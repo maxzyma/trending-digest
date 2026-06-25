@@ -7,7 +7,6 @@ title_en: New connectors in Claude for everyday life
 title_zh: Claude 中新增的日常生活连接器
 source_intro_paragraphs: 1
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/lyQod3RxJK3mZr50SobDvdDAJkb4Mw9r"
 ---
 
 # Claude 中新增的日常生活连接器

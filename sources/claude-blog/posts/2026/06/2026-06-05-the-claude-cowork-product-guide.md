@@ -7,7 +7,6 @@ title_en: The Claude Cowork product guide
 title_zh: Claude Cowork 产品指南
 source_intro_paragraphs: 0
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/r1R7q3QmWe7MzAbDINbwPby7JxkXOEP2"
 ---
 
 # Claude Cowork 产品指南

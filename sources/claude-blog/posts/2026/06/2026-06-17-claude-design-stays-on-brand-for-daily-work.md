@@ -7,7 +7,6 @@ title_en: Claude Design now stays on brand for daily work
 title_zh: Claude Design 现在能在日常工作中保持品牌一致
 source_intro_paragraphs: 2
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/gwva2dxOW4KprLM1Fkv1rGZB8bkz3BRL"
 ---
 
 # Claude Design 现在能在日常工作中保持品牌一致

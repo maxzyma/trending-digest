@@ -7,7 +7,6 @@ title_en: New in Claude Managed Agents: dreaming, outcomes, and multiagent orche
 title_zh: Claude Managed Agents 新功能：做梦、结果导向与多智能体编排
 source_intro_paragraphs: 1
 source_image_count: 2
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/6LeBq413JAzGDpRXC3ElAONd8DOnGvpb"
 ---
 
 # Claude Managed Agents 新功能：做梦、结果导向与多智能体编排

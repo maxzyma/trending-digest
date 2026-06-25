@@ -7,7 +7,6 @@ title_en: Redesigning Claude Code on desktop for parallel agents
 title_zh: 为并行智能体重新设计桌面端 Claude Code
 source_intro_paragraphs: 1
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/o14dA3GK8g5NaR3MHnGplRwMV9ekBD76"
 ---
 
 # 为并行智能体重新设计桌面端 Claude Code

@@ -7,7 +7,6 @@ title_en: New in Claude Managed Agents: self-hosted sandboxes and MCP tunnels
 title_zh: Claude 托管代理新功能：自托管沙箱与 MCP 隧道
 source_intro_paragraphs: 3
 source_image_count: 2
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/P7QG4Yx2Jp7NyRBaIQwarp7jV9dEq3XD"
 ---
 
 # Claude 托管代理新功能：自托管沙箱与 MCP 隧道

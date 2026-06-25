@@ -7,7 +7,6 @@ title_en: The evolution of agentic surfaces: building with Claude Managed Agents
 title_zh: 智能体形态的演进：基于 Claude Managed Agents 构建
 source_intro_paragraphs: 2
 source_image_count: 9
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/m9bN7RYPWdlg2n09IK25RLpeWZd1wyK0"
 ---
 
 # 智能体形态的演进：基于 Claude Managed Agents 构建

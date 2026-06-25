@@ -7,7 +7,6 @@ title_en: Preparing your security program for AI-accelerated offense
 title_zh: 为 AI 加速的攻击做好安全防护准备
 source_intro_paragraphs: 5
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/MNDoBb60VLrOaAqbUm9gD03g8lemrZQ3"
 ---
 
 # 为 AI 加速的攻击做好安全防护准备

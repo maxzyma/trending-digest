@@ -7,7 +7,6 @@ title_en: Agent identity in Claude Tag: a new access model for autonomous, team-
 title_zh: Claude Tag 中的智能体身份：面向自主、团队级 AI 的全新访问模型
 source_intro_paragraphs: 4
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/QG53mjyd80RjZYvGUwRYLm64V6zbX04v"
 ---
 
 # Claude Tag 中的智能体身份：面向自主、团队级 AI 的全新访问模型

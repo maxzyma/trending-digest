@@ -7,7 +7,6 @@ title_en: Harnessing Claude’s intelligence
 title_zh: 驾驭 Claude 的智能
 source_intro_paragraphs: 0
 source_image_count: 7
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/m9bN7RYPWdlg2n09IK2B3d6xWZd1wyK0"
 ---
 
 # 驾驭 Claude 的智能

@@ -7,7 +7,6 @@ title_en: The full Claude Desktop experience on AWS, Google Cloud, and Microsoft
 title_zh: 在 AWS、Google Cloud 和 Microsoft Foundry 上获得完整的 Claude Desktop 体验
 source_intro_paragraphs: 0
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/YndMj49yWjPv73OkUR5kxby7J3pmz5aA"
 ---
 
 # 在 AWS、Google Cloud 和 Microsoft Foundry 上获得完整的 Claude Desktop 体验

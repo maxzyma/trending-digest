@@ -7,7 +7,6 @@ title_en: Meet the winners of the Built with Opus 4.7 Claude Code hackathon
 title_zh: 来认识 Built with Opus 4.7 Claude Code 黑客松的获奖者
 source_intro_paragraphs: 3
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/14lgGw3P8vvl97DrFgmMXPbD85daZ90D"
 ---
 
 # 来认识 Built with Opus 4.7 Claude Code 黑客松的获奖者

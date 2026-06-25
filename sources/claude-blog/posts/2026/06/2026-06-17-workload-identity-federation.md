@@ -7,7 +7,6 @@ title_en: Secure access to the Claude Platform with Workload Identity Federation
 title_zh: 通过工作负载身份联合（Workload Identity Federation）安全访问 Claude 平台
 source_intro_paragraphs: 2
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/20eMKjyp81RNa19eUeDqMNAyWxAZB1Gv"
 ---
 
 # 通过工作负载身份联合（Workload Identity Federation）安全访问 Claude 平台

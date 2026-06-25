@@ -7,7 +7,6 @@ title_en: Steering Claude Code: CLAUDE.md files, skills, hooks, rules, subagents
 title_zh: 驾驭 Claude Code：CLAUDE.md 文件、技能、钩子、规则、子智能体及其他
 source_intro_paragraphs: 4
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/Obva6QBXJw9lDLgYuMnee592Wn4qY5Pr"
 ---
 
 # 驾驭 Claude Code：CLAUDE.md 文件、技能、钩子、规则、子智能体及其他

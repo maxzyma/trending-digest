@@ -7,7 +7,6 @@ title_en: New in Claude Managed Agents: run agents on a schedule and store envir
 title_zh: Claude 托管智能体新功能：按计划运行智能体，并在保险库中存储环境变量
 source_intro_paragraphs: 1
 source_image_count: 2
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/dQPGYqjpJYg04PkAsBv4arolWakx1Z5N"
 ---
 
 # Claude 托管智能体新功能：按计划运行智能体，并在保险库中存储环境变量

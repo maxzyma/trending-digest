@@ -7,7 +7,6 @@ title_en: Claude Managed Agents: get to production 10x faster
 title_zh: Claude 托管智能体（Claude Managed Agents）：上线速度提升 10 倍
 source_intro_paragraphs: 4
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/7NkDwLng8ZM3voXGiNdqxD0aJKMEvZBY"
 ---
 
 # Claude 托管智能体（Claude Managed Agents）：上线速度提升 10 倍

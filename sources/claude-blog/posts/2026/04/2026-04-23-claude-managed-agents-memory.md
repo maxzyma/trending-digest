@@ -7,7 +7,6 @@ title_en: Built-in memory for Claude Managed Agents
 title_zh: Claude 托管智能体（Managed Agents）内置记忆能力
 source_intro_paragraphs: 1
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/MNDoBb60VLrOaAqbUm9gkvoQ8lemrZQ3"
 ---
 
 # Claude 托管智能体（Managed Agents）内置记忆能力

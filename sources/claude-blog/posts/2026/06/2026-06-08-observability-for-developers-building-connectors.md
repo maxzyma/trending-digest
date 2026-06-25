@@ -7,7 +7,6 @@ title_en: Observability for developers building connectors
 title_zh: 为构建连接器的开发者提供的可观测性
 source_intro_paragraphs: 0
 source_image_count: 1
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/ydxXB52LJq7lxREmIKeYbLg2WqjMp697"
 ---
 
 # 为构建连接器的开发者提供的可观测性

@@ -7,7 +7,6 @@ title_en: Claude Code now supports artifacts
 title_zh: Claude Code 现已支持工件（Artifacts）
 source_intro_paragraphs: 2
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/ZgpG2NdyVXrOKPNEUP1n12318MwvDqPk"
 ---
 
 # Claude Code 现已支持工件（Artifacts）

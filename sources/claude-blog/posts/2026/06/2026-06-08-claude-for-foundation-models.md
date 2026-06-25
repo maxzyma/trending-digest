@@ -7,7 +7,6 @@ title_en: Building intelligent apps for Apple platforms with Claude in the Found
 title_zh: 在 Foundation Models 框架中通过 Claude 为 Apple 平台构建智能应用
 source_intro_paragraphs: 4
 source_image_count: 2
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/r1R7q3QmWe7MzAbDINbw0MkPJxkXOEP2"
 ---
 
 # 在 Foundation Models 框架中通过 Claude 为 Apple 平台构建智能应用

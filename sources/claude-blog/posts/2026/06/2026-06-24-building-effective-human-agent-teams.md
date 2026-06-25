@@ -7,7 +7,6 @@ title_en: Building effective human-agent teams
 title_zh: 构建高效的人机团队
 source_intro_paragraphs: 3
 source_image_count: 5
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/6LeBq413JAzGDpRXC3Ed6by18DOnGvpb"
 ---
 
 # 构建高效的人机团队

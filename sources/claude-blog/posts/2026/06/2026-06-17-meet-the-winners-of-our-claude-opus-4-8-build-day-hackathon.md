@@ -7,7 +7,6 @@ title_en: Meet the winners of our Claude Opus 4.8 Build Day hackathon
 title_zh: 来认识我们 Claude Opus 4.8 Build Day 黑客松的获奖者
 source_intro_paragraphs: 3
 source_image_count: 3
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/amweZ92PV6vZ0PNQFM3O1bX7VxEKBD6p"
 ---
 
 # 来认识我们 Claude Opus 4.8 Build Day 黑客松的获奖者

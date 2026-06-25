@@ -7,7 +7,6 @@ title_en: Centrally manage authorization for MCP connectors
 title_zh: 集中管理 MCP 连接器的授权
 source_intro_paragraphs: 0
 source_image_count: 0
-ding_doc_url: "https://alidocs.dingtalk.com/i/nodes/93NwLYZXWyglMOjysNazaqo0JkyEqBQm"
 ---
 
 # 集中管理 MCP 连接器的授权
