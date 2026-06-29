@@ -1,6 +1,6 @@
 ---
 schema_version: 1
-slug: frontend-migration-from-theuntold
+slug: aggregation-portal
 status: triaged
 priority: P1
 feature_type: new-feature
@@ -21,13 +21,12 @@ artifacts:
 
 # 聚合门户（trending.theuntold.ai 单入口聚多源）
 
-> 本条目由 bootstrap 预留的占位 `frontend-migration-from-theuntold` 升级而来。占位原前提有误，已纠正：
+> 本条目原为 bootstrap 预留占位 `frontend-migration-from-theuntold`，已改名 `aggregation-portal` 并完全迁入 theuntold 的同名工作（归属裁定：交付主体在本仓）。占位原前提已纠正：
 > - ❌ 原写「trending.theuntold.io 当前由 theuntold 仓维护」——实际 trending 子域是 **github-trending-digest** 的 Jekyll 站；theuntold 是另一个 Astro 主站（theuntold.ai）。
 > - ❌ 原范围「迁入 theuntold Astro 前端」——实际定论是**本仓自建 Jekyll 聚合门户**（不搬 Astro）。
 >
-> 归属讨论已在 theuntold 侧定论（2026-06-29），阻塞解除，intake 补齐。
-> 完整输入见 `notes/02-调研/trending-diggest/aggregation-portal-migration-input.md`（方案 + 6 stories + 决策 + 跨仓依赖）。
-> theuntold 侧该条目已 discarded·归属迁移，G1 passed 记录归档于 `projects/external/theuntold/sdlc/backlog/_archive/trending-aggregation-portal/`。
+> 归属讨论已定论（2026-06-29），阻塞解除，intake 补齐。本条目自包含（含下方 §归属迁移与 G1 历史）。
+> 方案信源：`notes/02-调研/trending-diggest/aggregation-portal-proposal.md`。theuntold 侧已 discard（仅留 Archive 指针）。
 
 ## Intake 覆盖账本（五问留痕）
 
@@ -85,6 +84,24 @@ artifacts:
 | github-trending 让出根路径 | 接受迁移，Worker 加旧路径 301 兜底（US-05），保旧 permalink 不断链 |
 | Worker 代码位置 | theuntold 本仓（DNS + 部署经验所在） |
 | 优先级 | P1（theuntold G1 时 Human 上调） |
+
+---
+
+## 归属迁移与 G1 历史（迁自 theuntold，自包含）
+
+本条目工作在 theuntold 仓走过 collect→triage→refine→**G1 passed**，因归属裁定（聚合门户交付主体在本仓、theuntold 是平级叶子产物仓）整体迁入本仓。完整历史在 theuntold git history（条目 `trending-aggregation-portal`，已 discard 归档）；关键记录复制如下，使本条目自包含。
+
+### theuntold 侧 G1 Review — 2026-06-29（passed，作输入）
+
+**dc:qualify**（profile sdlc-backlog / checkpoint stories-review，type gate）：三轮收敛 R1 needs-revision → R2 pass → **R3 pass，零 finding**。
+
+- **Q 值不值得做/批准进 Define？** A: passed。方案 self-contained、约束清晰、与既有 Feature 零重叠；唯一阻塞决策（github-trending URL 迁移）已拍板；自审两处实质缺口（漏 US-00 站点骨架、跨仓 merge 目标分裂）已闭合/留痕。
+- **Q 优先级？** A: **P1**（Human 上调，AI 原推荐 P2）。
+- **Q 跨仓归属张力？** A: 后续重定论为「交付迁至本仓 trending-diggest」（见本条目顶部）；代码交付物分布三仓，G5 release-plan 分仓列。
+
+**遗留追踪（交下游，不阻 G1）**：成功判据用户可观测信号已补但 G4 验证设计需落实；GoatCounter 量化 AC 已给但 Implement 细化。
+
+> 注：上述 G1 在 theuntold 仓 SDLC 通过。本仓为独立 SDLC，theuntold G1 作**输入**（非绑定）；本仓 G1 由 Human 在本仓复核确认。
 
 ---
 
