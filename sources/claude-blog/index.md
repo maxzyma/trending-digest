@@ -4,6 +4,8 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 
 | 日期 | 标题 | 分类 | 中文译读 | 原文 |
 |---|---|---|---|---|
+| 2026-06-29 | 面向 Amazon Bedrock 与 Google Cloud 推出 Claude 应用网关 | Product announcements | [Markdown](posts/2026/06/2026-06-29-introducing-the-claude-apps-gateway.md) | [原文](https://claude.com/blog/introducing-the-claude-apps-gateway) |
+| 2026-06-29 | Claude 入驻 Microsoft Foundry 正式全面可用 | Product announcements | [Markdown](posts/2026/06/2026-06-29-claude-in-microsoft-foundry.md) | [原文](https://claude.com/blog/claude-in-microsoft-foundry) |
 | 2026-06-24 | 构建高效的人机团队 | Enterprise AI | [Markdown](posts/2026/06/2026-06-24-building-effective-human-agent-teams.md) | [原文](https://claude.com/blog/building-effective-human-agent-teams) |
 | 2026-06-24 | Claude Tag 中的智能体身份：面向自主、团队级 AI 的全新访问模型 | Claude Code | [Markdown](posts/2026/06/2026-06-24-agent-identity-access-model.md) | [原文](https://claude.com/blog/agent-identity-access-model) |
 | 2026-06-22 | 在 AWS、Google Cloud 和 Microsoft Foundry 上获得完整的 Claude Desktop 体验 | Enterprise AI | [Markdown](posts/2026/06/2026-06-22-the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry.md) | [原文](https://claude.com/blog/the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry) |
