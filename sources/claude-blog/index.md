@@ -4,13 +4,14 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 
 | 日期 | 标题 | 分类 | 中文译读 | 原文 |
 |---|---|---|---|---|
-| 2026-06-30 | 循环入门：Claude Code 的智能体循环设计 | Claude Code | [Markdown](posts/2026/06/2026-06-30-getting-started-with-loops.md) | [原文](https://claude.com/blog/getting-started-with-loops) |
+| 2026-07-02 | 为管理员提供对 Claude 支出的更多可见性与控制 | Product announcements | [Markdown](posts/2026/07/2026-07-02-giving-admins-more-visibility-and-control-over-claude-usage-and-spend.md) | [原文](https://claude.com/blog/giving-admins-more-visibility-and-control-over-claude-usage-and-spend) |
+| 2026-06-30 | 上手智能体循环 | Claude Code | [Markdown](posts/2026/06/2026-06-30-getting-started-with-loops.md) | [原文](https://claude.com/blog/getting-started-with-loops) |
 | 2026-06-29 | 面向 Amazon Bedrock 与 Google Cloud 推出 Claude 应用网关 | Product announcements | [Markdown](posts/2026/06/2026-06-29-introducing-the-claude-apps-gateway.md) | [原文](https://claude.com/blog/introducing-the-claude-apps-gateway) |
 | 2026-06-29 | Claude 入驻 Microsoft Foundry 正式全面可用 | Product announcements | [Markdown](posts/2026/06/2026-06-29-claude-in-microsoft-foundry.md) | [原文](https://claude.com/blog/claude-in-microsoft-foundry) |
 | 2026-06-24 | 构建高效的人机团队 | Enterprise AI | [Markdown](posts/2026/06/2026-06-24-building-effective-human-agent-teams.md) | [原文](https://claude.com/blog/building-effective-human-agent-teams) |
 | 2026-06-24 | Claude Tag 中的智能体身份：面向自主、团队级 AI 的全新访问模型 | Claude Code | [Markdown](posts/2026/06/2026-06-24-agent-identity-access-model.md) | [原文](https://claude.com/blog/agent-identity-access-model) |
 | 2026-06-22 | 在 AWS、Google Cloud 和 Microsoft Foundry 上获得完整的 Claude Desktop 体验 | Enterprise AI | [Markdown](posts/2026/06/2026-06-22-the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry.md) | [原文](https://claude.com/blog/the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry) |
-| 2026-06-18 | 驾驭 Claude Code：CLAUDE.md 文件、技能、钩子、规则、子智能体等 | Claude Code | [Markdown](posts/2026/06/2026-06-18-steering-claude-code-skills-hooks-rules-subagents-and-more.md) | [原文](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more) |
+| 2026-06-18 | 驾驭 Claude Code：CLAUDE.md 文件、技能、钩子、规则、子代理及更多 | Claude Code | [Markdown](posts/2026/06/2026-06-18-steering-claude-code-skills-hooks-rules-subagents-and-more.md) | [原文](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more) |
 | 2026-06-18 | 集中管理 MCP 连接器的授权 | Enterprise AI | [Markdown](posts/2026/06/2026-06-18-enterprise-managed-auth.md) | [原文](https://claude.com/blog/enterprise-managed-auth) |
 | 2026-06-18 | Claude Code 现已支持工件（Artifacts） | Claude Code | [Markdown](posts/2026/06/2026-06-18-artifacts-in-claude-code.md) | [原文](https://claude.com/blog/artifacts-in-claude-code) |
 | 2026-06-17 | 通过工作负载身份联合（Workload Identity Federation）安全访问 Claude 平台 | Product announcements | [Markdown](posts/2026/06/2026-06-17-workload-identity-federation.md) | [原文](https://claude.com/blog/workload-identity-federation) |
