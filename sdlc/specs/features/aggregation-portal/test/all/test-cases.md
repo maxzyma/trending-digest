@@ -13,7 +13,7 @@ shard: all
 | TC-API-02 | api | boundary | 断言 CNAME 文件内容=trending.theuntold.ai；DNS 解析指向本仓 Pages | SC-02 |
 | TC-API-03 | api | error | 注入 _config.yml 缺失必填项 → 断言构建非零退出、无产物发布 | SC-20 |
 | TC-API-04 | api | functional | GET /github-trending/ → 断言反代返回 github-trending 仓页面（200） | SC-14 |
-| TC-API-05 | api | functional | GET /github-trending/ 页面 → 断言 CSS/JS src 前缀 /github-trending/ 200、permalink 前缀、GoatCounter script 可达 | SC-15 |
+| TC-API-05 | api | functional | GET /github-trending/ 页面 → 断言 CSS/JS src 前缀 /github-trending/ 200、permalink 前缀、GoatCounter script 可达且 **site-code 与迁移前一致**（baseurl 变更不改统计站点 ID）、上报 path 含 /github-trending/ | SC-15 |
 | TC-API-06 | api | boundary | 断言门户仓无 github-trending 内容拷贝（构建产物中无其明细文件） | SC-16 |
 | TC-API-07 | api | error | mock 上游 Pages 502 → GET /github-trending/ 断言 Worker 返回非 200 可辨识错误；同时 GET / 返 200 门户 | SC-24 |
 | TC-API-08 | api | functional | fixture：GET /daily/2026-03-30-analysis → 断言 301 Location=/github-trending/daily/2026-03-30-analysis | SC-17 |
@@ -47,7 +47,7 @@ shard: all
 
 ## 硬下限校验
 
-- form=api：14 条 ≥ contracts 路由/301 契约条目数（路由 5 + 301 fixture 模式）✓
+- form=api：14 条 ≥ contracts 契约条目数（路由表 6 行 + 301 fixture 6 模式 = 12；14 ≥ 12）✓
 - form=ui：11 条 ≥ ui/views 新增页面数（1：pc-portal-home）✓
 
 ## Extension TC

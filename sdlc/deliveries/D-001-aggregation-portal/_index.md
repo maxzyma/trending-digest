@@ -35,7 +35,17 @@ gates:
   g5:
     status: pending
 
-blockers: []
+blockers:
+  - description: "跨仓交付物地基未验证：TASK-005/007（theuntold Worker 反代+301）、TASK-006（github-trending baseurl）、TASK-008（CF DNS 切换）落兄弟仓，需两仓当前态 + Worker/CF 部署凭据 + runbook §6；implement 前须跨仓协调。原子上线顺序（防 DNS 先切断服）见 tasks.md TASK-008。"
+    category: external-dependency
+    since: 2026-07-07
+    skill: design
+    source_exhaustion:
+      - "tasks.md: TASK-005/006/007/008 已记跨仓依赖 + 地基未验证 + 原子上线顺序 + Gate（read）"
+      - "decisions.md ADR-001: Worker 代码归 theuntold 仓（read）"
+    refutation:
+      attempted: false
+      note: "非结论型阻塞——单仓 task（001~004）可先开工；此为已知 implement 前跨仓协调项，非 AI 判定不可行，无需驳斥"
 ---
 
 # D-001 聚合门户（aggregation-portal）

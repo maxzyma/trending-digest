@@ -5,14 +5,16 @@
 ```
 TASK-001 (本仓 Jekyll 骨架)
    ├── TASK-002 (门户首页) ── TASK-003 (最新流区块)
-   └── TASK-004 (claude-blog 子站 baseurl)
+   └── TASK-004 (claude-blog 子站 collection)
 
 TASK-006 (github-trending baseurl) ──┐
-                                     ├── [Gate: 跨仓协调 + Worker 部署凭据] ── TASK-005 (Worker 反代) ── TASK-007 (301 规则)
-TASK-008 (DNS/CNAME per runbook) ────┘
+                                     ├─ [Gate: 跨仓协调+凭据] ─ TASK-005 (Worker 反代) ── TASK-007 (301 规则)
+                                     │                              │
+                                     └──────────────────────────────┴── TASK-008 (DNS 切换，最后执行防断服)
 ```
 
-> 跨仓 task（005/006/007/008）落 theuntold / github-trending 仓，非本 worktree；地基验证=未验证（需对应仓当前态 + Worker 部署凭据），G3 后 implement 前须跨仓协调确认。
+> **原子上线顺序（防断服）**：TASK-008（DNS 切换）**最后**执行——须待 TASK-006（大站 baseurl 生效）+ TASK-005（Worker `/github-trending/*` 反代 live）验证通过后才切 DNS，否则 DNS 先指本仓而 Worker 未就绪 → `/github-trending/*` 404 断服（违反 US-04）。
+> 跨仓 task（005/006/007/008）落 theuntold / github-trending 仓，非本 worktree；地基验证=未验证（需对应仓当前态 + Worker/CF 部署凭据），已登记 blockers[]，G3 后 implement 前须跨仓协调确认。
 
 ---
 
@@ -23,7 +25,8 @@ TASK-008 (DNS/CNAME per runbook) ────┘
 - **层级**：INFRA
 - **变更点**：本仓新增 `_config.yml`（title/baseurl/theme）+ GitHub Pages workflow（`submodules: false`）+ `CNAME`=trending.theuntold.ai
 - **落点依据**：规格来源 behaviors/site-skeleton.gherkin#SC-01/02 + contracts.md#构建/部署契约 / 代码落点 本仓根 `_config.yml`、`.github/workflows/pages.yml`、`CNAME`（新建） / 定位方式 ⚠️ 前置确认项：本仓当前无 Jekyll，新建文件；参考 github-trending-digest `_config.yml`+`pages.yml` 结构（实证：那仓已跑通同栈），implement 时按其结构落地
-- **验证**：TC-UI（构建产出可访问 HTML）+ TC-API（Pages 构建成功、无 submodule 拉取）
+- **covers**：SC-01（构建成功无 submodule）+ SC-20（配置错误 fail-loud 非零退出）
+- **验证**：TC-API-01（Pages 构建成功、无 submodule 拉取）+ TC-API-03（配置错误 → 非零退出、无产物发布）
 - **影响范围回归**：无（本仓首个 Jekyll 化）
 - **依赖**：无
 - **地基验证**：已验证（github-trending-digest 同栈跑通，_layouts/home.html + pages.yml 可参照）
@@ -101,10 +104,12 @@ TASK-008 (DNS/CNAME per runbook) ────┘
 
 - **层级**：INFRA
 - **变更点**：按 theuntold `docs/runbook.md §6` 配置 trending.theuntold.ai（CF 橙云 + A 记录指 Pages IP），使域指向本仓 Pages
-- **落点依据**：规格来源 behaviors/site-skeleton.gherkin#SC-02 + stories US-00 AC-2 / 代码落点 CF DNS 控制台 + 本仓 CNAME / 定位方式 ⚠️ 前置确认项：需 theuntold runbook §6 具体步骤 + CF 账号；implement 前确认
-- **验证**：TC-API（trending.theuntold.ai 解析到本仓 Pages）
-- **影响范围回归**：trending.theuntold.ai 当前绑定（原 github-trending）——切换需与 TASK-005/006 协同，避免断服
-- **依赖**：TASK-001（CNAME 文件）
+- **covers**：SC-02（CNAME/DNS 指向本仓 Pages）+ SC-03（渲染链路连通、门户首页可访问）
+- **落点依据**：规格来源 behaviors/site-skeleton.gherkin#SC-02/03 + stories US-00 AC-2 / 代码落点 CF DNS 控制台 + 本仓 CNAME / 定位方式 ⚠️ 前置确认项：需 theuntold runbook §6 具体步骤 + CF 账号；implement 前确认
+- **验证**：TC-API-02（trending.theuntold.ai 解析到本仓 Pages）+ TC-UI-01（门户首页经该域可访问）
+- **影响范围回归**：trending.theuntold.ai 当前绑定（原 github-trending）
+- **⚠️ 原子上线顺序（防断服，MUST）**：DNS 切换（本 task）**必须在 TASK-006（github-trending baseurl 生效）+ TASK-005（Worker 反代 live）之后**执行——否则 DNS 已指本仓但 Worker 未路由 `/github-trending/*` → 该路径 404、大站断服（违反 US-04）。三者协同：TASK-006 上线 → TASK-005 Worker deploy 验证 `/github-trending/*` 通 → 才切 DNS。
+- **依赖**：TASK-001（CNAME 文件）+ TASK-005（Worker live）+ TASK-006（大站 baseurl 生效）
 - **地基验证**：未验证：CF 账号 + runbook §6 当前有效性 + 域当前绑定状态
 - **复杂度信号**：文件数=1，跨层=否，决策可逆=是（DNS 可回切），外部澄清=是（跨仓 + 凭据 + 停机窗口）
 

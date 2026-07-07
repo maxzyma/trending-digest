@@ -12,7 +12,8 @@
 **逻辑**（按序匹配，首命中即返）：
 1. `P` 命中旧内容子路径模式（见 ALG-02）→ 交 ALG-02 返回 301
 2. `P` 以 `/github-trending/` 前缀 → 反代 github-trending 独立仓 Pages origin（保留子路径）
-   - 上游返回非 2xx/3xx → 返回 Worker 可辨识错误响应（HTTP 非 200，不透传门户内容）（SC-24）
+   - 上游 2xx/3xx（正常/合法重定向）→ 透传上游响应
+   - 上游 4xx/5xx（含不可用 502）→ 返回 Worker 可辨识错误响应（HTTP 非 200，不透传门户内容）（SC-24）
 3. 其余（`/`、`/claude-blog/*`、未来同仓小源）→ 直出/透传本仓 Pages origin（Worker 不改写）（SC-13）
 
 **边界**：
