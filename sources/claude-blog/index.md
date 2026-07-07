@@ -4,7 +4,7 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 
 | 日期 | 标题 | 分类 | 中文译读 | 原文 |
 |---|---|---|---|---|
-| 2026-07-06 | Claude Fable 5 实战指南：发现你的未知 | Claude Code | [Markdown](posts/2026/07/2026-07-06-a-field-guide-to-claude-fable-finding-your-unknowns.md) | [原文](https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns) |
+| 2026-07-06 | Claude Fable 5 实地指南：发现你的未知 | Claude Code | [Markdown](posts/2026/07/2026-07-06-a-field-guide-to-claude-fable-finding-your-unknowns.md) | [原文](https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns) |
 | 2026-06-30 | 上手智能体循环 | Claude Code | [Markdown](posts/2026/06/2026-06-30-getting-started-with-loops.md) | [原文](https://claude.com/blog/getting-started-with-loops) |
 | 2026-06-24 | 构建高效的人机团队 | Enterprise AI | [Markdown](posts/2026/06/2026-06-24-building-effective-human-agent-teams.md) | [原文](https://claude.com/blog/building-effective-human-agent-teams) |
 | 2026-06-24 | Claude Tag 中的智能体身份：面向自主、团队级 AI 的全新访问模型 | Claude Code | [Markdown](posts/2026/06/2026-06-24-agent-identity-access-model.md) | [原文](https://claude.com/blog/agent-identity-access-model) |
