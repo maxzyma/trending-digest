@@ -1,0 +1,27 @@
+# 页面: github-trending 大站（/github-trending/*，经 CF Worker 反代到独立仓 Pages）
+Feature: github-trending 大站经 Worker 反代
+  作为技术读者，我要点 GitHub Trending 卡进入 /github-trending/，
+  看到它自己的网格首页与历史明细，以便在同一入口域下访问体量大的独立维护站。
+
+  Rule: /github-trending/* 经 CF Worker 反代到 github-trending 独立仓 Pages
+
+    @happy-path
+    Scenario: SC-14 反代到独立仓 Pages
+      Given CF Worker（代码落 theuntold 仓）绑在 trending.theuntold.ai
+      When 访问 /github-trending/ 或其子路径
+      Then Worker 将请求反代到 github-trending-digest 独立仓 Pages
+      And 返回该仓渲染的网格首页与历史明细
+
+    Scenario: SC-15 github-trending 仓 baseurl 设为 /github-trending 且资源前缀正确
+      Given github-trending-digest 仓 Jekyll baseurl 设为 /github-trending
+      When 加载 /github-trending/ 页面
+      Then 页面 CSS/JS src 以 /github-trending/ 为前缀且返回 200
+      And 内部 permalink 指向 /github-trending/...
+      And GoatCounter 统计脚本可达且上报 path 含 /github-trending/ 前缀
+
+    @boundary
+    Scenario: SC-16 门户侧零跨仓拷贝（运行时边缘反代）
+      Given github-trending 仍由其独立仓独立部署维护
+      When 门户提供 /github-trending/ 访问
+      Then 门户侧不含 github-trending 内容的拷贝
+      And 聚合为运行时边缘反代，非构建期合并

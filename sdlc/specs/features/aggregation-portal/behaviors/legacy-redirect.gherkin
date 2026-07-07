@@ -1,0 +1,25 @@
+# 页面: 旧 URL 重定向（CF Worker，theuntold 仓）
+Feature: 旧 URL 301 重定向兜底
+  作为持有 github-trending 旧链接（书签/外链/搜索引擎索引）的访客，
+  我要访问旧根路径 URL 时被自动重定向到 /github-trending/ 下的新地址，
+  以便历史 permalink 不断链、SEO 不受损。
+
+  Rule: Worker 对旧根路径 URL 返回 301 到新前缀，且不误伤门户根
+
+    @happy-path
+    Scenario: SC-17 旧根路径 URL 301 到 /github-trending/ 下对应新路径
+      Given github-trending 迁移前的根路径 permalink（书签/外链）
+      When 访客访问某旧根路径 URL
+      Then Worker 返回 301 到 /github-trending/ 下对应新路径
+
+    Scenario: SC-18 重定向覆盖关键 permalink 模式
+      Given 重定向模式在 Define 阶段从 github-trending _config.yml permalink 配置枚举
+      When 访问 daily 明细页旧 URL 或旧首页根
+      Then 均被 301 覆盖到对应 /github-trending/ 新路径
+
+    @boundary
+    Scenario: SC-19 显式模式列表、不误伤门户根 /
+      Given 重定向规则为显式前缀/模式列表（非 catch-all）
+      When 请求门户自身根路径 /
+      Then / 不被重定向规则命中，返回门户首页
+      And 一组 fixture 可断言：旧路径 URL → 期望 301 目标
