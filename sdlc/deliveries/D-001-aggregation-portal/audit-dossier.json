@@ -1,0 +1,119 @@
+{
+  "checkpoint": "g3-design-review",
+  "layers_run": [
+    "L1",
+    "L2",
+    "L3"
+  ],
+  "findings": [
+    {
+      "source_tier": "L3",
+      "severity": "critical",
+      "artifact_pointer": "tasks.md TASK-005 / TASK-008 依赖",
+      "counterexample": "TASK-008(DNS) 依赖 TASK-005(Worker)、TASK-005 又依赖 TASK-008 → 循环依赖，cutover 计划不可执行（codex 跨家族 P0，且是同族修 DNS 顺序时引入的）",
+      "provides_independence": true,
+      "disposition": "fixed-mechanical",
+      "category": "judgment"
+    },
+    {
+      "source_tier": "L3",
+      "severity": "major",
+      "artifact_pointer": "contracts.md Worker origin / algorithms.md ALG-01",
+      "counterexample": "Worker fetch 自定义域 trending.theuntold.ai → CF 路由回 Worker → 无限递归/502；origin host/SNI 未指定",
+      "provides_independence": true,
+      "disposition": "fixed-mechanical",
+      "category": "judgment"
+    },
+    {
+      "source_tier": "L3",
+      "severity": "major",
+      "artifact_pointer": "algorithms.md ALG-02",
+      "counterexample": "前缀匹配对结构化 permalink overmatch（/dailyfoo 误匹配 /daily），破坏非-catch-all 保证 → 改锚定正则",
+      "provides_independence": true,
+      "disposition": "fixed-mechanical",
+      "category": "judgment"
+    },
+    {
+      "source_tier": "L3",
+      "severity": "major",
+      "artifact_pointer": "behaviors/site-skeleton.gherkin SC-02",
+      "counterexample": "CF 橙云代理下公开 DNS 返 CF edge IP 而非 Pages IP，原断言生产不可观测 → 改行为路由断言",
+      "provides_independence": true,
+      "disposition": "fixed-mechanical",
+      "category": "judgment"
+    },
+    {
+      "source_tier": "L3",
+      "severity": "minor",
+      "artifact_pointer": "algorithms.md ALG-01 / SC-26",
+      "counterexample": "无尾斜杠 /github-trending 漏匹配落门户；上游真实 404/410 被当故障掩盖；301 丢 query string → 补 SC-26/27 + query 保留 + 404 透传",
+      "provides_independence": true,
+      "disposition": "fixed-mechanical",
+      "category": "judgment"
+    },
+    {
+      "source_tier": "L2",
+      "severity": "major",
+      "artifact_pointer": "tasks.md TASK covers / SC-03 SC-20",
+      "counterexample": "SC-03（渲染链路）、SC-20（fail-loud 构建）不在任何 TASK covers 并集 → 补入 TASK-008/TASK-001",
+      "provides_independence": false,
+      "disposition": "fixed-mechanical",
+      "category": "mechanical-grounding"
+    },
+    {
+      "source_tier": "L2",
+      "severity": "major",
+      "artifact_pointer": "specs/features/aggregation-portal/behaviors/*.gherkin",
+      "counterexample": "初版 6 Rule 全缺 @error 场景（构建失败/Worker 不可用/重定向歧义）→ 补 SC-20~25",
+      "provides_independence": false,
+      "disposition": "fixed-mechanical",
+      "category": "mechanical-grounding"
+    },
+    {
+      "source_tier": "L2",
+      "severity": "minor",
+      "artifact_pointer": "test-cases.md 硬下限 / TC-API-FUNC-003",
+      "counterexample": "硬下限分母计数错（路由5实为6）；GoatCounter site-code 不变未断言 → 修计数 + 补断言",
+      "provides_independence": false,
+      "disposition": "fixed-mechanical",
+      "category": "mechanical-grounding"
+    },
+    {
+      "source_tier": "L1",
+      "severity": "minor",
+      "artifact_pointer": "decisions.md ADR-001~004",
+      "counterexample": "ADR 缺显式 status + ADR-003/004 缺 alternatives → 补齐四要素",
+      "provides_independence": false,
+      "disposition": "fixed-mechanical",
+      "category": "mechanical-grounding"
+    },
+    {
+      "source_tier": "L3",
+      "severity": "major",
+      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/tasks.md",
+      "counterexample": "未验证：theuntold 仓 Worker 现状 + CF 部署凭据 + trending.theuntold.ai 当前绑定",
+      "provides_independence": true,
+      "disposition": "carried-to-caller",
+      "category": "judgment"
+    }
+  ],
+  "voided": [],
+  "validation_probe": [
+    {
+      "layer": "L3",
+      "intent": "US-04 大站可访问 + US-00 域切换不断服",
+      "counterexample": "DNS 先切、Worker 未部署 → /github-trending/* 404 断服；且任务依赖成环使 cutover 不可执行",
+      "verdict": "confirmed-real-fixed",
+      "note": "解循环 + TASK-008 原子后置（依赖 005+006 live）后不再成立"
+    }
+  ],
+  "residual": [
+    {
+      "item": "跨仓交付物地基未验证（theuntold Worker/CF 凭据 + github-trending baseurl + DNS runbook §6）",
+      "why_mechanism_cannot_decide": "跨仓当前态与部署凭据在本 worktree 不可达，须 implement 前跨仓协调",
+      "disposition": "carried-to-caller (registered in _index.md blockers[] as external-dependency)"
+    }
+  ],
+  "gaps": [],
+  "derived_from_artifact_hash": "2f9f09bad9280c3bd4daec94b333753a6c8cd3c6741e68d9c6c5d13f99e3d780"
+}
