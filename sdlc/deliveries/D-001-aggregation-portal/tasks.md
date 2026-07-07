@@ -1,0 +1,131 @@
+# 聚合门户：任务计划
+
+## 任务 DAG
+
+```
+TASK-001 (本仓 Jekyll 骨架)
+   ├── TASK-002 (门户首页) ── TASK-003 (最新流区块)
+   └── TASK-004 (claude-blog 子站 baseurl)
+
+TASK-006 (github-trending baseurl) ──┐
+                                     ├── [Gate: 跨仓协调 + Worker 部署凭据] ── TASK-005 (Worker 反代) ── TASK-007 (301 规则)
+TASK-008 (DNS/CNAME per runbook) ────┘
+```
+
+> 跨仓 task（005/006/007/008）落 theuntold / github-trending 仓，非本 worktree；地基验证=未验证（需对应仓当前态 + Worker 部署凭据），G3 后 implement 前须跨仓协调确认。
+
+---
+
+## 任务列表
+
+### TASK-001: scaffold-jekyll-site（本仓 Jekyll 骨架）
+
+- **层级**：INFRA
+- **变更点**：本仓新增 `_config.yml`（title/baseurl/theme）+ GitHub Pages workflow（`submodules: false`）+ `CNAME`=trending.theuntold.ai
+- **落点依据**：规格来源 behaviors/site-skeleton.gherkin#SC-01/02 + contracts.md#构建/部署契约 / 代码落点 本仓根 `_config.yml`、`.github/workflows/pages.yml`、`CNAME`（新建） / 定位方式 ⚠️ 前置确认项：本仓当前无 Jekyll，新建文件；参考 github-trending-digest `_config.yml`+`pages.yml` 结构（实证：那仓已跑通同栈），implement 时按其结构落地
+- **验证**：TC-UI（构建产出可访问 HTML）+ TC-API（Pages 构建成功、无 submodule 拉取）
+- **影响范围回归**：无（本仓首个 Jekyll 化）
+- **依赖**：无
+- **地基验证**：已验证（github-trending-digest 同栈跑通，_layouts/home.html + pages.yml 可参照）
+- **复杂度信号**：文件数=3，跨层=否，决策可逆=是，外部澄清=否
+
+### TASK-002: build-portal-homepage（门户首页）
+
+- **层级**：UI
+- **变更点**：新增 `_layouts/portal-home.html`（Hero + 信源导航网格 + 最新流占位）+ 信源卡数据文件（`_data/sources.yml`，SourceCard 集）+ 首页 `index.md`
+- **落点依据**：规格来源 behaviors/portal-homepage.gherkin#SC-04~07/21 + ui/prototype.html（视觉契约，implement 照它建）+ entities.md#SourceCard / 代码落点 `_layouts/portal-home.html`、`_data/sources.yml`、`index.md`（新建） / 定位方式 ⚠️ 前置确认项：新建页面，规格来源并入 `specs/features/aggregation-portal/ui/prototype.html`；implement 照 prototype 建 layout
+- **验证**：TC-UI（首页含 Hero+网格+流占位；两卡 href=/github-trending//claude-blog/；HTML 不含 github-trending 明细）
+- **影响范围回归**：无
+- **依赖**：TASK-001
+- **地基验证**：已验证（prototype.html 已产、对齐 github-trending 观感）
+- **复杂度信号**：文件数=3，跨层=否，决策可逆=是，外部澄清=否
+
+### TASK-003: latest-stream-aggregation（首页最新流）
+
+- **层级**：UI
+- **变更点**：`_layouts/portal-home.html` 第三区块用 Jekyll `site.pages` 聚合同仓小源 digest，按 ALG-03 倒序取 N 条；空集优雅留空
+- **落点依据**：规格来源 behaviors/latest-stream.gherkin#SC-08~10/22 + algorithms.md#ALG-03 + entities.md#DigestEntry / 代码落点 `_layouts/portal-home.html`（最新流 Liquid 段）+ `_config.yml`（条数 N 配置） / 定位方式 从 ALG-03 逻辑 → Liquid where/sort/limit 实现，落 portal-home layout
+- **验证**：TC-UI（倒序、仅同仓源、不含 github-trending、空集不报错）
+- **影响范围回归**：TASK-002 首页渲染
+- **依赖**：TASK-002
+- **地基验证**：已验证（同仓 claude-blog posts 存在，site.pages 可枚举）
+- **复杂度信号**：文件数=1，跨层=否，决策可逆=是，外部澄清=否
+
+### TASK-004: claude-blog-subsite-baseurl（小源子站）
+
+- **层级**：INFRA
+- **变更点**：`_config.yml` 定义 Jekyll collection `claude_blog`（`output: true` + `permalink: /claude-blog/:path/`），使 `sources/claude-blog/posts/` 渲染到 `/claude-blog/` 前缀下，资源/内链前缀正确（INV-01）
+- **落点依据**：规格来源 behaviors/small-source-subsite.gherkin#SC-11~13/23 + _index.md#INV-01 + decisions.md#ADR-002（小源同仓子目录机制已锁 collection 方案，非悬挂）/ 代码落点 `_config.yml`（collections.claude_blog 段）+ 页面 layout / 定位方式 从 ADR-002 锁定的 collection 机制 → Jekyll collections 配置落 `_config.yml`（deterministic，不留 implement 自由度）
+- **验证**：TC-UI（/claude-blog/ CSS 200、内链可达、Worker 不介入同仓路径）
+- **影响范围回归**：TASK-001 站点构建
+- **依赖**：TASK-001
+- **地基验证**：已验证（claude-blog markdown 归档已在本仓）
+- **复杂度信号**：文件数=2，跨层=否，决策可逆=是，外部澄清=是（collection 机制选型）
+
+<!-- ⚑ Gate: 跨仓协调 + Worker 部署凭据确认后再动 TASK-005/006/007/008 -->
+
+### TASK-005: cf-worker-reverse-proxy（github-trending 反代）【跨仓：theuntold】
+
+- **层级**：INFRA
+- **变更点**：theuntold 仓新增 CF Worker，按 ALG-01 反代 `/github-trending/*` 到 github-trending 独立仓 Pages；上游不可用返回可辨识错误
+- **落点依据**：规格来源 behaviors/github-trending-proxy.gherkin#SC-14~16/24 + algorithms.md#ALG-01 / 代码落点 theuntold 仓 Worker 脚本（路径待定） / 定位方式 ⚠️ 前置确认项：跨仓（theuntold），需该仓当前 Worker/部署结构 + CF 账号凭据；implement 前跨仓协调确认落点
+- **验证**：TC-UI（/github-trending/ 反代成功）+ TC-API（上游 502 时 Worker 返非 200）
+- **影响范围回归**：theuntold 现有 Worker/路由（若有）
+- **依赖**：TASK-006, TASK-008
+- **地基验证**：未验证：theuntold 仓 Worker 现状 + CF 部署凭据 + trending.theuntold.ai 当前绑定
+- **复杂度信号**：文件数=1~2，跨层=否，决策可逆=是（Worker 可回滚），外部澄清=是（跨仓+凭据）
+
+### TASK-006: github-trending-baseurl（大站 baseurl）【跨仓：github-trending-digest】
+
+- **层级**：INFRA
+- **变更点**：github-trending-digest 仓 `_config.yml` 设 `baseurl: /github-trending`，使其资源/permalink 带前缀
+- **落点依据**：规格来源 behaviors/github-trending-proxy.gherkin#SC-15 + _index.md#INV-01 / 代码落点 github-trending-digest 仓 `_config.yml`（当前 baseurl=""） / 定位方式 已实证该仓 `_config.yml` baseurl 当前为空（读取确认）；改为 /github-trending
+- **验证**：TC-API（页面 CSS/JS src 带 /github-trending/ 前缀 200、permalink 前缀、GoatCounter 正常）
+- **影响范围回归**：github-trending 现有站全站链接（baseurl 变更影响面大）
+- **依赖**：无（可先行）
+- **地基验证**：已验证（该仓 _config.yml 已读，baseurl="" 确认）
+- **复杂度信号**：文件数=1，跨层=否，决策可逆=是，外部澄清=是（跨仓 + 需与旧 URL 301 协同上线）
+
+### TASK-007: legacy-301-redirect（旧 URL 301 兜底）【跨仓：theuntold】
+
+- **层级**：INFRA
+- **变更点**：theuntold Worker 按 ALG-02 对旧内容子路径返 301；裸 / 不命中；显式模式列表 + fixture 断言
+- **落点依据**：规格来源 behaviors/legacy-redirect.gherkin#SC-17~19/25 + algorithms.md#ALG-02 + contracts.md#301 fixture 契约 / 代码落点 theuntold Worker（同 TASK-005） / 定位方式 ⚠️ 前置确认项：跨仓，随 TASK-005 Worker 一并落地
+- **验证**：TC-API（fixture：旧子路径→301 目标；裸 /→门户 200；无匹配→不误 301 不 5xx）
+- **影响范围回归**：TASK-005 Worker 路由
+- **依赖**：TASK-005
+- **地基验证**：未验证：同 TASK-005（theuntold Worker）
+- **复杂度信号**：文件数=1，跨层=否，决策可逆=是，外部澄清=是（跨仓）
+
+### TASK-008: dns-cname-config（DNS/CNAME）【跨仓：theuntold/runbook】
+
+- **层级**：INFRA
+- **变更点**：按 theuntold `docs/runbook.md §6` 配置 trending.theuntold.ai（CF 橙云 + A 记录指 Pages IP），使域指向本仓 Pages
+- **落点依据**：规格来源 behaviors/site-skeleton.gherkin#SC-02 + stories US-00 AC-2 / 代码落点 CF DNS 控制台 + 本仓 CNAME / 定位方式 ⚠️ 前置确认项：需 theuntold runbook §6 具体步骤 + CF 账号；implement 前确认
+- **验证**：TC-API（trending.theuntold.ai 解析到本仓 Pages）
+- **影响范围回归**：trending.theuntold.ai 当前绑定（原 github-trending）——切换需与 TASK-005/006 协同，避免断服
+- **依赖**：TASK-001（CNAME 文件）
+- **地基验证**：未验证：CF 账号 + runbook §6 当前有效性 + 域当前绑定状态
+- **复杂度信号**：文件数=1，跨层=否，决策可逆=是（DNS 可回切），外部澄清=是（跨仓 + 凭据 + 停机窗口）
+
+---
+
+## 总览
+
+| 指标 | 值 |
+|------|-----|
+| 任务总数 | 8（本仓 4 / 跨仓 4）|
+| Gate 数量 | 1（跨仓协调 + Worker 部署凭据）|
+| 关键路径 | TASK-006/008 → [Gate] → TASK-005 → TASK-007 |
+
+<!-- Feature: aggregation-portal | 由 /sdlc:design 生成于 2026-07-07 -->
+
+## 信源清单
+
+<!-- sources-manifest:begin -->
+### D-001 @ 2026-07-07
+
+- specs：`features/aggregation-portal/behaviors/*.gherkin`（SC-01~25 逐 task covers）、`algorithms.md`（ALG-01/02/03）、`contracts.md`（路由/301/构建契约）、`entities.md`（SourceCard/DigestEntry）、`ui/prototype.html`（TASK-002 视觉契约）、`_index.md`（INV-01）
+- code：`publications/github-trending-digest/_config.yml`（TASK-006 baseurl="" 实证 + TASK-001 同栈参照）、`_layouts/home.html`（TASK-002 参照）
+- 参考：theuntold `docs/runbook.md §6`（TASK-008 DNS，未读原文—标⚠️前置确认）
+<!-- sources-manifest:end -->
