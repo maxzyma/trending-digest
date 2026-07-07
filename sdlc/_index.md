@@ -18,7 +18,7 @@ updated: "2026-06-29"
 | claude-blog-ingestion | Claude 博客增量抓取 + 幂等去重 | P1 | collected |
 | bilingual-digest-format | 中文双语译读 markdown 格式契约 | P1 | collected |
 | archive-index-maintenance | 归档目录结构 + index.md 索引维护 | P2 | collected |
-| aggregation-portal | 聚合门户（trending.theuntold.ai 单入口聚多源；迁自 theuntold G1 passed，6 stories） | P1 | triaged |
+| aggregation-portal | 聚合门户（trending.theuntold.ai 单入口聚多源；迁自 theuntold G1 passed，6 stories） | P1 | ready |
 
 ## G0 Review — Bootstrap 基线（Greenfield）
 

@@ -1,12 +1,12 @@
 ---
 schema_version: 1
 slug: aggregation-portal
-status: triaged
+status: ready
 priority: P1
 feature_type: new-feature
 related_features: []
 created_at: "2026-06-29"
-updated_at: "2026-06-29"
+updated_at: "2026-07-07"
 assigned_to: null
 notified_at: null
 delivery_ref: null
@@ -105,11 +105,20 @@ artifacts:
 
 ---
 
+## G1 Review — 本仓复核（2026-07-07，passed）
+
+- **结论**：passed（Human 批准 → ready）。
+- **dc:qualify**（profile sdlc-backlog / checkpoint stories-review，type gate）：round 1 **pass，零 finding**（problem-statement / dod-checklist / impact-analysis 三维全 pass）。
+- **Q&A 留痕**：
+  - **Q**: 批准进入 Delivery（Define）吗？ **A**: 批准 → ready。条目自包含、dc 零 finding、theuntold G1 作输入；唯一实质变化是本仓职责扩张，已在风险中明示。
+  - **Q**: 认可本仓职责从「纯数据仓」扩张为「数据 + Jekyll 展示宿主」吗？ **A**: 认可。聚合门户交付主体已裁定在本仓，Jekyll 骨架（US-00）是必要前提；architecture 基线届时随交付更新。
+- **遗留追踪（交下游，不阻 G1）**：G4 验证设计需落实（成功判据用户可观测信号已给）；GoatCounter 量化 AC 待 Implement 细化；跨 3 仓交付物 → G5 release-plan 分仓列。
+
 ## DoD 检查清单
 
 - [x] 有清晰目标 + 业务价值 + 优先级
 - [x] 有影响分析（跨仓依赖已识别）
 - [x] 无 Feature 冲突（与本仓 claude-blog-ingestion / bilingual-digest-format / archive-index-maintenance 不重叠——它们是数据流水线，本条目是展示/路由层）
-- [ ] G1（本仓 SDLC）：theuntold 侧 G1 已 passed 作输入，本仓 G1 待 Human 在本仓复核确认
+- [x] G1（本仓 SDLC）：passed（2026-07-07 Human 复核，见上 G1 Review 段；theuntold 侧 G1 作输入）
 
 <!-- 关联 Feature ID（进入 Define 后分配）：待分配 -->
