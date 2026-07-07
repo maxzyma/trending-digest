@@ -24,6 +24,7 @@ artifacts:
 - **拥有**：本仓 Jekyll 站点骨架、门户首页、小源子站渲染、`trending.theuntold.ai` CNAME。
 - **消费（不拥有）**：claude-blog 等源的内容生产（归数据流水线 Feature）；github-trending 站内容（独立仓）；CF Worker 运行时（代码归 theuntold 仓）。
 - **不做**：跨仓构建期聚合（首页最新流仅同仓小源）；改造各源内容流水线。
+- **平台可用性非本 Feature 行为**：GitHub Pages / Cloudflare 边缘的平台级可用性（uptime/SLA）不在本 Feature 行为范围——本 Feature 只保证「上游不可用时门户侧返回可辨识错误、不污染其他路径」（SC-24），不保证平台本身不宕。
 
 ## 不变量
 
