@@ -1,0 +1,15 @@
+# Deliveries Index
+
+> Delivery 生命周期账本（manifest）。每次 Delivery 经 G1 追加 Active、G5 merge 后移入 Completed。
+
+## Active
+
+| Delivery | Feature | 类型 | lifecycle | feature_branch | updated |
+|---|---|---|---|---|---|
+| _（暂无在飞交付）_ | — | — | — | — | — |
+
+## Completed
+
+| Delivery | Feature | 类型 | lifecycle | feature_branch | updated |
+|---|---|---|---|---|---|
+| _（暂无）_ | — | — | — | — | — |
