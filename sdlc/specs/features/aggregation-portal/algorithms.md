@@ -10,15 +10,18 @@
 **输出**：origin 响应（反代 / 直出 / 错误）
 
 **逻辑**（按序匹配，首命中即返）：
-1. `P` 命中旧内容子路径模式（见 ALG-02）→ 交 ALG-02 返回 301
-2. `P` 以 `/github-trending/` 前缀 → 反代 github-trending 独立仓 Pages origin（保留子路径）
-   - 上游 2xx/3xx（正常/合法重定向）→ 透传上游响应
-   - 上游 4xx/5xx（含不可用 502）→ 返回 Worker 可辨识错误响应（HTTP 非 200，不透传门户内容）（SC-24）
-3. 其余（`/`、`/claude-blog/*`、未来同仓小源）→ 直出/透传本仓 Pages origin（Worker 不改写）（SC-13）
+1. `P == "/github-trending"`（无尾斜杠）→ `301 Location: /github-trending/`（补尾斜杠，防漏匹配落门户）（SC-26）
+2. `P` 命中旧内容子路径模式（见 ALG-02）→ 交 ALG-02 返回 301
+3. `P` 以 `/github-trending/` 前缀 → 反代 github-trending origin（**保留完整 path，不 rewrite**；origin=Pages 域非自定义域，防递归，见 contracts Worker origin 契约）
+   - 上游 2xx/3xx → 透传上游响应
+   - 上游 **4xx（404/410 等）→ 透传**上游（不掩盖真实 not-found，保 SEO 诊断）
+   - 上游 **5xx / 网络失败 → Worker 可辨识错误响应**（HTTP 非 200，不透传门户内容）（SC-24）
+4. 其余（`/`、`/claude-blog/*`、未来同仓小源）→ 直出/透传本仓 Pages origin（Worker 不改写）（SC-13）
 
 **边界**：
-- 门户根 `/` 命中步骤 3，不被步骤 1/2 截获（INV-04 / SC-19）
-- 反代保持 path（github-trending 仓 baseurl=`/github-trending`，故其自身链接已含前缀，Worker 不再二次改写）（SC-15）
+- 门户根 `/` 命中步骤 4，不被步骤 1/2/3 截获（INV-04 / SC-19）
+- 反代保持 path（github-trending baseurl=`/github-trending`，其自身链接已含前缀，Worker 不二次改写）（SC-15）
+- Worker fetch origin 必须用 Pages 域（非 `trending.theuntold.ai`），否则 CF 路由回 Worker → 无限递归/502（contracts Worker origin 契约）
 
 ## ALG-02 旧 URL → 301 目标映射
 
@@ -27,22 +30,23 @@
 **输入**：request URL path `P`
 **输出**：`{ status: 301, location }` 或 `null`（不重定向）
 
-**重定向模式集**（显式列表，非 catch-all；从 github-trending `_config.yml` 枚举——无自定义 permalink，Jekyll 默认）：
+**重定向模式集**（**锚定正则**，非前缀 catch-all，防越界 overmatch；从 github-trending `_config.yml` 枚举——无自定义 permalink，Jekyll 默认）：
 ```
-/daily/{date}-analysis      → /github-trending/daily/{date}-analysis
-/daily/{date}               → /github-trending/daily/{date}
-/weekly/{YYYY-Www}          → /github-trending/weekly/{YYYY-Www}
-/monthly/{YYYY-MM}          → /github-trending/monthly/{YYYY-MM}
-/assets/*                   → /github-trending/assets/*
+^/daily/\d{4}-\d{2}-\d{2}(-analysis)?/?$   → /github-trending{P}
+^/weekly/\d{4}-W\d{2}/?$                    → /github-trending{P}
+^/monthly/\d{4}-\d{2}/?$                    → /github-trending{P}
+^/assets/.+$                               → /github-trending{P}
 ```
 
 **逻辑**：
 1. `P == "/"` → 返回 `null`（门户首页，不重定向）（SC-19）
-2. `P` 前缀匹配模式集任一 → 返回 `{301, "/github-trending" + P}`（SC-17/18）
+2. `P` **完整匹配**模式集任一锚定正则 → 返回 `{301, "/github-trending" + P + 保留原 query string}`（SC-17/18）
 3. 否则 → 返回 `null`（交 ALG-01 后续步骤；不 catch-all 兜底 301）（SC-25）
 
 **边界**：
-- 模式集为显式前缀白名单，新增源不改本算法（github-trending 迁移一次性）
+- 锚定正则（`^...$`）避免前缀越界（如 `/dailyfoo` 不误匹配 `/daily`）；含可选尾斜杠
+- **query string 保留**：`?utm=x` 等参数随 301 一并带到新地址（不静默丢失老链接参数）
+- 模式集为显式白名单，新增源不改本算法（github-trending 迁移一次性）
 - 不匹配的旧路径不误 301（返回 404 或正常路由，不返 5xx）（SC-25）
 
 ## ALG-03 首页最新流聚合（Jekyll 构建期）

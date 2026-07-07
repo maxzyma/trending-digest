@@ -7,11 +7,11 @@ TASK-001 (本仓 Jekyll 骨架)
    ├── TASK-002 (门户首页) ── TASK-003 (最新流区块)
    └── TASK-004 (claude-blog 子站 collection)
 
-TASK-006 (github-trending baseurl) ──┐
-                                     ├─ [Gate: 跨仓协调+凭据] ─ TASK-005 (Worker 反代) ── TASK-007 (301 规则)
-                                     │                              │
-                                     └──────────────────────────────┴── TASK-008 (DNS 切换，最后执行防断服)
+TASK-006 (github-trending baseurl) ─ [Gate: 跨仓协调+凭据] ─ TASK-005 (Worker 反代, preview 验证) ── TASK-007 (301 规则)
+                                                                        │
+TASK-005 + TASK-006 均 live 验证通过 ────────────────────────────────────┴── TASK-008 (DNS 切换, 最后, 防断服)
 ```
+> 无环：006→005→007 线性；008 依赖 005+006（且 001 提供 CNAME 文件），005 不回依赖 008（解 codex P0 循环）。
 
 > **原子上线顺序（防断服）**：TASK-008（DNS 切换）**最后**执行——须待 TASK-006（大站 baseurl 生效）+ TASK-005（Worker `/github-trending/*` 反代 live）验证通过后才切 DNS，否则 DNS 先指本仓而 Worker 未就绪 → `/github-trending/*` 404 断服（违反 US-04）。
 > 跨仓 task（005/006/007/008）落 theuntold / github-trending 仓，非本 worktree；地基验证=未验证（需对应仓当前态 + Worker/CF 部署凭据），已登记 blockers[]，G3 后 implement 前须跨仓协调确认。
@@ -72,10 +72,10 @@ TASK-006 (github-trending baseurl) ──┐
 - **层级**：INFRA
 - **变更点**：theuntold 仓新增 CF Worker，按 ALG-01 反代 `/github-trending/*` 到 github-trending 独立仓 Pages；上游不可用返回可辨识错误
 - **落点依据**：规格来源 behaviors/github-trending-proxy.gherkin#SC-14~16/24 + algorithms.md#ALG-01 / 代码落点 theuntold 仓 Worker 脚本（路径待定） / 定位方式 ⚠️ 前置确认项：跨仓（theuntold），需该仓当前 Worker/部署结构 + CF 账号凭据；implement 前跨仓协调确认落点
-- **验证**：TC-UI（/github-trending/ 反代成功）+ TC-API（上游 502 时 Worker 返非 200）
+- **验证**：TC-UI（/github-trending/ 反代成功）+ TC-API（上游 5xx/网络失败时 Worker 返非 200；上游 404/410 透传）——先在 preview/origin 路由验证，不切生产流量
 - **影响范围回归**：theuntold 现有 Worker/路由（若有）
-- **依赖**：TASK-006, TASK-008
-- **地基验证**：未验证：theuntold 仓 Worker 现状 + CF 部署凭据 + trending.theuntold.ai 当前绑定
+- **依赖**：TASK-006（大站 baseurl 生效后才能验证反代前缀）——**不依赖 TASK-008**（解循环：Worker 先部署+preview 验证，DNS 由 TASK-008 最后切；codex 跨家族审查 P0）
+- **地基验证**：未验证：theuntold 仓 Worker 现状 + CF 部署凭据 + trending.theuntold.ai 当前绑定 + **Worker origin host/递归防护**（见 contracts Worker origin 契约）
 - **复杂度信号**：文件数=1~2，跨层=否，决策可逆=是（Worker 可回滚），外部澄清=是（跨仓+凭据）
 
 ### TASK-006: github-trending-baseurl（大站 baseurl）【跨仓：github-trending-digest】

@@ -23,6 +23,9 @@ shard: all
 | TC-API-12 | api | functional | GET /claude-blog/ 资源 → 断言 CSS 200、内链目标可达 | SC-12 |
 | TC-API-13 | api | error | fixture：baseurl 未设的子站页 → 断言 CSS/内链 404；构建/校验步骤非零退出 | SC-23 |
 | TC-API-14 | api | error | fixture：不匹配任何模式的旧路径 → 断言不返 301、返 404 或 200、不返 5xx | SC-25 |
+| TC-API-15 | api | boundary | GET /github-trending（无尾斜杠）→ 断言 301 Location=/github-trending/ | SC-26 |
+| TC-API-16 | api | boundary | mock 上游真实 404 → GET /github-trending/<不存在页> → 断言 Worker 透传 404（非 5xx 错误页） | SC-27 |
+| TC-API-17 | api | functional | GET /github-trending/ 页面 → 断言 canonical/sitemap/feed/OG URL 均含 /github-trending/ 前缀（或显式记缺失）；旧根路径 fixture 外链样例 301 不断链 | SC-15 |
 | TC-UI-01 | ui | functional | 渲染 trending.theuntold.ai/ → 断言页面含 Hero 区（品牌+定位）+ 信源导航网格区 | SC-04 |
 | TC-UI-02 | ui | functional | 首页导航网格 → 断言 ≥2 卡，github-trending 卡 href=/github-trending/，claude-blog 卡 href=/claude-blog/ | SC-05 |
 | TC-UI-03 | ui | boundary | 首页 HTML → 断言不含 github-trending 明细条目（仅导航卡） | SC-06 |
@@ -38,8 +41,8 @@ shard: all
 
 | focus \ form | ui | api |
 |--------------|-----|-----|
-| functional | TC-UI-01/02/04/06/10 | TC-API-01/02/04/05/08/09/12 |
-| boundary | TC-UI-03/07/08 | TC-API-06/10/11 |
+| functional | TC-UI-01/02/04/06/10 | TC-API-01/02/04/05/08/09/12/17 |
+| boundary | TC-UI-03/07/08 | TC-API-06/10/11/15/16 |
 | error | TC-UI-05/09 | TC-API-03/07/13/14 |
 | idempotent | （0 格）见下依据 | （0 格）见下依据 |
 
@@ -47,8 +50,16 @@ shard: all
 
 ## 硬下限校验
 
-- form=api：14 条 ≥ contracts 契约条目数（路由表 6 行 + 301 fixture 6 模式 = 12；14 ≥ 12）✓
+- form=api：17 条 ≥ contracts 契约条目数（路由表 6 行 + 301 fixture 6 模式 = 12；17 ≥ 12）✓
 - form=ui：11 条 ≥ ui/views 新增页面数（1：pc-portal-home）✓
+
+## 需 CF live 验证层（不可本地静态覆盖，G4 在 CF 环境执行）
+
+以下断言依赖 Cloudflare 运行时环境，本地静态测试无法覆盖，标注为 "requires live CF validation"，G4 在 CF 环境跑：
+- Worker Route 绑定生效（trending.theuntold.ai/* 命中 Worker）
+- cache 行为（`cf-cache-status`、purge、bypass）
+- origin Host header / SNI / 递归防护（Worker fetch Pages 域非自定义域，无无限子请求）
+- 上游 5xx/网络失败 failure-mode smoke（TC-API-07 的 CF 环境版）
 
 ## Extension TC
 

@@ -39,9 +39,13 @@ note: 单分片——本 feature 为静态站 + CF Worker，非 API 分片场景
 | TP-23 | api | functional | 枚举模式（daily/weekly/monthly/assets）全 301 覆盖；裸 / 不在集合 | SC-18 |
 | TP-24 | api | boundary | 显式模式列表非 catch-all；门户根 / 返 200 不被命中 | SC-19 |
 | TP-25 | api | error | 未匹配旧路径不误 catch-all 301；返 404 或 200，不返 5xx | SC-25 |
+| TP-26 | api | boundary | 无尾斜杠 /github-trending → 301 到 /github-trending/ | SC-26 |
+| TP-27 | api | boundary | 上游真实 404/410 透传（不转 Worker 5xx，保 SEO 诊断） | SC-27 |
+| TP-28 | api | functional | baseurl 迁移完整性：canonical/sitemap/feed/OG URL 均迁到 /github-trending/ 前缀（或显式缺失） | SC-15 |
 
 ## 覆盖率自检
 
-- SC 全集：SC-01~25（25）；TP covers 并集：SC-01~25 ✓ 无缺口、无悬挂
-- form 分布：ui 11 / api 14
-- focus 分布：functional 12 / boundary 7 / error 6
+- SC 全集：SC-01~27（27）；TP covers 并集：SC-01~27 ✓ 无缺口、无悬挂
+- form 分布：ui 11 / api 17
+- focus 分布：functional 13 / boundary 9 / error 6
+- **需 CF live 验证层**（不可本地静态覆盖，G4 在 CF 环境执行）：Worker Route 绑定 / cache bypass·purge / origin Host·SNI·递归防护 / subrequest 行为 —— 见 contracts「需 Cloudflare live 环境验证的测试层」

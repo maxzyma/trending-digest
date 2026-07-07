@@ -27,8 +27,20 @@ Feature: github-trending 大站经 Worker 反代
       And 聚合为运行时边缘反代，非构建期合并
 
     @error
-    Scenario: SC-24 上游仓 Pages 不可用时返回可辨识错误
-      Given github-trending-digest 仓 Pages 暂不可用
+    Scenario: SC-24 上游仓 Pages 不可用（5xx/网络失败）时返回可辨识错误
+      Given github-trending-digest 仓 Pages 因 5xx 或网络失败不可用
       When 访问 /github-trending/*
       Then Worker 返回 HTTP 状态码非 200 的可辨识错误响应（5xx 或 Worker 自定义错误页，非门户首页、不与门户内容混淆）
       And 门户根 / 与同仓小源不受影响
+
+    @boundary
+    Scenario: SC-26 无尾斜杠 /github-trending 归一到 /github-trending/
+      Given 访客用无尾斜杠形式访问 /github-trending（书签/外链常见）
+      When 请求到达 Worker
+      Then 返回 301 到 /github-trending/（补尾斜杠，不漏落门户）
+
+    @boundary
+    Scenario: SC-27 上游真实 404/410 透传，不掩盖为故障
+      Given github-trending 站内某页真实不存在（上游返 404/410）
+      When 访问该 /github-trending/ 子路径
+      Then Worker 透传上游 404/410（不转为 Worker 5xx 错误页，保 SEO 诊断）
