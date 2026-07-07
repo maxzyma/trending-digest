@@ -30,10 +30,11 @@ artifacts:
 
 | ID | 不变量 | 保证机制 |
 |----|--------|---------|
-| INV-01 | 每个经路径挂载的站，其 Jekyll `baseurl` 必须等于挂载路径 | 否则 CSS/内链相对路径错位；US-03/US-04 AC |
-| INV-02 | 门户首页构建期只依赖同仓内容 | 首页 HTML 不含 github-trending 明细（US-01 AC-3）；跨仓是运行时反代 |
-| INV-03 | 单一自定义域仅绑一个仓 Pages（GitHub Pages 一域一仓） | 多仓路径聚合必经 Worker，不可用 submodule（scope 约束） |
-| INV-04 | 旧 URL 301 规则为显式前缀/模式列表，非 catch-all | 门户根 `/` 不被重定向规则命中（US-05 AC-3） |
+| INV-01 | 每个经路径挂载的站，其 Jekyll `baseurl` 必须等于挂载路径 | SC-15 / SC-23（否则 CSS/内链错位） |
+| INV-02 | 门户首页构建期只依赖同仓内容 | SC-06 / SC-09 / SC-16（首页不含 github-trending 明细，跨仓是运行时反代） |
+| INV-04 | 旧 URL 301 规则为显式前缀/模式列表，非 catch-all | SC-19 / SC-25（门户根 `/` 不被命中） |
+
+> **架构约束（非行为不变量，无 SC）**：GitHub Pages「一域一仓」是**平台事实**——单一自定义域只能绑一个仓的 Pages，故多仓路径聚合必经 CF Worker、不可用 submodule。这是本方案选型的前提（scope 关键约束），由平台强制、非本 Feature 代码可断言，故不设 SC（原编号 INV-03 退为本架构约束说明）。
 
 ## Story 映射
 
