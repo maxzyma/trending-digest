@@ -38,9 +38,9 @@ source_image_count: 1
 
 > When we released Claude Code in 2025, we were surprised at how many non-technical users started playing around with it. People who had never opened the terminal before were using it to create agents that organized folders, deduplicated files, and wrote spreadsheet formulas.
 
-但对另一些人来说，终端仍是个略带压迫感的地方——一个字面意义上的"黑箱"。我们打造了 Claude Cowork，把 Claude Code 的智能体能力延伸到人们早已用来与 Claude 对话的那个聊天界面上。
+但对另一些人来说，终端仍是个略带压迫感的地方——一个字面意义上的"黑箱"。我们打造了 [Claude Cowork](https://www.anthropic.com/product/claude-cowork)，把 [Claude Code](https://claude.com/product/claude-code) 的智能体能力延伸到人们早已用来与 Claude 对话的那个聊天界面上。
 
-> But for others, the terminal remained a slightly intimidating place—a literal “black box.” We built Claude Cowork to extend the agentic capabilities of Claude Code to the same chat interface people were already using to talk to Claude.
+> But for others, the terminal remained a slightly intimidating place—a literal “black box.” We built [Claude Cowork](https://www.anthropic.com/product/claude-cowork) to extend the agentic capabilities of [Claude Code](https://claude.com/product/claude-code) to the same chat interface people were already using to talk to Claude.
 
 自我们在一月推出 Claude Cowork 以来，它对那些工作聚焦于信息创造与交换的人——也就是许多人所说的"知识工作"（knowledge work）——尤其成为了一件利器。人们用它完成各式各样的任务，这些任务未必是某个特定岗位的标志性职责，而是代表了围绕岗位、推动项目前进并维持业务运转的那些串联性工作。这意味着诸如起草进度更新、制作幻灯片、或把海量研究浓缩成一份报告之类的任务。
 
@@ -104,9 +104,9 @@ source_image_count: 1
 
 > Getting started with Cowork
 
-所有 Claude 用户都可以使用 Claude Cowork。了解更多信息，或参加我们的《Claude Cowork 入门》课程以开始使用。
+所有 Claude 用户都可以使用 Claude Cowork。[了解更多信息](http://anthropic.com/product/claude-cowork)，或参加我们的[《Claude Cowork 入门》课程](https://anthropic.skilljar.com/introduction-to-claude-cowork)以开始使用。
 
-> Claude Cowork is available to all Claude users. Learn more or take our Introduction to Claude Cowork course to get started.
+> Claude Cowork is available to all Claude users. [Learn more](http://anthropic.com/product/claude-cowork) or [take our Introduction to Claude Cowork course](https://anthropic.skilljar.com/introduction-to-claude-cowork) to get started.
 
 ++++
 
