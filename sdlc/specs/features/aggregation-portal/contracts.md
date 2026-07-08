@@ -19,7 +19,7 @@
 
 ## 301 重定向 fixture 契约（US-05）
 
-> permalink 模式已在 Define 阶段从 github-trending `_config.yml` 枚举（US-05 AC-2）：该仓无自定义 `permalink`，用 Jekyll 默认；内容页实际路径为 `/daily/{date}-analysis`、`/daily/{date}`、`/weekly/{YYYY-Www}`、`/monthly/{YYYY-MM}`；旧首页在裸 `/`。迁移后 baseurl=`/github-trending`，对应新路径前缀 `/github-trending/...`。
+> permalink 模式已在 Define 阶段从 github-trending `_config.yml` 枚举（US-05 AC-2）：该仓无自定义 `permalink`，用 Jekyll 默认。**实现期实证修正**：Jekyll 默认页面 URL **带 `.html` 后缀**，内容页实际路径为 `/daily/{date}-analysis.html`、`/daily/{date}.html`、`/weekly/{YYYY-Www}[-desc].html`（weekly 有 `-old-...` 描述后缀变体）、`/monthly/{YYYY-MM}.html`；旧首页在裸 `/`。迁移后 baseurl=`/github-trending`，对应新路径前缀 `/github-trending/...`（保留 `.html`）。锚定正则见 algorithms.md ALG-02。
 
 | 输入（旧 URL 模式，baseurl="" 时） | 期望响应 | 期望 Location | covers |
 |--------------------|---------|--------------|--------|

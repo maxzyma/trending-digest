@@ -30,13 +30,14 @@
 **输入**：request URL path `P`
 **输出**：`{ status: 301, location }` 或 `null`（不重定向）
 
-**重定向模式集**（**锚定正则**，非前缀 catch-all，防越界 overmatch；从 github-trending `_config.yml` 枚举——无自定义 permalink，Jekyll 默认）：
+**重定向模式集**（**锚定正则**，非前缀 catch-all，防越界 overmatch；从 github-trending 仓**实际产物**枚举——无自定义 permalink，Jekyll 默认 = 页面 URL 带 `.html` 后缀；weekly 有带描述后缀变体如 `2026-W17-old-04-14-to-04-19`）：
 ```
-^/daily/\d{4}-\d{2}-\d{2}(-analysis)?/?$   → /github-trending{P}
-^/weekly/\d{4}-W\d{2}/?$                    → /github-trending{P}
-^/monthly/\d{4}-\d{2}/?$                    → /github-trending{P}
-^/assets/.+$                               → /github-trending{P}
+^/daily/\d{4}-\d{2}-\d{2}(-analysis)?(\.html)?$   → /github-trending{P}
+^/weekly/\d{4}-W\d{2}[\w-]*(\.html)?$              → /github-trending{P}
+^/monthly/\d{4}-\d{2}(\.html)?$                    → /github-trending{P}
+^/assets/.+$                                       → /github-trending{P}
 ```
+> **`.html` 后缀（实现期实证修正）**：github-trending 无 pretty permalink，页面实际 URL 带 `.html`（如 `/daily/2026-03-30-analysis.html`），旧外链/SEO 索引即此形态，故正则含可选 `.html`；weekly `-old-...` 描述后缀用 `[\w-]*` 容纳。仍为显式前缀白名单（daily/weekly/monthly/assets）+ 锚定，非 catch-all（SC-25 不变）。
 
 **逻辑**：
 1. `P == "/"` → 返回 `null`（门户首页，不重定向）（SC-19）
