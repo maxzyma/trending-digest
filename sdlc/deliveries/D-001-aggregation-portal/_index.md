@@ -47,8 +47,46 @@ gates:
     review_doc: decisions.md
   g4:
     status: pending
+    review_doc: validation-report-local-20260708-1215.md
   g5:
     status: pending
+
+verification:
+  cross_feature_regression:
+    features_checked: 0
+    cases_run: 0
+    failed: 0
+    note: "aggregation-portal 为项目唯一 feature，无跨 feature 回归对象（N/A）"
+  traceability:
+    behaviors_total: 27
+    behaviors_covered: 24
+    deferred_live: 3
+    extension_tc_total: 0
+    extension_tc_run: 0
+    excess_code: false
+  loop_count: 0
+  loop_history: []
+  flaky: []
+  stages:
+    - stage: 1
+      env: local
+      api_pass_rate: "39/39"
+      ui_pass_rate: "N/A"
+      released: false
+      release_reason: null
+      cross_feature_pass: "N/A"
+      na_reasons:
+        api: null
+        ui: "门户无交互；结构性 TC-UI 已由 verify-build.sh 断言；live 渲染 defer cutover（Step 3.7 用户跳过）"
+        cross_feature: "唯一 feature，无回归对象"
+      report_paths:
+        api: "theuntold tests/unit/trending-proxy + trending-diggest scripts/verify-build.sh"
+        ui: null
+        cross_feature: null
+  live_deferred:
+    - "SC-02 CNAME/DNS 域名解析（cutover 时 agent-browser 验，runbook §6）"
+    - "SC-03 域名 live 渲染链路连通"
+    - "SC-15 GoatCounter 运行时上报 path 前缀（build 侧 baseurl 前缀已验）"
 
 blockers:
   - description: "跨仓交付物地基未验证：TASK-005/007（theuntold Worker 反代+301）、TASK-006（github-trending baseurl）、TASK-008（CF DNS 切换）落兄弟仓，需两仓当前态 + Worker/CF 部署凭据 + runbook §6；implement 前须跨仓协调。原子上线顺序（防 DNS 先切断服）见 tasks.md TASK-008。"
