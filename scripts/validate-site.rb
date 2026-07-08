@@ -26,6 +26,33 @@ if File.exist?(config_path)
   errors << "_config.yml 缺必填项 baseurl（键须定义，根门户可为空串）" unless config.key?('baseurl')
 end
 
+# ── SC-21：SourceCard 必填字段（key/title/summary/entry_url/kind 全 NOT NULL；kind 枚举） ──
+sources_path = File.join(ROOT, '_data', 'sources.yml')
+errors << "_data/sources.yml 缺失" unless File.exist?(sources_path)
+if File.exist?(sources_path)
+  cards = load_yaml(sources_path) || []
+  errors << "_data/sources.yml 应为非空列表" unless cards.is_a?(Array) && !cards.empty?
+  required = %w[key title summary entry_url kind]
+  valid_kinds = %w[same-repo proxied]
+  keys_seen = {}
+  Array(cards).each_with_index do |card, i|
+    unless card.is_a?(Hash)
+      errors << "SourceCard[#{i}] 非法（应为对象）"
+      next
+    end
+    required.each do |field|
+      errors << "SourceCard[#{i}](#{card['key'] || '?'}) 缺必填字段 #{field}" if card[field].to_s.strip.empty?
+    end
+    unless valid_kinds.include?(card['kind'].to_s)
+      errors << "SourceCard[#{i}](#{card['key'] || '?'}) kind 非法：#{card['kind'].inspect}（须 ∈ #{valid_kinds}）"
+    end
+    if card['key']
+      errors << "SourceCard key 重复：#{card['key']}" if keys_seen[card['key']]
+      keys_seen[card['key']] = true
+    end
+  end
+end
+
 if errors.empty?
   puts '[validate-site] OK'
   exit 0
