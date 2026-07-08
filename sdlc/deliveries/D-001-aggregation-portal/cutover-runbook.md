@@ -34,6 +34,8 @@
 
 1. **github-trending-digest 移除自定义域**：仓 Settings → Pages → Custom domain 清空（或删 CNAME 文件）。此后其 Pages 服务于 `maxzyma.github.io/github-trending-digest/`（项目页，物理路径含 `/github-trending-digest/` 前缀，与 baseurl=/github-trending 的链接经 Worker 映射自洽）。
    - ⚠️ 此步会使旧 `trending.theuntold.ai`（仍指此仓）暂时不可用——故须与步骤 4 快速衔接，或先做步骤 2/3 让新链路就绪。
+   - **⚠️ Worker origin 依赖此步先行（对抗审确认）**：本步之前 github-trending-digest 仍持自定义域 → `maxzyma.github.io/github-trending-digest/` 会 302 跳自定义域，Worker 若此时已服务 `/github-trending/*` 反代该 origin → 跳回本域 → 递归/循环。故 Worker route 生产绑定（步骤 2）须在本步之后（或先部署 Worker、route 暂不绑生产直到本步完成）。
+   - **⚠️ trending-diggest CNAME 冲突窗口（对抗审确认）**：同一自定义域不能被两仓同时认领——本步释放前，trending-diggest merge 到 main 后其 Pages 只在 `maxzyma.github.io/trending-diggest/`（域冲突未认领）；本步释放 + 步骤 4 认领后才接管该域。此窗口属预期，非故障。
 2. **部署 Worker**：`cd theuntold && pnpm run edge-proxy:deploy`（`wrangler deploy -c edge/trending-proxy/wrangler.jsonc`）。routes 绑 `trending.theuntold.ai/github-trending*` + legacy。
 3. **preview 验证 Worker origin**（切域前，用 workers.dev 或临时路由）：确认 `/github-trending/` 反代到 `maxzyma.github.io/github-trending-digest/` 返回 200 且资源前缀正确；`/daily/2026-03-30-analysis.html` → 301。
 4. **切自定义域到 trending-diggest**：仓 Settings → Pages → Custom domain = `trending.theuntold.ai`（GitHub 自动写 CNAME + 签证书）。CNAME 文件已在仓内。

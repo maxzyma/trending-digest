@@ -95,6 +95,12 @@ test-cases.md 无 "## Extension TC" 段 → 无 Extension TC，SKIPPED（不计 
 - **决策依据**：门户无交互（纯链接页），结构性 TC-UI 已在构建产物 HTML 上断言通过；真实浏览器渲染/链接可点 defer 到 cutover live 验证
 - **替代方案**：verify-build.sh HTML 结构断言（Level 构建产物）+ cutover 时 agent-browser live 验证（runbook §6.6）
 
+## 验证偏差登记（对抗审一轮补）
+
+1. **自动化脚本非 canonical 目录（流程偏差，非缺陷）**：本交付未产 `tests/api/{feature}/test_*.py` + `tests/browser/{feature}/playwright-*.spec.js` 的标准 fan-out 骨架。原因——技术栈不匹配：本交付无 HTTP API 服务（apitest 无对象）、门户无交互 UI（Playwright 交互流无对象）。改用**栈适配的可重复自动化**：Worker 逻辑 = theuntold vitest（22）、Jekyll 构建/结构/fail-loud = `verify-build.sh`（17）。二者均自动可重复（非 mock-only、非一次性手跑），满足验收证据 provenance 铁律；TC-ID 追溯闭环在本报告主表完整。**留待 G4 Human 裁量该偏差是否接受**。
+2. **SC-15 GoatCounter 措辞收紧**：GoatCounter `<script>` src 为外链（`gtd-digest.goatcounter.com`），不受 baseurl 影响、build 侧存在性可验（github-trending 构建产物含该脚本，site-code=gtd-digest 未改）；仅**运行时上报 path 是否含 /github-trending/ 前缀**需 live 浏览器验证（defer cutover）。故 SC-15 = baseurl 前缀 PASS(build) + 脚本存在 PASS(build) + 运行时上报 DEFERRED-live。
+3. **stage 语义**：two-stage 门禁模型（DF 集成→TF 系统）面向服务型应用；本交付是静态站 + 无状态 Worker，无 DF/TF 服务环境。本次 = 本地构建/逻辑验收（等价 stage 1 本机），live 系统验收（域名可达+反代连通+agent-browser）= post-G5 cutover。
+
 ## 结论
 
 本地可断言范围内**全通过（39/39 自动可重复 + 24/27 SC）**。跨 Feature 回归 N/A（唯一 feature）。3 项 live-CF SC 有明确 cutover runbook + agent-browser 验证时机，非 mock-only punt。
