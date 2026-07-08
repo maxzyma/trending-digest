@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/claude-managed-agents-updates
 published_at: 2026-05-19
 category: Agents
-title_en: New in Claude Managed Agents: self-hosted sandboxes and MCP tunnels
-title_zh: Claude 托管代理新功能：自托管沙箱与 MCP 隧道
+title_en: "New in Claude Managed Agents: self-hosted sandboxes and MCP tunnels"
+title_zh: "Claude 托管代理新功能：自托管沙箱与 MCP 隧道"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 3
 source_image_count: 2

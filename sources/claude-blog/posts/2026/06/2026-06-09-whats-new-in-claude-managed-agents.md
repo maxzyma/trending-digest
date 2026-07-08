@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/whats-new-in-claude-managed-agents
 published_at: 2026-06-09
 category: Product announcements
-title_en: New in Claude Managed Agents: run agents on a schedule and store environment variables in vaults
-title_zh: Claude 托管智能体新功能：按计划运行智能体，并在保险库中存储环境变量
+title_en: "New in Claude Managed Agents: run agents on a schedule and store environment variables in vaults"
+title_zh: "Claude 托管智能体新功能：按计划运行智能体，并在保险库中存储环境变量"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 1
 source_image_count: 2

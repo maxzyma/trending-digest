@@ -53,6 +53,22 @@ if File.exist?(sources_path)
   end
 end
 
+# ── SC-23 / INV-01：经路径挂载的同仓子站，其 collection permalink 前缀 = 挂载路径 ──
+# baseurl 错位（如 claude_blog permalink 不带 /claude-blog/ 前缀）→ CSS/内链前缀错位、子站 404。
+# 前置到构建期校验（非零退出阻断部署），对应 ADR-004 baseurl 铁律。
+if File.exist?(config_path)
+  config ||= load_yaml(config_path) || {}
+  mounts = { 'claude_blog' => '/claude-blog/' }
+  collections = config['collections'] || {}
+  mounts.each do |coll, prefix|
+    next unless collections.key?(coll)
+    permalink = collections[coll]['permalink'].to_s
+    unless permalink.start_with?(prefix)
+      errors << "collection #{coll} permalink 前缀错位：#{permalink.inspect}（须以 #{prefix} 开头，INV-01/SC-23）"
+    end
+  end
+end
+
 if errors.empty?
   puts '[validate-site] OK'
   exit 0
