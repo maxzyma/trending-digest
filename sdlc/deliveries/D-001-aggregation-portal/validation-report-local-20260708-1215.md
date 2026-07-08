@@ -7,7 +7,7 @@ loop_count: 0
 loop_history: []
 flaky: []
 summary:
-  automated_repeatable: "39/39"   # worker vitest 22 + build-verify 17
+  automated_repeatable: "41/41"   # worker vitest 22 + build-verify 19（含 codex 跨家族审补的 SC-23b/c）
   sc_covered_local: 24            # 27 SC 中本地可断言 24
   sc_deferred_live: 3             # SC-02/03 + SC-15 GoatCounter live 部分
   cross_feature_regression: "N/A（aggregation-portal 为唯一 feature）"
@@ -17,7 +17,8 @@ summary:
 
 ## Summary（≤3 行）
 
-- 自动可重复测试：**39/39 通过**（theuntold Worker vitest 22/22 + trending-diggest verify-build.sh 17/17）。
+- 自动可重复测试：**41/41 通过**（theuntold Worker vitest 22/22 + trending-diggest verify-build.sh 19/19）。
+- 审查深度：本地自审 2 轮（修 Host 递归 + minima 死重量）+ **codex 跨家族审 1 轮**（找到 P2：validate-site.rb collection 缺失静默跳过 → 已修 fail-loud + 补 SC-23b/c 红用例；其余 9 点核实无问题）。
 - 27 SC 中 **24 本地断言通过**；3 项（SC-02 DNS、SC-03 域名 live 渲染、SC-15 GoatCounter 运行时上报）需 CF live 环境，defer 到 cutover（contracts「需 Cloudflare live 验证的测试层」）。
 - 跨 Feature 回归：**N/A** —— aggregation-portal 是本项目唯一 feature，无其他 feature 可回归。
 

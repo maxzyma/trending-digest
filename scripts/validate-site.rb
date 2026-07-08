@@ -58,12 +58,20 @@ end
 # 前置到构建期校验（非零退出阻断部署），对应 ADR-004 baseurl 铁律。
 if File.exist?(config_path)
   config ||= load_yaml(config_path) || {}
+  # 挂载子站 = 必需 collection（缺失即子站不渲染，比前缀错位更严重 → 同样 fail-loud）。
   mounts = { 'claude_blog' => '/claude-blog/' }
   collections = config['collections'] || {}
   mounts.each do |coll, prefix|
-    next unless collections.key?(coll)
-    permalink = collections[coll]['permalink'].to_s
-    unless permalink.start_with?(prefix)
+    unless collections.key?(coll) && collections[coll].is_a?(Hash)
+      errors << "缺必需挂载 collection `#{coll}`（子站 #{prefix} 将不渲染，INV-01/SC-23）"
+      next
+    end
+    cfg = collections[coll]
+    errors << "collection #{coll} 须 output: true（否则不生成子站页面，SC-23）" unless cfg['output'] == true
+    permalink = cfg['permalink'].to_s
+    if permalink.empty?
+      errors << "collection #{coll} 缺 permalink（须以 #{prefix} 开头，INV-01/SC-23）"
+    elsif !permalink.start_with?(prefix)
       errors << "collection #{coll} permalink 前缀错位：#{permalink.inspect}（须以 #{prefix} 开头，INV-01/SC-23）"
     end
   end
