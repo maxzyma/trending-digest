@@ -10,9 +10,22 @@ lifecycle: in_progress
 phases:
   define: done
   design: done
-  implement: pending
+  implement: done
   verify: pending
   deliver: pending
+
+implementation:
+  unit_tests: { total: 22, passed: 22, failed: 0 }
+  coverage: "worker ALG-01/02 全 SC; jekyll 经 docker 真实构建 + 结构断言"
+  files_changed: 18
+  behaviors_covered: [SC-01, SC-02, SC-03, SC-04, SC-05, SC-06, SC-07, SC-08, SC-09, SC-10, SC-11, SC-12, SC-13, SC-14, SC-15, SC-16, SC-17, SC-18, SC-19, SC-20, SC-21, SC-22, SC-23, SC-24, SC-25, SC-26, SC-27]
+  code_review:
+    antipatterns: "10/10"
+    dimensions: "8/8"
+    traps: "5/5"
+    critical: 0
+    report_path: code-review-report.md
+  notes: "跨 3 仓（trending-diggest 001~004 / github-trending-digest 006 / theuntold 005/007）。SC-02/03 + 部分 SC-14/15/24 的 live CF 层验证 defer 到 cutover（contracts live-CF 层）。TASK-008 live cutover = post-G5 部署。"
 
 define_summary:
   behaviors_generated: [SC-01, SC-02, SC-03, SC-04, SC-05, SC-06, SC-07, SC-08, SC-09, SC-10, SC-11, SC-12, SC-13, SC-14, SC-15, SC-16, SC-17, SC-18, SC-19, SC-20, SC-21, SC-22, SC-23, SC-24, SC-25]
