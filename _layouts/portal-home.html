@@ -79,10 +79,24 @@
       {% endfor %}
     </div>
 
-    <!-- 最新内容流：仅同仓小源 (SC-07 占位块存在性)。聚合逻辑由 TASK-003 填充。 -->
+    <!-- 最新内容流：仅同仓小源 digest 倒序（ALG-03）。github-trending 属另一仓、构建期不可得，天然排除 (INV-02/SC-09)。 -->
     <h2 class="section-title">最新（同仓源）</h2>
-    <ul class="stream" data-testid="portal-latest-stream"></ul>
+    {%- comment -%} 同仓小源 collection 汇总；缺 published_at 的条目被 where_exp 过滤（SC-22 跳过），倒序取前 N（SC-08 可配置）。 {%- endcomment -%}
+    {%- assign entries = site.claude_blog | where_exp: "p", "p.published_at" | sort: "published_at" | reverse -%}
+    {%- assign stream_n = site.latest_stream_count | default: 8 -%}
+    {%- if entries.size > 0 -%}
+    <ul class="stream" data-testid="portal-latest-stream">
+      {%- for e in entries limit: stream_n -%}
+      <li>
+        <a href="{{ e.url | relative_url }}">
+          <span class="src">{{ e.source | default: 'claude-blog' }}</span> {{ e.title_zh | default: e.title_en | default: e.title }}</a>
+        <time datetime="{{ e.published_at }}">{{ e.published_at }}</time>
+      </li>
+      {%- endfor -%}
+    </ul>
+    {%- else -%}
     <p class="stream-empty" data-testid="portal-stream-empty">暂无最新内容</p>
+    {%- endif -%}
   </main>
 </body>
 </html>

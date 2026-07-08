@@ -69,6 +69,24 @@ if File.exist?(config_path)
   end
 end
 
+# ── SC-22（非致命）：同仓小源 digest 缺 published_at 排序键 → stderr 告警但不阻断 ──
+# 最新流会跳过这些条目（portal-home.html where_exp 过滤），此处产出可识别告警关键词供构建日志诊断。
+posts_dir = File.join(ROOT, 'sources', 'claude-blog', 'posts')
+if Dir.exist?(posts_dir)
+  Dir.glob(File.join(posts_dir, '**', '*.md')).sort.each do |md|
+    front = File.read(md)[/\A---\s*\n(.*?)\n---\s*\n/m, 1]
+    next unless front
+    meta = begin
+      YAML.safe_load(front, permitted_classes: [Date, Time]) || {}
+    rescue StandardError
+      next # front matter 解析问题不在本非致命扫描职责内
+    end
+    if meta['published_at'].to_s.strip.empty?
+      warn "[validate-site][WARN] digest 缺 published_at 排序键，最新流将跳过：#{md.sub(ROOT + '/', '')}"
+    end
+  end
+end
+
 if errors.empty?
   puts '[validate-site] OK'
   exit 0
