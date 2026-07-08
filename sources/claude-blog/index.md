@@ -6,7 +6,6 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 |---|---|---|---|---|
 | 2026-07-07 | 人们正在如何使用 Claude Cowork | Enterprise AI | [Markdown](posts/2026/07/2026-07-07-how-people-are-using-claude-cowork.md) | [原文](https://claude.com/blog/how-people-are-using-claude-cowork) |
 | 2026-07-07 | 在 Claude Code 中选择模型与努力级别 | Claude Code | [Markdown](posts/2026/07/2026-07-07-claude-model-and-effort-level-in-claude-code.md) | [原文](https://claude.com/blog/claude-model-and-effort-level-in-claude-code) |
-| 2026-07-07 | 将 Claude Code 与 Claude Cowork 引入政府部门 | Claude Code | [Markdown](posts/2026/07/2026-07-07-bringing-claude-code-and-claude-cowork-to-government.md) | [原文](https://claude.com/blog/bringing-claude-code-and-claude-cowork-to-government) |
 | 2026-07-06 | Claude Fable 5 实地指南：发现你的未知 | Claude Code | [Markdown](posts/2026/07/2026-07-06-a-field-guide-to-claude-fable-finding-your-unknowns.md) | [原文](https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns) |
 | 2026-06-30 | 上手智能体循环 | Claude Code | [Markdown](posts/2026/06/2026-06-30-getting-started-with-loops.md) | [原文](https://claude.com/blog/getting-started-with-loops) |
 | 2026-06-24 | 构建高效的人机团队 | Enterprise AI | [Markdown](posts/2026/06/2026-06-24-building-effective-human-agent-teams.md) | [原文](https://claude.com/blog/building-effective-human-agent-teams) |
