@@ -1,0 +1,35 @@
+# 页面: 旧 URL 重定向（CF Worker，theuntold 仓）
+Feature: 旧 URL 301 重定向兜底
+  作为持有 github-trending 旧链接（书签/外链/搜索引擎索引）的访客，
+  我要访问旧根路径 URL 时被自动重定向到 /github-trending/ 下的新地址，
+  以便历史 permalink 不断链、SEO 不受损。
+
+  # US-05 AC-2「旧首页根」消歧裁决：指原 github-trending 根路径 `/`；迁移后 `/` 归门户（200），
+  # 不作 301 目标（SC-19 权威）。301 仅覆盖内容子路径（daily/weekly/monthly/assets）。详见 contracts.md 裸 / 裁决段。
+  Rule: Worker 对旧内容子路径 URL 返回 301 到新前缀，且不误伤门户根
+
+    @happy-path
+    Scenario: SC-17 单条旧内容子路径 URL 301 到对应新地址（代表实例）
+      Given github-trending 迁移前的具体内容子路径 permalink /daily/2026-03-30-analysis
+      When 访客访问该旧 URL
+      Then Worker 返回 301 到 /github-trending/daily/2026-03-30-analysis
+
+    Scenario: SC-18 重定向覆盖枚举出的内容子路径 permalink
+      Given 重定向模式已从 github-trending _config.yml 枚举（无自定义 permalink，Jekyll 默认：/daily/{date}-analysis、/daily/{date}、/weekly/{YYYY-Www}、/monthly/{YYYY-MM}、/assets/*）
+      When 访问上述任一内容子路径的旧 URL
+      Then 被 301 覆盖到对应 /github-trending/<子路径> 新地址
+      And 裸 / 不在此 301 集合内（归门户，见 SC-19）
+
+    @boundary
+    Scenario: SC-19 显式模式列表、不误伤门户根 /
+      Given 重定向规则为显式前缀/模式列表（非 catch-all）
+      When 请求门户自身根路径 /
+      Then / 不被重定向规则命中，返回门户首页（200）
+      And 无任何内容子路径以外的模式被 catch-all 兜底 301
+
+    @error
+    Scenario: SC-25 未匹配任何规则的旧路径不误 301
+      Given 某旧路径 URL 不匹配任何显式重定向模式
+      When 访问该 URL
+      Then 不返回错误的 catch-all 301（不兜底到 /github-trending/）
+      And 返回 404 或 200，且不返回 5xx 服务端错误

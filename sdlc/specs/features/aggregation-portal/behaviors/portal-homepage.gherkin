@@ -1,0 +1,41 @@
+# 页面: pc-portal-home（门户首页）
+Feature: 聚合门户首页
+  作为想浏览多源译读/深读内容的技术读者，我要访问 trending.theuntold.ai
+  时看到统一入口首页（品牌定位 + 各信源导航卡），
+  以便一处发现并进入所有源，不必记多个分散地址。
+
+  Rule: 首页呈现 Hero + 信源导航网格 + 最新流占位
+
+    @happy-path
+    Scenario: SC-04 根路径返回含 Hero 与信源导航网格的门户首页
+      Given 本仓 Pages 已部署且 CNAME 生效
+      When 访问根路径 /
+      Then 返回本仓 Pages 渲染的门户首页
+      And 页面含 Hero 区（品牌 + 一句定位）
+      And 页面含信源导航网格区
+
+    Scenario: SC-05 导航网格每源一张卡且含入口链接
+      Given 门户首页已加载
+      When 查看信源导航网格区
+      Then 每个信源呈现为一张卡，含简介与入口链接
+      And 当前批次至少含 GitHub Trending 卡（链接指向 /github-trending/）
+      And 当前批次至少含 Claude Blog 卡（链接指向 /claude-blog/）
+
+    @boundary
+    Scenario: SC-06 首页不含 github-trending 明细条目（不依赖另一仓构建期数据）
+      Given 门户首页由本仓构建期生成
+      When 检查首页 HTML
+      Then 不含 github-trending 的明细条目
+      And 仅以导航卡形式引用 github-trending
+
+    Scenario: SC-07 最新内容流区块占位存在
+      Given 门户首页已加载
+      When 查看页面第三区块
+      Then 存在最新内容流占位区块（其内容逻辑归 US-02，本故事仅保证区块存在性）
+
+    @error
+    Scenario: SC-21 信源卡配置缺必填字段时构建 fail-loud
+      Given 某 SourceCard 配置缺任一 NOT NULL 字段（key/title/summary/entry_url/kind，与 entities.md 约束一致）
+      When 首页构建渲染信源导航网格
+      Then 构建报错并指出缺失字段
+      And 不静默产出残缺导航网格

@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more
 published_at: 2026-06-18
 category: Claude Code
-title_en: Steering Claude Code: CLAUDE.md files, skills, hooks, rules, subagents and more
-title_zh: 驾驭 Claude Code：CLAUDE.md 文件、技能、钩子、规则、子代理及更多
+title_en: "Steering Claude Code: CLAUDE.md files, skills, hooks, rules, subagents and more"
+title_zh: "驾驭 Claude Code：CLAUDE.md 文件、技能、钩子、规则、子代理及更多"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 4
 source_image_count: 4

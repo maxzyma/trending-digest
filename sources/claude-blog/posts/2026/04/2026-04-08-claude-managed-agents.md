@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/claude-managed-agents
 published_at: 2026-04-08
 category: Agents
-title_en: Claude Managed Agents: get to production 10x faster
-title_zh: Claude 托管智能体（Claude Managed Agents）：上线速度提升 10 倍
+title_en: "Claude Managed Agents: get to production 10x faster"
+title_zh: "Claude 托管智能体（Claude Managed Agents）：上线速度提升 10 倍"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 4
 source_image_count: 1

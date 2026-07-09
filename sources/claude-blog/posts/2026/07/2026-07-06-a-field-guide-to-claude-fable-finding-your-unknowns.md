@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns
 published_at: 2026-07-06
 category: Claude Code
-title_en: A field guide to Claude Fable 5: Finding your unknowns
-title_zh: Claude Fable 5 实地指南：发现你的未知
+title_en: "A field guide to Claude Fable 5: Finding your unknowns"
+title_zh: "Claude Fable 5 实地指南：发现你的未知"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 6
 source_image_count: 3

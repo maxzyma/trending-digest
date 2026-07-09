@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/new-in-claude-managed-agents
 published_at: 2026-05-19
 category: Agents
-title_en: New in Claude Managed Agents: dreaming, outcomes, and multiagent orchestration
-title_zh: Claude Managed Agents 新功能：做梦、结果导向与多智能体编排
+title_en: "New in Claude Managed Agents: dreaming, outcomes, and multiagent orchestration"
+title_zh: "Claude Managed Agents 新功能：做梦、结果导向与多智能体编排"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 1
 source_image_count: 2

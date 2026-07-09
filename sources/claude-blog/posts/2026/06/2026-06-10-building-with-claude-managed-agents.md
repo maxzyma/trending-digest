@@ -3,8 +3,8 @@ source: claude-blog
 source_url: https://claude.com/blog/building-with-claude-managed-agents
 published_at: 2026-06-10
 category: Agents
-title_en: The evolution of agentic surfaces: building with Claude Managed Agents
-title_zh: 智能体形态的演进：基于 Claude Managed Agents 构建
+title_en: "The evolution of agentic surfaces: building with Claude Managed Agents"
+title_zh: "智能体形态的演进：基于 Claude Managed Agents 构建"
 format: bilingual-paragraph-zh-first
 source_intro_paragraphs: 2
 source_image_count: 9

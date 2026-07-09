@@ -1,0 +1,35 @@
+# 页面: 无（构建/部署基础设施 Rule）
+Feature: 本仓 Jekyll 站点骨架 + Pages 部署 + CNAME
+  作为聚合门户维护者，我要 trending-diggest 仓从纯 markdown 归档仓
+  升级为具备 Jekyll 渲染 + GitHub Pages 部署 + CNAME 的站点，
+  以便它能作为聚合入口宿主渲染门户首页与小源子目录。
+
+  Rule: 仓具备 Jekyll 配置与 Pages 构建产出
+
+    @happy-path
+    Scenario: SC-01 Jekyll 配置 + Pages workflow 存在且构建成功
+      Given 仓根含 Jekyll 配置（_config.yml 至少含 title 与 baseurl）
+      And 含 GitHub Pages 构建 workflow 且设置 submodules: false
+      When 向默认分支 push 触发 Pages 构建
+      Then 构建成功并产出可访问的 HTML 站点
+      And 构建过程不拉取任何 submodule
+
+    @boundary
+    Scenario: SC-02 CNAME 接管根域 trending.theuntold.ai
+      Given 仓根含 CNAME 文件内容为 "trending.theuntold.ai"
+      And DNS 按 theuntold/docs/runbook.md §6 配置（CF 橙云 + A 记录指 Pages IP）
+      When 访问 https://trending.theuntold.ai/
+      Then 行为层：该域返回本仓 Pages 渲染的门户站点（非旧 github-trending 首页）
+      # 注：CF 橙云代理下公开 DNS 解析返回 CF edge IP 而非 Pages IP，故断言"行为路由正确"而非"解析到 Pages IP"；origin 配置正确性走 CF 控制面核验（runbook §6）
+
+    Scenario: SC-03 渲染链路连通（占位首页可访问）
+      Given Pages 构建成功且 CNAME 生效
+      When 访问 trending.theuntold.ai/
+      Then 返回本仓 Pages 渲染的 HTML（占位首页即可，实际内容由 US-01 充实）
+
+    @error
+    Scenario: SC-20 配置错误时构建失败即阻断部署（fail-loud）
+      Given Jekyll 配置或 Pages workflow 存在错误（如 _config.yml 缺必填项）
+      When 触发 Pages 构建
+      Then 构建以非零退出码失败并阻断部署
+      And 不产出可访问的残缺站点（失败即中止发布，不静默上线）
