@@ -9,6 +9,7 @@
 | claude-blog-ingestion | Claude 博客增量抓取 + 幂等去重 | collected | P1 | functional | 2026-06-29 |
 | bilingual-digest-format | 中文双语译读 markdown 格式契约 | collected | P1 | functional | 2026-06-29 |
 | archive-index-maintenance | 归档目录结构 + index.md 索引维护 | collected | P2 | functional | 2026-06-29 |
+| claude-blog-frontmatter-quoting | claude-blog 流水线 front-matter 值引号化（门户交付发现的跨仓根因） | collected | P2 | fix | 2026-07-09 |
 
 ## Archive（已交付/归档，计数：1）
 
