@@ -6,7 +6,7 @@
 
 | Delivery | Feature | 类型 | lifecycle | feature_branch | updated |
 |---|---|---|---|---|---|
-| _（暂无）_ | — | — | — | — | — |
+| D-002-editorial-design-unification | aggregation-portal | functional | in_progress | D-002-editorial-design-unification | 2026-07-09 |
 
 ## Completed
 
