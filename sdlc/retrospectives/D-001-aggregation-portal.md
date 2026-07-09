@@ -1,8 +1,12 @@
 ---
 delivery: D-001-aggregation-portal
 feature: aggregation-portal
-phases_appended: [implement, verify]
+phases_appended: [implement, verify, deliver]
 created: 2026-07-09
+verify_safety_net: 已填
+spec_gap_test_value: 已填
+flow_blockage: 已填
+experience_capture: 已填
 ---
 
 # 复盘：D-001 聚合门户
@@ -24,6 +28,12 @@ created: 2026-07-09
 - **无阻塞性返工**。三轮审查均在 Implement/Verify 内闭环修复，未回退 G2/G3。
 - **跨仓协调是主要非代码约束**：交付物分 3 仓，live 验证（SC-02/03 + GoatCounter 运行时）本质是 post-merge cutover 才能做——非流程阻塞，是 GitHub Pages 一域一仓 + CF 域切换的平台事实，已由 cutover-runbook 兜底。
 - **实证修正驱动 spec 回写 2 处**（Option B 前缀映射 G3-delta、ALG-02 .html 精度）——均在交付内 spec-first 处理，未破坏已过 Gate。
+
+## 维度④：经验沉淀（可复用教训）
+
+- **静态站 + 无状态 Worker 与 canonical 测试 harness 不匹配**：SDLC 的 apitest(python)/playwright fan-out 假设有 HTTP API 服务 + 交互 UI。纯 Jekyll 站 + 边缘 Worker 场景下，真实可重复证据是 vitest（Worker 逻辑）+ 构建断言脚本（Jekyll 产物），canonical harness 只能以骨架存在（存在性与执行分离）。教训：栈适配的可重复自动化同样满足 provenance 铁律，不应为"目录形态"牺牲证据真实性；但需在 G4 显式向 Human 登记偏差裁量。
+- **跨仓 + 平台约束（GitHub Pages 一域一仓 + CF 域切换）把关键验证推到 post-merge**：域名可达/反代连通/301 live 本质只能在生产域切换后验，pre-merge 审查再多轮也验不了。教训：这类交付要明确区分"审查/构建能验的"与"必须 live 验的"，后者用原子 cutover runbook + agent-browser 兜底，而非假装 pre-merge 能覆盖。
+- **实证驱动 spec 回写 2 处**（Option B 前缀映射、ALG-02 .html 精度）：spec 的模式枚举（permalink）与 Jekyll 实际输出有偏差，靠真实构建才暴露。教训：涉及平台默认行为（permalink/baseurl/safe-mode）的 spec，implement 期必须用真实构建校准，不能纸面推导。
 
 ## 元层洞察（候选，机制类）
 
