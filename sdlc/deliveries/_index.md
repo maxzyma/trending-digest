@@ -6,7 +6,13 @@
 
 | Delivery | Feature | 类型 | lifecycle | feature_branch | updated |
 |---|---|---|---|---|---|
-| D-002-editorial-design-unification | aggregation-portal | functional | in_progress | D-002-editorial-design-unification | 2026-07-09 |
+| _（无）_ | | | | | |
+
+## Abandoned
+
+| Delivery | Feature | 类型 | lifecycle | feature_branch | updated | 原因 |
+|---|---|---|---|---|---|---|
+| D-002-editorial-design-unification | aggregation-portal | functional | abandoned | D-002-editorial-design-unification | 2026-07-10 | 对齐基线判断错误（gtd 已过时 vs theuntold post-D-018）；改按完整重设计流程 → 回 Supply 重过 G1。分支不 merge，产物留作参考输入 |
 
 ## Completed
 

@@ -1,12 +1,33 @@
 ---
 slug: editorial-design-unification
-status: ready
+status: collected
 priority: P1
 type: functional
 feature_type: functional
 related_features: [aggregation-portal]
 granularity: feature
 created: 2026-07-09
+updated: 2026-07-10
+retriage_reason: baseline-pivot
+prior_g1: superseded
+---
+
+## ⚠ 重新 Triage（2026-07-10，前次交付放弃后回退）
+
+**前次交付（token-copy 方案）已放弃**，本条目回退 `ready → collected` 重新 triage。原 G1（2026-07-09）作废（`prior_g1: superseded`），须在放大后的雄心上重过 G1。
+
+**为什么推翻**：原立意假设 gtd 姊妹站是对齐目标。实证 gtd 样式停在 2026-05-10 v2 快照，而 theuntold 主站经宽屏设计系统（2026-05-15）+ 站点编辑重设计（2026-06-17 上线）两轮重构 → **gtd 已过时**，三站若统一到 gtd 等于统一到过时基线。
+
+**新雄心（Human 定，需重过 G1）**：把 trending 集群（门户 + claude-blog + **github-trending**）当**一等审美**，按主站"完整编辑重设计流程"（高保真原型锚点 → 三方 DoD 审 → 跨仓铺开）对齐 theuntold **当前**设计语言，而非机械抄 token。
+
+**体量变化（G1 须在此基础重评 ROI）**：
+- 三站全改（含 gtd，原以为已达标，实为过时）→ 跨 2 仓 + 已上线站。
+- 主站 EditorialCard 是围绕其批判内容模型（判词/被审对象）设计，**字段 trending 用不上**——可迁移的是设计语言层（fluid clamp 字阶 / 容器解耦 / 全站左对齐 / 卡片等高 / 报纸质感 / tokens），需适配 trending 内容形态（数据摘要 / 译读长文 / 分析报告表格）。
+
+**可复用输入（前次交付分支保留，勿重造）**：`.sdlc/worktrees/editorial-design-unification` 分支上的 portal-home + claude-blog 原型（theuntold token + light 默认 + dark 切换）、editorial-design-system behaviors、gtd-stale 实证、fluid-clamp/text-wrap 教训（主站宽屏设计系统 decisions）。
+
+**待 G1 重评的关键问**：跨两仓做一等定制重设计（含 gtd 重做 + 136 天历史回归）值不值得现在做（P1）？还是拆分（先门户/claude-blog，gtd 单列后续）？
+
 ---
 
 ## Spec 交叉验证（triage）

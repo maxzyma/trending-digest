@@ -10,7 +10,7 @@
 | bilingual-digest-format | 中文双语译读 markdown 格式契约 | collected | P1 | functional | 2026-06-29 |
 | archive-index-maintenance | 归档目录结构 + index.md 索引维护 | collected | P2 | functional | 2026-06-29 |
 | claude-blog-frontmatter-quoting | claude-blog 流水线 front-matter 值引号化（门户交付发现的跨仓根因） | collected | P2 | fix | 2026-07-09 |
-| editorial-design-unification | 三站统一 editorial 设计系统（复用 theuntold 共享 token；门户/子站/github-trending） | ready | P1 | functional | 2026-07-09 |
+| editorial-design-unification | trending 三站编辑重设计（对齐 theuntold 主站当前设计语言；重 triage 中，前次交付已放弃） | collected | P1 | functional | 2026-07-10 |
 
 ## Archive（已交付/归档，计数：1）
 
