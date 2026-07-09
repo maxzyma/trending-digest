@@ -6,7 +6,7 @@ created: 2026-07-09
 verify_safety_net: 已填
 spec_gap_test_value: 已填
 flow_blockage: 已填
-experience_capture: 已填
+experience: 已填
 ---
 
 # 复盘：D-001 聚合门户
