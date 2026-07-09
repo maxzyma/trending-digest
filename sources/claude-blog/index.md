@@ -4,6 +4,8 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 
 | 日期 | 标题 | 分类 | 中文译读 | 原文 |
 |---|---|---|---|---|
+| 2026-07-08 | 在前沿工作：汤森路透如何为高风险专业场景打造 AI | Enterprise AI | [Markdown](posts/2026/07/2026-07-08-working-at-the-frontier-how-thomson-reuters-builds-ai-for-high--stakes-professional-work.md) | [原文](https://claude.com/blog/working-at-the-frontier-how-thomson-reuters-builds-ai-for-high--stakes-professional-work) |
+| 2026-07-08 | Anthropic 市场运营团队如何用 Claude Cowork 自动化报告与活动搭建 | Enterprise AI | [Markdown](posts/2026/07/2026-07-08-how-anthropics-marketing-operations-team-uses-claude-cowork-to-automate-reporting-and-campaign-builds.md) | [原文](https://claude.com/blog/how-anthropics-marketing-operations-team-uses-claude-cowork-to-automate-reporting-and-campaign-builds) |
 | 2026-07-07 | 人们正在如何使用 Claude Cowork | Enterprise AI | [Markdown](posts/2026/07/2026-07-07-how-people-are-using-claude-cowork.md) | [原文](https://claude.com/blog/how-people-are-using-claude-cowork) |
 | 2026-07-07 | 在 Claude Code 中选择模型与努力级别 | Claude Code | [Markdown](posts/2026/07/2026-07-07-claude-model-and-effort-level-in-claude-code.md) | [原文](https://claude.com/blog/claude-model-and-effort-level-in-claude-code) |
 | 2026-07-06 | Claude Fable 5 实地指南：发现你的未知 | Claude Code | [Markdown](posts/2026/07/2026-07-06-a-field-guide-to-claude-fable-finding-your-unknowns.md) | [原文](https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns) |
