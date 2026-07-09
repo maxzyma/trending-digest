@@ -1,93 +1,57 @@
 {
-  "checkpoint": "g4-verify",
+  "checkpoint": "g5-deliver",
   "layers_run": [
     "L1",
-    "L2",
-    "L3"
+    "L2"
   ],
   "findings": [
     {
       "source_tier": "L2",
       "severity": "major",
-      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/validation-report-local-20260708-1215.md",
-      "counterexample": "需 CF live 环境",
+      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/release-plan.md",
+      "counterexample": "3 项 live-CF SC 未 pre-merge 验",
       "provides_independence": false,
       "disposition": "carried-to-caller",
-      "category": "coverage",
-      "note": "真实未决残留：3 项 SC（SC-02 DNS / SC-03 域名 live 渲染 / SC-15 GoatCounter 运行时）本地不可验，defer post-merge cutover。Human G4 裁量接受。"
+      "category": "release-risk",
+      "note": "合入后 3 项 live-CF SC 仍待 cutover agent-browser 验；平台固有（一域一仓），有 runbook §6.6 兜底。Human G5 知情。"
     },
     {
-      "source_tier": "L3",
+      "source_tier": "L2",
       "severity": "major",
-      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/cutover-runbook.md",
-      "counterexample": "须 cutover 时在 CF 环境执行",
-      "provides_independence": true,
+      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/release-plan.md",
+      "counterexample": "回滚核心 = 域归属 + baseurl",
+      "provides_independence": false,
       "disposition": "carried-to-caller",
-      "category": "coverage",
-      "note": "live CF 层（Worker route 绑定 / origin Host / 递归 / agent-browser）须 cutover 时验；runbook §6 已成文兜底。"
-    }
-  ],
-  "fixed_findings_history": [
-    {
-      "tier": "L2",
-      "severity": "major",
-      "disposition": "fixed-mechanical",
-      "what": "Worker 反代转发原始 Host → origin 按自定义域路由递归/502（本地自审二轮）；已加 originHeaders 剥离 + 单测"
-    },
-    {
-      "tier": "L2",
-      "severity": "minor",
-      "disposition": "fixed-mechanical",
-      "what": "minima 死重量 + /assets 路由语义重叠（本地自审二轮）；已移除 theme，构建复验"
-    },
-    {
-      "tier": "L3",
-      "severity": "major",
-      "disposition": "fixed-mechanical",
-      "what": "validate-site.rb 对 claude_blog collection 整段缺失静默放行，违背 SC-23（codex 跨家族）；改硬失败 + SC-23b/c 红用例"
+      "category": "release-risk",
+      "note": "跨仓 cutover 时序风险（DNS 先切/Worker 未就绪断服）；缓解=原子顺序 runbook；回滚=域归属+baseurl 分钟级。"
     }
   ],
   "validation_probe": [
     {
-      "probe": "反代转发原始 Host → origin 按自定义域路由回本域递归",
-      "intent": "US-04 大站经 Worker 可访问、不自我死循环",
-      "verdict": "real-and-fixed"
-    },
-    {
-      "probe": "子站 collection 配置整段删除 → 构建放行但子站空白",
-      "intent": "SC-23 baseurl/配置错误部署前 fail-loud",
-      "verdict": "real-and-fixed"
-    },
-    {
-      "probe": "codex 核实 9 方向（响应编码错配/正则漏匹配/路径边界/防递归/materialize/Date/假通过/规格违背）",
-      "intent": "实现与 ALG-01/02/03 + contracts MUST 一致",
-      "verdict": "verified-no-issue"
+      "probe": "3 仓 merge 时序不当 → 旧 live 站链接错位 / /github-trending 断服",
+      "intent": "US-04 大站可访问 + US-00 域切换不断服",
+      "verdict": "mitigated-by-runbook"
     }
   ],
   "accepted_residuals": [
     {
-      "finding_pointer": "SC-02/03 + SC-15 GoatCounter 运行时 = live-CF 层，本地不可覆盖",
-      "reason": "GitHub Pages 一域一仓 + CF 域切换本质是 post-merge cutover 才能验；有 cutover-runbook（原子顺序 + agent-browser §6 验证时机）兜底，非 mock-only punt"
+      "finding_pointer": "3 项 live-CF SC（SC-02/03 + SC-15 GoatCounter 运行时）合入后仍待 cutover 验",
+      "reason": "GitHub Pages 一域一仓 + CF 域切换本质 post-merge cutover 才能验，pre-merge 不可覆盖；cutover-runbook 原子顺序 + §6.6 agent-browser 兜底，G4 已裁量接受"
     },
     {
-      "finding_pointer": "自动化脚本以栈适配可重复形态存在（vitest 22 + verify-build.sh 19）+ canonical tests/api|browser 骨架（存在性与执行分离）",
-      "reason": "本栈无 HTTP API 服务 / 门户无交互 UI，canonical 执行形态不适用；骨架 mark 齐全指向真实证据，provenance 合规、TC-ID 追溯闭环完整；Human G4 裁量接受"
+      "finding_pointer": "跨仓 cutover 时序（github-trending baseurl merge 时机 / CF 凭据）",
+      "reason": "release-plan 风险表 + ops-checklist + cutover-runbook 已明确时序与缓解；live 切换属 post-G5 部署（CI/CD + 手工运维），非本次 merge 阻断项"
     }
   ],
-  "gap_dispositions": [
-    {
-      "gap": "claude-blog 流水线仍可能产未引号 front matter（存量 8 文件已修）",
-      "disposition": "立项 follow-up（跨仓流水线根因），本交付不承担"
-    }
-  ],
+  "gap_dispositions": [],
   "stop_reason": "severity-no-progress",
   "passed_as": "normal",
   "dossier_audit_trail": [
     {
-      "round": "L1+L2 本地自审二轮（Host 递归 + minima 死重量）→ L3 codex 跨家族（validate-site collection 缺失 P2 + 9 点核实无问题）",
-      "reason_for_reaudit": "Human 连续三次要求再审；第三轮按 grounding 升级跨家族获新信号，三问题严重度递减收敛至零"
+      "round": "G5 release-plan 审：风险表 + 回滚 + 原子 cutover 时序 + ops-checklist 联审",
+      "reason_for_reaudit": "G4→G5 阶段推进；release-plan 为新产物，首次自审"
     }
   ],
-  "accepted_via": "human-gate-decision (G4 passed 2026-07-09；两家族审查共修 3 真问题、41/41 自动可重复、2 项 carried live-CF 残留显式 defer cutover)",
-  "derived_from_artifact_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  "accepted_via": "human-gate-decision (G5 pending — 待 Human 批准合入)",
+  "derived_from_artifact_hash": "9a37325f0f9b5fda22c476b25964a9b7d99ccfb6cf79ec3d8ae6e04a095248e3"
 }

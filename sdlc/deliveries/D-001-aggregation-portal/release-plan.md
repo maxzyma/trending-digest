@@ -43,3 +43,14 @@
 - 3 仓分支代码 review + PR
 - cutover 时序确认（谁先 merge、何时切域、CF 凭据就绪）
 - live-CF 3 项 defer 接受（G4 已裁量）
+
+## 信源清单
+
+<!-- sources-manifest:begin -->
+### D-001 @ 2026-07-09
+
+- deliveries：`validation-report-local-20260708-1215.md`（G4 验证结果 + 追溯 + live-defer）、`cutover-runbook.md`（原子上线时序 + 回滚）、`ops-checklist.md`（运维上线动作）、`decisions.md`（ADR-001~004 + Option B/ALG-02 G3-delta）、`code-review-report.md`（0 critical）
+- specs：`features/aggregation-portal/{contracts,algorithms,entities}.md` + `behaviors/*.gherkin`（SC-01~27）+ `_index.md`（INV-01/02/04 + 边界声明）
+- code：本仓 `_config.yml`/`_layouts/`/`scripts/`；theuntold `edge/trending-proxy/`；github-trending-digest `_config.yml`
+<!-- sources-manifest:end -->
+

@@ -50,7 +50,9 @@ gates:
     decided_at: 2026-07-09
     review_doc: validation-report-local-20260708-1215.md
   g5:
-    status: pending
+    status: passed
+    decided_at: 2026-07-09
+    review_doc: release-plan.md
 
 verification:
   cross_feature_regression:
@@ -107,6 +109,17 @@ blockers:
 单一入口 `trending.theuntold.ai` 聚多源：本仓（trending-diggest）自建 Jekyll 门户 + 小源子站，github-trending 经 CF Worker 反代挂入。交付物分布 3 仓（本仓 US-00~03 / theuntold Worker US-04~05 / github-trending baseurl）。
 
 Backlog 来源：`sdlc/backlog/aggregation-portal/`（G1 passed 2026-07-07，theuntold 侧 G1 作输入）。
+
+### G5 Review — 合入决策（2026-07-09，passed）
+
+- **结论**：passed（Human 批准 → merge）。
+- **变更**：3 仓——trending-diggest（Jekyll 门户+claude-blog 子站）/ theuntold（新建 CF Worker 反代+301）/ github-trending-digest（baseurl=/github-trending）。
+- **风险：中**——跨仓 cutover 时序（DNS 先切/Worker 未就绪 → `/github-trending/*` 断服）；缓解 = cutover-runbook 原子顺序（先释放旧域→部署 Worker→preview 验→切新域→agent-browser 验）。回滚 = Worker rollback / 域归属+baseurl 回切（分钟级，DNS A 记录不变）。
+- **Q&A 留痕**：
+  - **Q**: 批准把 trending-diggest D-001 合入 main 吗？ **A**: Y。合入触发 Pages 从 main 构建、门户上线到项目页路径（`maxzyma.github.io/trending-diggest/`），不切域、不影响现网（现网仍 github-trending on trending.theuntold.ai）。
+  - **Q**: 跨仓 merge + CF cutover 按 runbook 在合并后手工执行（需 Human CF 凭据/`wrangler login`）的分工可接受吗？ **A**: 接受。live 切换属 post-G5 部署（CI/CD + 手工运维），非本次 merge 阻断项；release-plan + ops-checklist + runbook 已定时序。
+- **残留（显式接受）**：① 3 项 live-CF SC（SC-02/03 + SC-15 GoatCounter 运行时）合入后待 cutover agent-browser 验；② 跨仓 cutover 时序 + CF 凭据。均有 runbook §6 兜底。
+- **build-once/发布流**：本交付为静态站 + 边缘 Worker，无 TF 镜像；发布 = Pages Actions 构建（真相流即发布流）。
 
 ### G4 Review — 验证验收（2026-07-09，passed）
 
