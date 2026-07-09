@@ -35,11 +35,12 @@ summary:
 
 ## 主追溯矩阵（SC → TC → 实现/证据位置 → 运行结果）
 
-| SC | TC | 实现/证据位置 | 结果 |
+> 结果列枚举：`PASS`（本地可重复自动化通过） / `环境阻塞（原因）`（live-CF 层本地不可验、defer cutover，带备注）。每 TC 独立行。
+
+| SC | TC-ID | 实现/证据位置 | 结果 |
 |----|-----|--------------|------|
 | SC-01 | TC-API-FUNC-001 | trending-diggest `_config.yml`+`.github/workflows/pages.yml`; verify-build.sh | PASS |
-| SC-02 | TC-API-BND-001 | `CNAME`（文件存在=trending.theuntold.ai）；DNS live 行为 | DEFERRED-live（cutover agent-browser） |
-| SC-03 | TC-API/UI（域名 live） | 渲染链路 | DEFERRED-live（cutover agent-browser） |
+| SC-02 | TC-API-BND-001 | `CNAME`（文件存在=trending.theuntold.ai）；DNS live 行为 | 环境阻塞（live-CF：域名 DNS 解析须 post-merge cutover 用 agent-browser 验，runbook §6） |
 | SC-04 | TC-UI-FUNC-001 | `_layouts/portal-home.html`; verify-build.sh | PASS |
 | SC-05 | TC-UI-FUNC-002 | `_data/sources.yml`+portal-home; verify-build.sh | PASS |
 | SC-06 | TC-UI-BND-001 | portal-home（proxied 卡仅链接）; verify-build.sh | PASS |
@@ -51,7 +52,8 @@ summary:
 | SC-12 | TC-API-FUNC-006 | collection permalink /claude-blog/:path/; verify-build.sh（28 post 前缀内链） | PASS |
 | SC-13 | TC-API-BND-004 | 同仓直出（route-scoped Worker 不介入）; verify-build.sh + router.test（passthrough） | PASS |
 | SC-14 | TC-API-FUNC-002 | theuntold `edge/trending-proxy` handler.test（proxy-gh + origin 映射） | PASS |
-| SC-15 | TC-API-FUNC-003/007 | github-trending `baseurl=/github-trending`（构建 90 前缀）；GoatCounter 运行时上报 | PASS(build) / DEFERRED-live(GoatCounter) |
+| SC-15 | TC-API-FUNC-003 | github-trending `baseurl=/github-trending`（构建 90 前缀断言） | PASS |
+| SC-15 | TC-API-FUNC-007 | canonical/sitemap/feed/OG 前缀 build 侧已随 baseurl 验；GoatCounter 运行时上报 + 旧外链 301 | 环境阻塞（live-CF：GoatCounter 运行时上报 path + 旧根外链 live 301 须 cutover 验，runbook §6） |
 | SC-16 | TC-API-BND-002 | 运行时反代（无拷贝）; verify-build.sh（产物无 gh 内容） | PASS |
 | SC-17 | TC-API-FUNC-004 | router/handler.test（301 + query 保留） | PASS |
 | SC-18 | TC-API-FUNC-005 | router.test（daily/weekly/monthly/assets + .html + weekly 变体锚定正则） | PASS |
@@ -65,7 +67,9 @@ summary:
 | SC-26 | TC-API-BND-005 | router/handler.test（无尾斜杠 301） | PASS |
 | SC-27 | TC-API-ERR-005 | handler.test（上游 404 透传，非 5xx） | PASS |
 
-**覆盖**：27 SC 中 24 本地 PASS（含 SC-15 build 侧）；SC-02/03 + SC-15 GoatCounter live 侧 = DEFERRED-live（3 项，cutover 时 agent-browser 验，runbook §6.6）。
+> SC-03（域名 live 渲染链路）在 test-cases.md 主表无独立 TC-ID（属域名 live 行为，随 SC-02 域切换 + agent-browser 一并验），故不在上表；cutover-runbook §6 覆盖。
+
+**覆盖**：25 条 TC 中 23 PASS（本地可重复自动化）+ 2 环境阻塞（TC-API-BND-001 / TC-API-FUNC-007，均带 live-CF 备注、defer cutover）。
 
 ## Extension TC
 
