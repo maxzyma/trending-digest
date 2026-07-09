@@ -46,7 +46,8 @@ gates:
     decided_at: 2026-07-07
     review_doc: decisions.md
   g4:
-    status: pending
+    status: passed
+    decided_at: 2026-07-09
     review_doc: validation-report-local-20260708-1215.md
   g5:
     status: pending
@@ -70,10 +71,10 @@ verification:
   stages:
     - stage: 1
       env: local
-      api_pass_rate: "39/39"
+      api_pass_rate: "41/41"
       ui_pass_rate: "N/A"
-      released: false
-      release_reason: null
+      released: true
+      release_reason: "本地自动可重复 41/41 全通过（UI 为无交互静态站，结构断言已覆盖，故 N/A）；SC-02/03 + SC-15 GoatCounter 运行时 = live-CF 层，本质 post-merge cutover 才能验，Human G4 裁量接受 + cutover-runbook 兜底"
       cross_feature_pass: "N/A"
       na_reasons:
         api: null
@@ -107,6 +108,18 @@ blockers:
 
 Backlog 来源：`sdlc/backlog/aggregation-portal/`（G1 passed 2026-07-07，theuntold 侧 G1 作输入）。
 
+### G4 Review — 验证验收（2026-07-09，passed）
+
+- **结论**：passed（Human 批准 → 进 Deliver）。
+- **验证**：自动可重复 **41/41**（theuntold Worker vitest 22 + trending-diggest verify-build.sh 19）；27 SC 中 24 本地 PASS，3 项（SC-02 DNS / SC-03 域名 live 渲染 / SC-15 GoatCounter 运行时上报）= live-CF 层 defer post-merge cutover（cutover-runbook §6 agent-browser 验证时机）。跨 Feature 回归 N/A（aggregation-portal 唯一 feature）。失败 0 / Flaky 0 / 回环 0。
+- **审查深度（两家族三轮）**：① 本地自审二轮修 2 真问题（Worker 转发 Host 递归/502；minima 死重量 + /assets 路由语义重叠）；② **codex 跨家族一轮** 修 1 真 P2（validate-site.rb 对 claude_blog collection 整段缺失静默放行，违背 SC-23 fail-loud）+ 补 SC-23b/c 红用例，其余 9 个调查方向核实无问题。三问题严重度递减收敛至零。
+- **Q&A 留痕**：
+  - **Q**: 用栈适配可重复自动化（vitest + verify-build.sh）替代 canonical apitest/playwright fan-out，作本交付验收证据可接受吗？ **A**: 接受。本栈无 HTTP API 服务 / 门户无交互 UI，canonical harness 不匹配；替代方案 provenance 合规（可重复、非 mock/手跑）、TC-ID 追溯闭环完整。
+  - **Q**: SC-02/03 + SC-15 GoatCounter 运行时 3 项 live-CF defer 到 post-merge cutover 可接受吗？ **A**: 接受。GitHub Pages 一域一仓 + CF 域切换本质是 merge 后 Pages 从 main 部署才能做，pre-merge 无法验；有 cutover-runbook（原子顺序 + agent-browser §6）兜底，非 mock-only punt。
+  - **Q**: 是否继续加审（第三家族 gemini）？ **A**: 不再加审。两家族已覆盖、真问题收敛至零、同族再审为回声；剩余风险是 live-CF（审查不可验、部署后事项）。
+- **偏差登记**：① 自动化非 canonical 目录（栈适配替代）② SC-15 GoatCounter 措辞收紧（脚本存在 build 可验，仅运行时上报 defer）③ two-stage 模型对静态站+Worker N/A（本次=本地验收，live=post-cutover）。
+- **live 未验项**：SC-02/03 + SC-15 运行时，cutover 时 agent-browser 补验（runbook §6.6）。
+
 ### G3 Review — 技术方案（2026-07-07，passed）
 
 - **结论**：passed（Human 批准 → 进 Implement）。
@@ -133,7 +146,7 @@ Backlog 来源：`sdlc/backlog/aggregation-portal/`（G1 passed 2026-07-07，the
 <!-- change-ledger:begin -->
 ## 本交付变更清单
 
-> `9f34744...9f9bd0c` @ 2026-07-07 · 机械派生，手工编辑会被覆盖
+> `7b7be99...db452bc` @ 2026-07-09 · 机械派生，手工编辑会被覆盖
 
 **specs 变更**：
 
@@ -152,7 +165,7 @@ Backlog 来源：`sdlc/backlog/aggregation-portal/`（G1 passed 2026-07-07，the
 | 新增 | [contracts.md](../../specs/features/aggregation-portal/contracts.md) <!-- sdlc/specs/features/aggregation-portal/contracts.md --> |
 | 新增 | [entities.md](../../specs/features/aggregation-portal/entities.md) <!-- sdlc/specs/features/aggregation-portal/entities.md --> |
 | 新增 | [review-report.md](../../specs/features/aggregation-portal/test/all/review-report.md) <!-- sdlc/specs/features/aggregation-portal/test/all/review-report.md --> |
-| 新增 | [test-cases.md](../../specs/features/aggregation-portal/test/all/test-cases.md)（未提交） <!-- sdlc/specs/features/aggregation-portal/test/all/test-cases.md --> |
+| 新增 | [test-cases.md](../../specs/features/aggregation-portal/test/all/test-cases.md) <!-- sdlc/specs/features/aggregation-portal/test/all/test-cases.md --> |
 | 新增 | [test-points.md](../../specs/features/aggregation-portal/test/all/test-points.md) <!-- sdlc/specs/features/aggregation-portal/test/all/test-points.md --> |
 | 新增 | [prototype.html](../../specs/features/aggregation-portal/ui/prototype.html) <!-- sdlc/specs/features/aggregation-portal/ui/prototype.html --> |
 | 新增 | [scene-registry.md](../../specs/features/aggregation-portal/ui/scene-registry.md) <!-- sdlc/specs/features/aggregation-portal/ui/scene-registry.md --> |
@@ -164,9 +177,12 @@ Backlog 来源：`sdlc/backlog/aggregation-portal/`（G1 passed 2026-07-07，the
 | 变更 | 文件 |
 |------|------|
 | 新增 | [audit-dossier.json](audit-dossier.json)（未提交） <!-- sdlc/deliveries/D-001-aggregation-portal/audit-dossier.json --> |
+| 新增 | [code-review-report.md](code-review-report.md) <!-- sdlc/deliveries/D-001-aggregation-portal/code-review-report.md --> |
+| 新增 | [cutover-runbook.md](cutover-runbook.md) <!-- sdlc/deliveries/D-001-aggregation-portal/cutover-runbook.md --> |
 | 新增 | [decisions.md](decisions.md) <!-- sdlc/deliveries/D-001-aggregation-portal/decisions.md --> |
 | 新增 | [gate-audit-record.json](gate-audit-record.json)（未提交） <!-- sdlc/deliveries/D-001-aggregation-portal/gate-audit-record.json --> |
 | 新增 | [scope.md](scope.md) <!-- sdlc/deliveries/D-001-aggregation-portal/scope.md --> |
 | 新增 | [tasks.md](tasks.md)（未提交） <!-- sdlc/deliveries/D-001-aggregation-portal/tasks.md --> |
+| 新增 | [validation-report-local-20260708-1215.md](validation-report-local-20260708-1215.md) <!-- sdlc/deliveries/D-001-aggregation-portal/validation-report-local-20260708-1215.md --> |
 
 <!-- change-ledger:end -->

@@ -1,5 +1,5 @@
 {
-  "checkpoint": "g3-design-review",
+  "checkpoint": "g4-verify",
   "layers_run": [
     "L1",
     "L2",
@@ -7,113 +7,87 @@
   ],
   "findings": [
     {
-      "source_tier": "L3",
-      "severity": "critical",
-      "artifact_pointer": "tasks.md TASK-005 / TASK-008 依赖",
-      "counterexample": "TASK-008(DNS) 依赖 TASK-005(Worker)、TASK-005 又依赖 TASK-008 → 循环依赖，cutover 计划不可执行（codex 跨家族 P0，且是同族修 DNS 顺序时引入的）",
-      "provides_independence": true,
-      "disposition": "fixed-mechanical",
-      "category": "judgment"
-    },
-    {
-      "source_tier": "L3",
-      "severity": "major",
-      "artifact_pointer": "contracts.md Worker origin / algorithms.md ALG-01",
-      "counterexample": "Worker fetch 自定义域 trending.theuntold.ai → CF 路由回 Worker → 无限递归/502；origin host/SNI 未指定",
-      "provides_independence": true,
-      "disposition": "fixed-mechanical",
-      "category": "judgment"
-    },
-    {
-      "source_tier": "L3",
-      "severity": "major",
-      "artifact_pointer": "algorithms.md ALG-02",
-      "counterexample": "前缀匹配对结构化 permalink overmatch（/dailyfoo 误匹配 /daily），破坏非-catch-all 保证 → 改锚定正则",
-      "provides_independence": true,
-      "disposition": "fixed-mechanical",
-      "category": "judgment"
-    },
-    {
-      "source_tier": "L3",
-      "severity": "major",
-      "artifact_pointer": "behaviors/site-skeleton.gherkin SC-02",
-      "counterexample": "CF 橙云代理下公开 DNS 返 CF edge IP 而非 Pages IP，原断言生产不可观测 → 改行为路由断言",
-      "provides_independence": true,
-      "disposition": "fixed-mechanical",
-      "category": "judgment"
-    },
-    {
-      "source_tier": "L3",
-      "severity": "minor",
-      "artifact_pointer": "algorithms.md ALG-01 / SC-26",
-      "counterexample": "无尾斜杠 /github-trending 漏匹配落门户；上游真实 404/410 被当故障掩盖；301 丢 query string → 补 SC-26/27 + query 保留 + 404 透传",
-      "provides_independence": true,
-      "disposition": "fixed-mechanical",
-      "category": "judgment"
-    },
-    {
       "source_tier": "L2",
       "severity": "major",
-      "artifact_pointer": "tasks.md TASK covers / SC-03 SC-20",
-      "counterexample": "SC-03（渲染链路）、SC-20（fail-loud 构建）不在任何 TASK covers 并集 → 补入 TASK-008/TASK-001",
+      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/validation-report-local-20260708-1215.md",
+      "counterexample": "需 CF live 环境",
       "provides_independence": false,
-      "disposition": "fixed-mechanical",
-      "category": "mechanical-grounding"
-    },
-    {
-      "source_tier": "L2",
-      "severity": "major",
-      "artifact_pointer": "specs/features/aggregation-portal/behaviors/*.gherkin",
-      "counterexample": "初版 6 Rule 全缺 @error 场景（构建失败/Worker 不可用/重定向歧义）→ 补 SC-20~25",
-      "provides_independence": false,
-      "disposition": "fixed-mechanical",
-      "category": "mechanical-grounding"
-    },
-    {
-      "source_tier": "L2",
-      "severity": "minor",
-      "artifact_pointer": "test-cases.md 硬下限 / TC-API-FUNC-003",
-      "counterexample": "硬下限分母计数错（路由5实为6）；GoatCounter site-code 不变未断言 → 修计数 + 补断言",
-      "provides_independence": false,
-      "disposition": "fixed-mechanical",
-      "category": "mechanical-grounding"
-    },
-    {
-      "source_tier": "L1",
-      "severity": "minor",
-      "artifact_pointer": "decisions.md ADR-001~004",
-      "counterexample": "ADR 缺显式 status + ADR-003/004 缺 alternatives → 补齐四要素",
-      "provides_independence": false,
-      "disposition": "fixed-mechanical",
-      "category": "mechanical-grounding"
+      "disposition": "carried-to-caller",
+      "category": "coverage",
+      "note": "真实未决残留：3 项 SC（SC-02 DNS / SC-03 域名 live 渲染 / SC-15 GoatCounter 运行时）本地不可验，defer post-merge cutover。Human G4 裁量接受。"
     },
     {
       "source_tier": "L3",
       "severity": "major",
-      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/tasks.md",
-      "counterexample": "未验证：theuntold 仓 Worker 现状 + CF 部署凭据 + trending.theuntold.ai 当前绑定",
+      "artifact_pointer": "sdlc/deliveries/D-001-aggregation-portal/cutover-runbook.md",
+      "counterexample": "须 cutover 时在 CF 环境执行",
       "provides_independence": true,
       "disposition": "carried-to-caller",
-      "category": "judgment"
+      "category": "coverage",
+      "note": "live CF 层（Worker route 绑定 / origin Host / 递归 / agent-browser）须 cutover 时验；runbook §6 已成文兜底。"
     }
   ],
-  "voided": [],
+  "fixed_findings_history": [
+    {
+      "tier": "L2",
+      "severity": "major",
+      "disposition": "fixed-mechanical",
+      "what": "Worker 反代转发原始 Host → origin 按自定义域路由递归/502（本地自审二轮）；已加 originHeaders 剥离 + 单测"
+    },
+    {
+      "tier": "L2",
+      "severity": "minor",
+      "disposition": "fixed-mechanical",
+      "what": "minima 死重量 + /assets 路由语义重叠（本地自审二轮）；已移除 theme，构建复验"
+    },
+    {
+      "tier": "L3",
+      "severity": "major",
+      "disposition": "fixed-mechanical",
+      "what": "validate-site.rb 对 claude_blog collection 整段缺失静默放行，违背 SC-23（codex 跨家族）；改硬失败 + SC-23b/c 红用例"
+    }
+  ],
   "validation_probe": [
     {
-      "layer": "L3",
-      "intent": "US-04 大站可访问 + US-00 域切换不断服",
-      "counterexample": "DNS 先切、Worker 未部署 → /github-trending/* 404 断服；且任务依赖成环使 cutover 不可执行",
-      "verdict": "confirmed-real-fixed",
-      "note": "解循环 + TASK-008 原子后置（依赖 005+006 live）后不再成立"
-    }
-  ],
-  "residual": [
+      "probe": "反代转发原始 Host → origin 按自定义域路由回本域递归",
+      "intent": "US-04 大站经 Worker 可访问、不自我死循环",
+      "verdict": "real-and-fixed"
+    },
     {
-      "item": "跨仓交付物地基未验证（theuntold Worker/CF 凭据 + github-trending baseurl + DNS runbook §6）",
-      "why_mechanism_cannot_decide": "跨仓当前态与部署凭据在本 worktree 不可达，须 implement 前跨仓协调",
-      "disposition": "carried-to-caller (registered in _index.md blockers[] as external-dependency)"
+      "probe": "子站 collection 配置整段删除 → 构建放行但子站空白",
+      "intent": "SC-23 baseurl/配置错误部署前 fail-loud",
+      "verdict": "real-and-fixed"
+    },
+    {
+      "probe": "codex 核实 9 方向（响应编码错配/正则漏匹配/路径边界/防递归/materialize/Date/假通过/规格违背）",
+      "intent": "实现与 ALG-01/02/03 + contracts MUST 一致",
+      "verdict": "verified-no-issue"
     }
   ],
-  "gaps": [],
-  "derived_from_artifact_hash": "2f9f09bad9280c3bd4daec94b333753a6c8cd3c6741e68d9c6c5d13f99e3d780"
+  "accepted_residuals": [
+    {
+      "finding_pointer": "SC-02/03 + SC-15 GoatCounter 运行时 = live-CF 层，本地不可覆盖",
+      "reason": "GitHub Pages 一域一仓 + CF 域切换本质是 post-merge cutover 才能验；有 cutover-runbook（原子顺序 + agent-browser §6 验证时机）兜底，非 mock-only punt"
+    },
+    {
+      "finding_pointer": "自动化脚本以栈适配可重复形态存在（vitest 22 + verify-build.sh 19）+ canonical tests/api|browser 骨架（存在性与执行分离）",
+      "reason": "本栈无 HTTP API 服务 / 门户无交互 UI，canonical 执行形态不适用；骨架 mark 齐全指向真实证据，provenance 合规、TC-ID 追溯闭环完整；Human G4 裁量接受"
+    }
+  ],
+  "gap_dispositions": [
+    {
+      "gap": "claude-blog 流水线仍可能产未引号 front matter（存量 8 文件已修）",
+      "disposition": "立项 follow-up（跨仓流水线根因），本交付不承担"
+    }
+  ],
+  "stop_reason": "severity-no-progress",
+  "passed_as": "normal",
+  "dossier_audit_trail": [
+    {
+      "round": "L1+L2 本地自审二轮（Host 递归 + minima 死重量）→ L3 codex 跨家族（validate-site collection 缺失 P2 + 9 点核实无问题）",
+      "reason_for_reaudit": "Human 连续三次要求再审；第三轮按 grounding 升级跨家族获新信号，三问题严重度递减收敛至零"
+    }
+  ],
+  "accepted_via": "human-gate-decision (G4 passed 2026-07-09；两家族审查共修 3 真问题、41/41 自动可重复、2 项 carried live-CF 残留显式 defer cutover)",
+  "derived_from_artifact_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 }
