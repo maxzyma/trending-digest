@@ -1,6 +1,6 @@
 ---
 slug: editorial-design-unification
-status: collected
+status: ready
 priority: P1
 type: functional
 feature_type: functional
@@ -50,65 +50,76 @@ prior_g1: superseded
 - theuntold SDLC：`wide-screen-design-system` + `site-editorial-redesign` 交付 decisions/scope
 <!-- sources-manifest:end -->
 
-# 三站统一 editorial 设计系统（复用 theuntold 共享 token 契约）
+# trending 三站编辑重设计（对齐 theuntold 主站当前设计语言）
 
 ## 背景 / 问题
 
-聚合门户上线后发现视觉割裂：`trending.theuntold.ai` 下 `/`（门户）+ `/claude-blog/`（子站）用**自造深色调色板**（`--bg #0e1116`/`--pulse`，仅 dark），`/github-trending/` 用 **minima 浅色**——同一域名三种观感，"单一入口像一个站"的定位立不住。
+聚合门户上线后发现视觉割裂：`trending.theuntold.ai` 下 `/`（门户）+ `/claude-blog/`（子站）用**自造深色调色板**（`--bg #0e1116`/`--pulse`，仅 dark），`/github-trending/` 用其**过时 v2 快照**（2026-05-10）——同一域名观感不一，且**都落后于 theuntold 主站当前设计语言**（主站经宽屏设计系统 + 站点编辑重设计两轮重构）。"单一入口像一个站、且属主站设计家族"的定位立不住。
 
-**根因**：门户原型自造 token，没复用 theuntold 早已为姐妹站 `trending.theuntold.ai` 建立的共享 design-token 契约；github-trending 沿用 minima 从未对齐。
+**根因**：门户原型自造 token；github-trending 停在旧 v2 未跟进主站两轮重构。
 
 ## 目标
 
-三站统一到 **theuntold 共享 editorial design 系统**（light 纸感默认 + dark 可切，经 codex WCAG-AA 审）：
+trending 三站按 **theuntold 主站当前设计语言**做一等编辑重设计（light 纸感默认 + dark 可切，WCAG-AA），属同一设计家族：
 - `/` 门户首页（trending-diggest）
 - `/claude-blog/` 子站（trending-diggest）
-- `/github-trending/` 大站（github-trending-digest，替换 minima）
+- `/github-trending/` 大站（github-trending-digest，从 v2 升级到当前设计语言）
 
-## 复用信源（theuntold，MUST 照搬不重造）
+## 复用信源（theuntold）
+
+> **照搬 vs 改造边界**（消歧，dc G1 提出）：token 值 / 字体分工 / decisions 教训 = **照搬不重造**（设计系统底料）；组件级结构（尤其 EditorialCard）= **按 trending 内容模型改造、不逐字复用**（主站 EditorialCard 绕判词/被审对象字段建，trending 无此模型）。即"借设计语言与底料，不搬内容专属组件"。
 
 - **token SSoT**：`projects/external/theuntold/src/layouts/BaseLayout.astro` `:root` 块（light `#faf8f3` 纸底 + 琥珀 `#8b5e0c`；dark `#0b0c0f` + 琥珀 `#e8a820`）——12+ CSS 变量：`--bg-default/surface/elevated/hover`、`--border(-mid/-bright)`、`--fg-emphasis/default/muted/subtle`（附对比度）、`--accent-primary/dim/glow/line/info`、`--signal-*`、`--finding-*`。
 - **字体分工**（theuntold 已定）：trending 站 body = Source Serif 4；标题 Noto Serif SC；mono JetBrains Mono。Google Fonts link 见 BaseLayout.astro:57。
 - **设计经验**：theuntold SDLC 交付 `wide-screen-design-system`（容器分层 / fluid clamp typography / a11y focus-visible / 卡片 hover 去位移 / SVG noise）+ `site-editorial-redesign`（EditorialCard 组件 + tokens SSoT + 媒体报纸编辑语言）的 decisions/scope（见 theuntold `sdlc/deliveries/` 对应目录）。
 - **共享契约声明**：theuntold wide-screen-design-system scope「与姐妹站 trending.theuntold.ai 共享 token 名保持一致」+ decisions「共享 token 契约 12 个 :root 变量」。
 
-## 范围
+## 范围（重设计雄心，2026-07-10 重 triage）
 
-- trending-diggest：`_layouts/portal-home.html` + `_layouts/claude-blog-post.html` + `claude-blog/index.html` 换 theuntold `:root` token（抽到共享 CSS include，Jekyll `_includes/` 或 `assets/css/`）；light 默认 + dark 切换。
-- github-trending-digest：替换 minima → theuntold token 样式（其 `_layouts/{home,daily,weekly,default}.html`）；**136 天历史页（daily/weekly/monthly）回归验证**。
-- 跨仓：两仓改动 + 上线（github-trending Pages 重建；门户 Pages 重建）；Worker 不变。
+对齐目标 = **theuntold 主站当前设计语言**（宽屏设计系统 + 站点编辑重设计两轮成果），非 gtd 过时 v2 快照、非机械抄 token。做法按主站编辑重设计流程：**高保真原型锚点 → 三方 DoD 审 → 跨仓铺开**。
 
-## 已知风险（供 triage/G1）
+- **可迁移设计语言层**（适配 trending 内容形态）：fluid clamp 字阶 / 容器与文本解耦 / 全站左对齐 chrome / 卡片等高底对齐 + hover 去位移 / 报纸质感（noise/rule line）/ a11y focus-visible / tokens（light 纸感默认 + dark）。**不照搬主站 EditorialCard**（其判词/被审对象字段 trending 用不上），只借设计系统骨架。
+- **三站全改（Human 定：一次性）**：
+  - trending-diggest 本仓：门户首页 + claude-blog（index + 长文页）。
+  - github-trending-digest 跨仓：从旧 v2 升级到当前设计语言（layouts 重做）+ **136 天历史页（daily/weekly/monthly）回归**。
+- **共享设计系统单一来源**：tokens + 字阶 clamp + 卡片/chrome patterns 抽为可复用 CSS（本仓 include；跨仓按各自约定同步）。
+- 跨仓上线（两仓 Pages 重建）；Worker 反代不变。
 
-- github-trending 脱离 minima = 大改：136 天历史 daily/weekly/monthly 页 + 现有布局全量回归；minima 提供的默认排版要自建替代。
-- 跨仓交付（trending-diggest + github-trending-digest 两仓 + 已上线站，改动可见于生产）。
-- token 需同时适配三种内容形态（门户卡片网格 / claude-blog 长文 / github-trending 分析报告表格）。
+## 已知风险（供重 G1）
+
+- **跨两仓 + 已上线站**：改动可见于生产；需原子上线协调。
+- **gtd 从 v2 升级 = 全量回归**：136 天历史 daily/weekly/monthly + 现有 layouts。
+- **一等重设计工作量**：高保真原型 + 三方审 + 三种内容形态（门户卡片 / 长文 / 分析报告表格）各自版式，周期显著长于 token-copy。
+- **设计语言适配非照搬**：需判断主站哪些 pattern 迁移、哪些因内容模型不同要改造——判断成本。
 
 ## Intake 覆盖账本
 
 | 五问维度 | 覆盖 | 内容 |
 |------|------|------|
-| 用户 | covered | trending.theuntold.ai 深度读者（跨 `/`↔`/github-trending/`↔`/claude-blog/` 浏览时观感一致、3 秒识别同一站）|
-| 场景 | covered | 单一入口域下在门户/子站/大站间跳转；light/dark 切换 |
-| 任务 | covered | 三站套用 theuntold 共享 editorial token（light 默认+dark）+ 一致字体/卡片/排版语言，替换门户自造调色板与 github-trending minima |
-| 成功判据 | covered | 三站视觉统一（同 token/字体/卡片语言）；WCAG AA 不退化；github-trending 136 天历史页无回归；light 默认 + dark 可切 |
-| 边界 | covered | 纯视觉 + 样式层（不改业务逻辑/数据/路由/Worker 反代）；不改内容；不引第三方 UI 框架（照搬 theuntold token，不重造设计） |
+| 用户 | covered | trending.theuntold.ai 深度读者（跨 `/`↔`/github-trending/`↔`/claude-blog/` 浏览观感一致、3 秒识别同一站、感知与主站同一设计家族）|
+| 场景 | covered | 单一入口域下门户/子站/大站间跳转；light/dark 切换 |
+| 任务 | covered | 三站按主站当前设计语言做一等编辑重设计（非抄 token）：统一字阶/卡片/chrome/tokens，适配 trending 内容形态 |
+| 成功判据 | covered | 三站视觉统一且属主站设计家族；WCAG AA 不退化；gtd 136 天历史无回归；light 默认 + dark 可切；有高保真原型经三方 DoD 审作锚点 |
+| 边界 | covered | 纯视觉 + IA + 组件层（不改业务逻辑/数据/路由/Worker）；不改内容；不引第三方 UI 框架 |
 
-## G1 Review — 值不值得做（2026-07-09，passed）
+## G1 Review — 值不值得做（重审 2026-07-10，passed）
 
-- **结论**：passed（Human 批准 → 可拉入 Delivery）。
-- **值/成本**：值 = 聚合门户"单一入口像一个站"的定位现被三种观感割裂，统一到 theuntold 已建的共享 editorial 系统即修复品牌一致性、复用现成 WCAG-AA 资产（不重造）；成本 = 跨 2 仓 + github-trending 脱 minima + 136 天历史回归。
+> 前次 G1（2026-07-09）基于"抄 token"小方案通过，已随交付放弃作废（`prior_g1: superseded`）。本条目在"完整重设计"放大体量上**重过 G1**。
+
+- **结论**：passed（Human 2026-07-10 批准 → 拉入 Delivery）。
+- **dc:qualify（gate-teeth 前置）**：adversarial audit（L1+L2 falsify）→ dossier `audit-dossier.json`。一致性 finding（旧 token-copy 框架残留）已修；falsify round 的 F1/F2（G1 裁决未留痕 / status 未推进）由本 Q&A + status→ready 消解；validation_probe（"ROI 悬空即过 G1"）由下方 ROI Q&A 正面裁决驳倒。
 - **Q&A 留痕**：
-  - **Q**: 这个 UI 统一值不值得现在做（P1）？ **A**: 值。门户刚上线即暴露割裂，趁热改成本最低；复用 theuntold token 无设计重造成本。
-  - **Q**: github-trending 一并改（大改 + 历史回归风险）还是先只做门户/子站？ **A**: 一并改（Human 选）。否则 `/github-trending/` 仍浅色割裂，"单一入口"不成立；风险由 US-05 历史回归验证 + 原子上线兜底。
-  - **Q**: 对齐目标是 minima 浅色还是 theuntold editorial？ **A**: theuntold 共享 editorial token（light 纸感默认+dark）——这是 theuntold 当初就为本域名设计的归属，比 minima 更对。
-- **自审**：dc G1 dossier（2 finding + 1 probe：只做门户/子站不足 → 三站全改）；复用信源已 grounding 到 theuntold BaseLayout.astro + 两交付 decisions。
-- **粒度**：Feature（演化 aggregation-portal UI 层），5 stories，US-01/02/03/04 为 Walking Skeleton。
+  - **Q（scope 边界）**：放大后拆不拆？ **A**：不拆——三站一次性重设计（含 gtd 跨仓 + 136 天回归）。G1 不重开此项。
+  - **Q（ROI 主问，falsify probe 正面回应）**：此放大体量（跨两仓 + gtd 全量升级 + 136 天历史回归 + 高保真原型三方审 + 三种内容形态各自版式，周期显著长于 token-copy、生产可见）下，值得 P1 现在投入吗？ **A**：值得，现在做（Human 选 "passed—拉入 Delivery"）。理由：门户刚上线即暴露割裂 + 三站均落后主站设计家族，趁热改品牌一致性成本最低；体量已诚实披露、scope 已收敛，放弃分支的原型/behaviors/教训作复用输入降低返工。
+- **可复用输入**（前次交付分支保留）：portal + claude-blog theuntold-token 原型、editorial-design-system behaviors、gtd-stale 实证、fluid-clamp/text-wrap 教训。
+- **信源精度（dc F3 minor）**：gtd 末次样式 commit `e4a7fb5 2026-05-10`；theuntold 宽屏设计系统交付 `bee4d65/dfdfaba 2026-05-15`；站点编辑重设计上线 `e397398 2026-06-17`（均 theuntold/gtd 仓 `git log` 可核，非推断）。
 
-## Stories（初拟，triage/refine 细化）
+## Stories（重设计雄心，refine 细化）
 
-- US-01 抽取 theuntold 共享 token 为本仓可复用 CSS（light+dark，含字体 link）
-- US-02 门户首页 portal-home 套 token（卡片网格 editorial 化）
-- US-03 claude-blog 子站（index + post layout）套 token（长文阅读版式）
-- US-04 github-trending 替换 minima → token 样式（home/daily/weekly/default layout）
-- US-05 github-trending 136 天历史页回归验证 + light/dark 切换机制
+- US-01 提炼 trending 适用设计语言 + 产高保真门户原型作锚点（对齐主站宽屏/编辑设计系统，三方 DoD 审）
+- US-02 共享设计系统 CSS 单一来源（tokens light+dark / 字阶 clamp / 卡片·chrome patterns / a11y）
+- US-03 门户首页编辑重设计（hero 版式 + editorial 卡片网格，fluid clamp/容器解耦/左对齐）
+- US-04 claude-blog 索引 + 长文页重设计（长文阅读版式对齐设计家族）
+- US-05 github-trending 从 v2 升级到当前设计语言（layouts 重做）
+- US-06 跨站一致性核验 + light/dark 机制三站统一（同 token/字阶/卡片语言）
+- US-07 github-trending 136 天历史页回归 + 全站 WCAG AA 不退化
