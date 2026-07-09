@@ -1,0 +1,82 @@
+# 页面: 三站统一 editorial 设计系统（D-002 editorial-design-unification）
+Feature: 三站统一 editorial 设计系统
+  作为跨 / ↔ /github-trending/ ↔ /claude-blog/ 浏览的读者，
+  我要三站共享同一套 editorial design-token（纸感 light 默认 + dark 可切、同字体族、同卡片语言），
+  以便"单一入口像一个站"，3 秒识别同一品牌，不再感到视觉割裂。
+
+  # 纯视觉 / 样式层：不改业务逻辑 / 数据 / 路由 / CF Worker。
+  # token 名+值照搬 theuntold BaseLayout.astro :root（SSoT），不重造。
+
+  Rule: 本仓 portal + claude-blog 套 theuntold 共享 editorial token
+
+    @happy-path
+    Scenario: SC-28 共享 token 单一来源被本仓两处 layout 引用
+      Given 本仓有一份共享 editorial token CSS（含 theuntold 12+ :root 变量 light 默认 + [data-theme=dark] + 字体 link）
+      When 检查 _layouts/portal-home.html 与 _layouts/claude-blog-post.html
+      Then 两者引用同一份共享 token CSS，不再各自内联自造调色板
+      And token 名与值与 theuntold BaseLayout.astro :root 逐项一致（--bg-default #faf8f3 / --accent-primary #8b5e0c 等）
+
+    @happy-path
+    Scenario: SC-29 门户首页在 editorial token 下渲染
+      Given 门户首页已套共享 token
+      When 访问 /
+      Then Hero/信源卡/最新流呈现纸感 light 底 + 琥珀 accent + Source Serif 正文
+      And 信源卡为 editorial 卡片语言（bg-surface 底 + border + hover 提亮）
+
+    @happy-path
+    Scenario: SC-30 claude-blog 索引与文章页在 editorial token 下渲染
+      Given claude-blog index 与 post layout 已套共享 token
+      When 访问 /claude-blog/ 及任一译读文章页
+      Then 长文阅读版式（760px 单栏 + editorial 字号/行距）在 token 下渲染
+      And 中英对照 / 引用 / 代码块 / 表格样式在 token 下可读
+
+  Rule: light 默认 + dark 可切机制，跨站基调一致
+
+    @happy-path
+    Scenario: SC-31 首次访问默认 light 纸感（无主题偏好存储时跟系统）
+      Given 访客本地无 trending-theme 存储
+      When 访问本仓任一页面且系统未偏好深色
+      Then 页面以 light 纸感基调渲染（--bg-default #faf8f3）
+
+    Scenario: SC-32 手动切换深色并写入偏好
+      Given 读者在某页点击主题切换（data-testid="portal-theme-toggle"）
+      When 从 light 切到 dark
+      Then 当前页切换到 dark 基调（--bg-default #0b0c0f + signature amber #e8a820）
+      And 偏好以 dark 写入 localStorage key trending-theme
+
+    Scenario: SC-37 非首次访问按已存偏好渲染（无 FOUC）
+      Given 访客本地已有 trending-theme=dark 存储
+      When 访问本仓任一页面
+      Then 页面在 body 渲染前的内联脚本读取 trending-theme 并套用 dark 基调
+      And 不出现先 light 再跳 dark 的闪烁（FOUC）
+
+    @boundary
+    Scenario: SC-33 github-trending 一致性核验（非改造）
+      Given github-trending 已在 theuntold token 上（其 assets/css/style.css 逐值同 theuntold）
+      When 与本仓改后 portal/claude-blog 对比 token 值/字体/light-dark 默认
+      Then 三站基调一致（同 light 默认 + 同 amber + 同字体族）
+      And 本交付不改 github-trending 代码
+      And 已知差异（如切换存储 key gtd-theme vs trending-theme 跨子域独立）记录为已知项、不强制统一
+
+  Rule: 换样式不退化既有契约
+
+    @boundary
+    Scenario: SC-34 现有 data-testid 在换 token 后保留
+      Given portal / claude-blog 现有 data-testid（如 portal-brand-home-link / portal-source-grid / claude-blog-post-body）
+      When 套 token 重构样式后
+      Then 全部现有 data-testid 保留（D-001 的 SC/测试仍绿）
+      And 新增 data-testid portal-theme-toggle 用于切换控件
+
+    @boundary
+    Scenario: SC-35 WCAG AA 对比度不退化
+      Given 照搬 theuntold 已审对比度 token（fg-subtle 4.55:1 AA 等）
+      When 应用到本仓 light 与 dark
+      Then 正文/次要文字/accent 组合均不低于 WCAG AA
+      And 不引入 theuntold token 之外的自造色破坏对比度
+
+    @error
+    Scenario: SC-36 共享 token include 缺失时 Jekyll 构建 fail-loud
+      Given 某 layout 引用的共享 editorial token include（如 {% include editorial-tokens.html %}）对应文件不存在
+      When 运行 Jekyll 站点构建（scripts/verify-build.sh）
+      Then 构建以非 0 退出码失败并在日志指出缺失的 include 文件名
+      And 不静默产出缺 token 的半套样式页面

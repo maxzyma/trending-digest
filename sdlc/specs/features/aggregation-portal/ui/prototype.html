@@ -1,55 +1,138 @@
 <!DOCTYPE html>
 <!--
-  Baseline 原型：门户首页（pc-portal-home）。
-  对齐 github-trending-digest 观感（同字体族 + 深色底 + editorial 卡片网格）。
-  静态自包含，供 G2 审查；implement 阶段转为 Jekyll _layouts/portal-home.html + 数据文件。
+  原型：门户首页（pc-portal-home）— D-002 editorial-design-unification 基线。
+  统一到 theuntold 共享 editorial design-token（light 纸感默认 + dark 可切，WCAG-AA）。
+  token 名+值照搬 theuntold src/layouts/BaseLayout.astro :root / [data-theme='dark']（SSoT，不重造）。
+  per-product 分歧（有意）：trending body = Source Serif 4（衬线，数据阅读感），headline = Noto Serif SC，mono = JetBrains Mono。
+  静态自包含，供 G2 审查；implement 阶段转为 Jekyll _layouts/portal-home.html + 共享 token CSS + 数据文件。
   Mock 数据字段与 entities.md（SourceCard / DigestEntry）一致；链接与 contracts.md 路由一致。
 -->
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Trending Diggest — 多源技术资讯译读聚合</title>
   <meta name="description" content="多源技术资讯译读/深读聚合：GitHub Trending 深度分析 + Claude Blog 中文译读，单一入口。">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
+  <script>
+    /* FOUC 防御：body 渲染前套用已存主题（trending 独立 key，light 默认，无存储时跟系统偏好） */
+    ;(function () {
+      var t = localStorage.getItem('trending-theme')
+      if (t === 'dark') document.documentElement.dataset.theme = 'dark'
+      else if (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.dataset.theme = 'dark'
+      }
+    })()
+  </script>
   <style>
+    /* ── theuntold editorial token（light 默认，纸感长文阅读）── */
     :root {
-      --bg: #0e1116; --surface: #161b22; --border: #2a313c;
-      --fg: #e6edf3; --muted: #9aa7b4; --accent: #58a6ff; --pulse: #3fb950;
+      --bg-default: #faf8f3;
+      --bg-surface: #f3efe2;
+      --bg-elevated: #ebe5d3;
+      --bg-hover: #e3dcc6;
+
+      --border: #d8d2c2;
+      --border-mid: #c5bea8;
+      --border-bright: #8a8472;
+
+      --fg-emphasis: #1a1a1a;   /* 16.0:1 AAA */
+      --fg-default: #363737;    /*  9.5:1 AAA */
+      --fg-muted: #5b5852;      /*  6.7:1 AAA */
+      --fg-subtle: #766e65;     /*  4.55:1 AA */
+
+      --accent-primary: #8b5e0c; /* dark amber — WCAG-safe on paper */
+      --accent-line: rgba(139, 94, 12, 0.3);
+      --accent-info: #1e7a8a;
+      --signal-success: #2d7a47;
+
       --serif: "Source Serif 4", "Noto Serif SC", serif;
+      --headline: "Noto Serif SC", "Source Serif 4", serif;
       --mono: "JetBrains Mono", monospace;
     }
+
+    /* ── dark（可切，Bloomberg amber-on-terminal-black）── */
+    [data-theme='dark'] {
+      --bg-default: #0b0c0f;
+      --bg-surface: #111318;
+      --bg-elevated: #181922;
+      --bg-hover: #1e202b;
+
+      --border: #222430;
+      --border-mid: #2c2e3e;
+      --border-bright: #3a3d52;
+
+      --fg-emphasis: #dde0f0;   /* 14.4:1 AAA */
+      --fg-default: #b8bace;    /*  8.6:1 AAA */
+      --fg-muted: #8a8da6;      /*  5.6:1 AA  */
+      --fg-subtle: #767994;     /*  4.55:1 AA */
+
+      --accent-primary: #e8a820; /* signature amber */
+      --accent-line: rgba(232, 168, 32, 0.2);
+      --accent-info: #45c4d8;
+      --signal-success: #52d08a;
+    }
+
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--serif); line-height: 1.6; }
-    a { color: var(--accent); text-decoration: none; }
+    body {
+      margin: 0; background: var(--bg-default); color: var(--fg-default);
+      font-family: var(--serif); line-height: 1.65;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      transition: background-color .2s, color .2s;
+    }
+    a { color: var(--accent-primary); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .site-header { border-bottom: 1px solid var(--border); }
-    .header-inner { max-width: 1080px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
-    .site-brand { display: flex; align-items: center; gap: .5rem; font-family: var(--mono); font-weight: 600; color: var(--fg); }
-    .brand-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--pulse); box-shadow: 0 0 8px var(--pulse); }
-    .brand-tag { color: var(--muted); font-weight: 400; }
+
+    .site-header {
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg-default) 88%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      position: sticky; top: 0; z-index: 30;
+    }
+    .header-inner { max-width: 1080px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .site-brand { display: flex; align-items: center; gap: .55rem; font-family: var(--headline); font-weight: 700; color: var(--fg-emphasis); }
+    .brand-pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--accent-primary); box-shadow: 0 0 8px var(--accent-line); }
+    .brand-tag { color: var(--fg-muted); font-weight: 400; font-family: var(--mono); font-size: .78rem; }
+
+    /* 主题切换 */
+    .theme-toggle {
+      font-family: var(--mono); font-size: .72rem; color: var(--fg-muted);
+      background: transparent; border: 1px solid var(--border); border-radius: 5px;
+      padding: .35rem .7rem; cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    .theme-toggle:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
     main { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem 6rem; }
 
-    /* Hero */
-    .hero { padding: 4rem 0 2.5rem; border-bottom: 1px solid var(--border); }
-    .hero h1 { font-size: 2.4rem; margin: 0 0 .6rem; font-weight: 600; }
-    .hero p { font-size: 1.15rem; color: var(--muted); margin: 0; max-width: 46ch; }
+    /* Hero — 逐项对齐 gtd 姊妹站 style.css:590-601（Source Serif 4 / 600 / fluid clamp，D-W3 教训）。
+       两处显式偏离（非藏）：① h1 加 max-width 18ch —— gtd 靠两列 grid 约束 h1 到 ~55% 宽，本门户无 KPI 列，用 max-width 等价替代；
+       ② h1 加 text-wrap:balance —— 现代增强，无副作用，gtd 原文未用。 */
+    .hero { padding: 3.5rem 0 2.5rem; border-bottom: 1px solid var(--border); }
+    .hero h1 { font-family: var(--serif); font-size: clamp(1.75rem, 3.5vw, 2.75rem); font-weight: 600; line-height: 1.12; letter-spacing: -0.01em; color: var(--fg-emphasis); margin: 0 0 1.25rem; max-width: 18ch; text-wrap: balance; }
+    .hero p { font-family: var(--serif); font-style: italic; font-size: 1.0625rem; color: var(--fg-default); line-height: 1.55; margin: 0; max-width: 38ch; text-wrap: pretty; }
 
     /* 信源导航网格 */
-    .section-title { font-family: var(--mono); font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 3rem 0 1rem; }
+    .section-title { font-family: var(--mono); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-subtle); margin: 3rem 0 1.1rem; }
     .source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
-    .source-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.4rem; transition: border-color .15s; }
-    .source-card:hover { border-color: var(--accent); }
-    .source-card h3 { margin: 0 0 .4rem; font-family: var(--mono); font-size: 1.05rem; }
-    .source-card .kind { font-family: var(--mono); font-size: .68rem; color: var(--muted); border: 1px solid var(--border); border-radius: 5px; padding: .1rem .4rem; margin-left: .5rem; }
-    .source-card p { color: var(--muted); font-size: .95rem; margin: .5rem 0 1rem; }
+    .source-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; transition: border-color .15s, background-color .15s; display: block; }
+    .source-card:hover { border-color: var(--accent-primary); background: var(--bg-elevated); text-decoration: none; }
+    .source-card h3 { margin: 0 0 .5rem; font-family: var(--headline); font-size: 1.1rem; font-weight: 700; color: var(--fg-emphasis); }
+    .source-card .kind { font-family: var(--mono); font-weight: 400; font-size: .66rem; color: var(--fg-muted); border: 1px solid var(--border-mid); border-radius: 5px; padding: .12rem .45rem; margin-left: .5rem; vertical-align: middle; }
+    .source-card p { color: var(--fg-muted); font-size: .96rem; margin: .5rem 0 1rem; }
+    .source-card .go { font-family: var(--mono); font-size: .82rem; color: var(--accent-primary); }
 
     /* 最新内容流 */
     .stream { list-style: none; padding: 0; margin: 0; }
-    .stream li { padding: .9rem 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 1rem; }
-    .stream .src { font-family: var(--mono); font-size: .7rem; color: var(--pulse); }
-    .stream time { font-family: var(--mono); font-size: .8rem; color: var(--muted); white-space: nowrap; }
-    .stream-empty { color: var(--muted); font-style: italic; padding: 1rem 0; }
+    .stream li { padding: .95rem 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+    .stream a { color: var(--fg-default); }
+    .stream a:hover { color: var(--accent-primary); }
+    .stream .src { font-family: var(--mono); font-size: .68rem; color: var(--signal-success); margin-right: .5rem; text-transform: uppercase; letter-spacing: .05em; }
+    .stream time { font-family: var(--mono); font-size: .8rem; color: var(--fg-subtle); white-space: nowrap; }
+    .stream-empty { color: var(--fg-subtle); font-style: italic; padding: 1rem 0; }
   </style>
 </head>
 <body>
@@ -59,6 +142,9 @@
         <span class="brand-pulse"></span>
         <span>Trending Diggest <span class="brand-tag">/ 聚合</span></span>
       </a>
+      <button class="theme-toggle" data-testid="portal-theme-toggle" aria-label="切换深色/浅色主题" onclick="(function(){var d=document.documentElement;var dark=d.dataset.theme==='dark';if(dark){delete d.dataset.theme;localStorage.setItem('trending-theme','light')}else{d.dataset.theme='dark';localStorage.setItem('trending-theme','dark')}})()">
+        ☀ / ☾
+      </button>
     </div>
   </header>
 
@@ -76,13 +162,13 @@
       <a class="source-card" href="/github-trending/" data-testid="source-card-github-trending">
         <h3>GitHub Trending Digest <span class="kind">proxied</span></h3>
         <p>每日 GitHub Trending 深度分析——四源交叉验证、风险标签、真实使用信号。</p>
-        <span>进入 /github-trending/ →</span>
+        <span class="go">进入 /github-trending/ →</span>
       </a>
       <!-- SourceCard: claude-blog (kind=same-repo) -->
       <a class="source-card" href="/claude-blog/" data-testid="source-card-claude-blog">
         <h3>Claude Blog 译读 <span class="kind">same-repo</span></h3>
         <p>Claude 官方博客中文译读归档，附原文链接。</p>
-        <span>进入 /claude-blog/ →</span>
+        <span class="go">进入 /claude-blog/ →</span>
       </a>
     </div>
 
@@ -92,17 +178,17 @@
       <!-- DigestEntry mock：source_key / title / published_at / url。仅 same-repo 源，不含 github-trending (SC-09) -->
       <li>
         <a href="/claude-blog/posts/2026/06/2026-06-24-building-effective-human-agent-teams">
-          <span class="src">claude-blog</span> 构建高效的人机团队</a>
+          <span class="src">claude-blog</span>构建高效的人机团队</a>
         <time datetime="2026-06-24">2026-06-24</time>
       </li>
       <li>
         <a href="/claude-blog/posts/2026/06/2026-06-18-steering-claude-code">
-          <span class="src">claude-blog</span> 驾驭 Claude Code：技能、钩子、规则与子智能体</a>
+          <span class="src">claude-blog</span>驾驭 Claude Code：技能、钩子、规则与子智能体</a>
         <time datetime="2026-06-18">2026-06-18</time>
       </li>
       <li>
         <a href="/claude-blog/posts/2026/06/2026-06-05-claude-cowork-product-guide">
-          <span class="src">claude-blog</span> Claude Cowork 产品指南</a>
+          <span class="src">claude-blog</span>Claude Cowork 产品指南</a>
         <time datetime="2026-06-05">2026-06-05</time>
       </li>
     </ul>
