@@ -1,7 +1,7 @@
 ---
 schema_version: 1
 slug: aggregation-portal
-status: in_delivery
+status: done
 priority: P1
 feature_type: new-feature
 related_features: []

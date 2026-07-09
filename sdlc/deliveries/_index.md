@@ -6,10 +6,10 @@
 
 | Delivery | Feature | 类型 | lifecycle | feature_branch | updated |
 |---|---|---|---|---|---|
-| D-001-aggregation-portal | aggregation-portal | functional | in_progress | D-001-aggregation-portal | 2026-07-07 |
+| _（暂无）_ | — | — | — | — | — |
 
 ## Completed
 
 | Delivery | Feature | 类型 | lifecycle | feature_branch | updated |
 |---|---|---|---|---|---|
-| _（暂无）_ | — | — | — | — | — |
+| D-001-aggregation-portal | aggregation-portal | functional | done | D-001-aggregation-portal | 2026-07-09 |
