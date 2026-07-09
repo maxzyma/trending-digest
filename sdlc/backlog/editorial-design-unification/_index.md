@@ -1,10 +1,33 @@
 ---
 slug: editorial-design-unification
-status: collected
+status: ready
 priority: P1
 type: functional
+feature_type: functional
+related_features: [aggregation-portal]
+granularity: feature
 created: 2026-07-09
 ---
+
+## Spec 交叉验证（triage）
+
+- **相关 Feature**：aggregation-portal（单值 → related_features）
+- **关键 Spec 证据**：
+  - `specs/features/aggregation-portal/_index.md` 边界声明「拥有：本仓 Jekyll 站点骨架、门户首页、小源子站渲染」——门户/子站 UI 归本 Feature，本条目演化其 UI token 层。
+  - `specs/features/aggregation-portal/ui/prototype.html` + `ui/views/pc-portal-home.md`：现原型用自造 token（`--bg/--surface/--pulse` 深色单模式），非 theuntold 共享契约——即本条目要改的现状。
+  - `contracts.md`「视觉对齐 github-trending 卡片网格」——原意图是"对齐"，实际两套观感，本条目落实真正统一（对齐目标锁定为 theuntold 共享 editorial token，非 minima）。
+- **判定**：功能增强（UI 视觉层演化，Spec 已含 UI 但 token 层需重定）——feature_type=functional，演化 aggregation-portal。
+- **粒度**：Feature（Story>1，跨 2 仓，影响 >5 文件，github-trending 脱 minima 属结构性 UI 变更）。
+- **github-trending 归属说明**：github-trending 内容归独立仓（aggregation-portal 边界"消费不拥有"），但本次对其**样式层**套统一 token 属跨仓实现细节，纳入本 Feature 的"三站统一"目标，不新增 Feature（1:1 铁律：related_features=[aggregation-portal] 单值）。
+
+## 信源清单
+
+<!-- sources-manifest:begin -->
+### triage @ 2026-07-09
+- specs：`features/aggregation-portal/_index.md`（边界）、`ui/prototype.html` + `ui/views/pc-portal-home.md`（现状 token）、`contracts.md`（视觉对齐原意）
+- 复用源码：`projects/external/theuntold/src/layouts/BaseLayout.astro`（:root token SSoT）
+- theuntold SDLC：`wide-screen-design-system` + `site-editorial-redesign` 交付 decisions/scope
+<!-- sources-manifest:end -->
 
 # 三站统一 editorial 设计系统（复用 theuntold 共享 token 契约）
 
@@ -49,6 +72,17 @@ created: 2026-07-09
 | 任务 | covered | 三站套用 theuntold 共享 editorial token（light 默认+dark）+ 一致字体/卡片/排版语言，替换门户自造调色板与 github-trending minima |
 | 成功判据 | covered | 三站视觉统一（同 token/字体/卡片语言）；WCAG AA 不退化；github-trending 136 天历史页无回归；light 默认 + dark 可切 |
 | 边界 | covered | 纯视觉 + 样式层（不改业务逻辑/数据/路由/Worker 反代）；不改内容；不引第三方 UI 框架（照搬 theuntold token，不重造设计） |
+
+## G1 Review — 值不值得做（2026-07-09，passed）
+
+- **结论**：passed（Human 批准 → 可拉入 Delivery）。
+- **值/成本**：值 = 聚合门户"单一入口像一个站"的定位现被三种观感割裂，统一到 theuntold 已建的共享 editorial 系统即修复品牌一致性、复用现成 WCAG-AA 资产（不重造）；成本 = 跨 2 仓 + github-trending 脱 minima + 136 天历史回归。
+- **Q&A 留痕**：
+  - **Q**: 这个 UI 统一值不值得现在做（P1）？ **A**: 值。门户刚上线即暴露割裂，趁热改成本最低；复用 theuntold token 无设计重造成本。
+  - **Q**: github-trending 一并改（大改 + 历史回归风险）还是先只做门户/子站？ **A**: 一并改（Human 选）。否则 `/github-trending/` 仍浅色割裂，"单一入口"不成立；风险由 US-05 历史回归验证 + 原子上线兜底。
+  - **Q**: 对齐目标是 minima 浅色还是 theuntold editorial？ **A**: theuntold 共享 editorial token（light 纸感默认+dark）——这是 theuntold 当初就为本域名设计的归属，比 minima 更对。
+- **自审**：dc G1 dossier（2 finding + 1 probe：只做门户/子站不足 → 三站全改）；复用信源已 grounding 到 theuntold BaseLayout.astro + 两交付 decisions。
+- **粒度**：Feature（演化 aggregation-portal UI 层），5 stories，US-01/02/03/04 为 Walking Skeleton。
 
 ## Stories（初拟，triage/refine 细化）
 
