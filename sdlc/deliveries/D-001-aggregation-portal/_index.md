@@ -11,7 +11,7 @@ phases:
   define: done
   design: done
   implement: done
-  verify: pending
+  verify: done
   deliver: pending
 
 implementation:
