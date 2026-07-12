@@ -45,7 +45,7 @@ A producer must:
       "source_revision": "sha256:...",
       "archive_path": "sources/source/posts/YYYY/MM/article.md",
       "published_at": "YYYY-MM-DD",
-      "generator_version": "article-pipeline@..."
+      "generator_version": "article-pivot@..."
     }
   ]
 }
