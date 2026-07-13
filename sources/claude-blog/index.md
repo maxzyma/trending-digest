@@ -4,6 +4,7 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 
 | 日期 | 标题 | 分类 | 中文译读 | 原文 |
 |---|---|---|---|---|
+| 2026-07-10 | 在前沿工作：Cognition 为何放心让 Claude Fable 5 通宵运行 | Enterprise AI | [Markdown](posts/2026/07/2026-07-10-working-at-the-frontier-how-cognition-trusts-claude-fable-5-to-work-through-the-night.md) | [原文](https://claude.com/blog/working-at-the-frontier-how-cognition-trusts-claude-fable-5-to-work-through-the-night) |
 | 2026-07-08 | 在前沿工作：汤森路透如何为高风险专业场景打造 AI | Enterprise AI | [Markdown](posts/2026/07/2026-07-08-working-at-the-frontier-how-thomson-reuters-builds-ai-for-high--stakes-professional-work.md) | [原文](https://claude.com/blog/working-at-the-frontier-how-thomson-reuters-builds-ai-for-high--stakes-professional-work) |
 | 2026-07-08 | Anthropic 市场运营团队如何用 Claude Cowork 自动化报告与活动搭建 | Enterprise AI | [Markdown](posts/2026/07/2026-07-08-how-anthropics-marketing-operations-team-uses-claude-cowork-to-automate-reporting-and-campaign-builds.md) | [原文](https://claude.com/blog/how-anthropics-marketing-operations-team-uses-claude-cowork-to-automate-reporting-and-campaign-builds) |
 | 2026-07-07 | 人们正在如何使用 Claude Cowork | Enterprise AI | [Markdown](posts/2026/07/2026-07-07-how-people-are-using-claude-cowork.md) | [原文](https://claude.com/blog/how-people-are-using-claude-cowork) |
