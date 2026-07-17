@@ -4,6 +4,7 @@ Claude 官方博客中文译读归档。公开仓只保留公开可访问的 Mar
 
 | 日期 | 标题 | 分类 | 中文译读 | 原文 |
 |---|---|---|---|---|
+| 2026-07-16 | Anthropic 如何用 Claude Code 完成大规模代码迁移 | Claude Code | [Markdown](posts/2026/07/2026-07-16-ai-code-migration.md) | [原文](https://claude.com/blog/ai-code-migration) |
 | 2026-07-07 | 在 Claude Code 中选择模型与努力级别 | Claude Code | [Markdown](posts/2026/07/2026-07-07-claude-model-and-effort-level-in-claude-code.md) | [原文](https://claude.com/blog/claude-model-and-effort-level-in-claude-code) |
 | 2026-07-06 | Claude Fable 5 实地指南：发现你的未知 | Claude Code | [Markdown](posts/2026/07/2026-07-06-a-field-guide-to-claude-fable-finding-your-unknowns.md) | [原文](https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns) |
 | 2026-06-30 | 上手智能体循环 | Claude Code | [Markdown](posts/2026/06/2026-06-30-getting-started-with-loops.md) | [原文](https://claude.com/blog/getting-started-with-loops) |
