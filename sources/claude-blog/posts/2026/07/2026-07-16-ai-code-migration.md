@@ -231,11 +231,11 @@ Zig
 ```plaintext
 fn readConfig(allocator: std.mem.Allocator) ![]u8 {
     const buf = try allocator.alloc(u8, 1024);
-    // ...fill buf...
-    return buf; // caller must free this — but only the comment says so
+    // ...填充 buf...
+    return buf; // 调用方必须释放它——但只有注释这样说明
 }
 
-// A caller that forgets 'defer allocator.free(buf)' still compiles — the leak only surfaces at runtime.
+// 即使调用方忘记执行 'defer allocator.free(buf)'，代码仍可编译——内存泄漏只会在运行时暴露。
 ```
 
 > fn readConfig(allocator: std.mem.Allocator) ![]u8 {
@@ -253,11 +253,11 @@ Rust
 ```rust
 fn read_config() -> Vec<u8> { 
 let buf = vec![0u8; 1024]; 
-// ...fill buf... 
-buf // ownership moves to the caller; memory is freed automatically 
+// ...填充 buf... 
+buf // 所有权移交给调用方；内存会自动释放 
 } 
-// Use it after it's moved? Free it twice? Neither compiles. 
-// Forget to free it? There's no free call to forget — drop is automatic.
+// 所有权移交后继续使用？重复释放？两者都无法通过编译。 
+// 忘记释放？这里根本没有可能被忘记的释放调用——drop 会自动执行。
 ```
 
 > fn read_config() -> Vec<u8> {
