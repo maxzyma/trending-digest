@@ -1,0 +1,3631 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2024-04-12-diffusion-video",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2024-04-12T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:c5ccac241854ec42bef641ed99d372334f0504150c3cfcf1c11c51d77ff6bd73",
+    "fetched_at": "2026-07-14T02:05:50.014336+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Diffusion Models for Video Generation",
+    "title_en": "Diffusion Models for Video Generation",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-b17b49293ee4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Diffusion models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " have demonstrated strong results on image synthesis in past years. Now the research community has started working on a harder task—using it for video generation. The task itself is a superset of the image case, since an image is a video of 1 frame, and it is much more challenging because:"
+          }
+        ]
+      },
+      {
+        "id": "list-2b4189e94642",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-77b6926d6ba0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "It has extra requirements on temporal consistency across frames in time, which naturally demands more world knowledge to be encoded into the model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-79ec3fb3446c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In comparison to text or images, it is more difficult to collect large amounts of high-quality, high-dimensional video data, let along text-video pairs."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-d9357a0ea126",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-5aeebc72b76e",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "\n🥑 Required Pre-read: Please make sure you have read the previous blog on "
+                  },
+                  {
+                    "type": "link",
+                    "attrs": {
+                      "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "“What are Diffusion Models?”"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "text": " for image generation before continue here.\n"
+                  }
+                ]
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "line_break"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-24acb5c9d6f2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Video Generation Modeling from Scratch"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c6333a3f4486",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First let’s review approaches for designing and training diffusion video models from scratch, meaning that we do not rely on pre-trained image generators."
+          }
+        ]
+      },
+      {
+        "id": "heading-c1ce8cd96c9e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Parameterization & Sampling Basics"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-ce1291e4d898",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here we use a slightly different variable definition from the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "previous post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", but the math stays the same. Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} \\sim q_\\text{real}"
+          },
+          {
+            "type": "text",
+            "text": " be a data point sampled from the real data distribution. Now we are adding Gaussian noise in small amount in time, creating a sequence of noisy variations of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ", denoted as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{\\mathbf{z}_t \\mid t =1 \\dots, T\\}"
+          },
+          {
+            "type": "text",
+            "text": ", with increasing amount of noise as "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " increases and the last "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(\\mathbf{z}_T) \\sim \\mathcal{N}(\\mathbf{0}, \\mathbf{I})"
+          },
+          {
+            "type": "text",
+            "text": ". The noise-adding forward process is a Gaussian process. Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_t, \\sigma_t"
+          },
+          {
+            "type": "text",
+            "text": " define a differentiable noise schedule of the Gaussian process:"
+          }
+        ]
+      },
+      {
+        "id": "math-cbf8d7195b69",
+        "type": "math",
+        "attrs": {
+          "latex": "q(\\mathbf{z}_t \\vert \\mathbf{x}) = \\mathcal{N}(\\mathbf{z}_t; \\alpha_t \\mathbf{x}, \\sigma^2_t\\mathbf{I})"
+        }
+      },
+      {
+        "id": "paragraph-7f4de8ec417a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To represent "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(\\mathbf{z}_t \\vert \\mathbf{z}_s)"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "0 \\leq s < t \\leq T"
+          },
+          {
+            "type": "text",
+            "text": ", we have:"
+          }
+        ]
+      },
+      {
+        "id": "math-5c65072e4e6f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{z}_t &= \\alpha_t \\mathbf{x} + \\sigma_t\\boldsymbol{\\epsilon}_t \\\\\n\\mathbf{z}_s &= \\alpha_s \\mathbf{x} + \\sigma_s\\boldsymbol{\\epsilon}_s \\\\\n\\mathbf{z}_t &= \\alpha_t \\Big(\\frac{\\mathbf{z}_s - \\sigma_s\\boldsymbol{\\epsilon}_s}{\\alpha_s}\\Big) + \\sigma_t\\boldsymbol{\\epsilon}_t \\\\\n\\mathbf{z}_t &= \\frac{\\alpha_t}{\\alpha_s}\\mathbf{z}_s + \\sigma_t\\boldsymbol{\\epsilon}_t - \\frac{\\alpha_t\\sigma_s}{\\alpha_s} \\boldsymbol{\\epsilon}_s \\\\\n\\text{Thus }q(\\mathbf{z}_t \\vert \\mathbf{z}_s) &= \\mathcal{N}\\Big(\\mathbf{z}_t; \\frac{\\alpha_t}{\\alpha_s}\\mathbf{z}_s, \\big(1 - \\frac{\\alpha^2_t\\sigma^2_s}{\\sigma^2_t\\alpha^2_s}\\big)\\sigma^2_t \\mathbf{I}\\Big)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-291a08d89612",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let the log signal-to-noise-ratio be "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda_t = \\log[\\alpha^2_t / \\sigma^2_t]"
+          },
+          {
+            "type": "text",
+            "text": ", we can represent the DDIM ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.02502"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Song et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") update as:"
+          }
+        ]
+      },
+      {
+        "id": "math-749751325ff5",
+        "type": "math",
+        "attrs": {
+          "latex": "q(\\mathbf{z}_t \\vert \\mathbf{z}_s) = \\mathcal{N}\\Big(\\mathbf{z}_t; \\frac{\\alpha_t}{\\alpha_s}\\mathbf{z}_s, \\sigma^2_{t\\vert s} \\mathbf{I}\\Big) \\quad\n\\text{where }\\sigma^2_{t\\vert s} = (1 - e^{\\lambda_t - \\lambda_s})\\sigma^2_t"
+        }
+      },
+      {
+        "id": "paragraph-0c5962ab6204",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There is a special "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{v}"
+          },
+          {
+            "type": "text",
+            "text": "-prediction ("
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{v} = \\alpha_t \\boldsymbol{\\epsilon} - \\sigma_t \\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ") parameterization, proposed by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2202.00512"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Salimans & Ho (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". It has been shown to be helpful for avoiding color shift in video generation compared to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{\\epsilon}"
+          },
+          {
+            "type": "text",
+            "text": "-parameterization."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c2985b669198",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{v}"
+          },
+          {
+            "type": "text",
+            "text": "-parameterization is derived with a trick in the angular coordinate. First, we define "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi_t = \\arctan(\\sigma_t / \\alpha_t)"
+          },
+          {
+            "type": "text",
+            "text": " and thus we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_\\phi = \\cos\\phi, \\sigma_t = \\sin\\phi, \\mathbf{z}_\\phi = \\cos\\phi \\mathbf{x} + \\sin\\phi\\boldsymbol{\\epsilon}"
+          },
+          {
+            "type": "text",
+            "text": ". The velocity of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_\\phi"
+          },
+          {
+            "type": "text",
+            "text": " can be written as:"
+          }
+        ]
+      },
+      {
+        "id": "math-e5d370c0e1e0",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{v}_\\phi = \\nabla_\\phi \\mathbf{z}_\\phi = \\frac{d\\cos\\phi}{d\\phi} \\mathbf{x} + \\frac{d\\sin\\phi}{d\\phi}\\boldsymbol{\\epsilon} = \\cos\\phi\\boldsymbol{\\epsilon} -\\sin\\phi\\mathbf{x}"
+        }
+      },
+      {
+        "id": "paragraph-6c9f34bc3746",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then we can infer,"
+          }
+        ]
+      },
+      {
+        "id": "math-8fc836c7670f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\sin\\phi\\mathbf{x} \n&= \\cos\\phi\\boldsymbol{\\epsilon}  - \\mathbf{v}_\\phi \\\\\n&= \\frac{\\cos\\phi}{\\sin\\phi}\\big(\\mathbf{z}_\\phi - \\cos\\phi\\mathbf{x}\\big) - \\mathbf{v}_\\phi \\\\\n\\sin^2\\phi\\mathbf{x} \n&= \\cos\\phi\\mathbf{z}_\\phi - \\cos^2\\phi\\mathbf{x} - \\sin\\phi \\mathbf{v}_\\phi \\\\\n\\mathbf{x} &= \\cos\\phi\\mathbf{z}_\\phi - \\sin\\phi\\mathbf{v}_\\phi \\\\\n\\text{Similarly }\n\\boldsymbol{\\epsilon} &= \\sin\\phi\\mathbf{z}_\\phi + \\cos\\phi \\mathbf{v}_\\phi\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-48c2b0e2a4a4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The DDIM update rule is updated accordingly,"
+          }
+        ]
+      },
+      {
+        "id": "math-728f56cc1ce0",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{z}_{\\phi_s} \n&= \\cos\\phi_s\\hat{\\mathbf{x}}_\\theta(\\mathbf{z}_{\\phi_t}) + \\sin\\phi_s\\hat{\\epsilon}_\\theta(\\mathbf{z}_{\\phi_t}) \\quad\\quad{\\small \\text{; }\\hat{\\mathbf{x}}_\\theta(.), \\hat{\\epsilon}_\\theta(.)\\text{ are two models to predict }\\mathbf{x}, \\boldsymbol{\\epsilon}\\text{ based on }\\mathbf{z}_{\\phi_t}}\\\\\n&= \\cos\\phi_s \\big( \\cos\\phi_t \\mathbf{z}_{\\phi_t} - \\sin\\phi_t \\hat{\\mathbf{v}}_\\theta(\\mathbf{z}_{\\phi_t} ) \\big) +\n\\sin\\phi_s \\big( \\sin\\phi_t \\mathbf{z}_{\\phi_t} + \\cos\\phi_t \\hat{\\mathbf{v}}_\\theta(\\mathbf{z}_{\\phi_t} ) \\big) \\\\\n&= {\\color{red} \\big( \\cos\\phi_s\\cos\\phi_t + \\sin\\phi_s\\sin\\phi_t \\big)} \\mathbf{z}_{\\phi_t} + \n{\\color{green} \\big( \\sin\\phi_s \\cos\\phi_t - \\cos\\phi_s \\sin\\phi_t \\big)} \\hat{\\mathbf{v}}_\\theta(\\mathbf{z}_{\\phi_t} ) \\\\\n&= {\\color{red} cos(\\phi_s - \\phi_t)} \\mathbf{z}_{\\phi_t} +\n{\\color{green} \\sin(\\phi_s - \\phi_t)} \\hat{\\mathbf{v}}_\\theta(\\mathbf{z}_{\\phi_t}) \\quad\\quad{\\small \\text{; trigonometric identity functions.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-418b8acab2d8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/v-param.png",
+          "alt": "Visualizing how the diffusion update step works in the angular coordinate, where DDIM evolves $\\mathbf{z}_{\\phi_s}$ by moving it along the $-\\hat{\\mathbf{v}}_{\\phi_t}$ direction. (Image source: Salimans & Ho, 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-6a84cf839305",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{v}"
+          },
+          {
+            "type": "text",
+            "text": "-parameterization for the model is to predict "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{v}_\\phi = \\cos\\phi\\boldsymbol{\\epsilon} -\\sin\\phi\\mathbf{x} = \\alpha_t\\boldsymbol{\\epsilon} - \\sigma_t\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-221e0f363b89",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the case of video generation, we need the diffusion model to run multiple steps of upsampling for extending video length or increasing the frame rate. This requires the capability of sampling a second video "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^b"
+          },
+          {
+            "type": "text",
+            "text": " conditioned on the first "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^a"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^b \\sim p_\\theta(\\mathbf{x}^b \\vert \\mathbf{x}^a)"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^b"
+          },
+          {
+            "type": "text",
+            "text": " might be an autoregressive extension of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^a"
+          },
+          {
+            "type": "text",
+            "text": " or be the missing frames in-between for a video "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^a"
+          },
+          {
+            "type": "text",
+            "text": " at a low frame rate."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-101130f98435",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The sampling of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_b"
+          },
+          {
+            "type": "text",
+            "text": " needs to condition on "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_a"
+          },
+          {
+            "type": "text",
+            "text": " besides its own corresponding noisy variable. "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Video Diffusion Models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VDM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.03458"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ho & Salimans, et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") proposed the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "reconstruction guidance"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " method using an adjusted denoising model such that the sampling of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^b"
+          },
+          {
+            "type": "text",
+            "text": " can be properly conditioned on "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^a"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-4adb8c7157af",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbb{E}_q [\\mathbf{x}_b \\vert \\mathbf{z}_t, \\mathbf{x}^a] &= \\mathbb{E}_q [\\mathbf{x}^b \\vert \\mathbf{z}_t] + \\frac{\\sigma_t^2}{\\alpha_t} \\nabla_{\\mathbf{z}^b_t} \\log q(\\mathbf{x}^a \\vert \\mathbf{z}_t) \\\\\nq(\\mathbf{x}^a \\vert \\mathbf{z}_t) &\\approx \\mathcal{N}\\big[\\hat{\\mathbf{x}}^a_\\theta (\\mathbf{z}_t), \\frac{\\sigma_t^2}{\\alpha_t^2}\\mathbf{I}\\big] & {\\small \\text{; the closed form is unknown.}}\\\\\n\\tilde{\\mathbf{x}}^b_\\theta (\\mathbf{z}_t) &= \\hat{\\mathbf{x}}^b_\\theta (\\mathbf{z}_t) - \\frac{w_r \\alpha_t}{2} \\nabla_{\\mathbf{z}_t^b} \\| \\mathbf{x}^a - \\hat{\\mathbf{x}}^a_\\theta (\\mathbf{z}_t) \\|^2_2 & {\\small \\text{; an adjusted denoising model for }\\mathbf{x}^b}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-39e80acf4013",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\mathbf{x}}^a_\\theta (\\mathbf{z}_t), \\hat{\\mathbf{x}}^b_\\theta (\\mathbf{z}_t)"
+          },
+          {
+            "type": "text",
+            "text": " are reconstructions of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^a, \\mathbf{x}^b"
+          },
+          {
+            "type": "text",
+            "text": " provided by the denoising model. And "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_r"
+          },
+          {
+            "type": "text",
+            "text": " is a weighting factor and a large one "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_r >1"
+          },
+          {
+            "type": "text",
+            "text": " is found to improve sample quality. Note that it is also possible to simultaneously condition on low resolution videos to extend samples to be at the high resolution using the same reconstruction guidance method."
+          }
+        ]
+      },
+      {
+        "id": "heading-d40432d069f1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model Architecture: 3D U-Net & DiT"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-1e29cecc7ddc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to text-to-image diffusion models, U-net and Transformer are still two "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#model-architecture"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "common architecture choices"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". There are a series of diffusion video modeling papers from Google based on the U-net architecture and a recent Sora model from OpenAI leveraged the Transformer architecture."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fafd4464142c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VDM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.03458"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ho & Salimans, et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") adopts the standard diffusion model setup but with an altered architecture suitable for video modeling. It extends the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#model-architecture"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "2D U-net"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to work for 3D data ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.06650"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Cicek et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), where each feature map represents a 4D tensor of frames x height x width x channels. This 3D U-net is factorized over space and time, meaning that each layer only operates on the space or time dimension, but not both:"
+          }
+        ]
+      },
+      {
+        "id": "list-901bb0855e8b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a37bc574b201",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Processing "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Space"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ":\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-f63163758b16",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-2556ff2c2d14",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Each old 2D convolution layer as in the 2D U-net is extended to be space-only 3D convolution; precisely, 3x3 convolutions become 1x3x3 convolutions."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-8e40879c6a60",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Each spatial attention block remains as attention over space, where the first axis ("
+                      },
+                      {
+                        "type": "inline_code",
+                        "text": "frames"
+                      },
+                      {
+                        "type": "text",
+                        "text": ") is treated as batch dimension."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-138b04354119",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Processing "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Time"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ":\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-39d37af22afe",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-1e4e7d470cc3",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "A temporal attention block is added after each spatial attention block. It performs attention over the first axis ("
+                      },
+                      {
+                        "type": "inline_code",
+                        "text": "frames"
+                      },
+                      {
+                        "type": "text",
+                        "text": ") and treats spatial axes as the batch dimension. The "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#relative-position-encoding"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "relative position"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " embedding is used for tracking the order of frames. The temporal attention block is important for the model to capture good temporal coherence."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-daa807f18138",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/3D-U-net.png",
+          "alt": "The 3D U-net architecture. The noisy video $\\mathbf{z}_t$ , conditioning information $\\boldsymbol{c}$ and the log signal-to-noise ratio (log-SNR) $\\lambda_t$ are inputs to the network. The channel multipliers $M_1, \\dots, M_K$ represent the channel counts across layers. (Image source: Salimans & Ho, 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-5f68bf98486d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Imagen Video"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.02303"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ho, et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is constructed on a cascade of diffusion models to enhance the video generation quality and upgrades to output 1280x768 videos at 24 fps. The Imagen Video architecture consists of the following components, counting 7 diffusion models in total."
+          }
+        ]
+      },
+      {
+        "id": "list-fdad7ab65012",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-fec45e3d19ed",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A frozen "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#t5"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "T5"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " text encoder to provide text embedding as the conditioning input."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f507c5f36048",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A base video diffusion model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-44b4de920478",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A cascade of interleaved "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "spatial and temporal super-resolution"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " diffusion models, including 3 TSR (Temporal Super-Resolution) and 3 SSR (Spatial Super-Resolution) components."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-16422de02cea",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/imagen-video.png",
+          "alt": "The cascaded sampling pipeline in Imagen Video. In practice, the text embeddings are injected into all components, not just the base model. (Image source: Ho et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-815aeafe44ec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The base denoising models performs spatial operations over all the frames with shared parameters simultaneously and then the temporal layer mixes activations across frames to better capture temporal coherence, which is found to work better than frame-autoregressive approaches."
+          }
+        ]
+      },
+      {
+        "id": "image-19fb034fdcdc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/imagen-video-Unet-block.png",
+          "alt": "The architecture of one space-time separable block in the Imagen Video diffusion model. (Image source: Ho et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-07d3a49750a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both SSR and TSR models condition on the upsampled inputs concatenated with noisy data "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_t"
+          },
+          {
+            "type": "text",
+            "text": " channel-wise. SSR upsamples by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://chao-ji.github.io/jekyll/update/2018/07/19/BilinearResize.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "bilinear resizing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", while TSR upsamples by repeating the frames or filling in blank frames."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d6421d744784",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Imagen Video also applies "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#prog-distll"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "progressive distillation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to speed up sampling and each distillation iteration can reduce the required sampling steps by half. Their experiments were able to distill all 7 video diffusion models down to just 8 sampling steps per model without any noticeable loss in perceptual quality."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-40b411af2f78",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To achieve better scaling efforts, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sora"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/research/video-generation-models-as-world-simulators"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Brooks et al. 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") leverages "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#model-architecture"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "DiT (Diffusion Transformer)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " architecture that operates on spacetime patches of video and image latent codes. Visual input is represented as a sequence of spacetime patches which act as Transformer input tokens."
+          }
+        ]
+      },
+      {
+        "id": "image-f491dbd26ea9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/sora.png",
+          "alt": "Sora is a diffusion transformer model. (Image source: Brooks et al. 2024 )"
+        }
+      },
+      {
+        "id": "heading-615f77a3bb96",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adapting Image Models to Generate Videos"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-896e58fb00f6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another prominent approach for diffusion video modeling is to “inflate” a pre-trained image-to-text diffusion model by inserting temporal layers and then we can choose to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "only"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " fine-tune new layers on video data, or avoid extra training at all. The prior knowledge of text-image pairs is inherited by the new model and thus it can help alleviate the requirement on text-video pair data."
+          }
+        ]
+      },
+      {
+        "id": "heading-e6cec79e1bac",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fine-tuning on Video Data"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c869d01d4dd8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Make-A-Video"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2209.14792"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Singer et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") extends a pre-trained diffusion image model with a temporal dimension, consisting of three key components:"
+          }
+        ]
+      },
+      {
+        "id": "list-942a01b17800",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f35b33575778",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A base text-to-image model trained on text-image pair data."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d2d6ff9b1458",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Spatiotemporal convolution and attention layers to extend the network to cover temporal dimension."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7753b67e6ec1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A frame interpolation network for high frame rate generation"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-145d3926a4db",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/make-a-video.png",
+          "alt": "The illustration of Make-A-Video pipeline. (Image source: Singer et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-c9cd1e645cb0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final video inference scheme can be formulated as:"
+          }
+        ]
+      },
+      {
+        "id": "math-5ef8ca956f66",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{\\mathbf{y}}_t = \\text{SR}_h \\circ \\text{SR}^t_l \\circ \\uparrow_F \\circ D^t \\circ P \\circ (\\hat{\\mathbf{x}}, \\text{CLIP}_\\text{text}(\\mathbf{x}))"
+        }
+      },
+      {
+        "id": "paragraph-fd387ea20653",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where:"
+          }
+        ]
+      },
+      {
+        "id": "list-73b2a04c6d8a",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-d3362ae6185f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}"
+              },
+              {
+                "type": "text",
+                "text": " is the input text."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6bc8a41e206f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\hat{\\mathbf{x}}"
+              },
+              {
+                "type": "text",
+                "text": " is the BPE-encoded text."
+              }
+            ]
+          },
+          {
+            "id": "list-item-43788ec33902",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\text{CLIP}_\\text{text}(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the CLIP text encoder, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_e = \\text{CLIP}_\\text{text}(\\mathbf{x})"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-93cd07754fe7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "P(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the prior, generating image embedding "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{y}_e"
+              },
+              {
+                "type": "text",
+                "text": " given text embedding "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_e"
+              },
+              {
+                "type": "text",
+                "text": " and BPE encoded text "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\hat{\\mathbf{x}}"
+              },
+              {
+                "type": "text",
+                "text": " : "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{y}_e = P(\\mathbf{x}_e, \\hat{\\mathbf{x}})"
+              },
+              {
+                "type": "text",
+                "text": ". This part is trained on text-image pair data and not fine-tuned on video data."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1ee21be6f2e5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "D^t(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the spatiotemporal decoder that generates a series of 16 frames, where each frame is a low-resolution 64x64 RGB image "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\hat{\\mathbf{y}}_l"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ec298793e41f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\uparrow_F(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the frame interpolation network, increasing the effective frame rate by interpolating between generated frames. This is a fine-tuned model for the task of predicting masked frames for video upsampling."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c72667711a47",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\text{SR}_h(.), \\text{SR}^t_l(.)"
+              },
+              {
+                "type": "text",
+                "text": " are the spatial and spatiotemporal super-resolution models, increasing the image resolution to 256x256 and 768x768, respectively."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ba9bb4375ce9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\hat{\\mathbf{y}}_t"
+              },
+              {
+                "type": "text",
+                "text": " is the final generated video."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4ba2ccc88630",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Spatiotemporal SR layers contain pseudo-3D convo layers and pseudo-3D attention layers:"
+          }
+        ]
+      },
+      {
+        "id": "list-0c5aa7a23ff8",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-8b8e34da7e0c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Pseudo-3D convo layer : Each spatial 2D convo layer (initialized from the pre-training image model) is followed by a temporal 1D layer (initialized as the identity function). Conceptually, the convo 2D layer first generates multiple frames and then frames are reshaped to be a video clip."
+              }
+            ]
+          },
+          {
+            "id": "list-item-42dcf141e380",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Pseudo-3D attention layer: Following each (pre-trained) spatial attention layer, a temporal attention layer is stacked and used to approximate a full spatiotemporal attention layer."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-9fb12328d623",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/make-a-video-layers.png",
+          "alt": "How pseudo-3D convolution (left) and attention (right) layers work. (Image source: Singer et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-53986286e83e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They can be represented as:"
+          }
+        ]
+      },
+      {
+        "id": "math-a110bd0de681",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\text{Conv}_\\text{P3D} &= \\text{Conv}_\\text{1D}(\\text{Conv}_\\text{2D}(\\mathbf{h}) \\circ T) \\circ T \\\\\n\\text{Attn}_\\text{P3D} &= \\text{flatten}^{-1}(\\text{Attn}_\\text{1D}(\\text{Attn}_\\text{2D}(\\text{flatten}(\\mathbf{h})) \\circ T) \\circ T)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-fbd41d99df21",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where an input tensor "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h} \\in \\mathbb{R}^{B\\times C \\times F \\times H \\times W}"
+          },
+          {
+            "type": "text",
+            "text": "  (corresponding to batch size, channels, frames, height and weight); and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\circ T"
+          },
+          {
+            "type": "text",
+            "text": " swaps between temporal and spatial dimensions; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{flatten}(.)"
+          },
+          {
+            "type": "text",
+            "text": " is a matrix operator to convert "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}"
+          },
+          {
+            "type": "text",
+            "text": " to be "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}’ \\in \\mathbb{R}^{B \\times C \\times F \\times HW}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{flatten}^{-1}(.)"
+          },
+          {
+            "type": "text",
+            "text": " reverses that process."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-eba11d5be79a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During training, different components of Make-A-Video pipeline are trained independently."
+          }
+        ]
+      },
+      {
+        "id": "list-31a2789133fa",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-2ffc5d14cbfe",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Decoder "
+              },
+              {
+                "type": "inline_math",
+                "text": "D^t"
+              },
+              {
+                "type": "text",
+                "text": ", prior "
+              },
+              {
+                "type": "inline_math",
+                "text": "P"
+              },
+              {
+                "type": "text",
+                "text": " and two super-resolution components "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\text{SR}_h, \\text{SR}^t_l"
+              },
+              {
+                "type": "text",
+                "text": " are first trained on images alone, without paired text."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c03e631e529c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Next the new temporal layers are added, initialized as identity function, and then fine-tuned on unlabeled video data."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2ca42dac00e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Tune-A-Video"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openaccess.thecvf.com/content/ICCV2023/html/Wu_Tune-A-Video_One-Shot_Tuning_of_Image_Diffusion_Models_for_Text-to-Video_Generation_ICCV_2023_paper.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wu et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") inflates a pre-trained image diffusion model to enable one-shot video tuning: Given a video containing "
+          },
+          {
+            "type": "inline_math",
+            "text": "m"
+          },
+          {
+            "type": "text",
+            "text": " frames, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{V} = \\{v_i \\mid i = 1, \\dots, m\\}"
+          },
+          {
+            "type": "text",
+            "text": ", paired with a descriptive prompt "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": ", the task is to generate a new video "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{V}^*"
+          },
+          {
+            "type": "text",
+            "text": " based on a slightly edited & related text prompt "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau^*"
+          },
+          {
+            "type": "text",
+            "text": ". For example, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": " = "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"A man is skiing\""
+          },
+          {
+            "type": "text",
+            "text": " can be extended to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau^*"
+          },
+          {
+            "type": "text",
+            "text": "="
+          },
+          {
+            "type": "inline_code",
+            "text": "\"Spiderman is skiing on the beach\""
+          },
+          {
+            "type": "text",
+            "text": ". Tune-A-Video is meant to be used for object editing, background change, and style transfer."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-757834fd2e61",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Besides inflating the 2D convo layer, the U-Net architecture of Tune-A-Video incorporates the ST-Attention (spatiotemporal attention) block to capture temporal consistency by querying relevant positions in previous frames. Given latent features of frame "
+          },
+          {
+            "type": "inline_math",
+            "text": "v_i"
+          },
+          {
+            "type": "text",
+            "text": ", previous frames "
+          },
+          {
+            "type": "inline_math",
+            "text": "v_{i-1}"
+          },
+          {
+            "type": "text",
+            "text": " and the first frame "
+          },
+          {
+            "type": "inline_math",
+            "text": "v_1"
+          },
+          {
+            "type": "text",
+            "text": " are projected to query "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{Q}"
+          },
+          {
+            "type": "text",
+            "text": ", key "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{K}"
+          },
+          {
+            "type": "text",
+            "text": " and value "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{V}"
+          },
+          {
+            "type": "text",
+            "text": ", the ST-attention is defined as:"
+          }
+        ]
+      },
+      {
+        "id": "math-1827f4c898dd",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n&\\mathbf{Q} = \\mathbf{W}^Q \\mathbf{z}_{v_i}, \\quad \\mathbf{K} = \\mathbf{W}^K [\\mathbf{z}_{v_1}, \\mathbf{z}_{v_{i-1}}], \\quad \\mathbf{V} = \\mathbf{W}^V [\\mathbf{z}_{v_1}, \\mathbf{z}_{v_{i-1}}] \\\\\n&\\mathbf{O} = \\text{softmax}\\Big(\\frac{\\mathbf{Q} \\mathbf{K}^\\top}{\\sqrt{d}}\\Big) \\cdot \\mathbf{V}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-8b74e9c743a7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/tune-a-video.png",
+          "alt": "The Tune-A-Video architecture overview. It first runs a light-weighted fine-tuning stage on a single video before the sampling stage. Note that the entire temporal self-attention (T-Attn) layers get fine-tuned because they are newly added, but only query projections in ST-Attn and Cross-Attn are updated during fine-tuning to preserve prior text-to-image knowledge. ST-Attn improves spatial-temporal consistency, Cross-Attn refines text-video alignment. (Image source: Wu et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-e86d146a90a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Gen-1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " model  ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.03011"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Esser et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") by Runway targets the task of editing a given video according to text inputs. It decomposes the consideration of "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "structure"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "content"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of a video "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{x} \\mid s, c)"
+          },
+          {
+            "type": "text",
+            "text": " for generation conditioning. However, to do a clear decomposition of these two aspects is not easy."
+          }
+        ]
+      },
+      {
+        "id": "list-93e67f0c4ff4",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-0e90e53fcbd2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Content"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_math",
+                "text": "c"
+              },
+              {
+                "type": "text",
+                "text": " refers to appearance and semantics of the video, that is sampled from the text for conditional editing. CLIP embedding of the frame is a good representation of content, and stays largely orthogonal to structure traits."
+              }
+            ]
+          },
+          {
+            "id": "list-item-270d5ef2bd79",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Structure"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_math",
+                "text": "s"
+              },
+              {
+                "type": "text",
+                "text": " depicts greometry and dynamics, including shapes, locations, temporal changes of objects, and "
+              },
+              {
+                "type": "inline_math",
+                "text": "s"
+              },
+              {
+                "type": "text",
+                "text": " is sampled from the input video. Depth estimation or other task-specific side information (e.g. human body pose or face landmarks for human video synthesis) can be used."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2312a0f7befc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The architecture changes in Gen-1 are quite standard, i.e. adding 1D temporal convo layer after each 2D spatial convo layer in its residual blocks and adding 1D temporal attention block after each 2D spatial attention block in its attention blocks. During training, the structure variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " is concatenated with the diffusion latent variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": ", where the content variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " is provided in the cross-attention layer. At inference time, the clip embedding is converted via a prior to convert CLIP text embedding to be CLIP image embedding."
+          }
+        ]
+      },
+      {
+        "id": "image-ba5564dd6399",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/gen-1.png",
+          "alt": "The overview of the Gen-1 model training pipeline. (Image source: Esser et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-6c561c7f23cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Video LDM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2304.08818"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Blattmann et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") trains a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#latent-variable-space"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "LDM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Latent diffusion models) image generator first. Then the model is fine-tuned to produce videos with a temporal dimension added. The fine-tuning only applies to these newly added temporal layers on encoded image sequences. The temporal layers "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{l^i_\\phi \\mid i = \\ 1, \\dots, L\\}"
+          },
+          {
+            "type": "text",
+            "text": " in the Video LDM (See Fig. 10) are interleaved with existing spatial layers "
+          },
+          {
+            "type": "inline_math",
+            "text": "l^i_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " which stays "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "frozen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " during fine-tuning. That’s being said, we only fine-tune the new parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " but not the pre-trained image backbone model parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". The pipeline of Video LDM first generates key frames at low fps and then processes through 2 steps of latent frame interpolations to increase fps."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-de1eab18f5cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The input sequence of length "
+          },
+          {
+            "type": "inline_math",
+            "text": "T"
+          },
+          {
+            "type": "text",
+            "text": " is interpreted as a batch of images (i.e. "
+          },
+          {
+            "type": "inline_math",
+            "text": "B \\cdot T"
+          },
+          {
+            "type": "text",
+            "text": ") for the base image model "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and then gets reshaped into video format for "
+          },
+          {
+            "type": "inline_math",
+            "text": "l^i_\\phi"
+          },
+          {
+            "type": "text",
+            "text": " temporal layers. There is a skip connection leads to a combination of temporal layer output "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}’"
+          },
+          {
+            "type": "text",
+            "text": " and the spatial output "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": " via a learned merging parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": ". There are two types of temporal mixing layers implemented in practice: (1) temporal attention and (2) residual blocks based on 3D convolutions."
+          }
+        ]
+      },
+      {
+        "id": "image-2b9ebd1b269b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/video-LDM.png",
+          "alt": "A pre-training LDM for image synthesis is extended to be a video generator. $B, T, C, H, W$ are batch size, sequence length, channels, height and width, respectively. $\\mathbf{c}_S$ is an optional conditioning/context frame. (Image source: Blattmann et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-49d0537b769a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, there is a remaining issue with LDM’s pretrainined autoencoder which only sees images never videos. Naively using that for video generation can cause flickering artifacts without good temporal coherence. So Video LDM adds additional temporal layers into the decoder and fine-tuned on video data with a patch-wise temporal discriminator built from 3D convolutions, while the encoder remains unchanged so that we still can reuse the pretrained LDM. During temporal decoder fine-tuning, the frozen encoder processes each frame in the video independently, and enforce temporally coherent reconstructions across frames with a video-aware discriminator."
+          }
+        ]
+      },
+      {
+        "id": "image-1c095e29829e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/video-LDM-autoencoder.png",
+          "alt": "The training pipeline of autoencoder in video latent diffusion models. The decoder is fine-tuned to have temporal coherency with a new across-frame discriminator while the encoder stays frozen. (Image source: Blattmann et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-1a02af94a994",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to Video LDM, the architecture design of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Stable Video Diffusion"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "SVD"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2311.15127"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Blattmann et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is also based on LDM with temporal layers inserted after every spatial convolution and attention layer, but SVD fine-tunes the entire model. There are three stages for training video LDMs:"
+          }
+        ]
+      },
+      {
+        "id": "list-6f4984a527d5",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-188eec37c820",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Text-to-image pretraining"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is important and helps improve both quality and prompt following."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0856c991f1ee",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Video pretraining"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is beneficial to be separated and should ideally occur on a larger scale, curated dataset."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3d2646deb24e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "High-quality video finetuning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " works with a smaller, pre-captioned video of high visual fidelity."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-af44b999553d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SVD specially emphasizes the critical role of "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "dataset curation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in model performance. They applied a cut detection pipeline to get more cuts per video and then applied three different captioner models: (1) CoCa for mid-frame, (2) V-BLIP for a video caption, and (3) LLM based captioning based on previous two captions. Then they were able to continue to improve video datasets, by removing clips with less motion (filtered by low optical flow scores calculated at 2 fps), excessive text presence (apply optical character recognition to identify videos with lots of text), or generally low aesthetic value (annotate the first, middle, and last frames of each clip with CLIP embeddings and calculate aesthetics scores & text-image similarities). The experiments showed that a filtered, higher quality dataset leads to better model quality, even when this dataset is much smaller."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2202f92e5674",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The key challenge of generating distant key frames first and then adding interpolation with temporal super-resolution is how to maintain high-quality temporal consistency. "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Lumiere"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2401.12945"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bar-Tal et al. 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") instead adopts a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "space-time U-Net (STUNet)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " architecture that generates the entire temporal duration of the video "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "at once"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " through a single pass, removing the dependency on TSR (temporal super-resolution) components. STUNet downsamples the video in both time and space dimensions and thus expensive computation happens in a compact time-space latent space."
+          }
+        ]
+      },
+      {
+        "id": "image-7abd7ef09630",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/lumiere.png",
+          "alt": "Lumiere removes TSR (temporal super-resolution) models. The inflated SSR network can operate only on short segments of the video due to memory constraints and thus SSR models operate on a set of shorter but overlapped video snippets. (Image source: Bar-Tal et al. 2024 )"
+        }
+      },
+      {
+        "id": "paragraph-1369e9b6336d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "STUNet inflates a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "pretrained"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " text-to-image U-net to be able to downsample and upsample videos at both time and space dimensions. Convo-based blocks consist of pre-trained text-to-image layers, followed by a factorized space-time convolution. And attention-based blocks at the coarsest U-Net level contains the pre-trained text-to-image, followed by temporal attention. Further training "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "only"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " happens with the newly added layers."
+          }
+        ]
+      },
+      {
+        "id": "image-e9e6058bf66a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/lumiere-STUnet.png",
+          "alt": "The architecture of (a) Space-Time U-Net (STUNet), (b) the convolution-based block, and (c) the attention-based block. (Image source: Bar-Tal et al. 2024 )"
+        }
+      },
+      {
+        "id": "heading-a72bb89bc7da",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training-Free Adaptation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e4e2972f591e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Somehow surprisingly, it is possible to adapt a pre-trained text-to-image model to output videos without any training 🤯."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fb1093ce249b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we naively sample a sequence of latent codes at random and then construct a video of decoded corresponding images, there is no guarantee in the consistency in objects and semantics in time. "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Text2Video-Zero"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2303.13439"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Khachatryan et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") enables zero-shot, training-free video generation by enhancing a pre-trained image diffusion model with two key mechanisms for temporal consistency:"
+          }
+        ]
+      },
+      {
+        "id": "list-44005b5a7eb7",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-1c0ca140ba32",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sampling the sequence of latent codes with "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "motion dynamics"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to keep the global scene and the background time consistent;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-84f906001120",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reprogramming frame-level self-attention using a "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "new cross-frame attention"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " of each frame on the first frame, to preserve the context, appearance, and identity of the foreground object."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-b1c162b12850",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/text2video-zero.png",
+          "alt": "An overview of the Text2Video-Zero pipeline. (Image source: Khachatryan et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-8716ffab7574",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The process of sampling a sequence of latent variables, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^1_T, \\dots, \\mathbf{x}^m_T"
+          },
+          {
+            "type": "text",
+            "text": ", with motion information is described as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-91b079240f6d",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-e6cc75c89510",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Define a direction "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\boldsymbol{\\delta} = (\\delta_x, \\delta_y) \\in \\mathbb{R}^2"
+              },
+              {
+                "type": "text",
+                "text": " for controlling the global scene and camera motion; by default, we set "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\boldsymbol{\\delta} = (1, 1)"
+              },
+              {
+                "type": "text",
+                "text": ". Also define a hyperparameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\lambda > 0"
+              },
+              {
+                "type": "text",
+                "text": " controlling the amount of global motion."
+              }
+            ]
+          },
+          {
+            "id": "list-item-17d946bdc6c0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First sample the latent code of the first frame at random, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}^1_T \\sim \\mathcal{N}(0, I)"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-0999a66a42ca",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Perform "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\Delta t \\geq 0"
+              },
+              {
+                "type": "text",
+                "text": " DDIM backward update steps using the pre-trained image diffusion model, e.g. Stable Diffusion (SD) model in the paper, and obtain the corresponding latent code "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}^1_{T’}"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "T’ = T - \\Delta t"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-44bae5dbd36a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "For each frame in the latent code sequence, we apply corresponding motion translation with a warping operation defined by "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\boldsymbol{\\delta}^k = \\lambda(k-1)\\boldsymbol{\\delta}"
+              },
+              {
+                "type": "text",
+                "text": " to obtain "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tilde{\\mathbf{x}}^k_{T’}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ccf2bc5e6a98",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Finally apply DDIM forward steps to all "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tilde{\\mathbf{x}}^{2:m}_{T’}"
+              },
+              {
+                "type": "text",
+                "text": " to obtain "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}^{2:m}_T"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-bdfcac152f66",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{x}^1_{T'} &= \\text{DDIM-backward}(\\mathbf{x}^1_T, \\Delta t)\\text{ where }T' = T - \\Delta t \\\\\nW_k &\\gets \\text{a warping operation of }\\boldsymbol{\\delta}^k = \\lambda(k-1)\\boldsymbol{\\delta} \\\\\n\\tilde{\\mathbf{x}}^k_{T'} &= W_k(\\mathbf{x}^1_{T'})\\\\\n\\mathbf{x}^k_T &= \\text{DDIM-forward}(\\tilde{\\mathbf{x}}^k_{T'}, \\Delta t)\\text{ for }k=2, \\dots, m\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7f1206bd0eea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Besides, Text2Video-Zero replaces the self-attention layer in a pre-trained SD model with a new cross-frame attention mechanism with reference to the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " frame. The motivation is to preserve the information about the foreground object’s appearance, shape, and identity throughout the generated video."
+          }
+        ]
+      },
+      {
+        "id": "math-566ff159910e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{Cross-Frame-Attn}(\\mathbf{Q}^k, \\mathbf{K}^{1:m}, \\mathbf{V}^{1:m}) = \\text{Softmax}\\Big( \\frac{\\mathbf{Q}^k (\\mathbf{K}^1)^\\top}{\\sqrt{c}} \\Big) \\mathbf{V}^1"
+        }
+      },
+      {
+        "id": "paragraph-4862ca4d42b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Optionally, the background mask can be used to further smoothen and improve background consistency. Let’s say, we obtain a corresponding foreground mask "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{M}_k"
+          },
+          {
+            "type": "text",
+            "text": " for the "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "-th frame using some existing method, and background smoothing merges the actual and the warped latent code at the diffusion step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": ", w.r.t. the background matrix:"
+          }
+        ]
+      },
+      {
+        "id": "math-dba9ff7cd962",
+        "type": "math",
+        "attrs": {
+          "latex": "\\bar{\\mathbf{x}}^k_t = \\mathbf{M}^k \\odot \\mathbf{x}^k_t + (1 − \\mathbf{M}^k) \\odot (\\alpha\\tilde{\\mathbf{x}}^k_t +(1−\\alpha)\\mathbf{x}^k_t)\\quad\\text{for }k=1, \\dots, m"
+        }
+      },
+      {
+        "id": "paragraph-ef6c55343fa2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^k_t"
+          },
+          {
+            "type": "text",
+            "text": " is the actual latent code and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{\\mathbf{x}}^k_t"
+          },
+          {
+            "type": "text",
+            "text": " is the warped latent code on the background; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " is a hyperparameter and the papers set "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha=0.6"
+          },
+          {
+            "type": "text",
+            "text": " in the experiments."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b46675e1bc9f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Text2video-zero can be combined with "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#controlnet"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ControlNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " where the ControlNet pretrained copy branch is applied per frame on each "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^k_t"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "k = 1, \\dots, m"
+          },
+          {
+            "type": "text",
+            "text": " in each diffusion time-step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t = T , \\dots, 1"
+          },
+          {
+            "type": "text",
+            "text": " and add the ControlNet branch outputs to the skip-connections of the main U-net."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ed769b0d784",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "ControlVideo"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.13077"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") aims to generate videos conditioned on text prompt "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": " and a motion sequence (e.g., depth or edge maps), "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{c} = \\{c^i\\}_{i=0}^{N-1}"
+          },
+          {
+            "type": "text",
+            "text": ". It is adapted from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#controlnet"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ControlNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " with three new mechanisms added:"
+          }
+        ]
+      },
+      {
+        "id": "list-99c8c37cd700",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-a3ce635e934e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Cross-frame attention"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Adds fully cross-frame interaction in self-attention modules. It introduces interactions between all the frames, by mapping the latent frames at "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "all the time steps"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " into "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{Q}, \\mathbf{K}, \\mathbf{V}"
+              },
+              {
+                "type": "text",
+                "text": " matrices, different from Text2Video-zero which only configures all the frames to attend to the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "first"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " frame."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7cb24a488498",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Interleaved-frame smoother"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is a mechanism to employ frame interpolation on alternated frames to reduce the flickering effect. At each time step "
+              },
+              {
+                "type": "inline_math",
+                "text": "t"
+              },
+              {
+                "type": "text",
+                "text": ", the smoother interpolates the even or odd frames to smooth their corresponding three-frame clips. Note that the number of frames decreases in time after smoothing steps."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a0dffb3dd130",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Hierarchical sampler"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " utilizes a hierarchical sampler to enable long videos with time consistency under memory constraints. A long video is split into multiple short clips and each has a key frame selected. The model pre-generates these keyframes with full cross-frame attention for long-term coherency and each corresponding short clip is synthesized sequentially conditioned on the keyframes."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-9e5bebe92439",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/control-video.png",
+          "alt": "The overview of ControlVideo. (Image source: Zhang et al. 2023 )"
+        }
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-44e2beb10630",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-ced8629e8eb6",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Apr 2024). Diffusion Models Video Generation. Lil’Log. https://lilianweng.github.io/posts/2024-04-12-diffusion-video/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-0742a3a8a7fe",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2024video,\n  title   = \"Diffusion Models Video Generation.\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2024\",\n  month   = \"Apr\",\n  url     = \"https://lilianweng.github.io/posts/2024-04-12-diffusion-video/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-1876d8bd500c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Cicek et al. 2016. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.06650"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“3D U-Net: Learning Dense Volumetric Segmentation from Sparse Annotation.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-62f0e85ac549",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Ho & Salimans, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.03458"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Video Diffusion Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 2022 | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://video-diffusion.github.io/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "webpage"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1cfcb348f619",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Bar-Tal et al. 2024 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2401.12945"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Lumiere: A Space-Time Diffusion Model for Video Generation.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-51ec667ad508",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Brooks et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/research/video-generation-models-as-world-simulators"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Video generation models as world simulators.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " OpenAI Blog, 2024."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-96b18b8ab424",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Zhang et al. 2023 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.13077"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“ControlVideo: Training-free Controllable Text-to-Video Generation.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-86ef43b70322",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Khachatryan et al. 2023 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2303.13439"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Text2Video-Zero: Text-to-image diffusion models are zero-shot video generators.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7d5300635d25",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Ho, et al. 2022 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.02303"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Imagen Video: High Definition Video Generation with Diffusion Models.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d03c2325d846",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Singer et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2209.14792"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Make-A-Video: Text-to-Video Generation without Text-Video Data.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 2022."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-040e363ba0f6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Wu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openaccess.thecvf.com/content/ICCV2023/html/Wu_Tune-A-Video_One-Shot_Tuning_of_Image_Diffusion_Models_for_Text-to-Video_Generation_ICCV_2023_paper.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Tune-A-Video: One-Shot Tuning of Image Diffusion Models for Text-to-Video Generation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICCV 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bddbd8a0acb1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Blattmann et al. 2023 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2304.08818"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Align your Latents: High-Resolution Video Synthesis with Latent Diffusion Models.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a1684f6f3c12",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Blattmann et al. 2023 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2311.15127"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Stable Video Diffusion: Scaling Latent Video Diffusion Models to Large Datasets.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2b97668545b2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Esser et al. 2023 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.03011"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Structure and Content-Guided Video Synthesis with Diffusion Models.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3ae8c4384f6f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Bar-Tal et al. 2024 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2401.12945"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Lumiere: A Space-Time Diffusion Model for Video Generation.”"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "diffusion-models-for-video-generation",
+    "source_slug": "2024-04-12-diffusion-video",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 8,
+      "math": 13,
+      "image": 15,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/v-param.png",
+      "alt": "Visualizing how the diffusion update step works in the angular coordinate, where DDIM evolves $\\mathbf{z}_{\\phi_s}$ by moving it along the $-\\hat{\\mathbf{v}}_{\\phi_t}$ direction. (Image source: Salimans & Ho, 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/3D-U-net.png",
+      "alt": "The 3D U-net architecture. The noisy video $\\mathbf{z}_t$ , conditioning information $\\boldsymbol{c}$ and the log signal-to-noise ratio (log-SNR) $\\lambda_t$ are inputs to the network. The channel multipliers $M_1, \\dots, M_K$ represent the channel counts across layers. (Image source: Salimans & Ho, 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/imagen-video.png",
+      "alt": "The cascaded sampling pipeline in Imagen Video. In practice, the text embeddings are injected into all components, not just the base model. (Image source: Ho et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/imagen-video-Unet-block.png",
+      "alt": "The architecture of one space-time separable block in the Imagen Video diffusion model. (Image source: Ho et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/sora.png",
+      "alt": "Sora is a diffusion transformer model. (Image source: Brooks et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/make-a-video.png",
+      "alt": "The illustration of Make-A-Video pipeline. (Image source: Singer et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/make-a-video-layers.png",
+      "alt": "How pseudo-3D convolution (left) and attention (right) layers work. (Image source: Singer et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/tune-a-video.png",
+      "alt": "The Tune-A-Video architecture overview. It first runs a light-weighted fine-tuning stage on a single video before the sampling stage. Note that the entire temporal self-attention (T-Attn) layers get fine-tuned because they are newly added, but only query projections in ST-Attn and Cross-Attn are updated during fine-tuning to preserve prior text-to-image knowledge. ST-Attn improves spatial-temporal consistency, Cross-Attn refines text-video alignment. (Image source: Wu et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/gen-1.png",
+      "alt": "The overview of the Gen-1 model training pipeline. (Image source: Esser et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/video-LDM.png",
+      "alt": "A pre-training LDM for image synthesis is extended to be a video generator. $B, T, C, H, W$ are batch size, sequence length, channels, height and width, respectively. $\\mathbf{c}_S$ is an optional conditioning/context frame. (Image source: Blattmann et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/video-LDM-autoencoder.png",
+      "alt": "The training pipeline of autoencoder in video latent diffusion models. The decoder is fine-tuned to have temporal coherency with a new across-frame discriminator while the encoder stays frozen. (Image source: Blattmann et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/lumiere.png",
+      "alt": "Lumiere removes TSR (temporal super-resolution) models. The inflated SSR network can operate only on short segments of the video due to memory constraints and thus SSR models operate on a set of shorter but overlapped video snippets. (Image source: Bar-Tal et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/lumiere-STUnet.png",
+      "alt": "The architecture of (a) Space-Time U-Net (STUNet), (b) the convolution-based block, and (c) the attention-based block. (Image source: Bar-Tal et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/text2video-zero.png",
+      "alt": "An overview of the Text2Video-Zero pipeline. (Image source: Khachatryan et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-04-12-diffusion-video/control-video.png",
+      "alt": "The overview of ControlVideo. (Image source: Zhang et al. 2023 )"
+    }
+  ]
+}

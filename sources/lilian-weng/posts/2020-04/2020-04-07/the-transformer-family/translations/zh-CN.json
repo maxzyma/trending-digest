@@ -1,0 +1,4034 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:900f697d9d771b25e559194a6788275bae45839177c2a61434717890fbe6c3be",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "Transformer 家族",
+  "segments": {
+    "paragraph-c2ad600812c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[更新于 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "2023-01-27"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 时隔近三年，我对这篇博文进行了大规模重构更新，以纳入自 2020 年以来出现的一系列新的 Transformer 模型。这篇博文的增强版在此："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/"
+          },
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Transformer 家族 2.0 版"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。请参考该博文了解此主题。]\n"
+        },
+        {
+          "type": "line_break"
+        }
+      ]
+    },
+    "paragraph-220ff4a4652c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "距离我上一篇关于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-06-24-attention/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "注意力机制"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的博文已经过去了近两年。Transformer 新版本和增强版本的最新进展促使我撰写另一篇关于此特定主题的博文，重点关注如何改进原始 Transformer，以实现更长的注意力跨度、更少的内存和计算消耗、解决强化学习任务等。"
+        }
+      ]
+    },
+    "heading-111fa15ff05a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "符号表示"
+        }
+      ]
+    },
+    "table-3c78f1edf750": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "符号",
+          "含义"
+        ],
+        "rows": [
+          [
+            "$d$",
+            "模型大小 / 隐藏状态维度 / 位置编码大小。"
+          ],
+          [
+            "$h$",
+            "多头注意力层中的头数。"
+          ],
+          [
+            "$L$",
+            "输入序列的段长度。"
+          ],
+          [
+            "$\\mathbf{X} \\in \\mathbb{R}^{L \\times d}$",
+            "输入序列，其中每个元素都已映射为形状为 $d$ 的嵌入向量，与模型大小相同。"
+          ],
+          [
+            "$\\mathbf{W}^k \\in \\mathbb{R}^{d \\times d_k}$",
+            "键权重矩阵。"
+          ],
+          [
+            "$\\mathbf{W}^q \\in \\mathbb{R}^{d \\times d_k}$",
+            "查询权重矩阵。"
+          ],
+          [
+            "$\\mathbf{W}^v \\in \\mathbb{R}^{d \\times d_v}$",
+            "值权重矩阵。通常我们有 $d_k = d_v = d$。"
+          ],
+          [
+            "$\\mathbf{W}^k_i, \\mathbf{W}^q_i \\in \\mathbb{R}^{d \\times d_k/h}; \\mathbf{W}^v_i \\in \\mathbb{R}^{d \\times d_v/h}$",
+            "每个头的权重矩阵。"
+          ],
+          [
+            "$\\mathbf{W}^o \\in \\mathbb{R}^{d_v \\times d}$",
+            "输出权重矩阵。"
+          ],
+          [
+            "$\\mathbf{Q} = \\mathbf{X}\\mathbf{W}^q \\in \\mathbb{R}^{L \\times d_k}$",
+            "查询嵌入输入。"
+          ],
+          [
+            "$\\mathbf{K} = \\mathbf{X}\\mathbf{W}^k \\in \\mathbb{R}^{L \\times d_k}$",
+            "键嵌入输入。"
+          ],
+          [
+            "$\\mathbf{V} = \\mathbf{X}\\mathbf{W}^v \\in \\mathbb{R}^{L \\times d_v}$",
+            "值嵌入输入。"
+          ],
+          [
+            "$S_i$",
+            "第 $i$ 个查询 $\\mathbf{q}_i$ 需要关注的键位置集合。"
+          ],
+          [
+            "$\\mathbf{A} \\in \\mathbb{R}^{L \\times L}$",
+            "长度为 $L$ 的输入序列与其自身的自注意力矩阵。$\\mathbf{A} = \\text{softmax}(\\mathbf{Q}\\mathbf{K}^\\top / \\sqrt{d_k})$。"
+          ],
+          [
+            "$a_{ij} \\in \\mathbf{A}$",
+            "查询 $\\mathbf{q}_i$ 和键 $\\mathbf{k}_j$ 之间的标量注意力分数。"
+          ],
+          [
+            "$\\mathbf{P} \\in \\mathbb{R}^{L \\times d}$",
+            "位置编码矩阵，其中第 $i$ 行 $\\mathbf{p}_i$ 是输入 $\\mathbf{x}_i$ 的位置编码。"
+          ]
+        ]
+      }
+    },
+    "heading-53beae977c6b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "注意力与自注意力"
+        }
+      ]
+    },
+    "paragraph-87c535af52dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是神经网络中的一种机制，模型可以通过选择性地关注给定数据集来学习进行预测。注意力的量通过学习到的权重来量化，因此输出通常以加权平均的形式形成。"
+        }
+      ]
+    },
+    "paragraph-284b982bd28f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是一种注意力机制，模型利用同一数据样本中其他部分的观测来预测该样本的一部分。从概念上讲，它与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Non-local_means"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "非局部均值"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "非常相似。另请注意，自注意力是置换不变的；换句话说，它是一种集合上的操作。"
+        }
+      ]
+    },
+    "paragraph-5bad18ea493b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "注意力/自注意力有多种形式，Transformer（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1706.03762"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Vaswani 等人，2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）依赖于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "缩放点积注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：给定一个查询矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q}"
+        },
+        {
+          "type": "text",
+          "text": "、一个键矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{K}"
+        },
+        {
+          "type": "text",
+          "text": "和一个值矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{V}"
+        },
+        {
+          "type": "text",
+          "text": "，输出是值向量的加权和，其中分配给每个值槽的权重由查询与相应键的点积决定："
+        }
+      ]
+    },
+    "paragraph-83b61a01ac9d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于查询向量和键向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}_i, \\mathbf{k}_j \\in \\mathbb{R}^d"
+        },
+        {
+          "type": "text",
+          "text": "（查询矩阵和键矩阵中的行向量），我们有一个标量分数："
+        }
+      ]
+    },
+    "paragraph-bba39fc38aba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果感兴趣，请参阅我之前的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#a-family-of-attention-mechanisms"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，了解其他类型的注意力。"
+        }
+      ]
+    },
+    "heading-6e18e729f62a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "多头自注意力"
+        }
+      ]
+    },
+    "paragraph-bdfa4ab1f177": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多头自注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模块是 Transformer 中的一个关键组件。多头机制不是只计算一次注意力，而是将输入分成更小的块，然后并行地在每个子空间上计算缩放点积注意力。独立的注意力输出被简单地拼接并线性变换到预期的维度。"
+        }
+      ]
+    },
+    "paragraph-d6f6065f4247": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "[.;.]"
+        },
+        {
+          "type": "text",
+          "text": "是拼接操作。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^q_i, \\mathbf{W}^k_i \\in \\mathbb{R}^{d \\times d_k/h}, \\mathbf{W}^v_i \\in \\mathbb{R}^{d \\times d_v/h}"
+        },
+        {
+          "type": "text",
+          "text": "是权重矩阵，用于将大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "L \\times d"
+        },
+        {
+          "type": "text",
+          "text": "的输入嵌入映射到查询、键和值矩阵。而"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^o \\in \\mathbb{R}^{d_v \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "是输出线性变换。所有权重都应在训练期间学习。"
+        }
+      ]
+    },
+    "heading-bdcd67bea98e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer"
+        }
+      ]
+    },
+    "paragraph-ed97351670ec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型（为区别于其他增强版本，此处称为“香草Transformer”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1706.03762"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Vaswani 等人，2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）具有编码器-解码器架构，这在许多"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#born-for-translation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "NMT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模型中很常见。后来，简化的Transformer被证明在语言建模任务中取得了出色的性能，例如仅编码器的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#bert"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或仅解码器的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#openai-gpt"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "GPT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-03ee63804dcd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "编码器-解码器架构"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-63692c642ec1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "编码器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "生成一种基于注意力的表示，能够从大型上下文中定位特定信息。它由6个恒等模块堆叠而成，每个模块包含两个子模块：一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多头自注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "层和一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐点"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "全连接前馈网络。逐点意味着它对序列中的每个元素应用相同的线性变换（使用相同的权重）。这也可以看作是一个滤波器大小为1的卷积层。每个子模块都有一个残差连接和层归一化。所有子模块输出相同维度的数据"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-2ed54f77418c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "解码器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的功能是从编码表示中检索信息。其架构与编码器非常相似，不同之处在于解码器在每个相同的重复模块中包含两个多头注意力子模块，而不是一个。第一个多头注意力子模块被"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "掩码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以防止位置关注未来。"
+        }
+      ]
+    },
+    "paragraph-555fb2bb6f4a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "位置编码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-554a1f12c88a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于自注意力操作是置换不变的，因此使用适当的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "位置编码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来为模型提供"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "顺序信息"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "非常重要。位置编码"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P} \\in \\mathbb{R}^{L \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "与输入嵌入具有相同的维度，因此可以直接添加到输入中。原始Transformer考虑了两种类型的编码："
+        }
+      ]
+    },
+    "paragraph-f83cb4deee47": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "正弦位置编码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "定义如下，给定token位置"
+        },
+        {
+          "type": "inline_math",
+          "text": "i=1,\\dots,L"
+        },
+        {
+          "type": "text",
+          "text": "和维度"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\delta=1,\\dots,d"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-272a603e814e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过这种方式，位置编码的每个维度都对应于不同维度中不同波长的正弦曲线，从"
+        },
+        {
+          "type": "inline_math",
+          "text": "2\\pi"
+        },
+        {
+          "type": "text",
+          "text": "到"
+        },
+        {
+          "type": "inline_math",
+          "text": "10000 \\cdot 2\\pi"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-d2033fbf4b69": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "学习到的位置编码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，顾名思义，为每个元素分配一个学习到的列向量，该向量编码其"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "绝对"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "位置（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1705.03122"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gehring, et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-0483b6a0754a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "快速跟进"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-6804134ff2ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在原始Transformer之后，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1808.04444"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Al-Rfou et al. (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "添加了一组辅助损失，以实现在字符级语言建模上训练深度Transformer模型，其性能优于LSTMs。使用了几种类型的辅助任务："
+        }
+      ]
+    },
+    "list-item-01067c6cee84": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型不再只在序列末尾生成一个预测，而是要求每个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "即时位置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "也做出正确预测，这迫使模型在给定较小上下文（例如，上下文窗口开头的最初几个token）的情况下进行预测。"
+        }
+      ]
+    },
+    "list-item-87629067843d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个中间Transformer层也用于进行预测。随着训练的进行，较低层被赋予的权重越来越小，对总损失的贡献也越来越少。"
+        }
+      ]
+    },
+    "list-item-633f69ec0a6e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "序列中的每个位置可以预测多个目标，即对未来token进行两次或更多次预测。"
+        }
+      ]
+    },
+    "heading-06afffe796b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自适应计算时间 (ACT)"
+        }
+      ]
+    },
+    "paragraph-2fa8f915c571": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应计算时间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（简称 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ACT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.08983"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Graves, 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是一种动态决定循环神经网络中所需计算步数的机制。这里有一个来自 distill.pub 的关于 ACT 的很棒的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://distill.pub/2016/augmented-rnns/#adaptive-computation-time"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "教程"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-971e88ab49e6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们有一个 RNN 模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{R}"
+        },
+        {
+          "type": "text",
+          "text": "，它由输入权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W_x"
+        },
+        {
+          "type": "text",
+          "text": "、一个参数化状态转移函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}(.)"
+        },
+        {
+          "type": "text",
+          "text": "、一组输出权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W_y"
+        },
+        {
+          "type": "text",
+          "text": " 和一个输出偏置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "b_y"
+        },
+        {
+          "type": "text",
+          "text": " 组成。给定一个输入序列 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(x_1, \\dots, x_L)"
+        },
+        {
+          "type": "text",
+          "text": "，输出序列 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(y_1, \\dots, y_L)"
+        },
+        {
+          "type": "text",
+          "text": " 通过以下方式计算："
+        }
+      ]
+    },
+    "paragraph-ac6f555800f9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ACT 使上述 RNN 设置能够在每个输入元素上执行可变数量的步骤。多个计算步骤会产生一系列中间状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(s_t^1, \\dots, s_t^{N(t)})"
+        },
+        {
+          "type": "text",
+          "text": " 和输出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(y_t^1, \\dots, y_t^{N(t)})"
+        },
+        {
+          "type": "text",
+          "text": " —— 它们都共享相同的状态转移函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}(.)"
+        },
+        {
+          "type": "text",
+          "text": "，以及相同的输出权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W_y"
+        },
+        {
+          "type": "text",
+          "text": " 和偏置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "b_y"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-5b6bdf6bb319": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\delta_{n,1}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个二进制标志，指示输入步骤是否已递增。"
+        }
+      ]
+    },
+    "paragraph-e69b309949ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "步数"
+        },
+        {
+          "type": "inline_math",
+          "text": "N(t)"
+        },
+        {
+          "type": "text",
+          "text": "由一个额外的S形停止单元决定"
+        },
+        {
+          "type": "inline_math",
+          "text": "h"
+        },
+        {
+          "type": "text",
+          "text": "，以及相关的权重矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "W_h"
+        },
+        {
+          "type": "text",
+          "text": "和偏置"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_h"
+        },
+        {
+          "type": "text",
+          "text": "，输出一个停止概率"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_t^n"
+        },
+        {
+          "type": "text",
+          "text": "在即时步"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "对于"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "个输入元素："
+        }
+      ]
+    },
+    "paragraph-feea463c7acf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了让计算在单步后停止，ACT引入了一个小常数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\epsilon"
+        },
+        {
+          "type": "text",
+          "text": "（例如0.01），这样每当累积概率超过"
+        },
+        {
+          "type": "inline_math",
+          "text": "1-\\epsilon"
+        },
+        {
+          "type": "text",
+          "text": "时，计算就会停止。"
+        }
+      ]
+    },
+    "paragraph-83539b062115": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": "是允许的即时步数的上限。"
+        }
+      ]
+    },
+    "paragraph-21f015aff9ae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最终状态和输出是平均场更新："
+        }
+      ]
+    },
+    "paragraph-b181f0f0ee30": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了避免对每个输入进行不必要的思考，ACT在损失函数中添加了一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "思考成本"
+            }
+          ]
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{P}(x) = \\sum_{t=1}^L N(t) + R(t) "
+        },
+        {
+          "type": "text",
+          "text": "，以鼓励更少的中间计算步骤。"
+        }
+      ]
+    },
+    "heading-09cc7f928b29": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "改进的注意力范围"
+        }
+      ]
+    },
+    "paragraph-85d51dcacfca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "改进注意力范围的目标是使自注意力中可用的上下文更长、更高效、更灵活。"
+        }
+      ]
+    },
+    "heading-fab1ef0517c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更长的注意力范围（Transformer-XL）"
+        }
+      ]
+    },
+    "paragraph-bc0ccb76e7f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "普通的Transformer具有固定且有限的注意力范围。模型在每个更新步骤中只能关注同一段落中的其他元素，并且信息无法在分离的固定长度段落之间流动。"
+        }
+      ]
+    },
+    "paragraph-9145ec253338": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "上下文分段"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "导致了几个问题："
+        }
+      ]
+    },
+    "list-item-124cb1428508": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型无法捕获非常长期的依赖关系。"
+        }
+      ]
+    },
+    "list-item-652e34939860": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在没有或只有少量上下文的情况下，很难预测每个段落中的前几个token。"
+        }
+      ]
+    },
+    "list-item-9d0f188cfd68": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评估成本很高。每当段落向右移动一个位置时，新段落都会从头开始重新处理，尽管存在大量重叠的token。"
+        }
+      ]
+    },
+    "paragraph-d855260a06d2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Transformer-XL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.02860"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dai et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；“XL”意为“超长”）通过两项主要修改解决了上下文分段问题："
+        }
+      ]
+    },
+    "list-item-78e07099ca27": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在段落之间重用隐藏状态。"
+        }
+      ]
+    },
+    "list-item-c9fc04a6e4bb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "采用适用于重用状态的新型位置编码。"
+        }
+      ]
+    },
+    "paragraph-91e03d0c9e56": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "隐藏状态重用"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-19377161fc80": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过持续使用前一段落的隐藏状态，模型中引入了段落之间的循环连接。"
+        }
+      ]
+    },
+    "paragraph-c3cdb6919995": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们将模型中第"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "层的第"
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\tau + 1)"
+        },
+        {
+          "type": "text",
+          "text": "段的隐藏状态标记为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}_{\\tau+1}^{(n)} \\in \\mathbb{R}^{L \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "。除了同一段落的最后一层隐藏状态"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}_{\\tau+1}^{(n-1)}"
+        },
+        {
+          "type": "text",
+          "text": "之外，它还依赖于前一段落的同一层隐藏状态"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}_{\\tau}^{(n)}"
+        },
+        {
+          "type": "text",
+          "text": "。通过整合来自先前隐藏状态的信息，模型将注意力范围在过去大大延长，跨越多个段落。"
+        }
+      ]
+    },
+    "paragraph-770fac372e77": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，key和value都依赖于扩展的隐藏状态，而query只消耗当前步骤的隐藏状态。拼接操作"
+        },
+        {
+          "type": "inline_math",
+          "text": "[. \\circ .]"
+        },
+        {
+          "type": "text",
+          "text": "是沿着序列长度维度进行的。"
+        }
+      ]
+    },
+    "paragraph-60fb14ada064": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "相对位置编码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-08b26e95187c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了处理这种新的注意力跨度形式，Transformer-XL 提出了一种新型的位置编码。如果使用普通 Transformer 的相同方法并编码绝对位置，则前一个和当前片段将被分配相同的编码，这是不希望的。"
+        }
+      ]
+    },
+    "paragraph-11b9a248d1a5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了使位置信息在片段之间连贯地流动，Transformer-XL 转而编码"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "相对"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "位置，因为知道位置偏移量足以做出良好的预测，即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i-j"
+        },
+        {
+          "type": "text",
+          "text": "，在一个键向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{k}_{\\tau, j}"
+        },
+        {
+          "type": "text",
+          "text": " 及其查询 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}_{\\tau, i}"
+        },
+        {
+          "type": "text",
+          "text": " 之间。"
+        }
+      ]
+    },
+    "paragraph-28badbac68b9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果省略标量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "1/\\sqrt{d_k}"
+        },
+        {
+          "type": "text",
+          "text": " 和 softmax 中的归一化项，但包含位置编码，我们可以将位置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 处的查询与位置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 处的键之间的注意力分数写为："
+        }
+      ]
+    },
+    "paragraph-4c54fd3ceb64": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer-XL 将上述四项重新参数化如下："
+        }
+      ]
+    },
+    "list-item-411c3d3ebdc1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{p}_j"
+        },
+        {
+          "type": "text",
+          "text": " 替换为相对位置编码 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{r}_{i-j} \\in \\mathbf{R}^{d}"
+        },
+        {
+          "type": "text",
+          "text": "；"
+        }
+      ]
+    },
+    "list-item-18fecdd0e195": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在两个不同的项中，将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{p}_i\\mathbf{W}^q"
+        },
+        {
+          "type": "text",
+          "text": " 替换为两个可训练参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{u}"
+        },
+        {
+          "type": "text",
+          "text": "（用于内容）和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v}"
+        },
+        {
+          "type": "text",
+          "text": "（用于位置）；"
+        }
+      ]
+    },
+    "list-item-0577fa267ab0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^k"
+        },
+        {
+          "type": "text",
+          "text": " 分成两个矩阵，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^k_E"
+        },
+        {
+          "type": "text",
+          "text": " 用于内容信息，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^k_R"
+        },
+        {
+          "type": "text",
+          "text": " 用于位置信息。"
+        }
+      ]
+    },
+    "heading-4569e881aa74": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自适应注意力跨度"
+        }
+      ]
+    },
+    "paragraph-bc1c003186e6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer 的一个关键优势是能够捕获长期依赖关系。根据上下文，模型有时可能更倾向于关注更远的地方；或者一个注意力头可能与另一个有不同的注意力模式。如果注意力跨度能够灵活地调整其长度，并且只在需要时才向后关注更远，这将有助于减少计算和内存成本，从而支持模型中更长的最大上下文大小。"
+        }
+      ]
+    },
+    "paragraph-20f907998669": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这就是"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应注意力跨度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的动机。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.07799"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sukhbaatar 等人 (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种自注意力机制，旨在寻找最佳注意力跨度。他们假设不同的注意力头在相同的上下文窗口内可能会以不同的方式分配分数（参见图 7），因此最佳跨度将为每个头单独训练。"
+        }
+      ]
+    },
+    "paragraph-75e74fc78815": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个 token，我们需要计算该 token 与位置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j \\in S_i"
+        },
+        {
+          "type": "text",
+          "text": " 处的其他键之间的注意力权重，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i"
+        },
+        {
+          "type": "text",
+          "text": " 定义了第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个 token 的上下文窗口。"
+        }
+      ]
+    },
+    "paragraph-5b423a69babe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "添加了一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "软掩码函数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "m_z"
+        },
+        {
+          "type": "text",
+          "text": " 来控制有效的可调注意力跨度，它将查询和键之间的距离映射到 [0, 1] 值。"
+        },
+        {
+          "type": "inline_math",
+          "text": "m_z"
+        },
+        {
+          "type": "text",
+          "text": " 由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z \\in [0, s]"
+        },
+        {
+          "type": "text",
+          "text": " 参数化，"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 待学习："
+        }
+      ]
+    },
+    "paragraph-2d15f5cb9395": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": " 是一个超参数，它定义了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m_z"
+        },
+        {
+          "type": "text",
+          "text": " 的柔和度。"
+        }
+      ]
+    },
+    "paragraph-736090f856cb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "软掩码函数应用于注意力权重中的 softmax 元素："
+        }
+      ]
+    },
+    "paragraph-9cfa9c257889": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在上述方程中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 是可微分的，因此它与模型的其他部分一起进行联合训练。参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z^{(i)}, i=1, \\dots, h"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个头单独学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的。此外，损失函数对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{i=1}^h z^{(i)}"
+        },
+        {
+          "type": "text",
+          "text": " 还有一个额外的 L1 惩罚。"
+        }
+      ]
+    },
+    "paragraph-fba2db1f9bb4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "利用"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应计算时间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，该方法可以进一步增强，使其具有灵活的注意力跨度长度，并能动态适应当前输入。注意力头的跨度参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_t"
+        },
+        {
+          "type": "text",
+          "text": "的注意力头在时间"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "是一个S形函数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_t = S \\sigma(\\mathbf{v} \\cdot \\mathbf{x}_t +b)"
+        },
+        {
+          "type": "text",
+          "text": "，其中向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v}"
+        },
+        {
+          "type": "text",
+          "text": "和偏置标量"
+        },
+        {
+          "type": "inline_math",
+          "text": "b"
+        },
+        {
+          "type": "text",
+          "text": "与其他参数一起学习。"
+        }
+      ]
+    },
+    "paragraph-e36ac294750e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在带有自适应注意力跨度的 Transformer 实验中，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.07799"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sukhbaatar 等人 (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 发现了一个普遍趋势，即较低层不需要很长的注意力跨度，而较高层中的少数注意力头可能会使用异常长的跨度。自适应注意力跨度还有助于大幅减少 FLOPS 的数量，尤其是在具有许多注意力层和较大上下文长度的大型模型中。"
+        }
+      ]
+    },
+    "heading-212884f710be": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "局部注意力跨度 (图像 Transformer)"
+        }
+      ]
+    },
+    "paragraph-2172cb6d145d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer 最初也是最流行的用例是进行语言建模。文本序列是一维的，具有明确定义的时间顺序，因此注意力跨度随着上下文大小的增加而线性增长。"
+        }
+      ]
+    },
+    "paragraph-abdb9bd53628": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，如果我们要将 Transformer 用于图像，则不清楚如何定义上下文范围或顺序。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Image Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1802.05751"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Parmer, et al 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 在 Transformer 框架内采用了一种类似于序列建模的图像生成公式。此外，Image Transformer 将自注意力跨度限制在仅"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "局部"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "邻域，以便模型可以扩展以并行处理更多图像并保持似然损失可控。"
+        }
+      ]
+    },
+    "paragraph-1fb6691f7413": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "编码器-解码器架构仍用于图像条件生成："
+        }
+      ]
+    },
+    "list-item-6d5c3de56dbd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "编码器生成源图像的上下文化、逐像素通道表示；"
+        }
+      ]
+    },
+    "list-item-6e6f54560170": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "解码器"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自回归地"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "生成输出图像，在每个时间步生成每个像素的一个通道。"
+        }
+      ]
+    },
+    "paragraph-4461ab526a2e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们将当前要生成的像素的表示标记为查询 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}"
+        },
+        {
+          "type": "text",
+          "text": "。其表示将用于计算 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}"
+        },
+        {
+          "type": "text",
+          "text": " 的其他位置是键向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{k}_1, \\mathbf{k}_2, \\dots"
+        },
+        {
+          "type": "text",
+          "text": "，它们共同形成一个记忆矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{M}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{M}"
+        },
+        {
+          "type": "text",
+          "text": " 的范围定义了像素查询 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}"
+        },
+        {
+          "type": "text",
+          "text": " 的上下文窗口。"
+        }
+      ]
+    },
+    "paragraph-80e530d54943": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Image Transformer 引入了两种类型的局部化 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{M}"
+        },
+        {
+          "type": "text",
+          "text": "，如下所示。"
+        }
+      ]
+    },
+    "paragraph-341d00562ffe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "一维局部注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：输入图像按 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Raster_scan#Scanning_pattern"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "光栅扫描"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 顺序展平，即从左到右、从上到下。然后将线性化后的图像划分为不重叠的查询块。上下文窗口由与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}"
+        },
+        {
+          "type": "text",
+          "text": " 位于同一查询块中的像素以及在该查询块之前生成的固定数量的额外像素组成。"
+        }
+      ]
+    },
+    "paragraph-7f0d5a607524": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "二维局部注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：图像被划分为多个不重叠的矩形查询块。查询像素可以关注同一内存块中的所有其他像素。为了确保左上角的像素也能拥有有效的上下文窗口，内存块分别向顶部、左侧和右侧扩展了固定量。"
+        }
+      ]
+    },
+    "heading-834660cd5d8b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更少的时间和内存成本"
+        }
+      ]
+    },
+    "paragraph-f49503f3cf5d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本节介绍了对 Transformer 进行的几项改进，以减少计算时间和内存消耗。"
+        }
+      ]
+    },
+    "heading-cf11a1dd2495": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏注意力矩阵分解（稀疏 Transformer）"
+        }
+      ]
+    },
+    "paragraph-07abf7d95003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "普通 Transformer 的计算和内存成本随序列长度呈二次方增长，因此很难应用于非常长的序列。"
+        }
+      ]
+    },
+    "paragraph-7630b3d6cfc9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏 Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.10509"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Child 等人，2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过稀疏矩阵分解引入了 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "因子化自注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，使得在序列长度高达 16,384 的情况下训练具有数百层的密集注意力网络成为可能，否则这在现代硬件上是不可行的。"
+        }
+      ]
+    },
+    "paragraph-d85a333ffdd8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一组注意力连接模式 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S} = \\{S_1, \\dots, S_n\\}"
+        },
+        {
+          "type": "text",
+          "text": "，其中每个 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i"
+        },
+        {
+          "type": "text",
+          "text": " 记录了第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个查询向量所关注的一组键位置。"
+        }
+      ]
+    },
+    "paragraph-31245f314a7c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，尽管 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i"
+        },
+        {
+          "type": "text",
+          "text": " 的大小不固定，但 "
+        },
+        {
+          "type": "inline_math",
+          "text": "a(\\mathbf{x}_i, S_i)"
+        },
+        {
+          "type": "text",
+          "text": " 始终为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_v"
+        },
+        {
+          "type": "text",
+          "text": " 大小，因此为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{Attend}(\\mathbf{X}, \\mathcal{S}) \\in \\mathbb{R}^{L \\times d_v}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-416869d99149": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在自回归模型中，一个注意力跨度定义为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i = \\{j: j \\leq i\\}"
+        },
+        {
+          "type": "text",
+          "text": "，因为它允许每个 token 关注过去的所有位置。"
+        }
+      ]
+    },
+    "paragraph-ec1750b4f282": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在因子化自注意力中，集合 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i"
+        },
+        {
+          "type": "text",
+          "text": " 被分解为依赖关系的 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "树"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，使得对于每一对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(i, j)"
+        },
+        {
+          "type": "text",
+          "text": "（其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j \\leq i"
+        },
+        {
+          "type": "text",
+          "text": "），都存在一条将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 连接回 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 的路径，并且 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 可以直接或间接地关注 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-fea9105f84fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "具体来说，集合 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i"
+        },
+        {
+          "type": "text",
+          "text": " 被划分为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 个 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "不重叠"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的子集，其中第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": " 个子集表示为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "A^{(m)}_i \\subset S_i, m = 1,\\dots, p"
+        },
+        {
+          "type": "text",
+          "text": "。因此，输出位置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 与任何 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 之间的路径最大长度为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p + 1"
+        },
+        {
+          "type": "text",
+          "text": "。例如，如果 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(j, a, b, c, \\dots, i)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 之间的索引路径，我们将有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j \\in A_a^{(1)}, a \\in A_b^{(2)}, b \\in A_c^{(3)}, \\dots"
+        },
+        {
+          "type": "text",
+          "text": "，依此类推。"
+        }
+      ]
+    },
+    "paragraph-994e13d194a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏分解注意力"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-6c3769c82983": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏Transformer提出了两种类型的分解注意力。如图10所示，以2D图像输入为例，更容易理解这些概念。"
+        }
+      ]
+    },
+    "paragraph-afe83198e10c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "步幅"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "注意力，步幅为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell \\sim \\sqrt{n}"
+        },
+        {
+          "type": "text",
+          "text": "。这与图像数据配合良好，因为其结构与步幅对齐。在图像情况下，每个像素将关注光栅扫描顺序中所有前"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": "个像素（自然覆盖图像的整个宽度），然后这些像素关注同一列中的其他像素（由另一个注意力连接子集定义）。"
+        }
+      ]
+    },
+    "paragraph-0f6c20fb16b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "固定"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "注意力。一小组token总结先前的位置并将该信息传播到所有未来的位置。"
+        }
+      ]
+    },
+    "paragraph-6beef413716f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": "是一个超参数。如果"
+        },
+        {
+          "type": "inline_math",
+          "text": "c=1"
+        },
+        {
+          "type": "text",
+          "text": "，它会限制表示，而许多表示依赖于少数位置。该论文选择"
+        },
+        {
+          "type": "inline_math",
+          "text": "c\\in \\{ 8, 16, 32 \\}"
+        },
+        {
+          "type": "text",
+          "text": "用于"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell \\in \\{ 128, 256 \\}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-953ce6f39ff5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "在Transformer中使用分解自注意力"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-137be2c77e9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Transformer 架构中使用稀疏分解注意力模式有三种方式："
+        }
+      ]
+    },
+    "list-item-02db9e3ef174": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个残差块使用一种注意力类型，然后交错它们，"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{attention}(\\mathbf{X}) = \\text{Attend}(\\mathbf{X}, A^{(n \\mod p)}) \\mathbf{W}^o"
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": " 是当前残差块的索引。"
+        }
+      ]
+    },
+    "list-item-06dee7b5940c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设置一个单一的注意力头，它关注所有分解注意力头关注的位置，"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{attention}(\\mathbf{X}) = \\text{Attend}(\\mathbf{X}, \\cup_{m=1}^p A^{(m)}) \\mathbf{W}^o "
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-f723426bc394": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用多头注意力机制，但与普通 Transformer 不同的是，每个头可能采用上述模式中的一种，即 1 或 2。=> 此选项通常表现最佳。"
+        }
+      ]
+    },
+    "paragraph-d97ffda3340e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏 Transformer 还提出了一系列改进，以便将 Transformer 训练到数百层，包括梯度检查点、在反向传播过程中重新计算注意力层和 FF 层、混合精度训练、高效的块稀疏实现等。请查阅"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.10509"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "了解更多详情。"
+        }
+      ]
+    },
+    "heading-40e2c590507a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "局部敏感哈希 (Reformer)"
+        }
+      ]
+    },
+    "paragraph-b8eaf6938272": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Reformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模型（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2001.04451"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Kitaev, et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）提出的改进旨在解决Transformer中的以下痛点："
+        }
+      ]
+    },
+    "list-item-79340f021528": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个具有"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "层的模型，其内存是单层模型的"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "倍，因为我们需要存储激活值用于反向传播。"
+        }
+      ]
+    },
+    "list-item-7339c911bd39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "中间的FF层通常相当大。"
+        }
+      ]
+    },
+    "list-item-5cfb223c3205": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "长度为"
+        },
+        {
+          "type": "inline_math",
+          "text": "L"
+        },
+        {
+          "type": "text",
+          "text": "的序列上的注意力矩阵通常在内存和时间上都需要"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(L^2)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-86bd0db36f12": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Reformer提出了两项主要改变："
+        }
+      ]
+    },
+    "list-item-14bdf783b94f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "局部敏感哈希（LSH）注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "取代点积注意力，将复杂度从"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(L^2)"
+        },
+        {
+          "type": "text",
+          "text": "降低到"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(L\\log L)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-78447c70f9e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "可逆残差层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "取代标准残差块，这使得在训练期间只需存储一次激活值，而不是"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "次（即与层数成比例）。"
+        }
+      ]
+    },
+    "paragraph-613507c314b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "局部敏感哈希注意力"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-b94536a307b3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#attention-and-self-attention"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "注意力公式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q} \\mathbf{K}^\\top"
+        },
+        {
+          "type": "text",
+          "text": "部分，我们只对最大的元素感兴趣，因为只有大的元素在softmax后贡献很大。对于每个查询"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}_i \\in \\mathbf{Q}"
+        },
+        {
+          "type": "text",
+          "text": "，我们正在寻找"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{K}"
+        },
+        {
+          "type": "text",
+          "text": "中最接近"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{q}_i"
+        },
+        {
+          "type": "text",
+          "text": "的行向量。为了在高维空间中快速找到最近邻，Reformer将"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Locality-sensitive_hashing"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "局部敏感哈希（LSH）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "融入其注意力机制。"
+        }
+      ]
+    },
+    "paragraph-882cbe5aa2f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果哈希方案"
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\mapsto h(x)"
+        },
+        {
+          "type": "text",
+          "text": "能够保留数据点之间的距离信息，使得接近的向量获得相似的哈希值，而遥远的向量获得非常不同的哈希值，那么它就是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "局部敏感的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。Reformer采用了一种这样的哈希方案，给定一个固定的随机矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{R} \\in \\mathbb{R}^{d \\times b/2}"
+        },
+        {
+          "type": "text",
+          "text": "（其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "b"
+        },
+        {
+          "type": "text",
+          "text": "是一个超参数），哈希函数是"
+        },
+        {
+          "type": "inline_math",
+          "text": "h(x) = \\arg\\max([xR; −xR])"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-43edb7d77c54": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在LSH注意力中，查询只能关注同一哈希桶中的位置，"
+        },
+        {
+          "type": "inline_math",
+          "text": "S_i = \\{j: h(\\mathbf{q}_i) = h(\\mathbf{k}_j)\\}"
+        },
+        {
+          "type": "text",
+          "text": "。其执行过程如下，如图11所示："
+        }
+      ]
+    },
+    "list-item-5b634e00a26e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(a) 全注意力（full attention）的注意力矩阵通常是稀疏的。"
+        }
+      ]
+    },
+    "list-item-f246e88a5380": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(b) 使用LSH，我们可以根据哈希桶对要对齐的键和查询进行排序。"
+        }
+      ]
+    },
+    "list-item-9276d5289c82": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(c) 设置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q} = \\mathbf{K}"
+        },
+        {
+          "type": "text",
+          "text": " (精确地 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{k}_j = \\mathbf{q}_j / |\\mathbf{q}_j|"
+        },
+        {
+          "type": "text",
+          "text": ")，以便在一个桶中键和查询的数量相等，这更容易进行批处理。有趣的是，这种“共享 QK”配置不影响 Transformer 的性能。"
+        }
+      ]
+    },
+    "list-item-e495cae42654": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(d) 应用批处理，其中将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": " 个连续查询块分组在一起。"
+        }
+      ]
+    },
+    "paragraph-a92f5fd768c5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "可逆残差网络"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-49cea55047e3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Reformer 的另一个改进是使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "可逆残差层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1707.04585"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gomez et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。可逆残差网络的动机是以这样一种方式设计架构：在任何给定层的激活都可以仅使用模型参数从下一层的激活中恢复。因此，我们可以通过在反向传播期间重新计算激活而不是存储所有激活来节省内存。"
+        }
+      ]
+    },
+    "paragraph-ebdf7005dbd4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\mapsto y"
+        },
+        {
+          "type": "text",
+          "text": "，正常的残差层执行 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y = x + F(x)"
+        },
+        {
+          "type": "text",
+          "text": "，但可逆层将输入和输出都分成对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(x_1, x_2) \\mapsto (y_1, y_2)"
+        },
+        {
+          "type": "text",
+          "text": "，然后执行以下操作："
+        }
+      ]
+    },
+    "paragraph-140f6c8ba833": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "并且反转很容易："
+        }
+      ]
+    },
+    "paragraph-b382e58b7e68": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Reformer 通过在一个可逆网络块中结合注意力 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": ") 和前馈层 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": ")，将相同的思想应用于 Transformer："
+        }
+      ]
+    },
+    "paragraph-2e6256f61169": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过分块前馈计算可以进一步减少内存："
+        }
+      ]
+    },
+    "paragraph-b54b8418bbba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由此产生的可逆 Transformer 不需要在每一层存储激活。"
+        }
+      ]
+    },
+    "heading-c59d6f0874c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使其循环 (通用 Transformer)"
+        }
+      ]
+    },
+    "paragraph-99a3d20d667a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "通用Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1807.03819"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dehghani, et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 将Transformer中的自注意力机制与RNN中的循环机制相结合，旨在同时利用Transformer的长期全局感受野和RNN学习到的归纳偏置。"
+        }
+      ]
+    },
+    "paragraph-ecf409a2610c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通用Transformer不是通过固定数量的层，而是使用"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应计算时间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "动态调整步数。如果我们固定步数，通用Transformer就等同于一个层间参数共享的多层Transformer。"
+        }
+      ]
+    },
+    "paragraph-4a0b24274d74": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从宏观层面来看，通用Transformer可以被视为一个循环函数，用于学习每个token的隐藏状态表示。该循环函数在token位置之间并行演化，并且位置之间的信息通过自注意力机制共享。"
+        }
+      ]
+    },
+    "paragraph-9071fcfcde48": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个长度为"
+        },
+        {
+          "type": "inline_math",
+          "text": "L"
+        },
+        {
+          "type": "text",
+          "text": "，Universal Transformer 迭代更新表示"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{H}^t \\in \\mathbb{R}^{L \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "在步骤"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "，步数可调。在步骤 0，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{H}^0"
+        },
+        {
+          "type": "text",
+          "text": "被初始化为与输入嵌入矩阵相同。所有位置都在多头自注意力机制中并行处理，然后经过一个循环转换函数。"
+        }
+      ]
+    },
+    "paragraph-1863290b14ba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{Transition}(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1610.02357"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "可分离卷积"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 或一个全连接神经网络，该网络由两个逐位置（即单独应用于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{A}^t"
+        },
+        {
+          "type": "text",
+          "text": " 的每一行）仿射变换 + 一个 ReLU 组成。"
+        }
+      ]
+    },
+    "paragraph-c4ae4681b456": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "位置编码 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}^t"
+        },
+        {
+          "type": "text",
+          "text": " 使用正弦位置信号，但增加了一个时间维度："
+        }
+      ]
+    },
+    "paragraph-cf2958e34c71": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Universal Transformer 的自适应版本中，循环步数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": " 由 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ACT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 动态确定。每个位置都配备了一个动态 ACT 停止机制。一旦每个 token 的循环块停止，它就会停止接收更多的循环更新，而是简单地将当前值复制到下一步，直到所有块都停止，或者直到模型达到最大步数限制。"
+        }
+      ]
+    },
+    "heading-d68a9ab5ea13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强化学习的稳定性 (GTrXL)"
+        }
+      ]
+    },
+    "paragraph-b5e4ab9f29b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自注意力机制避免将整个过去压缩成固定大小的隐藏状态，并且不像 RNN 那样容易出现梯度消失或梯度爆炸问题。强化学习任务无疑可以从这些特性中受益。 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "然而"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，即使在监督学习中，训练 Transformer 也相当困难，更不用说在强化学习环境中了。毕竟，单独稳定和训练一个 LSTM 智能体可能就相当具有挑战性。"
+        }
+      ]
+    },
+    "paragraph-f8bd24a9f8e6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "门控 Transformer-XL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "GTrXL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.06764"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Parisotto, et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是将 Transformer 用于强化学习的一种尝试。GTrXL 在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#longer-attention-span-transformer-xl"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Transformer-XL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的基础上进行了两项改进，成功稳定了训练："
+        }
+      ]
+    },
+    "list-item-40050d43b291": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "层归一化仅应用于残差模块中的输入流，而不应用于快捷流。这种重新排序的一个主要好处是允许原始输入从第一层流向最后一层。"
+        }
+      ]
+    },
+    "list-item-376cf4446607": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "残差连接被替换为GRU风格（门控循环单元；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1412.3555"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chung et al., 2014"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "门控"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "机制。"
+        }
+      ]
+    },
+    "paragraph-7696debbb510": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "门控函数参数被显式初始化为接近恒等映射——这就是为什么存在一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_g"
+        },
+        {
+          "type": "text",
+          "text": "项。一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_g > 0"
+        },
+        {
+          "type": "text",
+          "text": "极大地有助于学习加速。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-80730adabd52": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (2020年4月). The transformer family. Lil’Log. https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/。"
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-1e128c52c168": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-5d3b01e25e3c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Ashish Vaswani, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Attention is all you need.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2017."
+        }
+      ]
+    },
+    "paragraph-1890076d0c87": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Rami Al-Rfou, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1808.04444"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Character-level language modeling with deeper self-attention.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " AAAI 2019."
+        }
+      ]
+    },
+    "paragraph-304fad899a5b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Olah & Carter, "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://doi.org/10.23915/disti"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Attention and Augmented Recurrent Neural Networks”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", Distill, 2016."
+        }
+      ]
+    },
+    "paragraph-5c675879f5c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Sainbayar Sukhbaatar, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.07799"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Adaptive Attention Span in Transformers”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". ACL 2019."
+        }
+      ]
+    },
+    "paragraph-14c109e2e617": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Rewon Child, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.10509"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Generating Long Sequences with Sparse Transformers”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:1904.10509 (2019)。"
+        }
+      ]
+    },
+    "paragraph-e96df85cfe4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Nikita Kitaev, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2001.04451"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Reformer: The Efficient Transformer”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2020."
+        }
+      ]
+    },
+    "paragraph-0d1f4ed59a98": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Alex Graves. (“Adaptive Computation Time for Recurrent Neural Networks”)[https://arxiv.org/abs/1603.08983]"
+        }
+      ]
+    },
+    "paragraph-ca0e7f67163f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Niki Parmar, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1802.05751"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Image Transformer”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 2018."
+        }
+      ]
+    },
+    "paragraph-d98a5911ac46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Zihang Dai, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.02860"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2019."
+        }
+      ]
+    },
+    "paragraph-11268750ce14": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Aidan N. Gomez, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1707.04585"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“The Reversible Residual Network: Backpropagation Without Storing Activations”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2017."
+        }
+      ]
+    },
+    "paragraph-c7d86b92e4f6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Mostafa Dehghani, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1807.03819"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Universal Transformers”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2019."
+        }
+      ]
+    },
+    "paragraph-23570ab5fe97": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Emilio Parisotto, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.06764"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Stabilizing Transformers for Reinforcement Learning”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:1910.06764 (2019)。"
+        }
+      ]
+    }
+  }
+}

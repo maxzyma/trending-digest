@@ -1,0 +1,3015 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:c5ccac241854ec42bef641ed99d372334f0504150c3cfcf1c11c51d77ff6bd73",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "扩散模型用于视频生成",
+  "segments": {
+    "paragraph-b17b49293ee4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "扩散模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在过去几年中在图像合成方面取得了显著成果。现在，研究界已经开始着手一项更具挑战性的任务——将其用于视频生成。这项任务本身是图像情况的超集，因为图像是1帧的视频，而且它更具挑战性，原因如下："
+        }
+      ]
+    },
+    "list-item-77b6926d6ba0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它对帧之间的时间一致性有额外的要求，这自然需要将更多的世界知识编码到模型中。"
+        }
+      ]
+    },
+    "list-item-79ec3fb3446c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与文本或图像相比，收集大量高质量、高维度的视频数据更加困难，更不用说文本-视频对了。"
+        }
+      ]
+    },
+    "paragraph-5aeebc72b76e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "🥑 必读预备知识：请确保您已阅读之前关于"
+            },
+            {
+              "type": "link",
+              "attrs": {
+                "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "text": "“什么是扩散模型？”"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "的博客，了解图像生成，然后再继续阅读本文。"
+            }
+          ]
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "line_break"
+        }
+      ]
+    },
+    "heading-24acb5c9d6f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从零开始的视频生成建模"
+        }
+      ]
+    },
+    "paragraph-c6333a3f4486": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，我们来回顾一下从头设计和训练扩散视频模型的方法，这意味着我们不依赖预训练的图像生成器。"
+        }
+      ]
+    },
+    "heading-c1ce8cd96c9e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参数化与采样基础"
+        }
+      ]
+    },
+    "paragraph-ce1291e4d898": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这里我们使用了与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上一篇文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "略有不同的变量定义，但数学原理保持不变。设"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\sim q_\\text{real}"
+        },
+        {
+          "type": "text",
+          "text": "是从真实数据分布中采样的数据点。现在我们随时间少量添加高斯噪声，创建"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "的一系列噪声变体，表示为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{\\mathbf{z}_t \\mid t =1 \\dots, T\\}"
+        },
+        {
+          "type": "text",
+          "text": "，随着"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "的增加，噪声量也随之增加，直到最后的"
+        },
+        {
+          "type": "inline_math",
+          "text": "q(\\mathbf{z}_T) \\sim \\mathcal{N}(\\mathbf{0}, \\mathbf{I})"
+        },
+        {
+          "type": "text",
+          "text": "。添加噪声的前向过程是一个高斯过程。设"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_t, \\sigma_t"
+        },
+        {
+          "type": "text",
+          "text": "定义了高斯过程的一个可微分噪声调度："
+        }
+      ]
+    },
+    "paragraph-7f4de8ec417a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了表示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q(\\mathbf{z}_t \\vert \\mathbf{z}_s)"
+        },
+        {
+          "type": "text",
+          "text": " 对于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "0 \\leq s < t \\leq T"
+        },
+        {
+          "type": "text",
+          "text": "，我们有："
+        }
+      ]
+    },
+    "paragraph-291a08d89612": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设对数信噪比为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_t = \\log[\\alpha^2_t / \\sigma^2_t]"
+        },
+        {
+          "type": "text",
+          "text": "，我们可以将 DDIM ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.02502"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Song et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 更新表示为："
+        }
+      ]
+    },
+    "paragraph-0c5962ab6204": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "存在一种特殊的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v}"
+        },
+        {
+          "type": "text",
+          "text": "-预测 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v} = \\alpha_t \\boldsymbol{\\epsilon} - \\sigma_t \\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": ") 参数化，由 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.00512"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Salimans & Ho (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出。与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{\\epsilon}"
+        },
+        {
+          "type": "text",
+          "text": "-参数化相比，它已被证明有助于避免视频生成中的色彩偏移。"
+        }
+      ]
+    },
+    "paragraph-c2985b669198": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v}"
+        },
+        {
+          "type": "text",
+          "text": "参数化是通过角坐标中的一个技巧推导出来的。首先，我们定义"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_t = \\arctan(\\sigma_t / \\alpha_t)"
+        },
+        {
+          "type": "text",
+          "text": "，因此我们有"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_\\phi = \\cos\\phi, \\sigma_t = \\sin\\phi, \\mathbf{z}_\\phi = \\cos\\phi \\mathbf{x} + \\sin\\phi\\boldsymbol{\\epsilon}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}_\\phi"
+        },
+        {
+          "type": "text",
+          "text": "的速度可以写成："
+        }
+      ]
+    },
+    "paragraph-6c9f34bc3746": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后我们可以推断出，"
+        }
+      ]
+    },
+    "paragraph-48c2b0e2a4a4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DDIM更新规则也相应地进行了更新，"
+        }
+      ]
+    },
+    "paragraph-6a84cf839305": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v}"
+        },
+        {
+          "type": "text",
+          "text": "参数化是为了预测"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{v}_\\phi = \\cos\\phi\\boldsymbol{\\epsilon} -\\sin\\phi\\mathbf{x} = \\alpha_t\\boldsymbol{\\epsilon} - \\sigma_t\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-221e0f363b89": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在视频生成的情况下，我们需要扩散模型运行多步上采样以延长视频长度或增加帧率。这需要能够对第二个视频"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^b"
+        },
+        {
+          "type": "text",
+          "text": "进行采样，并以第一个视频"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^b \\sim p_\\theta(\\mathbf{x}^b \\vert \\mathbf{x}^a)"
+        },
+        {
+          "type": "text",
+          "text": "为条件，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^b"
+        },
+        {
+          "type": "text",
+          "text": "可能是"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a"
+        },
+        {
+          "type": "text",
+          "text": "的自回归扩展，或者是低帧率视频"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a"
+        },
+        {
+          "type": "text",
+          "text": "中缺失的帧。"
+        }
+      ]
+    },
+    "paragraph-101130f98435": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_b"
+        },
+        {
+          "type": "text",
+          "text": "的采样除了其自身对应的噪声变量外，还需要以"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_a"
+        },
+        {
+          "type": "text",
+          "text": "为条件。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "视频扩散模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "VDM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2204.03458"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ho & Salimans, et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）提出了一种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "重建引导"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方法，该方法使用调整后的去噪模型，使得"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^b"
+        },
+        {
+          "type": "text",
+          "text": "的采样可以适当地以"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a"
+        },
+        {
+          "type": "text",
+          "text": "为条件："
+        }
+      ]
+    },
+    "paragraph-39e80acf4013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{x}}^a_\\theta (\\mathbf{z}_t), \\hat{\\mathbf{x}}^b_\\theta (\\mathbf{z}_t)"
+        },
+        {
+          "type": "text",
+          "text": "是由去噪模型提供的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a, \\mathbf{x}^b"
+        },
+        {
+          "type": "text",
+          "text": "的重建。"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_r"
+        },
+        {
+          "type": "text",
+          "text": "是一个权重因子，并且发现较大的"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_r >1"
+        },
+        {
+          "type": "text",
+          "text": "可以提高样本质量。请注意，也可以使用相同的重建引导方法，同时以低分辨率视频为条件，将样本扩展到高分辨率。"
+        }
+      ]
+    },
+    "heading-d40432d069f1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型架构：3D U-Net 与 DiT"
+        }
+      ]
+    },
+    "paragraph-1e29cecc7ddc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与文本到图像扩散模型类似，U-net和Transformer仍然是两种"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#model-architecture"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "常见的架构选择"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。Google有一系列基于U-net架构的扩散视频建模论文，而OpenAI最近的Sora模型则利用了Transformer架构。"
+        }
+      ]
+    },
+    "paragraph-fafd4464142c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "VDM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2204.03458"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ho & Salimans, et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）采用了标准的扩散模型设置，但其架构经过修改以适应视频建模。它将"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#model-architecture"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "2D U-net"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "扩展为适用于3D数据（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06650"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Cicek et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），其中每个特征图表示一个帧数 x 高度 x 宽度 x 通道的4D张量。这个3D U-net在空间和时间上进行了分解，这意味着每一层只在空间或时间维度上操作，而不是两者兼顾："
+        }
+      ]
+    },
+    "list-item-a37bc574b201": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "处理"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "空间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：\n\n"
+        }
+      ]
+    },
+    "list-item-2556ff2c2d14": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "2D U-net中的每个旧2D卷积层都被扩展为仅空间3D卷积；具体来说，3x3卷积变为1x3x3卷积。"
+        }
+      ]
+    },
+    "list-item-8e40879c6a60": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个空间注意力块仍然是空间上的注意力，其中第一个轴（"
+        },
+        {
+          "type": "inline_code",
+          "text": "frames"
+        },
+        {
+          "type": "text",
+          "text": "）被视为批处理维度。"
+        }
+      ]
+    },
+    "list-item-138b04354119": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "处理"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "时间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ":\n\n"
+        }
+      ]
+    },
+    "list-item-1e4e7d470cc3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每个空间注意力块之后添加一个时间注意力块。它对第一个轴（"
+        },
+        {
+          "type": "inline_code",
+          "text": "frames"
+        },
+        {
+          "type": "text",
+          "text": "）执行注意力，并将空间轴视为批处理维度。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#relative-position-encoding"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "相对位置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "嵌入用于跟踪帧的顺序。时间注意力块对于模型捕获良好的时间连贯性至关重要。"
+        }
+      ]
+    },
+    "paragraph-5f68bf98486d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Imagen Video"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2210.02303"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ho 等人，2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）建立在扩散模型的级联之上，以增强视频生成质量，并升级到以 24 fps 输出 1280x768 视频。Imagen Video 架构由以下组件组成，总计 7 个扩散模型。"
+        }
+      ]
+    },
+    "list-item-fec45e3d19ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个冻结的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#t5"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "T5"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 文本编码器，用于提供文本嵌入作为条件输入。"
+        }
+      ]
+    },
+    "list-item-f507c5f36048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个基础视频扩散模型。"
+        }
+      ]
+    },
+    "list-item-44b4de920478": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个交错的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "空间和时间超分辨率"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "扩散模型级联，包括 3 个 TSR（时间超分辨率）和 3 个 SSR（空间超分辨率）组件。"
+        }
+      ]
+    },
+    "paragraph-815aeafe44ec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基础去噪模型同时对所有帧执行共享参数的空间操作，然后时间层混合跨帧的激活以更好地捕获时间连贯性，这被发现比帧自回归方法效果更好。"
+        }
+      ]
+    },
+    "paragraph-07d3a49750a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SSR 和 TSR 模型都以与噪声数据 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}_t"
+        },
+        {
+          "type": "text",
+          "text": " 通道级联的上采样输入为条件。SSR 通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://chao-ji.github.io/jekyll/update/2018/07/19/BilinearResize.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "双线性调整大小"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "进行上采样，而 TSR 通过重复帧或填充空白帧进行上采样。"
+        }
+      ]
+    },
+    "paragraph-d6421d744784": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Imagen Video 还应用了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#prog-distll"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "渐进式蒸馏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来加速采样，每次蒸馏迭代可以将所需的采样步骤减少一半。他们的实验能够将所有 7 个视频扩散模型蒸馏到每个模型仅需 8 个采样步骤，而感知质量没有明显损失。"
+        }
+      ]
+    },
+    "paragraph-40b411af2f78": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了实现更好的扩展效果，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Sora"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/research/video-generation-models-as-world-simulators"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Brooks 等人，2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）利用了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#model-architecture"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DiT（扩散 Transformer）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "架构，该架构对视频和图像潜在代码的时空补丁进行操作。视觉输入被表示为时空补丁序列，这些补丁充当 Transformer 输入令牌。"
+        }
+      ]
+    },
+    "heading-615f77a3bb96": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "调整图像模型以生成视频"
+        }
+      ]
+    },
+    "paragraph-896e58fb00f6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "扩散视频建模的另一个突出方法是通过插入时间层来“膨胀”预训练的图像到文本扩散模型，然后我们可以选择"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "只"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在视频数据上微调新层，或者完全避免额外的训练。文本-图像对的先验知识被新模型继承，因此这有助于减轻对文本-视频对数据的要求。"
+        }
+      ]
+    },
+    "heading-e6cec79e1bac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在视频数据上进行微调"
+        }
+      ]
+    },
+    "paragraph-c869d01d4dd8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Make-A-Video"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2209.14792"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Singer 等人，2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过增加时间维度扩展了预训练的扩散图像模型，该模型包含三个关键组件："
+        }
+      ]
+    },
+    "list-item-f35b33575778": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个基于文本-图像对数据训练的基础文本到图像模型。"
+        }
+      ]
+    },
+    "list-item-d2d6ff9b1458": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "时空卷积和注意力层，用于将网络扩展到覆盖时间维度。"
+        }
+      ]
+    },
+    "list-item-7753b67e6ec1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个用于高帧率生成的帧插值网络"
+        }
+      ]
+    },
+    "paragraph-c9cd1e645cb0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最终的视频推理方案可以表述为："
+        }
+      ]
+    },
+    "paragraph-fd387ea20653": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中："
+        }
+      ]
+    },
+    "list-item-d3362ae6185f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 是输入文本。"
+        }
+      ]
+    },
+    "list-item-6bc8a41e206f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{x}}"
+        },
+        {
+          "type": "text",
+          "text": " 是 BPE 编码的文本。"
+        }
+      ]
+    },
+    "list-item-43788ec33902": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\text{CLIP}_\\text{text}(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是 CLIP 文本编码器，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_e = \\text{CLIP}_\\text{text}(\\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-93cd07754fe7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "P(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是先验模型，生成图像嵌入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}_e"
+        },
+        {
+          "type": "text",
+          "text": "，给定文本嵌入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_e"
+        },
+        {
+          "type": "text",
+          "text": " 和 BPE 编码文本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{x}}"
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}_e = P(\\mathbf{x}_e, \\hat{\\mathbf{x}})"
+        },
+        {
+          "type": "text",
+          "text": "。这部分在文本-图像对数据上进行训练，未在视频数据上进行微调。"
+        }
+      ]
+    },
+    "list-item-1ee21be6f2e5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "D^t(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是时空解码器，生成一系列 16 帧，其中每一帧都是低分辨率的 64x64 RGB 图像 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{y}}_l"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-ec298793e41f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\uparrow_F(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是帧插值网络，通过在生成的帧之间进行插值来提高有效帧率。这是一个经过微调的模型，用于预测视频超分辨率中被遮蔽帧的任务。"
+        }
+      ]
+    },
+    "list-item-c72667711a47": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\text{SR}_h(.), \\text{SR}^t_l(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是空间和时空超分辨率模型，分别将图像分辨率提高到 256x256 和 768x768。"
+        }
+      ]
+    },
+    "list-item-ba9bb4375ce9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{y}}_t"
+        },
+        {
+          "type": "text",
+          "text": " 是最终生成的视频。"
+        }
+      ]
+    },
+    "paragraph-4ba2ccc88630": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "时空 SR 层包含伪 3D 卷积层和伪 3D 注意力层："
+        }
+      ]
+    },
+    "list-item-8b8e34da7e0c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "伪 3D 卷积层：每个空间 2D 卷积层（从预训练图像模型初始化）后接一个时间 1D 层（初始化为恒等函数）。概念上，2D 卷积层首先生成多个帧，然后将这些帧重塑为视频片段。"
+        }
+      ]
+    },
+    "list-item-42dcf141e380": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "伪 3D 注意力层：在每个（预训练的）空间注意力层之后，堆叠一个时间注意力层，用于近似一个完整的时空注意力层。"
+        }
+      ]
+    },
+    "paragraph-53986286e83e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它们可以表示为："
+        }
+      ]
+    },
+    "paragraph-fbd41d99df21": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中输入张量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h} \\in \\mathbb{R}^{B\\times C \\times F \\times H \\times W}"
+        },
+        {
+          "type": "text",
+          "text": "（对应于批大小、通道、帧、高度和宽度）；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\circ T"
+        },
+        {
+          "type": "text",
+          "text": " 在时间维度和空间维度之间进行交换；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{flatten}(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是一个矩阵运算符，用于将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}"
+        },
+        {
+          "type": "text",
+          "text": " 转换为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}’ \\in \\mathbb{R}^{B \\times C \\times F \\times HW}"
+        },
+        {
+          "type": "text",
+          "text": "，而 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{flatten}^{-1}(.)"
+        },
+        {
+          "type": "text",
+          "text": " 则反转该过程。"
+        }
+      ]
+    },
+    "paragraph-eba11d5be79a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在训练期间，Make-A-Video 流水线的不同组件是独立训练的。"
+        }
+      ]
+    },
+    "list-item-2ffc5d14cbfe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "解码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D^t"
+        },
+        {
+          "type": "text",
+          "text": "、先验 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": " 和两个超分辨率组件 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{SR}_h, \\text{SR}^t_l"
+        },
+        {
+          "type": "text",
+          "text": " 首先单独在图像上进行训练，不使用配对文本。"
+        }
+      ]
+    },
+    "list-item-c03e631e529c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "接下来，新的时间层被添加，初始化为恒等函数，然后在未标记的视频数据上进行微调。"
+        }
+      ]
+    },
+    "paragraph-2ca42dac00e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Tune-A-Video"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openaccess.thecvf.com/content/ICCV2023/html/Wu_Tune-A-Video_One-Shot_Tuning_of_Image_Diffusion_Models_for_Text-to-Video_Generation_ICCV_2023_paper.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wu et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）通过膨胀预训练图像扩散模型来实现单次视频微调：给定一个包含"
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": "帧的视频，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{V} = \\{v_i \\mid i = 1, \\dots, m\\}"
+        },
+        {
+          "type": "text",
+          "text": "，并配有一个描述性提示词"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，任务是生成一个新视频"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{V}^*"
+        },
+        {
+          "type": "text",
+          "text": "，基于一个略微编辑且相关的文本提示词"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau^*"
+        },
+        {
+          "type": "text",
+          "text": "。例如，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": " = "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"A man is skiing\""
+        },
+        {
+          "type": "text",
+          "text": "可以扩展为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau^*"
+        },
+        {
+          "type": "text",
+          "text": " = "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"Spiderman is skiing on the beach\""
+        },
+        {
+          "type": "text",
+          "text": "。Tune-A-Video 旨在用于对象编辑、背景更改和风格迁移。"
+        }
+      ]
+    },
+    "paragraph-757834fd2e61": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除了膨胀2D卷积层，Tune-A-Video的U-Net架构还结合了ST-Attention（时空注意力）块，通过查询先前帧中的相关位置来捕获时间一致性。给定帧"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_i"
+        },
+        {
+          "type": "text",
+          "text": "的潜在特征，将先前帧"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_{i-1}"
+        },
+        {
+          "type": "text",
+          "text": "和第一帧"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_1"
+        },
+        {
+          "type": "text",
+          "text": "投影到查询"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q}"
+        },
+        {
+          "type": "text",
+          "text": "、键"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{K}"
+        },
+        {
+          "type": "text",
+          "text": "和值"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{V}"
+        },
+        {
+          "type": "text",
+          "text": "，ST-attention定义为："
+        }
+      ]
+    },
+    "paragraph-e86d146a90a3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Gen-1"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2302.03011"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Esser 等人 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）由 Runway 推出，旨在根据文本输入编辑给定视频。它将视频的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "结构"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "内容"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的考量"
+        },
+        {
+          "type": "inline_math",
+          "text": "p(\\mathbf{x} \\mid s, c)"
+        },
+        {
+          "type": "text",
+          "text": "分解，用于生成条件。然而，要清晰地分解这两个方面并不容易。"
+        }
+      ]
+    },
+    "list-item-0e90e53fcbd2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "内容"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 指的是视频的外观和语义，这些是从文本中采样用于条件编辑的。帧的 CLIP 嵌入是内容的良好表示，并且在很大程度上与结构特征正交。"
+        }
+      ]
+    },
+    "list-item-270d5ef2bd79": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "结构"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 描绘了几何和动态，包括物体的形状、位置、时间变化，并且 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 是从输入视频中采样的。可以使用深度估计或其他特定任务的辅助信息（例如，用于人类视频合成的人体姿态或面部地标）。"
+        }
+      ]
+    },
+    "paragraph-2312a0f7befc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Gen-1 中的架构变化相当标准，即在其残差块中每个 2D 空间卷积层之后添加 1D 时间卷积层，并在其注意力块中每个 2D 空间注意力块之后添加 1D 时间注意力块。在训练期间，结构变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 与扩散潜在变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}"
+        },
+        {
+          "type": "text",
+          "text": " 连接，其中内容变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 在交叉注意力层中提供。在推理时，通过先验将 CLIP 嵌入转换为 CLIP 图像嵌入，以将 CLIP 文本嵌入转换为 CLIP 图像嵌入。"
+        }
+      ]
+    },
+    "paragraph-6c561c7f23cb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "视频 LDM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2304.08818"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Blattmann 等人 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 首先训练一个 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#latent-variable-space"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "LDM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（潜在扩散模型）图像生成器。然后对模型进行微调，以生成添加了时间维度的视频。微调仅应用于编码图像序列上这些新添加的时间层。视频 LDM 中的时间层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{l^i_\\phi \\mid i = \\ 1, \\dots, L\\}"
+        },
+        {
+          "type": "text",
+          "text": "（参见图 10）与现有的空间层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "l^i_\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 交错排列，这些空间层在微调期间保持 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "冻结"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。也就是说，我们只微调新参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": "，而不微调预训练的图像骨干模型参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "。视频 LDM 的流程是首先以低帧率生成关键帧，然后通过 2 步潜在帧插值来提高帧率。"
+        }
+      ]
+    },
+    "paragraph-de1eab18f5cb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "长度为"
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": "被解释为一批图像（即"
+        },
+        {
+          "type": "inline_math",
+          "text": "B \\cdot T"
+        },
+        {
+          "type": "text",
+          "text": "）用于基础图像模型"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "，然后被重塑为视频格式，用于"
+        },
+        {
+          "type": "inline_math",
+          "text": "l^i_\\phi"
+        },
+        {
+          "type": "text",
+          "text": "个时间层。存在一个跳跃连接，它将时间层输出"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}’"
+        },
+        {
+          "type": "text",
+          "text": "与空间输出"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}"
+        },
+        {
+          "type": "text",
+          "text": "通过一个学习到的合并参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "。实践中实现了两种类型的时间混合层：（1）时间注意力机制和（2）基于3D卷积的残差块。"
+        }
+      ]
+    },
+    "paragraph-49d0537b769a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，LDM 的预训练自编码器存在一个遗留问题，它只处理图像，从未处理过视频。天真地将其用于视频生成可能会导致闪烁伪影，缺乏良好的时间连贯性。因此，Video LDM 在解码器中添加了额外的时间层，并使用由 3D 卷积构建的逐块时间判别器在视频数据上进行了微调，而编码器保持不变，以便我们仍然可以重用预训练的 LDM。在时间解码器微调期间，冻结的编码器独立处理视频中的每一帧，并使用视频感知判别器强制实现跨帧的时间连贯重建。"
+        }
+      ]
+    },
+    "paragraph-1a02af94a994": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与Video LDM类似，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Stable Video Diffusion"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "SVD"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2311.15127"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Blattmann et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的架构设计也基于LDM，并在每个空间卷积和注意力层之后插入了时间层，但SVD对整个模型进行了微调。视频LDM的训练分为三个阶段："
+        }
+      ]
+    },
+    "list-item-188eec37c820": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "文本到图像预训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "很重要，有助于提高质量和提示遵循能力。"
+        }
+      ]
+    },
+    "list-item-0856c991f1ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "视频预训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "最好是单独进行，并且理想情况下应在一个更大规模、经过精心策划的数据集上进行。"
+        }
+      ]
+    },
+    "list-item-3d2646deb24e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "高质量视频微调"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "适用于较小规模、预先标注且视觉保真度高的视频。"
+        }
+      ]
+    },
+    "paragraph-af44b999553d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SVD 特别强调了"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "数据集管理"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在模型性能中的关键作用。他们应用了剪辑检测管道来获取每个视频的更多剪辑，然后应用了三种不同的字幕模型：(1) CoCa 用于中帧，(2) V-BLIP 用于视频字幕，以及 (3) 基于前两个字幕的 LLM 字幕生成。然后，他们通过移除运动较少的片段（通过以 2 fps 计算的低光流分数进行过滤）、文本过多（应用光学字符识别来识别包含大量文本的视频），或普遍审美价值较低（使用 CLIP 嵌入注释每个片段的第一帧、中间帧和最后一帧，并计算美学分数&文本-图像相似度）来持续改进视频数据集。实验表明，经过过滤的、更高质量的数据集能够带来更好的模型质量，即使该数据集小得多。"
+        }
+      ]
+    },
+    "paragraph-2202f92e5674": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先生成远距离关键帧，然后通过时间超分辨率添加插值，其关键挑战是如何保持高质量的时间一致性。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Lumiere"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2401.12945"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Bar-Tal et al. 2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 则采用了一种"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "时空U-Net (STUNet)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 架构，通过"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "一次性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "生成视频的整个时间长度，从而消除了对TSR（时间超分辨率）组件的依赖。STUNet 在时间和空间维度上对视频进行下采样，因此昂贵的计算发生在紧凑的时空潜在空间中。"
+        }
+      ]
+    },
+    "paragraph-1369e9b6336d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "STUNet 扩展了一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "预训练的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "文本到图像U-net，使其能够在时间和空间维度上对视频进行下采样和上采样。基于卷积的块由预训练的文本到图像层组成，然后是分解的时空卷积。而U-Net最粗糙层级的基于注意力的块包含预训练的文本到图像，然后是时间注意力。进一步的训练"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "只"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "发生在新增的层上。"
+        }
+      ]
+    },
+    "heading-a72bb89bc7da": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练免调优适应"
+        }
+      ]
+    },
+    "paragraph-e4e2972f591e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "令人惊讶的是，无需任何训练，就可以使预训练的文本到图像模型输出视频 🤯。"
+        }
+      ]
+    },
+    "paragraph-fb1093ce249b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果我们随机地简单采样一系列潜在编码，然后构建一个由解码后的对应图像组成的视频，则无法保证物体和语义在时间上的一致性。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Text2Video-Zero"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2303.13439"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Khachatryan et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过用两个关键的时间一致性机制增强预训练图像扩散模型，实现了零样本、免训练的视频生成："
+        }
+      ]
+    },
+    "list-item-1c0ca140ba32": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "运动动力学"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "采样潜在编码序列，以保持全局场景和背景的时间一致性；"
+        }
+      ]
+    },
+    "list-item-84f906001120": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "新的跨帧注意力机制"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（即每帧对第一帧的注意力）重新编程帧级自注意力，以保留前景物体的上下文、外观和身份。"
+        }
+      ]
+    },
+    "paragraph-8716ffab7574": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "采样带有运动信息的潜在变量序列"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^1_T, \\dots, \\mathbf{x}^m_T"
+        },
+        {
+          "type": "text",
+          "text": "的过程描述如下："
+        }
+      ]
+    },
+    "list-item-e6cc75c89510": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定义一个方向"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{\\delta} = (\\delta_x, \\delta_y) \\in \\mathbb{R}^2"
+        },
+        {
+          "type": "text",
+          "text": "来控制全局场景和摄像机运动；默认情况下，我们设置"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{\\delta} = (1, 1)"
+        },
+        {
+          "type": "text",
+          "text": "。同时定义一个超参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda > 0"
+        },
+        {
+          "type": "text",
+          "text": "来控制全局运动的量。"
+        }
+      ]
+    },
+    "list-item-17d946bdc6c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先随机采样第一帧的潜在编码"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^1_T \\sim \\mathcal{N}(0, I)"
+        },
+        {
+          "type": "text",
+          "text": "；"
+        }
+      ]
+    },
+    "list-item-0999a66a42ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用预训练图像扩散模型（例如论文中的Stable Diffusion (SD) 模型）执行"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Delta t \\geq 0"
+        },
+        {
+          "type": "text",
+          "text": "次DDIM反向更新步骤，并获得相应的潜在编码"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^1_{T’}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "T’ = T - \\Delta t"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-44bae5dbd36a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于潜在编码序列中的每一帧，我们应用由"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{\\delta}^k = \\lambda(k-1)\\boldsymbol{\\delta}"
+        },
+        {
+          "type": "text",
+          "text": "定义的形变操作进行相应的运动平移，以获得"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{x}}^k_{T’}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-ccf2bc5e6a98": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，对所有"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{x}}^{2:m}_{T’}"
+        },
+        {
+          "type": "text",
+          "text": "应用DDIM正向步骤，以获得"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^{2:m}_T"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-7f1206bd0eea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，Text2Video-Zero 将预训练SD模型中的自注意力层替换为一种新的跨帧注意力机制，该机制参考"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "帧。这样做的动机是为了在生成的视频中保留前景物体的外观、形状和身份信息。"
+        }
+      ]
+    },
+    "paragraph-4862ca4d42b9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可选地，背景掩码可用于进一步平滑并改善背景一致性。假设我们获得了一个相应的前景掩码"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{M}_k"
+        },
+        {
+          "type": "text",
+          "text": "用于第"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "帧，使用某种现有方法，并且背景平滑在扩散步骤"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "，相对于背景矩阵："
+        }
+      ]
+    },
+    "paragraph-ef6c55343fa2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^k_t"
+        },
+        {
+          "type": "text",
+          "text": "是实际的潜在代码，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{x}}^k_t"
+        },
+        {
+          "type": "text",
+          "text": "是背景上扭曲的潜在代码；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "是一个超参数，论文在实验中设置"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha=0.6"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-b46675e1bc9f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Text2video-zero 可以与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#controlnet"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ControlNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 结合使用，其中 ControlNet 预训练的复制分支在每个帧上应用于每个 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^k_t"
+        },
+        {
+          "type": "text",
+          "text": "，用于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k = 1, \\dots, m"
+        },
+        {
+          "type": "text",
+          "text": " 在每个扩散时间步 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t = T , \\dots, 1"
+        },
+        {
+          "type": "text",
+          "text": "，并将 ControlNet 分支的输出添加到主 U-net 的跳跃连接中。"
+        }
+      ]
+    },
+    "paragraph-8ed769b0d784": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ControlVideo"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2305.13077"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 旨在生成以文本提示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": " 和运动序列（例如，深度图或边缘图）为条件的视频 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{c} = \\{c^i\\}_{i=0}^{N-1}"
+        },
+        {
+          "type": "text",
+          "text": "。它是在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/#controlnet"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ControlNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的基础上进行改编的，并增加了三种新机制："
+        }
+      ]
+    },
+    "list-item-a3ce635e934e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "跨帧注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在自注意力模块中添加了完全的跨帧交互。它通过将 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "所有时间步"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的潜在帧映射到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q}, \\mathbf{K}, \\mathbf{V}"
+        },
+        {
+          "type": "text",
+          "text": " 矩阵中，引入了所有帧之间的交互，这与 Text2Video-zero 不同，后者只配置所有帧关注 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "第一"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 帧。"
+        }
+      ]
+    },
+    "list-item-7cb24a488498": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "交错帧平滑器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是一种对交替帧进行帧插值以减少闪烁效应的机制。在每个时间步 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "，平滑器会插值偶数帧或奇数帧，以平滑它们对应的三帧片段。请注意，在平滑步骤后，帧数会随时间减少。"
+        }
+      ]
+    },
+    "list-item-a0dffb3dd130": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "分层采样器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "利用分层采样器，在内存限制下实现具有时间一致性的长视频。长视频被分割成多个短片段，每个片段都选择一个关键帧。模型预先生成这些关键帧，并采用完整的跨帧注意力以实现长期连贯性，然后依次合成每个对应的短片段，并以关键帧为条件。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-ced8629e8eb6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (Apr 2024). Diffusion Models Video Generation. Lil’Log. https://lilianweng.github.io/posts/2024-04-12-diffusion-video/."
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-1876d8bd500c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Cicek 等人 2016 年。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06650"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“3D U-Net：从稀疏标注中学习密集体积分割。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-62f0e85ac549": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Ho & Salimans 等人。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2204.03458"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“视频扩散模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2022 | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://video-diffusion.github.io/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "网页"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-1cfcb348f619": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Bar-Tal 等人 2024 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2401.12945"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Lumiere：用于视频生成的时空扩散模型。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-51ec667ad508": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Brooks 等人。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/research/video-generation-models-as-world-simulators"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“作为世界模拟器的视频生成模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " OpenAI 博客，2024 年。"
+        }
+      ]
+    },
+    "paragraph-96b18b8ab424": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Zhang 等人 2023 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2305.13077"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“ControlVideo：免训练可控文本到视频生成。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-86ef43b70322": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Khachatryan 等人 2023 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2303.13439"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Text2Video-Zero：文本到图像扩散模型是零样本视频生成器。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-7d5300635d25": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Ho 等人 2022 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2210.02303"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Imagen Video：使用扩散模型进行高清视频生成。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-d03c2325d846": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Singer 等人。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2209.14792"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Make-A-Video：无需文本视频数据的文本到视频生成。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2022 年。"
+        }
+      ]
+    },
+    "paragraph-040e363ba0f6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Wu 等人。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openaccess.thecvf.com/content/ICCV2023/html/Wu_Tune-A-Video_One-Shot_Tuning_of_Image_Diffusion_Models_for_Text-to-Video_Generation_ICCV_2023_paper.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Tune-A-Video：用于文本到视频生成的一次性图像扩散模型微调。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICCV 2023。"
+        }
+      ]
+    },
+    "paragraph-bddbd8a0acb1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Blattmann 等人 2023 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2304.08818"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对齐你的潜在空间：使用潜在扩散模型进行高分辨率视频合成。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-a1684f6f3c12": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Blattmann 等人 2023 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2311.15127"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“稳定视频扩散：将潜在视频扩散模型扩展到大型数据集。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-2b97668545b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Esser 等人 2023 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2302.03011"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用扩散模型进行结构和内容引导的视频合成。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-3ae8c4384f6f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Bar-Tal 等人 2024 年 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2401.12945"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Lumiere：用于视频生成的时空扩散模型。”"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

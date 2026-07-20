@@ -1,0 +1,1385 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2017-12-15-object-recognition-part-2",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2017-12-15T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:39a14eb0fa38bb4acc9a6ce0e0f030c7abe4743d0ece0bc776ddbede897c5a7e",
+    "fetched_at": "2026-07-14T02:04:57.217334+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Object Detection for Dummies Part 2: CNN, DPM and Overfeat",
+    "title_en": "Object Detection for Dummies Part 2: CNN, DPM and Overfeat",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-276a86b2c8ab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-10-29-object-recognition-part-1/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of the “Object Detection for Dummies” series introduced: (1) the concept of image gradient vector and how HOG algorithm summarizes the information across all the gradient vectors in one image; (2) how the image segmentation algorithm works to detect regions that potentially contain objects; (3) how the Selective Search algorithm refines the outcomes of image segmentation for better region proposal."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-30976188a71f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In Part 2, we are about to find out more on the classic convolution neural network architectures for image classification. They lay the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "foundation"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for further progress on the deep learning models for object detection. Go check "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " if you want to learn more on R-CNN and related models."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4832669d769c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Links to all the posts in the series:\n["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-10-29-object-recognition-part-1/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]\n["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]\n["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]\n["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 4"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]."
+          }
+        ]
+      },
+      {
+        "id": "heading-890b3018f4c6",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CNN for Image Classification"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-580b75b27aaf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CNN, short for “"
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Convolutional Neural Network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "”, is the go-to solution for computer vision problems in the deep learning world. It was, to some extent, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-06-21-overview/#convolutional-neural-network"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "inspired"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by how human visual cortex system works."
+          }
+        ]
+      },
+      {
+        "id": "heading-09126e711089",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Convolution Operation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-52ef2e4daef5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I strongly recommend this "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1603.07285.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "guide"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to convolution arithmetic, which provides a clean and solid explanation with tons of visualizations and examples. Here let’s focus on two-dimensional convolution as we are working with images in this post."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-51e3dbb78ea3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In short, convolution operation slides a predefined "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Kernel_(image_processing)"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "kernel"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (also called “filter”) on top of the input feature map (matrix of image pixels), multiplying and adding the values of the kernel and partial input features to generate the output. The values form an output matrix, as usually, the kernel is much smaller than the input image."
+          }
+        ]
+      },
+      {
+        "id": "image-cfd3f8ccd6d8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/convolution-operation.png",
+          "alt": "An illustration of applying a kernel on the input feature map to generate the output. (Image source: River Trail documentation )"
+        }
+      },
+      {
+        "id": "paragraph-d2e78f3a5672",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Figure 2 showcases two real examples of how to convolve a 3x3 kernel over a 5x5 2D matrix of numeric values to generate a 3x3 matrix. By controlling the padding size and the stride length, we can generate an output matrix of a certain size."
+          }
+        ]
+      },
+      {
+        "id": "image-293099f4eb84",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/numerical_no_padding_no_strides.gif",
+          "alt": "Two examples of 2D convolution operation: (top) no padding and 1x1 strides; (bottom) 1x1 border zeros padding and 2x2 strides. (Image source: deeplearning.net )"
+        }
+      },
+      {
+        "id": "image-1ab360220d4c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/numerical_padding_strides.gif",
+          "alt": "Two examples of 2D convolution operation: (top) no padding and 1x1 strides; (bottom) 1x1 border zeros padding and 2x2 strides. (Image source: deeplearning.net )"
+        }
+      },
+      {
+        "id": "heading-ecbe33e341b4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "AlexNet (Krizhevsky et al, 2012)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-277fd86ec3ad",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e29048ee849b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "5 convolution [+ optional max pooling] layers + 2 MLP layers + 1 LR layer"
+              }
+            ]
+          },
+          {
+            "id": "list-item-6318d1ef8953",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Use data augmentation techniques to expand the training dataset, such as image translations, horizontal reflections, and patch extractions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-73732ea79fea",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/alex_net_illustration.png",
+          "alt": "The architecture of AlexNet. (Image source: link )"
+        }
+      },
+      {
+        "id": "heading-0c57f9869ec8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "VGG (Simonyan and Zisserman, 2014)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-c434956184e0",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a9ac615d963e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The network is considered as “very deep” at its time; 19 layers"
+              }
+            ]
+          },
+          {
+            "id": "list-item-bb624e790548",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The architecture is extremely simplified with only 3x3 convolutional layers and 2x2 pooling layers. The stacking of small filters simulates a larger filter with fewer parameters."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-8524f81a386d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ResNet (He et al., 2015)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-6809c1423868",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e3309095a968",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The network is indeed very deep; 152 layers of simple architecture."
+              }
+            ]
+          },
+          {
+            "id": "list-item-70fb884d8800",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Residual Block"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Some input of a certain layer can be passed to the component two layers later. Residual blocks are essential for keeping a deep network trainable and eventually work. Without residual blocks, the training loss of a plain network does not monotonically decrease as the number of layers increases due to "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "http://www.wildml.com/2015/10/recurrent-neural-networks-tutorial-part-3-backpropagation-through-time-and-vanishing-gradients/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "vanishing and exploding gradients"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-f792e3166af7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/residual-block.png",
+          "alt": "An illustration of the residual block of ResNet. In some way, we can say the design of residual blocks is inspired by V4 getting input directly from V1 in the human visual cortex system. (left image source: Wang et al., 2017 )"
+        }
+      },
+      {
+        "id": "heading-bebbbd49b252",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evaluation Metrics: mAP"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a673a7bd7e92",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A common evaluation metric used in many object recognition and detection tasks is “"
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "mAP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "”, short for “"
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "mean average precision"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "”. It is a number from 0 to 100; higher value is better."
+          }
+        ]
+      },
+      {
+        "id": "list-ce4e502cd98e",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-1d731a649b6d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Combine all detections from all test images to draw a precision-recall curve (PR curve) for each class; The “average precision” (AP) is the area under the PR curve."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b284091216d4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Given that target objects are in different classes, we first compute AP separately for each class, and then average over classes."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2a8d281c4a15",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A detection is a true positive if it has "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "“intersection over union” (IoU)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " with a ground-truth box greater than some threshold (usually 0.5; if so, the metric is “"
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "mailto:mAP@0.5"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "mAP@0.5"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "”)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-aeb1721a3c1e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deformable Parts Model"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d178ea3cc1ae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Deformable Parts Model (DPM) ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://people.cs.uchicago.edu/~pff/papers/lsvm-pami.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Felzenszwalb et al., 2010"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") recognizes objects with a mixture graphical model (Markov random fields) of deformable parts. The model consists of three major components:"
+          }
+        ]
+      },
+      {
+        "id": "list-2160eaf936a5",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-953991aeb643",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A coarse "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "root filter"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " defines a detection window that approximately covers an entire object. A filter specifies weights for a region feature vector."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c64faa00886f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Multiple "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "part filters"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " that cover smaller parts of the object. Parts filters are learned at twice resolution of the root filter."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7b66b4935c63",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "spatial model"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " for scoring the locations of part filters relative to the root."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-ec589d35c93f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/DPM.png",
+          "alt": "The DPM model contains (a) a root filter, (b) multiple part filters at twice the resolution, and (c) a model for scoring the location and deformation of parts."
+        }
+      },
+      {
+        "id": "paragraph-c12d6b70795f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The quality of detecting an object is measured by the score of filters minus the deformation costs. The matching score "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": ", in laymen’s terms, is:"
+          }
+        ]
+      },
+      {
+        "id": "math-87fbf3c371d9",
+        "type": "math",
+        "attrs": {
+          "latex": "f(\\text{model}, x) = f(\\beta_\\text{root}, x) + \\sum_{\\beta_\\text{part} \\in \\text{part filters}} \\max_y [f(\\beta_\\text{part}, y) - \\text{cost}(\\beta_\\text{part}, x, y)]"
+        }
+      },
+      {
+        "id": "paragraph-b14a2e26713e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "in which,"
+          }
+        ]
+      },
+      {
+        "id": "list-f029c2e2147f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-60c38bd0ae6c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "x"
+              },
+              {
+                "type": "text",
+                "text": " is an image with a specified position and scale;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c3ab9a656c98",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "y"
+              },
+              {
+                "type": "text",
+                "text": " is a sub region of "
+              },
+              {
+                "type": "inline_math",
+                "text": "x"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b862296385ab",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\beta_\\text{root}"
+              },
+              {
+                "type": "text",
+                "text": " is the root filter."
+              }
+            ]
+          },
+          {
+            "id": "list-item-413164cd72cd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\beta_\\text{part}"
+              },
+              {
+                "type": "text",
+                "text": " is one part filter."
+              }
+            ]
+          },
+          {
+            "id": "list-item-47613f62cfbd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "cost() measures the penalty of the part deviating from its ideal location relative to the root."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-899a78bfc2af",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The basic score model is the dot product between the filter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " and the region feature vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Phi(x)"
+          },
+          {
+            "type": "text",
+            "text": ": "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(\\beta, x) = \\beta \\cdot \\Phi(x)"
+          },
+          {
+            "type": "text",
+            "text": ". The feature set "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Phi(x)"
+          },
+          {
+            "type": "text",
+            "text": " can be defined by HOG or other similar algorithms."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ef1779ca8e4c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A root location with high score detects a region with high chances to contain an object, while the locations of the parts with high scores confirm a recognized object hypothesis. The paper adopted latent SVM to model the classifier."
+          }
+        ]
+      },
+      {
+        "id": "image-a276434b4f60",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/DPM-matching.png",
+          "alt": "The matching process by DPM. (Image source: Felzenszwalb et al., 2010 )"
+        }
+      },
+      {
+        "id": "paragraph-e262b96fab16",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The author later claimed that DPM and CNN models are not two distinct approaches to object recognition. Instead, a DPM model can be formulated as a CNN by unrolling the DPM inference algorithm and mapping each step to an equivalent CNN layer. (Check the details in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Girshick_Deformable_Part_Models_2015_CVPR_paper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Girshick et al., 2015"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "!)"
+          }
+        ]
+      },
+      {
+        "id": "heading-8673daa0575e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Overfeat"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a536f64f082b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Overfeat ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pdfs.semanticscholar.org/f2c2/fbc35d0541571f54790851de9fcd1adde085.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/sermanet/OverFeat"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "] is a pioneer model of integrating the object detection, localization and classification tasks all into one convolutional neural network. The main idea is to (i) do image classification at different locations on regions of multiple scales of the image in a sliding window fashion, and (ii) predict the bounding box locations with a regressor trained on top of the same convolution layers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b3199ba3d00e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Overfeat model architecture is very similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/#alexnet-krizhevsky-et-al-2012"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "AlexNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". It is trained as follows:"
+          }
+        ]
+      },
+      {
+        "id": "image-512fc9f1ca85",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/overfeat-training.png",
+          "alt": "The training stages of the Overfeat model. (Image source: link )"
+        }
+      },
+      {
+        "id": "list-7d0363222641",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-655b0310213f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Train a CNN model (similar to AlexNet) on the image classification task."
+              }
+            ]
+          },
+          {
+            "id": "list-item-477fe976da56",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then, we replace the top classifier layers by a regression network and train it to predict object bounding boxes at each spatial location and scale. The regressor is class-specific, each generated for one image class.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-93bd3a7cd069",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-9694a6c895b5",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Input: Images with classification and bounding box."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-bdf06d2d9202",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Output: "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "(x_\\text{left}, x_\\text{right}, y_\\text{top}, y_\\text{bottom})"
+                      },
+                      {
+                        "type": "text",
+                        "text": ", 4 values in total, representing the coordinates of the bounding box edges."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-70ddcaa58759",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Loss: The regressor is trained to minimize "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "l2"
+                      },
+                      {
+                        "type": "text",
+                        "text": " norm between generated bounding box and the ground truth for each training example."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8cc53f88ddaf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At the detection time,"
+          }
+        ]
+      },
+      {
+        "id": "list-8944b65a62bd",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-94a7a7cb5f5e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Perform classification at each location using the pretrained CNN model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-15b566af6c65",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Predict object bounding boxes on all classified regions generated by the classifier."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ccfe8b0d14ff",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Merge bounding boxes with sufficient overlap from localization and sufficient confidence of being the same object from the classifier."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-054dc56b8cf5",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2017detection2,\n  title   = \"Object Detection for Dummies Part 2: CNN, DPM and Overfeat\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2017\",\n  url     = \"https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-1e128c52c168",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reference"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-ecd445bf97de",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Vincent Dumoulin and Francesco Visin. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1603.07285.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A guide to convolution arithmetic for deep learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1603.07285 (2016)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-efb120b161a1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Haohan Wang, Bhiksha Raj, and Eric P. Xing. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1702.07800.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“On the Origin of Deep Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1702.07800 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-74fdb5393a51",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Pedro F. Felzenszwalb, Ross B. Girshick, David McAllester, and Deva Ramanan. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://people.cs.uchicago.edu/~pff/papers/lsvm-pami.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Object detection with discriminatively trained part-based models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " IEEE transactions on pattern analysis and machine intelligence 32, no. 9 (2010): 1627-1645."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7ced562d0319",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Ross B. Girshick, Forrest Iandola, Trevor Darrell, and Jitendra Malik. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Girshick_Deformable_Part_Models_2015_CVPR_paper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Deformable part models are convolutional neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " In Proc. IEEE Conf. on Computer Vision and Pattern Recognition (CVPR), pp. 437-446. 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-720f41509d6f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Sermanet, Pierre, David Eigen, Xiang Zhang, Michaël Mathieu, Rob Fergus, and Yann LeCun. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pdfs.semanticscholar.org/f2c2/fbc35d0541571f54790851de9fcd1adde085.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“OverFeat: Integrated Recognition, Localization and Detection using Convolutional Networks”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1312.6229 (2013)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "object-detection-for-dummies-part-2-cnn-dpm-and-overfeat",
+    "source_slug": "2017-12-15-object-recognition-part-2",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 9,
+      "math": 1,
+      "image": 8,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/convolution-operation.png",
+      "alt": "An illustration of applying a kernel on the input feature map to generate the output. (Image source: River Trail documentation )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/numerical_no_padding_no_strides.gif",
+      "alt": "Two examples of 2D convolution operation: (top) no padding and 1x1 strides; (bottom) 1x1 border zeros padding and 2x2 strides. (Image source: deeplearning.net )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/numerical_padding_strides.gif",
+      "alt": "Two examples of 2D convolution operation: (top) no padding and 1x1 strides; (bottom) 1x1 border zeros padding and 2x2 strides. (Image source: deeplearning.net )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/alex_net_illustration.png",
+      "alt": "The architecture of AlexNet. (Image source: link )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/residual-block.png",
+      "alt": "An illustration of the residual block of ResNet. In some way, we can say the design of residual blocks is inspired by V4 getting input directly from V1 in the human visual cortex system. (left image source: Wang et al., 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/DPM.png",
+      "alt": "The DPM model contains (a) a root filter, (b) multiple part filters at twice the resolution, and (c) a model for scoring the location and deformation of parts."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/DPM-matching.png",
+      "alt": "The matching process by DPM. (Image source: Felzenszwalb et al., 2010 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/overfeat-training.png",
+      "alt": "The training stages of the Overfeat model. (Image source: link )"
+    }
+  ]
+}

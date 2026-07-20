@@ -1,0 +1,3024 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:6a3efc04882a56b71d6409f7119ecfc1c3da1cb2093fbabbb16e4f4cb85c04bc",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "深度神经网络是否严重过拟合？",
+  "segments": {
+    "paragraph-0b7c536aaebc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2019-05-27 更新：增加了关于 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#the-lottery-ticket-hypothesis"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "彩票假说"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的部分。]"
+        }
+      ]
+    },
+    "paragraph-c73047ac5044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果你和我一样，带着传统机器学习的经验进入深度学习领域，你可能会经常思考这个问题：一个典型的深度神经网络有如此多的参数，并且训练误差可以很容易地达到完美，它肯定会遭受严重的过拟合。它怎么可能泛化到样本外的数据点呢？"
+        }
+      ]
+    },
+    "paragraph-ecfa30810e1f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "试图理解深度神经网络为何能够泛化，这让我想起了系统生物学领域一篇有趣的文章——"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cell.com/cancer-cell/pdf/S1535-6108(02)00133-2.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“生物学家能修理收音机吗？”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (Lazebnik, 2002)。如果一位生物学家像研究生物系统那样试图修理收音机，那会很困难。因为收音机系统的完整机制并未揭示，探究小的局部功能可能会提供一些线索，但它很难呈现系统内的所有相互作用，更不用说整个工作流程了。无论你是否认为它与深度学习相关，这都是一篇非常有趣的文章。"
+        }
+      ]
+    },
+    "paragraph-e0bd62a32920": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我想在这篇文章中讨论几篇关于深度学习模型泛化能力和复杂性度量的论文。希望它能为你在理解深度神经网络为何能够泛化方面提供一些启发。"
+        }
+      ]
+    },
+    "heading-bf200f1d66b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "压缩与模型选择的经典定理"
+        }
+      ]
+    },
+    "paragraph-b5492ff59b2a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们有一个分类问题和一个数据集，我们可以开发许多模型来解决它，从拟合简单的线性回归到在磁盘空间中记忆整个数据集。哪一个更好呢？如果我们只关心训练数据的准确性（特别是考虑到测试数据可能未知），那么记忆方法似乎是最好的——嗯，这听起来不对劲。"
+        }
+      ]
+    },
+    "paragraph-83d14d5733cb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在这种情况下，有许多经典定理可以指导我们决定一个好的模型应该具备哪些类型的属性。"
+        }
+      ]
+    },
+    "heading-ae199681b3c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奥卡姆剃刀"
+        }
+      ]
+    },
+    "paragraph-18f09dc800a2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://pespmc1.vub.ac.be/OCCAMRAZ.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "奥卡姆剃刀"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是一个非正式的问题解决原则，由 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/William_of_Ockham"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "奥卡姆的威廉"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 在14世纪提出："
+        }
+      ]
+    },
+    "paragraph-ed8b14e97097": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“更简单的解决方案比复杂的解决方案更有可能是正确的。”"
+        }
+      ]
+    },
+    "paragraph-3bbbf3ad1e65": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当我们面对多种解释世界的潜在理论并必须选择其中一个时，这个论断极其强大。过多的不必要假设可能对一个问题看似合理，但却难以泛化到其他复杂情况，或最终无法引向宇宙的基本原理。"
+        }
+      ]
+    },
+    "paragraph-39296e67a15d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "试想一下，人们花了数百年才弄明白白天天空是蓝色而日落时是红色是由于相同的原因（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Rayleigh_scattering"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "瑞利散射"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），尽管这两种现象看起来非常不同。人们肯定曾为它们分别提出了许多其他解释，但最终统一而简单的版本胜出了。"
+        }
+      ]
+    },
+    "heading-d534fb89683b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最小描述长度原理"
+        }
+      ]
+    },
+    "paragraph-ecf0071e9ed2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奥卡姆剃刀原理同样可以应用于机器学习模型。这种概念的一个形式化版本被称为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最小描述长度（MDL）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 原理，用于比较给定观测数据的竞争模型/解释。"
+        }
+      ]
+    },
+    "paragraph-ef516241f7bd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“理解即压缩。”"
+        }
+      ]
+    },
+    "paragraph-9e8ba50e686e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "MDL 的基本思想是 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "将学习视为数据压缩"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。通过压缩数据，我们需要发现数据中的规律或模式，这些规律或模式具有高度泛化到未见样本的潜力。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "信息瓶颈"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 理论认为，深度神经网络首先通过最小化泛化误差来表示数据，然后通过去除噪声来学习压缩这种表示。"
+        }
+      ]
+    },
+    "paragraph-e9ae1eddb17b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "同时，MDL 将模型描述视为压缩交付的一部分，因此模型不能任意大。"
+        }
+      ]
+    },
+    "paragraph-48c0c68e607d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "MDL 原理的 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "两部分版本"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 指出：设 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{H}^{(1)}, \\mathcal{H}^{(2)}, \\dots"
+        },
+        {
+          "type": "text",
+          "text": " 是可以解释数据集 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{D}"
+        },
+        {
+          "type": "text",
+          "text": " 的模型列表。其中最好的假设应该是使以下总和最小化的那个："
+        }
+      ]
+    },
+    "list-item-e8ba0f04eb0a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "L(\\mathcal{H})"
+        },
+        {
+          "type": "text",
+          "text": " 是模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{H}"
+        },
+        {
+          "type": "text",
+          "text": " 描述的长度，以比特为单位。"
+        }
+      ]
+    },
+    "list-item-057fc90deeb6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "L(\\mathcal{D}\\vert\\mathcal{H})"
+        },
+        {
+          "type": "text",
+          "text": " 是数据 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{D}"
+        },
+        {
+          "type": "text",
+          "text": " 在用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{H}"
+        },
+        {
+          "type": "text",
+          "text": " 编码时描述的长度，以比特为单位。"
+        }
+      ]
+    },
+    "paragraph-cad9f2adcfae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "简单来说，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最佳"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型是包含编码数据和模型本身的 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最小"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型。遵循这个标准，无论它在训练数据上能达到多好的准确性，我在本节开头提出的记忆方法听起来都很糟糕。"
+        }
+      ]
+    },
+    "paragraph-ed6079eed41b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "人们可能会争辩说奥卡姆剃刀是错误的，因为既然现实世界可以任意复杂，我们为什么要寻找简单的模型呢？MDL 的一个有趣观点是，将模型视为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "“语言”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 而不是基本的生成定理。我们希望找到好的压缩策略来描述少量样本中的规律性，并且它们 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "不必是解释现象的“真实”生成模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。模型可能是错误的，但仍然有用（例如，想想任何贝叶斯先验）。"
+        }
+      ]
+    },
+    "heading-5f218836d416": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "柯尔莫哥洛夫复杂度"
+        }
+      ]
+    },
+    "paragraph-d0084a84cf7a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "柯尔莫哥洛夫复杂度依赖于现代计算机的概念来定义对象的算法（描述性）复杂度：它是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "描述该对象的最短二进制计算机程序的长度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。遵循MDL，计算机本质上是最通用的数据解压缩器形式。"
+        }
+      ]
+    },
+    "paragraph-9944c4be8afa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "柯尔莫哥洛夫复杂度的形式化定义如下：给定一台通用计算机"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{U}"
+        },
+        {
+          "type": "text",
+          "text": "和一个程序"
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": "，我们用"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{U}(p)"
+        },
+        {
+          "type": "text",
+          "text": "表示计算机处理该程序后的输出，用"
+        },
+        {
+          "type": "inline_math",
+          "text": "L(p)"
+        },
+        {
+          "type": "text",
+          "text": "表示程序的描述长度。那么，字符串的柯尔莫哥洛夫复杂度"
+        },
+        {
+          "type": "inline_math",
+          "text": "K_\\mathcal{U}"
+        },
+        {
+          "type": "text",
+          "text": "对于字符串"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "相对于通用计算机"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{U}"
+        },
+        {
+          "type": "text",
+          "text": "而言，定义为："
+        }
+      ]
+    },
+    "paragraph-9dd8e40fbaa1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，通用计算机是指能够模仿任何其他计算机行为的计算机。所有现代计算机都是通用的，因为它们都可以归结为图灵机。无论我们使用哪种计算机，这个定义都是通用的，因为另一台通用计算机总是可以被编程来克隆 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{U}"
+        },
+        {
+          "type": "text",
+          "text": " 的行为，而编码这个克隆程序只是一个常数。"
+        }
+      ]
+    },
+    "paragraph-90708aa7415e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "柯尔莫哥洛夫复杂性与香农信息论之间存在许多联系，因为两者都与通用编码相关。一个惊人的事实是，随机变量的预期柯尔莫哥洛夫复杂性大约等于其香农熵（参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://homepages.cwi.nl/~paulv/papers/info.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "报告"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的2.3节）。关于这个话题的更多内容超出了本文的范围，但网上有许多有趣的读物。请自行查阅 :)"
+        }
+      ]
+    },
+    "heading-58c1259bc17c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "索洛莫诺夫的推理理论"
+        }
+      ]
+    },
+    "paragraph-da58c809bedd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奥卡姆剃刀的另一种数学形式化是索洛莫诺夫的通用归纳推理理论（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.sciencedirect.com/science/article/pii/S0019995864902232"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "索洛莫诺夫"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.sciencedirect.com/science/article/pii/S0019995864901317"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "1964"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。其原则是根据柯尔莫哥洛夫复杂性，偏爱那些对应于生成训练数据的“最短程序”的模型"
+        }
+      ]
+    },
+    "heading-8e61aaa1eae4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DL 模型的表达能力"
+        }
+      ]
+    },
+    "paragraph-a099216e3de7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与传统统计模型相比，深度神经网络具有极其庞大的参数数量。如果我们使用 MDL 来衡量深度神经网络的复杂性，并将参数数量视为模型描述长度，那将看起来非常糟糕。模型描述 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L(\\mathcal{H})"
+        },
+        {
+          "type": "text",
+          "text": " 很容易失控。"
+        }
+      ]
+    },
+    "paragraph-5de4aa99408d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，拥有大量参数对于神经网络获得高表达能力是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "必要"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的。由于其捕获任何灵活数据表示的强大能力，深度神经网络在许多应用中取得了巨大成功。"
+        }
+      ]
+    },
+    "heading-0743bc4930a0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "万能近似定理"
+        }
+      ]
+    },
+    "paragraph-7c000d7ed741": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "万能近似定理"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "指出，一个具有以下特征的前馈网络：1) 一个线性输出层，2) 至少一个包含有限数量神经元的隐藏层，以及 3) 某种激活函数，能够以任意精度近似 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{R}^n"
+        },
+        {
+          "type": "text",
+          "text": " 的紧凑子集上的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "任何"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "连续函数。该定理最初是针对 sigmoid 激活函数证明的（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pdfs.semanticscholar.org/05ce/b32839c26c8d2cb38d5529cf7720a68c3fab.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Cybenko, 1989"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。后来表明，万能近似特性并非特定于激活函数的选择（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://zmjones.com/static/statistical-learning/hornik-nn-1991.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Hornik, 1991"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），而是多层前馈架构的特性。"
+        }
+      ]
+    },
+    "paragraph-8146498c8271": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "尽管单层前馈网络足以表示任何函数，但其宽度必须呈指数级增长。万能近似定理不保证模型能否被正确学习或泛化。通常，增加更多层有助于减少浅层网络所需的隐藏神经元数量。"
+        }
+      ]
+    },
+    "paragraph-0b9204e71e58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了利用万能近似定理，我们总能找到一个神经网络来表示目标函数，使其误差低于任何期望的阈值，但我们需要付出代价——网络可能会变得非常庞大。"
+        }
+      ]
+    },
+    "heading-d162036e4114": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "证明：两层神经网络的有限样本表达能力"
+        }
+      ]
+    },
+    "paragraph-6165284fd2f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们目前讨论的通用逼近定理没有考虑有限样本集。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.03530"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang 等人 (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提供了一个关于两层神经网络有限样本表达能力的简洁证明。"
+        }
+      ]
+    },
+    "paragraph-06df2aca073a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "神经网络 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": " 可以表示任何函数，给定样本大小 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": " 在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 维度中，如果：对于每个有限样本集 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S \\subseteq \\mathbb{R}^d"
+        },
+        {
+          "type": "text",
+          "text": " 具有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\vert S \\vert = n"
+        },
+        {
+          "type": "text",
+          "text": " 以及在此样本集上定义的每个函数："
+        },
+        {
+          "type": "inline_math",
+          "text": "f: S \\mapsto \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "，我们可以找到一组权重配置，使得 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": " 从而 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C(\\boldsymbol{x}) = f(\\boldsymbol{x}), \\forall \\boldsymbol{x} \\in S"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-f9b44e26dda5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该论文提出了一个定理："
+        }
+      ]
+    },
+    "paragraph-1c6f987326fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "存在一个具有ReLU激活函数和"
+        },
+        {
+          "type": "inline_math",
+          "text": "2n + d"
+        },
+        {
+          "type": "text",
+          "text": "权重的两层神经网络，可以表示大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "维度的任何函数。"
+        }
+      ]
+    },
+    "paragraph-c48e8d968efa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "证明。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "首先，我们希望构建一个两层神经网络"
+        },
+        {
+          "type": "inline_math",
+          "text": "C: \\mathbb{R}^d \\mapsto \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "。输入是一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "维向量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{x} \\in \\mathbb{R}^d"
+        },
+        {
+          "type": "text",
+          "text": "。隐藏层有"
+        },
+        {
+          "type": "inline_math",
+          "text": "h"
+        },
+        {
+          "type": "text",
+          "text": "个隐藏单元，与一个权重矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W} \\in \\mathbb{R}^{d\\times h}"
+        },
+        {
+          "type": "text",
+          "text": "、一个偏置向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "-\\mathbf{b} \\in \\mathbb{R}^h"
+        },
+        {
+          "type": "text",
+          "text": "和ReLU激活函数相关联。第二层输出一个标量值，带有权重向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{v} \\in \\mathbb{R}^h"
+        },
+        {
+          "type": "text",
+          "text": "和零偏置。"
+        }
+      ]
+    },
+    "paragraph-b61ae6a31fab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "网络"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "对于输入向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{x}"
+        },
+        {
+          "type": "text",
+          "text": "的输出可以表示如下："
+        }
+      ]
+    },
+    "paragraph-f2b4bdc36492": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{W}_{(:,i)}"
+        },
+        {
+          "type": "text",
+          "text": "是第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "列，位于"
+        },
+        {
+          "type": "inline_math",
+          "text": "d \\times h"
+        },
+        {
+          "type": "text",
+          "text": "矩阵中。"
+        }
+      ]
+    },
+    "paragraph-862675f9f17f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个样本集 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S = \\{\\boldsymbol{x}_1, \\dots, \\boldsymbol{x}_n\\}"
+        },
+        {
+          "type": "text",
+          "text": " 和目标值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{y} = \\{y_1, \\dots, y_n \\}"
+        },
+        {
+          "type": "text",
+          "text": "，我们希望找到合适的权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W} \\in \\mathbb{R}^{d\\times h}"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{b}, \\boldsymbol{v} \\in \\mathbb{R}^h"
+        },
+        {
+          "type": "text",
+          "text": "，使得 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C(\\boldsymbol{x}_i) = y_i, \\forall i=1,\\dots,n"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-e667e5020eec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们将所有样本点组合成一个批次，作为输入矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{X} \\in \\mathbb{R}^{n \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "。如果设置"
+        },
+        {
+          "type": "inline_math",
+          "text": "h=n"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{X}\\mathbf{W} - \\boldsymbol{b}"
+        },
+        {
+          "type": "text",
+          "text": "将是一个大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "n \\times n"
+        },
+        {
+          "type": "text",
+          "text": "的方阵。"
+        }
+      ]
+    },
+    "paragraph-839ee7749bd9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们可以简化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}"
+        },
+        {
+          "type": "text",
+          "text": "，使其所有列都具有相同的列向量："
+        }
+      ]
+    },
+    "paragraph-52bbdb441e9d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设"
+        },
+        {
+          "type": "inline_math",
+          "text": "a_i = \\boldsymbol{x}_i \\boldsymbol{w}"
+        },
+        {
+          "type": "text",
+          "text": "，我们希望找到合适的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{w}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{b}"
+        },
+        {
+          "type": "text",
+          "text": "使得"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_1 < a_1 < b_2 < a_2 < \\dots < b_n < a_n"
+        },
+        {
+          "type": "text",
+          "text": "。这总是可以实现的，因为我们试图用"
+        },
+        {
+          "type": "inline_math",
+          "text": "n+d"
+        },
+        {
+          "type": "text",
+          "text": "个未知变量和"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "个约束来求解，并且"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{x}_i"
+        },
+        {
+          "type": "text",
+          "text": "是独立的（即，选择一个随机的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{w}"
+        },
+        {
+          "type": "text",
+          "text": "，对"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{x}_i \\boldsymbol{w}"
+        },
+        {
+          "type": "text",
+          "text": "进行排序，然后将"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_j"
+        },
+        {
+          "type": "text",
+          "text": "设为中间值）。那么"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{M}_\\text{ReLU}"
+        },
+        {
+          "type": "text",
+          "text": "就变成了一个下三角矩阵："
+        }
+      ]
+    },
+    "paragraph-80609b6f59d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它是一个非奇异方阵，如 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\det(\\mathbf{M}_\\text{ReLU}) \\neq 0"
+        },
+        {
+          "type": "text",
+          "text": "，所以我们总能找到合适的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{v}"
+        },
+        {
+          "type": "text",
+          "text": " 来求解 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{v}\\mathbf{M}_\\text{ReLU}=\\boldsymbol{y}"
+        },
+        {
+          "type": "text",
+          "text": " (换句话说，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{M}_\\text{ReLU}"
+        },
+        {
+          "type": "text",
+          "text": " 的列空间是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{R}^n"
+        },
+        {
+          "type": "text",
+          "text": " 的全部，我们可以找到列向量的线性组合来获得任何 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\boldsymbol{y}"
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "heading-a24f764bc8aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "深度神经网络可以学习随机噪声"
+        }
+      ]
+    },
+    "paragraph-82e512530ffa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "众所周知，两层神经网络是通用逼近器，因此它们能够完美学习非结构化随机噪声，这并不令人惊讶，如"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.03530"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang, et al. (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "所示。如果图像分类数据集的标签被随机打乱，深度神经网络的高表达能力仍然可以使它们实现接近零的训练损失。这些结果不会因添加正则化项而改变。"
+        }
+      ]
+    },
+    "heading-2ba1dbc28e67": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "深度学习模型是否严重过拟合？"
+        }
+      ]
+    },
+    "paragraph-a501309c74e0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "深度学习模型参数量巨大，并且通常可以在训练数据上获得完美结果。在传统观点中，例如偏差-方差权衡，这可能是一场灾难，因为没有任何东西可以泛化到未见的测试数据。然而，通常情况下，这种“过拟合”（训练误差 = 0）的深度学习模型在样本外测试数据上仍然表现出不错的性能。嗯……这很有趣，为什么呢？"
+        }
+      ]
+    },
+    "heading-cfe6052b363f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "深度学习的现代风险曲线"
+        }
+      ]
+    },
+    "paragraph-f69d577a9323": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "传统的机器学习使用以下U形风险曲线来衡量偏差-方差权衡，并量化模型的泛化能力。如果有人问我如何判断模型是否过拟合，这会是我首先想到的。"
+        }
+      ]
+    },
+    "paragraph-6ec4889b4d85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着模型变大（添加更多参数），训练误差会下降到接近零，但一旦模型复杂度增长超过“欠拟合”和“过拟合”之间的阈值，测试误差（泛化误差）就开始增加。从某种程度上说，这与奥卡姆剃刀原理非常吻合。"
+        }
+      ]
+    },
+    "paragraph-1ca740023558": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "不幸的是，这不适用于深度学习模型。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1812.11118"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Belkin 等人 (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 调和了传统的偏差-方差权衡，并为深度神经网络提出了一种新的双U形风险曲线。一旦网络参数数量足够高，风险曲线就会进入另一个阶段。"
+        }
+      ]
+    },
+    "paragraph-842528eb9cb4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该论文声称这可能有两个原因："
+        }
+      ]
+    },
+    "list-item-9db91d5f8256": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参数数量并非衡量"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "归纳偏置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的良好指标，归纳偏置被定义为学习算法用于预测未知样本的一组假设。关于深度学习模型复杂度的更多讨论，请参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#intrinsic-dimension"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "后续"
+            }
+          ]
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#heterogeneous-layer-robustness"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "章节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-ea0c0791460d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "配备更大的模型，我们可能能够发现更大的函数类别，并进一步找到具有更小范数且因此“更简单”的插值函数。"
+        }
+      ]
+    },
+    "paragraph-21d7064c1f35": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "正如论文所示，双U形风险曲线是经验观察到的。然而，我在重现这些结果时遇到了相当大的困难。虽然有一些进展，但为了生成一条与定理相似的漂亮平滑曲线，实验中的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#experiments"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "许多细节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "都必须仔细处理。"
+        }
+      ]
+    },
+    "heading-03096a2b20eb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "正则化并非泛化的关键"
+        }
+      ]
+    },
+    "paragraph-94e39b68f010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "正则化是控制过拟合和提高模型泛化性能的常用方法。有趣的是，一些研究（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.03530"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang 等人 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）表明，显式正则化（即数据增强、权重衰减和 dropout）对于减少泛化误差既非必要也非充分条件。"
+        }
+      ]
+    },
+    "paragraph-daa3cad5639e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以在 CIFAR10 上训练的 Inception 模型为例（参见图 5），正则化技术有助于样本外泛化，但效果不大。没有单一的正则化似乎独立于其他项而至关重要。因此，正则化器不太可能是泛化的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "根本原因"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-0918692eb2d4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内在维度"
+        }
+      ]
+    },
+    "paragraph-d2bb88daf0a6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在深度学习领域，参数数量与模型过拟合无关，这表明参数计数不能指示深度神经网络的真实复杂性。"
+        }
+      ]
+    },
+    "paragraph-002ad17d7a69": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除了参数计数之外，研究人员还提出了许多量化这些模型复杂性的方法，例如模型的自由度数量（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.09260"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gao & Jojic, 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），或预编码（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1802.07044"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Blier & Ollivier, 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-0b62a9cd6969": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我想讨论一个关于此问题的最新方法，名为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "内在维度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1804.08838"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Li et al, 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。内在维度直观、易于测量，同时仍能揭示不同大小模型的许多有趣特性。"
+        }
+      ]
+    },
+    "paragraph-81e8bc639588": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "考虑一个拥有大量参数的神经网络，形成一个高维参数空间，学习发生在这个高维的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "目标景观"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "上。参数空间流形的形状至关重要。例如，更平滑的流形通过提供更具预测性的梯度并允许更大的学习率而有利于优化——这被认为是批归一化成功稳定训练的原因（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1805.11604"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Santurkar, et al, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-2e7e4f0f4506": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "尽管参数空间巨大，但幸运的是，我们不必过于担心优化过程陷入局部最优，因为已经"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1406.2572"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "表明"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "目标景观中的局部最优点几乎总是位于鞍点而非谷底。换句话说，总存在一个维度子集，其中包含离开局部最优并继续探索的路径。"
+        }
+      ]
+    },
+    "paragraph-5fb2c9b3a581": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内在维度测量背后的一种直觉是，由于参数空间具有如此高的维度，因此可能不需要利用所有维度来高效学习。如果我们只遍历目标景观的一个切片，仍然可以学到一个好的解决方案，那么所得模型的复杂性可能低于通过参数计数所显示的。这本质上就是内在维度试图评估的内容。"
+        }
+      ]
+    },
+    "paragraph-e0915337c342": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设一个模型有"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "个维度，其参数表示为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(D)}"
+        },
+        {
+          "type": "text",
+          "text": "。为了学习，随机采样一个较小的"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "维子空间，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(d)}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "d < D"
+        },
+        {
+          "type": "text",
+          "text": "。在一次优化更新期间，不是根据所有"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "个维度进行梯度步长，而是只使用较小的子空间"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(d)}"
+        },
+        {
+          "type": "text",
+          "text": "并重新映射以更新模型参数。"
+        }
+      ]
+    },
+    "paragraph-e5c0eaaf1b46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "梯度更新公式如下所示："
+        }
+      ]
+    },
+    "paragraph-30bbb1e90d7f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_0^{(D)}"
+        },
+        {
+          "type": "text",
+          "text": "是初始化值，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}"
+        },
+        {
+          "type": "text",
+          "text": "是一个在训练前随机采样的"
+        },
+        {
+          "type": "inline_math",
+          "text": "D \\times d"
+        },
+        {
+          "type": "text",
+          "text": "投影矩阵。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_0^{(D)}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}"
+        },
+        {
+          "type": "text",
+          "text": "在训练期间均不可训练且固定。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(d)}"
+        },
+        {
+          "type": "text",
+          "text": "初始化为全零。"
+        }
+      ]
+    },
+    "paragraph-d3bd85cad605": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过搜索"
+        },
+        {
+          "type": "inline_math",
+          "text": "d = 1, 2, \\dots, D"
+        },
+        {
+          "type": "text",
+          "text": "的值，当解决方案出现时对应的"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "被定义为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "内在维度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-4331f0488cca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "事实证明，许多问题的内在维度远小于参数数量。例如，在CIFAR10图像分类中，一个拥有65万以上参数的全连接网络只有9千的内在维度，而一个包含6.2万参数的卷积网络则拥有更低的2.9千内在维度。"
+        }
+      ]
+    },
+    "paragraph-607d53cf8618": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内在维度的测量表明，深度学习模型比它们看起来要简单得多。"
+        }
+      ]
+    },
+    "heading-6ed794d548ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "异构层鲁棒性"
+        }
+      ]
+    },
+    "paragraph-7c3237c3780f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.01996"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang 等人 (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 研究了参数在不同层中的作用。该论文提出的根本问题是："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“所有层都是平等的吗？”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 简短的回答是：不是。模型对某些层的变化更敏感，而对其他层则不敏感。"
+        }
+      ]
+    },
+    "paragraph-c026f09af6f4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该论文提出了两种操作，可以应用于第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": " 层的参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell = 1, \\dots, L"
+        },
+        {
+          "type": "text",
+          "text": "，在时间 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(\\ell)}_t"
+        },
+        {
+          "type": "text",
+          "text": "，以测试它们对模型鲁棒性的影响："
+        }
+      ]
+    },
+    "list-item-45bed3c8c4a4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "重新初始化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：将参数重置为初始值，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(\\ell)}_t \\leftarrow \\theta^{(\\ell)}_0"
+        },
+        {
+          "type": "text",
+          "text": "。层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": " 被重新初始化的网络的性能被称为层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": " 的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "重新初始化鲁棒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。\n"
+        }
+      ]
+    },
+    "list-item-f0499ac6d253": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "重新随机化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：随机重新采样层的参数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{(\\ell)}_t \\leftarrow \\tilde{\\theta}^{(\\ell)} \\sim \\mathcal{P}^{(\\ell)}"
+        },
+        {
+          "type": "text",
+          "text": "。相应的网络性能被称为层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": " 的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "重新随机化鲁棒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。\n"
+        }
+      ]
+    },
+    "paragraph-f88f0acee890": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "借助这两种操作，层可以分为两类："
+        }
+      ]
+    },
+    "list-item-996fc5caf2b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "鲁棒层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在重新初始化或重新随机化该层后，网络性能没有或只有可忽略的下降。"
+        }
+      ]
+    },
+    "list-item-9c7aea72cf3b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "关键层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：反之。"
+        }
+      ]
+    },
+    "paragraph-0486911a1d06": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在全连接网络和卷积网络上观察到了类似的模式。重新随机化任何层都会"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "完全破坏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模型性能，因为预测会立即降至随机猜测水平。更有趣和令人惊讶的是，当应用重新初始化时，只有第一层或前几层（最接近输入层的那些层）是关键的，而重新初始化更高层只会导致性能"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "可忽略不计的下降"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-9464768a637c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ResNet 能够利用非相邻层之间的快捷连接，将敏感层重新分布到整个网络中，而不仅仅是在底部。借助残差块架构，网络可以"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "均匀地对重新随机化保持鲁棒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。每个残差块中只有第一层仍然对重新初始化和重新随机化都敏感。如果我们将每个残差块视为一个局部子网络，那么其鲁棒性模式类似于上面提到的全连接网络和卷积网络。"
+        }
+      ]
+    },
+    "paragraph-40ad904ae5d0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于深度神经网络中许多顶层在重新初始化后对模型性能不关键这一事实，该论文大致得出结论："
+        }
+      ]
+    },
+    "paragraph-93d22207f7fc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“使用随机梯度训练的过容量深度网络由于自我限制关键层的数量而具有低复杂度。”"
+        }
+      ]
+    },
+    "paragraph-0c7f81f1b41a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们可以将重新初始化视为减少有效参数数量的一种方式，因此这一观察结果与内在维度所展示的一致。"
+        }
+      ]
+    },
+    "heading-9ceb235c9357": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "乐透彩票假说"
+        }
+      ]
+    },
+    "paragraph-7a512a6d9696": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "乐透彩票假说（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.03635"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Frankle & Carbin, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是另一个引人入胜且富有启发性的发现，它支持只有一部分网络参数对模型性能有影响，因此网络没有过拟合。乐透彩票假说指出，一个随机初始化、密集、前馈网络包含一个子网络池，其中只有一部分是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“中奖彩票”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它们在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "单独训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "时可以达到最佳性能。"
+        }
+      ]
+    },
+    "paragraph-b0eaed619937": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个想法的灵感来源于网络剪枝技术——在不损害模型性能的情况下移除不必要的权重（即几乎可以忽略不计的微小权重）。尽管最终网络规模可以显著减小，但从头开始成功训练这种剪枝后的网络架构却很困难。这感觉就像为了成功训练一个神经网络，我们需要大量的参数，但一旦模型训练完成，我们就不需要那么多参数来保持高准确率。这是为什么呢？"
+        }
+      ]
+    },
+    "paragraph-ab45782dc38c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "乐透彩票假说进行了以下实验："
+        }
+      ]
+    },
+    "list-item-e276d9e048bd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用初始化值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_0"
+        },
+        {
+          "type": "text",
+          "text": " 随机初始化一个密集前馈网络；"
+        }
+      ]
+    },
+    "list-item-9dcde4155d91": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用参数配置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 训练网络多次迭代以获得良好性能；"
+        }
+      ]
+    },
+    "list-item-b7a519fea1f8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 进行剪枝并创建掩码 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-affc312fa218": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“中奖彩票”初始化配置是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m \\odot \\theta_0"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-887c093e859b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "仅使用在步骤1中找到的初始值训练“中奖彩票”参数的小子集，模型就能够达到与步骤2相同的准确率水平。结果表明，最终的解决方案表示不需要大的参数空间，但在训练时需要，因为它提供了许多小得多的子网络的初始化配置的大型池。"
+        }
+      ]
+    },
+    "paragraph-95e473dff828": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "乐透彩票假说为解释和剖析深度神经网络结果开辟了新视角。许多有趣的后续工作正在进行中。"
+        }
+      ]
+    },
+    "heading-86479cbe1a51": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "实验"
+        }
+      ]
+    },
+    "paragraph-19eec0a97193": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在看到以上所有有趣的发现后，重现它们应该会很有趣。有些结果比其他结果更容易重现。详细信息如下所述。我的代码可在 GitHub "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/generalization-experiment"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "lilianweng/generalization-experiment"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 上获取。"
+        }
+      ]
+    },
+    "paragraph-b3f279e7cfc5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "深度学习模型的新风险曲线"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-4b7f126a91b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这是最难重现的一个。作者确实给了我很多很好的建议，我非常感谢。以下是他们实验中几个值得注意的设置："
+        }
+      ]
+    },
+    "list-item-49db8012e40f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "没有权重衰减、dropout 等正则化项。"
+        }
+      ]
+    },
+    "list-item-e22673711b46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在图3中，训练集包含4k个样本。它只采样一次，并对所有模型固定。评估使用完整的MNIST测试集。"
+        }
+      ]
+    },
+    "list-item-4aa73dfd446a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个网络都经过长时间训练以达到接近零的训练风险。学习率针对不同大小的模型进行了不同的调整。"
+        }
+      ]
+    },
+    "list-item-c41577603251": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了使模型在欠参数化区域对初始化不那么敏感，他们的实验采用了"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“权重复用”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方案：从训练较小神经网络获得的参数被用作训练较大网络的初始化。"
+        }
+      ]
+    },
+    "paragraph-d3bf33302f7c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我没有对每个模型进行足够长时间的训练或调优以获得完美的训练性能，但评估误差确实在插值阈值附近显示出一种特殊的转折，这与训练误差不同。例如，对于MNIST，阈值是训练样本数乘以类别数（10），即40000。"
+        }
+      ]
+    },
+    "paragraph-f04c76c3293e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "x轴是模型参数的数量：(28 * 28 + 1) * 单元数 + 单元数 * 10，以对数表示。"
+        }
+      ]
+    },
+    "paragraph-4da78eedf0f5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "层并非生而平等"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-99799de01eb2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这一项相当容易重现。请参阅我的实现"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/generalization-experiment/blob/master/layer_equality.py"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-b76e56e1ab7a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在第一个实验中，我使用了三层全连接网络，每层有256个单元。第0层是输入层，而第3层是输出层。该网络在MNIST上训练了100个epoch。"
+        }
+      ]
+    },
+    "paragraph-9683f26bade6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在第二个实验中，我使用了四层全连接网络，每层有128个单元。其他设置与实验1相同。"
+        }
+      ]
+    },
+    "paragraph-0e39a7af816d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "内在维度测量"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-f89b2f62e0ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了正确地将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 维子空间映射到完整的参数空间，投影矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}"
+        },
+        {
+          "type": "text",
+          "text": " 应该具有正交列。因为乘积 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}\\theta^{(d)}"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}"
+        },
+        {
+          "type": "text",
+          "text": " 的列乘以 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 维向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{i=1}^d \\theta^{(d)}_i \\mathbf{P}^\\top_{(:,i)}"
+        },
+        {
+          "type": "text",
+          "text": " 中相应标量值的和，所以最好充分利用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{P}"
+        },
+        {
+          "type": "text",
+          "text": " 中具有正交列的子空间。"
+        }
+      ]
+    },
+    "paragraph-f49b2eb15f4d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我的实现采用了一种朴素的方法，即从标准正态分布中采样一个具有独立条目的大矩阵。在高维空间中，列预计是独立的，因此是正交的。当维度不是太大时，这种方法有效。当使用大的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 进行探索时，存在创建稀疏投影矩阵的方法，这正是内在维度论文所建议的。"
+        }
+      ]
+    },
+    "paragraph-9583efb7cf3d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下是在两个网络上进行的实验运行：（左）一个两层全连接网络，每层有64个单元；（右）一个一层全连接网络，有128个隐藏单元，在10%的MNIST数据集上训练。对于每个 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "，模型训练100个epoch。请参阅"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/generalization-experiment/blob/master/intrinsic_dimensions.py"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/generalization-experiment/blob/master/intrinsic_dimensions_measurement.py"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-b2f619578eca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] 维基百科关于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Occam%27s_razor"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "奥卡姆剃刀"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的页面。"
+        }
+      ]
+    },
+    "paragraph-ba28add4cd05": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Principia Cybernetica Web 上的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://pespmc1.vub.ac.be/OCCAMRAZ.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "奥卡姆剃刀"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-121b9765f308": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Peter Grunwald. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/math/0406077"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“最小描述长度原理的教程介绍”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". 2004。"
+        }
+      ]
+    },
+    "paragraph-45229a14daae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Ian Goodfellow, 等. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.deeplearningbook.org/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "深度学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". 2016. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.deeplearningbook.org/contents/mlp.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第6.4.1节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-a265cf44e456": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Zhang, Chiyuan, 等. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.03530"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“理解深度学习需要重新思考泛化。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2017。"
+        }
+      ]
+    },
+    "paragraph-3cc828321627": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Shibani Santurkar, 等. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1805.11604"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“批量归一化如何帮助优化？”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2018。"
+        }
+      ]
+    },
+    "paragraph-c1bd6e90392c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Mikhail Belkin, 等. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1812.11118"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“调和现代机器学习与偏差-方差权衡。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:1812.11118, 2018。"
+        }
+      ]
+    },
+    "paragraph-5e8b243be297": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Chiyuan Zhang, 等. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.01996"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“所有层都生而平等吗？”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:1902.01996, 2019。"
+        }
+      ]
+    },
+    "paragraph-54c50953f679": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Chunyuan Li, 等. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1804.08838"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“测量目标景观的内在维度。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2018。"
+        }
+      ]
+    },
+    "paragraph-9272732e5dc2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Jonathan Frankle 和 Michael Carbin. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.03635"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“乐透彩票假说：寻找稀疏、可训练的神经网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2019。"
+        }
+      ]
+    }
+  }
+}

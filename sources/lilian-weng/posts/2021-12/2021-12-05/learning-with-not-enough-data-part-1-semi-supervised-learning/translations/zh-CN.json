@@ -1,0 +1,3998 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:4d8bf8c415010528b26970321aaa5e6d0565bcb27e6a2090d0daa0a30b8af439",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "数据不足下的学习 第一部分：半监督学习",
+  "segments": {
+    "paragraph-40009540edfb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当监督学习任务面临有限的标注数据时，通常会讨论四种方法。"
+        }
+      ]
+    },
+    "list-item-1e326f19307d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "预训练 + 微调"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在一个大型无监督数据语料库上预训练一个强大的任务无关模型，例如在自由文本上"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "预训练语言模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，或通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自监督学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在未标注图像上预训练视觉模型，然后使用少量标注样本在下游任务上进行微调。"
+        }
+      ]
+    },
+    "list-item-072b6d39fa86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "半监督学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：同时从标注和未标注样本中学习。在这种方法中，视觉任务已经进行了大量研究。"
+        }
+      ]
+    },
+    "list-item-0d91ce4b3f0b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "主动学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：标注成本高昂，但我们仍希望在给定成本预算的情况下收集更多数据。主动学习旨在选择最有价值的未标注样本进行后续收集，并帮助我们在有限预算内明智地行动。"
+        }
+      ]
+    },
+    "list-item-fdfc13c3eacd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "预训练 + 数据集自动生成"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：给定一个有能力的预训练模型，我们可以利用它自动生成更多标注样本。由于少样本学习的成功，这在语言领域尤其受欢迎。"
+        }
+      ]
+    },
+    "paragraph-c15099770639": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我计划撰写一系列关于“数据不足下的学习”主题的帖子。第一部分是关于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "半监督学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-196db4e99cdc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "什么是半监督学习？"
+        }
+      ]
+    },
+    "paragraph-69875c95759a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "半监督学习利用标注数据和未标注数据来训练模型。"
+        }
+      ]
+    },
+    "paragraph-16d569ed354c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有趣的是，大多数关于半监督学习的现有文献都集中在视觉任务上。而预训练 + 微调反而是语言任务中更常见的范式。"
+        }
+      ]
+    },
+    "paragraph-71be7576c676": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本文介绍的所有方法都包含两部分损失："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L} = \\mathcal{L}_s +  \\mu(t) \\mathcal{L}_u"
+        },
+        {
+          "type": "text",
+          "text": "。给定所有标注样本，监督损失"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_s"
+        },
+        {
+          "type": "text",
+          "text": "很容易获得。我们将重点关注无监督损失"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_u"
+        },
+        {
+          "type": "text",
+          "text": "是如何设计的。权重项"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mu(t)"
+        },
+        {
+          "type": "text",
+          "text": "的常见选择是一个斜坡函数，它随时间增加"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_u"
+        },
+        {
+          "type": "text",
+          "text": "的重要性，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "是训练步骤。"
+        }
+      ]
+    },
+    "paragraph-406467c35011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "免责声明"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：本文不涉及侧重于模型架构修改的半监督方法。关于如何在半监督学习中使用生成模型和基于图的方法，请查阅"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.05278"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "这项调查"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-111fa15ff05a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "符号"
+        }
+      ]
+    },
+    "table-3740eb9573f2": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "符号",
+          "含义"
+        ],
+        "rows": [
+          [
+            "$L$",
+            "唯一标签的数量。"
+          ],
+          [
+            "$(\\mathbf{x}^l, y) \\sim \\mathcal{X}, y \\in \\{0, 1\\}^L$",
+            "标注数据集。$y$ 是真实标签的独热表示。"
+          ],
+          [
+            "$\\mathbf{u} \\sim \\mathcal{U}$",
+            "未标注数据集。"
+          ],
+          [
+            "$\\mathcal{D} = \\mathcal{X} \\cup \\mathcal{U}$",
+            "整个数据集，包括标注和未标注样本。"
+          ],
+          [
+            "$\\mathbf{x}$",
+            "可以是标注或未标注的任何样本。"
+          ],
+          [
+            "$\\bar{\\mathbf{x}}$",
+            "应用了数据增强的$\\mathbf{x}$。"
+          ],
+          [
+            "$\\mathbf{x}_i$",
+            "第 $i$ 个样本。"
+          ],
+          [
+            "$\\mathcal{L}$、$\\mathcal{L}_s$、$\\mathcal{L}_u$",
+            "损失、监督损失和无监督损失。"
+          ],
+          [
+            "$\\mu(t)$",
+            "无监督损失权重，随时间增加。"
+          ],
+          [
+            "$p(y \\vert \\mathbf{x}), p_\\theta(y \\vert \\mathbf{x})$",
+            "给定输入的标签集上的条件概率。"
+          ],
+          [
+            "$f_\\theta(.)$",
+            "带有权重$\\theta$的已实现神经网络，即我们想要训练的模型。"
+          ],
+          [
+            "$\\mathbf{z} = f_\\theta(\\mathbf{x})$",
+            "由 $f$ 输出的 logits 向量。"
+          ],
+          [
+            "$\\hat{y} = \\text{softmax}(\\mathbf{z})$",
+            "预测的标签分布。"
+          ],
+          [
+            "$D[.,.]$",
+            "两个分布之间的距离函数，例如 MSE、交叉熵、KL 散度等。"
+          ],
+          [
+            "$\\beta$",
+            "教师模型权重的 EMA 加权超参数。"
+          ],
+          [
+            "$\\alpha, \\lambda$",
+            "MixUp 的参数，$\\lambda \\sim \\text{Beta}(\\alpha, \\alpha)$。"
+          ],
+          [
+            "$T$",
+            "用于锐化预测分布的温度。"
+          ],
+          [
+            "$\\tau$",
+            "用于选择合格预测的置信度阈值。"
+          ]
+        ]
+      }
+    },
+    "heading-f1711d2afd73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设"
+        }
+      ]
+    },
+    "paragraph-33f7f31539bb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "文献中已经讨论了几种假设，以支持半监督学习方法中的某些设计决策。"
+        }
+      ]
+    },
+    "list-item-dbce735cb4b9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\nH1: "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "平滑性假设"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 如果两个数据样本在特征空间的高密度区域中彼此接近，则它们的标签应该相同或非常相似。\n"
+        }
+      ]
+    },
+    "list-item-e35d7afda63f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\nH2: "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "聚类假设"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 特征空间既有密集区域也有稀疏区域。密集分组的数据点自然形成一个聚类。同一聚类中的样本预期具有相同的标签。这是H1的一个小扩展。\n"
+        }
+      ]
+    },
+    "list-item-48da3ae6fdf8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\nH3: "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "低密度分离假设"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 类别之间的决策边界倾向于位于稀疏的低密度区域，因为否则决策边界会将高密度聚类切成两个类别，对应于两个聚类，这会使H1和H2失效。\n"
+        }
+      ]
+    },
+    "list-item-0a486e1c1a75": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\nH4: "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "流形假设"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 高维数据倾向于位于低维流形上。尽管真实世界的数据可能在非常高的维度中被观察到（例如真实世界物体/场景的图像），但它们实际上可以通过一个低维流形来捕获，在该流形上捕获了某些属性，并且相似点被紧密分组（例如，真实世界物体/场景的图像并非从所有像素组合的均匀分布中抽取）。这使我们能够学习更有效的表示，以便发现和衡量未标记数据点之间的相似性。这也是表示学习的基础。[参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://stats.stackexchange.com/questions/66939/what-is-the-manifold-assumption-in-semi-supervised-learning"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "一个有用的链接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]。\n"
+        }
+      ]
+    },
+    "heading-2e4af9c80551": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一致性正则化"
+        }
+      ]
+    },
+    "paragraph-ba67e4a48d57": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "一致性正则化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，也称为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "一致性训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，假设神经网络内部的随机性（例如使用Dropout）或数据增强变换不应在给定相同输入的情况下修改模型预测。本节中的每种方法都具有一致性正则化损失，如"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_u"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-ccd1a746a400": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这一思想已被多种"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自监督"
+            }
+          ]
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方法采用，例如SimCLR、BYOL、SimCSE等。同一样本的不同增强版本应产生相同的表示。语言建模中的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#cross-view-training"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "跨视图训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和自监督学习中的多视图学习都具有相同的动机。"
+        }
+      ]
+    },
+    "heading-062cd6611416": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Π 模型"
+        }
+      ]
+    },
+    "paragraph-51d39a8a0524": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.04586"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sajjadi et al. (2016)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种无监督学习损失，用于最小化同一数据点经过网络两次（带有随机变换，例如 dropout、随机最大池化）之间的差异。标签未被明确使用，因此该损失可以应用于未标记的数据集。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1610.02242"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Laine & Aila (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 后来为这种设置创造了名称，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Π 模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-9a12acb22049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f’"
+        },
+        {
+          "type": "text",
+          "text": " 是应用了不同随机增强或 dropout 掩码的相同神经网络。这种损失利用了整个数据集。"
+        }
+      ]
+    },
+    "heading-e3d84613dcd1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "时间集成"
+        }
+      ]
+    },
+    "paragraph-e6a130f33879": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Π 模型要求网络对每个样本运行两次，计算成本翻倍。为了降低成本，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "时间集成"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1610.02242"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Laine & Aila 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 针对每个训练样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{z}}_i"
+        },
+        {
+          "type": "text",
+          "text": " 维护模型预测的时间指数移动平均 (EMA) 作为学习目标，该目标每个 epoch 只评估和更新一次。由于集成输出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{z}}_i"
+        },
+        {
+          "type": "text",
+          "text": " 被初始化为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{0}"
+        },
+        {
+          "type": "text",
+          "text": "，因此它通过 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(1-\\alpha^t)"
+        },
+        {
+          "type": "text",
+          "text": " 进行归一化以纠正这种启动偏差。Adam 优化器出于同样的原因也具有此类 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://stats.stackexchange.com/questions/232741/why-is-it-important-to-include-a-bias-correction-term-for-the-adam-optimizer-for"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "偏差校正"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 项。"
+        }
+      ]
+    },
+    "paragraph-e97424d248e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{z}}^{(t)}"
+        },
+        {
+          "type": "text",
+          "text": " 是 epoch "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": " 时的集成预测，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}_i"
+        },
+        {
+          "type": "text",
+          "text": " 是当前轮次中的模型预测。请注意，由于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{z}}^{(0)} = \\mathbf{0}"
+        },
+        {
+          "type": "text",
+          "text": "，经过校正后，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\mathbf{z}}^{(1)}"
+        },
+        {
+          "type": "text",
+          "text": " 在 epoch 1 时简单地等同于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}_i"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-b89c01f28261": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "平均教师模型"
+        }
+      ]
+    },
+    "paragraph-090165ded256": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "时间集成跟踪每个训练样本的标签预测的 EMA 作为学习目标。然而，这种标签预测只在 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个 epoch"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 改变一次，这使得当训练数据集很大时，该方法显得笨拙。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "平均教师模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.01780"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Tarvaninen & Valpola, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 被提出，通过跟踪模型权重的移动平均而不是模型输出来克服目标更新的缓慢。我们将权重为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的原始模型称为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "学生"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型，将连续学生模型的移动平均权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’"
+        },
+        {
+          "type": "text",
+          "text": " 的模型称为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "平均教师"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’ \\gets \\beta \\theta’ + (1-\\beta)\\theta"
+        }
+      ]
+    },
+    "paragraph-2283ac43ff7d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一致性正则化损失是学生模型和教师模型预测之间的距离，学生-教师差距应该被最小化。平均教师模型预计会比学生模型提供更准确的预测。这在实证实验中得到了证实，如所示"
+        }
+      ]
+    },
+    "paragraph-03683bfeef1d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据他们的消融研究，"
+        }
+      ]
+    },
+    "list-item-5c7ca2c32ca9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "输入增强（例如输入图像的随机翻转、高斯噪声）或学生模型 dropout 对于良好性能是必要的。教师模型不需要 dropout。"
+        }
+      ]
+    },
+    "list-item-e210c403f9af": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "性能对EMA衰减超参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "很敏感。一个好的策略是在启动阶段使用较小的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta=0.99"
+        },
+        {
+          "type": "text",
+          "text": "，在后期学生模型改进速度减慢时使用较大的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta=0.999"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-15aa993e7d4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们发现，将MSE作为一致性成本函数比KL散度等其他成本函数表现更好。"
+        }
+      ]
+    },
+    "heading-84b7792282b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将噪声样本作为学习目标"
+        }
+      ]
+    },
+    "paragraph-c5df40bd6c84": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最近的几种一致性训练方法学习最小化原始未标记样本与其对应增强版本之间的预测差异。这与Π模型非常相似，但一致性正则化损失"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "仅"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "应用于未标记数据。"
+        }
+      ]
+    },
+    "paragraph-e3d9dc39a69b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对抗训练（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1412.6572"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Goodfellow et al. 2014"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）将对抗性噪声应用于输入，并训练模型以抵御此类对抗性攻击。该设置在监督学习中有效，"
+        }
+      ]
+    },
+    "paragraph-930f4353b4c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q(y \\mid \\mathbf{x}^l)"
+        },
+        {
+          "type": "text",
+          "text": " 是真实分布，通过对真实标签进行独热编码来近似，"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(y \\mid \\mathbf{x}^l)"
+        },
+        {
+          "type": "text",
+          "text": " 是模型预测。"
+        },
+        {
+          "type": "inline_math",
+          "text": "D[.,.]"
+        },
+        {
+          "type": "text",
+          "text": " 是一个距离函数，用于衡量两个分布之间的散度。"
+        }
+      ]
+    },
+    "paragraph-84224dc4ad4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "虚拟对抗训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "VAT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.03976"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Miyato 等人 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 将这一思想扩展到半监督学习中。由于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q(y \\mid \\mathbf{x}^l)"
+        },
+        {
+          "type": "text",
+          "text": " 是未知的，VAT 用当前模型对原始输入使用当前权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}"
+        },
+        {
+          "type": "text",
+          "text": " 的预测来代替它。请注意，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}"
+        },
+        {
+          "type": "text",
+          "text": " 是模型权重的固定副本，因此在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}"
+        },
+        {
+          "type": "text",
+          "text": " 上没有梯度更新。"
+        }
+      ]
+    },
+    "paragraph-cc29ccddbf52": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "VAT 损失适用于有标签和无标签样本。它是当前模型在每个数据点上的预测流形的负平滑度度量。这种损失的优化促使流形更加平滑。"
+        }
+      ]
+    },
+    "paragraph-a0f63e8e272d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "插值一致性训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ICT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1903.03825"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Verma 等人 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过添加更多数据点插值来增强数据集，并期望模型预测与相应标签的插值保持一致。MixUp ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.09412"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zheng 等人 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 操作通过简单的加权和混合两张图像，并将其与标签平滑结合。遵循 MixUp 的思想，ICT 期望预测模型在混合样本上生成一个标签，以匹配相应输入的预测插值："
+        }
+      ]
+    },
+    "paragraph-59d4eaa2656c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的移动平均，它是一个 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-12-05-semi-supervised/#mean-teachers"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "平均教师模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-04cd6d40832b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于两个随机选择的未标记样本属于不同类别的概率很高（例如，ImageNet 中有 1000 个对象类别），因此在两个随机未标记样本之间应用 mixup 进行插值很可能发生在决策边界附近。根据低密度分离"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-12-05-semi-supervised/#hypotheses"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "假设"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，决策边界倾向于位于低密度区域。"
+        }
+      ]
+    },
+    "paragraph-83152f757fe9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的移动平均值。"
+        }
+      ]
+    },
+    "paragraph-d03d0bc09e16": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与 VAT 类似，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "无监督数据增强"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "UDA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.12848"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Xie et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）学习为未标记示例和增强示例预测相同的输出。UDA 特别关注研究噪声的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“质量”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "如何通过一致性训练影响半监督学习性能。使用先进的数据增强方法来生成有意义且有效的噪声样本至关重要。好的数据增强应该产生有效（即不改变标签）且多样化的噪声，并带有目标归纳偏置。"
+        }
+      ]
+    },
+    "paragraph-408606094331": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于图像，UDA 采用 RandAugment（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.13719"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Cubuk et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），它均匀采样 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pillow.readthedocs.io/en/stable/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "PIL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中可用的增强操作，无需学习或优化，因此比 AutoAugment 便宜得多。"
+        }
+      ]
+    },
+    "paragraph-4eb390b01ddd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于语言，UDA 结合了回译和基于 TF-IDF 的词替换。回译保留了高层含义，但可能不会保留某些词，而基于 TF-IDF 的词替换则会删除 TF-IDF 分数较低的非信息性词。在语言任务的实验中，他们发现 UDA 与迁移学习和表示学习互补；例如，在领域内未标记数据上微调的 BERT（即图 8 中的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{BERT}_\\text{FINETUNE}"
+        },
+        {
+          "type": "text",
+          "text": "）可以进一步提高性能。"
+        }
+      ]
+    },
+    "paragraph-c1d5a1ccd1c3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在计算 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_u"
+        },
+        {
+          "type": "text",
+          "text": " 时，UDA 发现了两种有助于改善结果的训练技术。"
+        }
+      ]
+    },
+    "list-item-0666dcf3183f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "低置信度掩码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：如果预测置信度低于阈值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，则掩盖低置信度的示例。"
+        }
+      ]
+    },
+    "list-item-5d2e599b2e4c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "锐化预测分布"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在 softmax 中使用低温度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": " 来锐化预测概率分布。"
+        }
+      ]
+    },
+    "list-item-809a901fd79b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "领域内数据过滤"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：为了从大型领域外数据集中提取更多领域内数据，他们训练了一个分类器来预测领域内标签，然后保留具有高置信度预测的样本作为领域内候选。"
+        }
+      ]
+    },
+    "paragraph-81e15ce26b69": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}"
+        },
+        {
+          "type": "text",
+          "text": " 是模型权重的固定副本，与 VAT 中相同，因此没有梯度更新，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\mathbf{x}}"
+        },
+        {
+          "type": "text",
+          "text": " 是增强数据点。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": " 是预测置信度阈值，"
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": " 是分布锐化温度。"
+        }
+      ]
+    },
+    "heading-c23d59820497": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "伪标签"
+        }
+      ]
+    },
+    "paragraph-6d5d93d4245e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "伪标签"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.664.3543&rep=rep1&type=pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lee 2013"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 根据当前模型预测的最大softmax概率，为未标记样本分配伪标签，然后在纯监督设置下同时使用标记和未标记样本训练模型。"
+        }
+      ]
+    },
+    "paragraph-3dd043893897": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为什么伪标签会起作用？伪标签实际上等同于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "熵正则化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/2004/hash/96f2b50b5d3613adf9c27049b2a888c7-Abstract.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Grandvalet & Bengio 2004"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")，它最小化了未标记数据的类别概率的条件熵，以利于类别之间的低密度分离。换句话说，预测的类别概率实际上是类别重叠的度量，最小化熵等同于减少类别重叠，从而实现低密度分离。"
+        }
+      ]
+    },
+    "paragraph-8a836a854692": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用伪标签进行训练自然是一个迭代过程。我们将生成伪标签的模型称为教师模型，将使用伪标签学习的模型称为学生模型。"
+        }
+      ]
+    },
+    "heading-cff4279cb495": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "标签传播"
+        }
+      ]
+    },
+    "paragraph-2e9904417102": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "标签传播"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.04717"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Iscen et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一种基于特征嵌入在样本之间构建相似性图的思想。然后，伪标签从已知样本“扩散”到未标记样本，其中传播权重与图中成对相似性分数成比例。从概念上讲，它类似于k-NN分类器，两者都存在无法很好地扩展到大型数据集的问题。"
+        }
+      ]
+    },
+    "heading-8c5df1419233": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自训练"
+        }
+      ]
+    },
+    "paragraph-80050243b97e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 并非一个新概念 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://ieeexplore.ieee.org/document/1053799"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Scudder 1965"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.kamalnigam.com/papers/cotrain-CIKM00.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nigram & Ghani CIKM 2000"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。它是一种迭代算法，在以下两个步骤之间交替进行，直到每个未标记样本都被分配了标签："
+        }
+      ]
+    },
+    "list-item-391abddd15e7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最初，它在标记数据上构建一个分类器。"
+        }
+      ]
+    },
+    "list-item-4c14e202b9de": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后，它使用此分类器预测未标记数据的标签，并将最确定的预测转换为标记样本。"
+        }
+      ]
+    },
+    "paragraph-3495125fe1ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.04252"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Xie et al. (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 将自训练应用于深度学习并取得了很好的结果。在ImageNet分类任务上，他们首先训练了一个EfficientNet ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.11946"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Tan & Le 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 模型作为教师模型，为3亿张未标记图像生成伪标签，然后训练一个更大的EfficientNet作为学生模型，以同时学习真实标记图像和伪标记图像。他们设置中的一个关键要素是，在学生模型训练期间引入"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "噪声"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，但教师模型在生成伪标签时没有噪声。因此，他们的方法被称为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "噪声学生"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。他们应用了随机深度 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.09382"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Huang et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")、dropout和RandAugment来对学生模型施加噪声。噪声对于学生模型表现优于教师模型至关重要。添加的噪声具有复合效应，可以促使模型在标记和未标记数据上的决策边界平滑。"
+        }
+      ]
+    },
+    "paragraph-d40b1e9f79ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "噪声学生自训练中的其他一些重要技术配置包括："
+        }
+      ]
+    },
+    "list-item-ccaccb1a83f8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "学生模型应该足够大（即比教师模型更大）以适应更多数据。"
+        }
+      ]
+    },
+    "list-item-062de0d441f8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“噪声学生”应该与数据平衡结合使用，尤其重要的是要平衡每个类别中伪标签图像的数量。"
+        }
+      ]
+    },
+    "list-item-698839998f0f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "软伪标签比硬伪标签效果更好。"
+        }
+      ]
+    },
+    "paragraph-9b78dd6ab012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "尽管模型并未针对对抗性鲁棒性进行优化，但噪声学生也能提高对抗性鲁棒性，以抵御FGSM（快速梯度符号攻击 = 该攻击利用损失函数相对于输入数据的梯度，并调整输入数据以最大化损失）攻击。"
+        }
+      ]
+    },
+    "paragraph-06e5d779d7a2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SentAugment由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.02194"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Du et al. (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出，旨在解决语言领域中没有足够的域内未标记数据进行自训练的问题。它依赖于句子嵌入从大型语料库中查找未标记的域内样本，并使用检索到的句子进行自训练。"
+        }
+      ]
+    },
+    "heading-9a87e2b32744": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "减少确认偏差"
+        }
+      ]
+    },
+    "paragraph-ee19506cea80": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "确认偏差是由于不完善的教师模型提供了不正确的伪标签而产生的问题。过度拟合错误的标签可能无法给我们带来更好的学生模型。"
+        }
+      ]
+    },
+    "paragraph-698307cd443f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了减少确认偏差，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.02983"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Arazo 等人 (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了两种技术。一种是采用带有软标签的 MixUp。给定两个样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\mathbf{x}_i, \\mathbf{x}_j)"
+        },
+        {
+          "type": "text",
+          "text": " 及其对应的真实或伪标签 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(y_i, y_j)"
+        },
+        {
+          "type": "text",
+          "text": "，插值标签方程可以转换为带有 softmax 输出的交叉熵损失："
+        }
+      ]
+    },
+    "paragraph-b318d60e4331": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果标记样本过少，Mixup 是不够的。他们通过对标记样本进行过采样，进一步在每个 mini batch 中设置了最少数量的标记样本。这比提高标记样本的权重效果更好，因为它会导致更频繁的更新，而不是少量大幅度的更新，后者可能不太稳定。与一致性正则化一样，数据增强和 dropout 对于伪标签的良好工作也很重要。"
+        }
+      ]
+    },
+    "paragraph-d707009e0fab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "元伪标签"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2003.10580"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pham 等人 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 根据学生在标记数据集上的表现反馈，不断调整教师模型。教师和学生并行训练，其中教师学习生成更好的伪标签，学生则从伪标签中学习。"
+        }
+      ]
+    },
+    "paragraph-d0f967e77fdd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设教师模型和学生模型的权重分别为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_T"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_S"
+        },
+        {
+          "type": "text",
+          "text": "。学生模型在带标签样本上的损失被定义为函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^\\text{PL}_S(.)"
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_T"
+        },
+        {
+          "type": "text",
+          "text": "，我们希望通过相应地优化教师模型来最小化此损失。"
+        }
+      ]
+    },
+    "paragraph-0b30c06931fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，优化上述方程并非易事。借鉴"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.03400"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MAML"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它将多步"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\arg\\min_{\\theta_S}"
+        },
+        {
+          "type": "text",
+          "text": "近似为单步梯度更新的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_S"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        }
+      ]
+    },
+    "paragraph-08fdd7f1aa39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果使用软伪标签，上述目标是可微分的。但如果使用硬伪标签，它就不可微分，因此我们需要使用强化学习（RL），例如REINFORCE。"
+        }
+      ]
+    },
+    "paragraph-cd7592004ec4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "优化过程在训练两个模型之间交替进行："
+        }
+      ]
+    },
+    "list-item-74a2e275bfc4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "学生模型更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：给定一批未标记样本"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{ \\mathbf{u} \\}"
+        },
+        {
+          "type": "text",
+          "text": "，我们通过"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_{\\theta_T}(\\mathbf{u})"
+        },
+        {
+          "type": "text",
+          "text": "生成伪标签，并用一步SGD优化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_S"
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’_S = \\color{green}{\\theta_S - \\eta_S \\cdot \\nabla_{\\theta_S} \\mathcal{L}_u(\\theta_T, \\theta_S)}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-c14d0748f128": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "教师模型更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：给定一批已标记样本"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{(\\mathbf{x}^l, y)\\}"
+        },
+        {
+          "type": "text",
+          "text": "，我们重用学生的更新来优化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta_T"
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’_T = \\theta_T  - \\eta_T \\cdot \\nabla_{\\theta_T} \\mathcal{L}_s ( \\color{green}{\\theta_S - \\eta_S \\cdot \\nabla_{\\theta_S} \\mathcal{L}_u(\\theta_T, \\theta_S)} )"
+        },
+        {
+          "type": "text",
+          "text": "。此外，UDA目标应用于教师模型以纳入一致性正则化。"
+        }
+      ]
+    },
+    "heading-ed59abaecefb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "带有一致性正则化的伪标签"
+        }
+      ]
+    },
+    "paragraph-08f2a6a75c7c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可以将上述两种方法结合起来，同时运行带有伪标签和一致性训练的半监督学习。"
+        }
+      ]
+    },
+    "heading-e3e6eaeb129e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "MixMatch"
+        }
+      ]
+    },
+    "paragraph-24e96c311d6d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "MixMatch"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.02249"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Berthelot et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 作为一种半监督学习的整体方法，通过融合以下技术来利用未标记数据："
+        }
+      ]
+    },
+    "list-item-e1c8c98148df": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "一致性正则化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：鼓励模型对扰动的未标记样本输出相同的预测。"
+        }
+      ]
+    },
+    "list-item-56fc6779239a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "熵最小化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：鼓励模型对未标记数据输出置信度高的预测。"
+        }
+      ]
+    },
+    "list-item-aed103bc880f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "MixUp"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 数据增强：鼓励模型在样本之间具有线性行为。"
+        }
+      ]
+    },
+    "paragraph-2ea43b5ce3fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一批已标记数据"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{X}"
+        },
+        {
+          "type": "text",
+          "text": "和未标记数据"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{U}"
+        },
+        {
+          "type": "text",
+          "text": "，我们通过"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{MixMatch}(.)"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\mathcal{X}}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\mathcal{U}}"
+        },
+        {
+          "type": "text",
+          "text": "创建它们的增强版本，其中包含增强样本和未标记示例的猜测标签。"
+        }
+      ]
+    },
+    "paragraph-f40f3d7647cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": "是用于减少猜测标签重叠的锐化温度；"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "是每个未标记示例生成的增强数量；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "是MixUp中的参数。"
+        }
+      ]
+    },
+    "paragraph-6f97f4dbe2cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于每个"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{u}"
+        },
+        {
+          "type": "text",
+          "text": "，MixMatch生成"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "个增强，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\mathbf{u}}^{(k)} = \\text{Augment}(\\mathbf{u})"
+        },
+        {
+          "type": "text",
+          "text": "用于"
+        },
+        {
+          "type": "inline_math",
+          "text": "k=1, \\dots, K"
+        },
+        {
+          "type": "text",
+          "text": "，伪标签基于平均值猜测："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{y} = \\frac{1}{K} \\sum_{k=1}^K p_\\theta(y \\mid \\bar{\\mathbf{u}}^{(k)})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-ba33c60daab7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据他们的消融研究，在未标记数据上使用MixUp至关重要。去除伪标签分布上的温度锐化会严重损害性能。对多个增强进行平均以猜测标签也是必要的。"
+        }
+      ]
+    },
+    "paragraph-d64624f9c6ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ReMixMatch"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.09785"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Berthelot et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过引入两种新机制改进了MixMatch："
+        }
+      ]
+    },
+    "list-item-f4acc8d99920": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "分布对齐。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "它鼓励边际分布"
+        },
+        {
+          "type": "inline_math",
+          "text": "p(y)"
+        },
+        {
+          "type": "text",
+          "text": "接近真实标签的边际分布。令"
+        },
+        {
+          "type": "inline_math",
+          "text": "p(y)"
+        },
+        {
+          "type": "text",
+          "text": "为真实标签中的类别分布，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{p}(\\hat{y})"
+        },
+        {
+          "type": "text",
+          "text": "为未标记数据中预测类别分布的运行平均值。模型对未标记样本"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(y \\vert \\mathbf{u})"
+        },
+        {
+          "type": "text",
+          "text": "的预测被归一化为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{Normalize}\\big( \\frac{p_\\theta(y \\vert \\mathbf{u}) p(y)}{\\tilde{p}(\\hat{y})} \\big)"
+        },
+        {
+          "type": "text",
+          "text": "以匹配真实的边际分布。\n\n"
+        }
+      ]
+    },
+    "list-item-d32868020e1c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，如果边际分布不均匀，熵最小化不是一个有用的目标。"
+        }
+      ]
+    },
+    "list-item-753e05d46433": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我确实认为，已标记和未标记数据上的类别分布应该匹配的假设过于强烈，在实际场景中不一定成立。"
+        }
+      ]
+    },
+    "list-item-4d7c11fe77fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "增强锚定"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。给定一个未标记样本，它首先生成一个带有弱增强的“锚定”版本，然后使用CTAugment（控制理论增强）对"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "个强增强版本进行平均。CTAugment只采样那些使模型预测保持在网络容差范围内的增强。"
+        }
+      ]
+    },
+    "paragraph-6abd63645e58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ReMixMatch损失是几个项的组合，"
+        }
+      ]
+    },
+    "list-item-2d9646771db3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "应用了数据增强和MixUp的监督损失；"
+        }
+      ]
+    },
+    "list-item-de4a37399fcd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "应用了数据增强和MixUp的无监督损失，使用伪标签作为目标；"
+        }
+      ]
+    },
+    "list-item-7623f8265b58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在单个经过大量增强的未标记图像上计算的CE损失，不使用MixUp；"
+        }
+      ]
+    },
+    "list-item-828ca2da13e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一种类似于自监督学习中的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#distortion"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "旋转"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "损失。"
+        }
+      ]
+    },
+    "heading-1c10bf40b403": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DivideMix"
+        }
+      ]
+    },
+    "paragraph-9a8a31981152": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DivideMix"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.07394"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Junnan Li et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 结合了半监督学习和带噪声标签学习 (LNL)。它通过一个 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://scikit-learn.org/stable/modules/mixture.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "GMM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 对逐样本损失分布进行建模，以动态地将训练数据分为包含干净样本的标记集和包含噪声样本的未标记集。遵循 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.11238"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Arazo et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中的思想，他们对逐样本交叉熵损失 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell_i = y_i^\\top \\log f_\\theta(\\mathbf{x}_i)"
+        },
+        {
+          "type": "text",
+          "text": " 拟合了一个双分量 GMM。与噪声样本相比，干净样本预计会更快地获得较低的损失。均值较小的分量是对应于干净标签的簇，我们将其表示为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": "。如果 GMM 后验概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i = p_\\text{GMM}(c \\mid \\ell_i)"
+        },
+        {
+          "type": "text",
+          "text": "（即样本属于干净样本集的概率）大于阈值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，则该样本被视为干净样本，否则视为噪声样本。"
+        }
+      ]
+    },
+    "paragraph-f1765ed3de6a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "数据聚类步骤名为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "co-divide"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。为避免确认偏差，DivideMix 同时训练两个不同的网络，其中每个网络都使用来自另一个网络的数据集划分；例如，可以联想到 Double Q Learning 的工作原理。"
+        }
+      ]
+    },
+    "paragraph-69e2d58a55ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与 MixMatch 相比，DivideMix 额外增加了一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "co-divide"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "阶段用于处理噪声样本，并在训练过程中进行了以下改进："
+        }
+      ]
+    },
+    "list-item-1c3a0819711e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "标签协同细化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 它将真实标签 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i"
+        },
+        {
+          "type": "text",
+          "text": " 与网络的预测 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{y}_i"
+        },
+        {
+          "type": "text",
+          "text": " 进行线性组合，其中网络的预测是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_i"
+        },
+        {
+          "type": "text",
+          "text": " 的多次增强的平均值，并由另一个网络生成的干净集概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": " 进行指导。"
+        }
+      ]
+    },
+    "list-item-7b5afbe8b6fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "标签协同猜测"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 它对来自两个模型的预测进行平均，用于未标记的数据样本。"
+        }
+      ]
+    },
+    "heading-d72470041729": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "FixMatch"
+        }
+      ]
+    },
+    "paragraph-669f1482c2fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "FixMatch"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2001.07685"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sohn et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 使用弱增强在未标记样本上生成伪标签，并且只保留高置信度的预测。在这里，弱增强和高置信度过滤都有助于生成高质量、可信赖的伪标签目标。然后，FixMatch 学习在给定一个经过强增强的样本时预测这些伪标签。"
+        }
+      ]
+    },
+    "paragraph-dcb83827e6c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{y}_b"
+        },
+        {
+          "type": "text",
+          "text": " 是未标记样本的伪标签；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mu"
+        },
+        {
+          "type": "text",
+          "text": " 是一个超参数，它决定了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{X}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{U}"
+        },
+        {
+          "type": "text",
+          "text": " 的相对大小。"
+        }
+      ]
+    },
+    "list-item-45892636422f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "弱增强 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}_\\text{weak}(.)"
+        },
+        {
+          "type": "text",
+          "text": "：一种标准的翻转和平移增强"
+        }
+      ]
+    },
+    "list-item-5c0398af76c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强数据增强 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}_\\text{strong}(.)"
+        },
+        {
+          "type": "text",
+          "text": " : AutoAugment, Cutout, RandAugment, CTAugment"
+        }
+      ]
+    },
+    "paragraph-f472811ed370": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据 FixMatch 的消融研究，"
+        }
+      ]
+    },
+    "list-item-1782c8dfe173": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用温度参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": "锐化预测分布，在使用阈值"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "时没有显著影响。"
+        }
+      ]
+    },
+    "list-item-b47362e3b70c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Cutout 和 CTAugment 作为强数据增强的一部分，对于良好的性能是必要的。"
+        }
+      ]
+    },
+    "list-item-f40347654d59": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当用于标签猜测的弱数据增强被强数据增强取代时，模型在训练早期就会发散。如果完全放弃弱数据增强，模型会过拟合猜测的标签。"
+        }
+      ]
+    },
+    "list-item-cbc03eb25b99": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用弱数据增强而非强数据增强进行伪标签预测会导致性能不稳定。强数据增强至关重要。"
+        }
+      ]
+    },
+    "heading-2d5b4de0a9ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "结合强大的预训练"
+        }
+      ]
+    },
+    "paragraph-cacfc622b457": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这是一种常见的范式，尤其是在语言任务中，即首先通过自监督学习在一个大型无监督数据集上预训练一个与任务无关的模型，然后使用少量标记数据集在下游任务上对其进行微调。研究表明，如果将半监督学习与预训练相结合，我们可以获得额外的收益。"
+        }
+      ]
+    },
+    "paragraph-6709135925ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.06882"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zoph 等人 (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 研究了 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-12-05-semi-supervised/#self-training"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 在多大程度上可以比预训练表现更好。他们的实验设置是使用 ImageNet 进行预训练或自训练以改进 COCO。请注意，当使用 ImageNet 进行自训练时，它会丢弃标签，仅将 ImageNet 样本用作未标记数据点。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1811.08883"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "He 等人 (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 已经证明，如果下游任务差异很大，例如目标检测，ImageNet 分类预训练效果不佳。"
+        }
+      ]
+    },
+    "paragraph-2d15cb8211ec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们的实验展示了一系列有趣的发现："
+        }
+      ]
+    },
+    "list-item-1e9e16c32e18": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着下游任务可用标记样本的增加，预训练的有效性会降低。预训练在低数据量（20%）情况下有帮助，但在高数据量情况下则中性或有害。"
+        }
+      ]
+    },
+    "list-item-7d8d4d9832c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自训练在高数据/强数据增强情况下有帮助，即使预训练有害。"
+        }
+      ]
+    },
+    "list-item-8ac6a7169c5f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自训练可以在预训练的基础上带来额外的改进，即使使用相同的数据源。"
+        }
+      ]
+    },
+    "list-item-e086bbfe78a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自监督预训练（例如通过SimCLR）在高数据量情况下会损害性能，类似于监督预训练的情况。"
+        }
+      ]
+    },
+    "list-item-39bd6906948f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "联合训练监督和自监督目标有助于解决预训练和下游任务之间的不匹配问题。预训练、联合训练和自训练都是可叠加的。"
+        }
+      ]
+    },
+    "list-item-333bf59f33cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "噪声标签或非目标性标注（即预训练标签与下游任务标签不一致）比目标性伪标注更差。"
+        }
+      ]
+    },
+    "list-item-47015307c5c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自训练在计算上比在预训练模型上进行微调更昂贵。"
+        }
+      ]
+    },
+    "paragraph-40fccda3b7a0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.10029"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chen et al. (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种三步程序，以结合自监督预训练、监督微调和自训练的优点："
+        }
+      ]
+    },
+    "list-item-57de79a18481": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "无监督或自监督预训练一个大型模型。"
+        }
+      ]
+    },
+    "list-item-39993bb014cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在少量带标签的样本上进行监督微调。使用大型（深而宽）神经网络很重要。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "更大的模型在更少的带标签样本下能产生更好的性能。"
+            }
+          ]
+        }
+      ]
+    },
+    "list-item-c8fb05573195": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过在自训练中采用伪标签，使用无标签样本进行蒸馏。\n\n"
+        }
+      ]
+    },
+    "list-item-c843bfce507c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可以将知识从大型模型蒸馏到小型模型中，因为特定任务的使用不需要学习到的表示具有额外的容量。"
+        }
+      ]
+    },
+    "list-item-8f79d8719785": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "蒸馏损失的格式如下，其中教师网络的权重固定为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}_T"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-f987b3f808ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们在 ImageNet 分类任务上进行了实验。自监督预训练使用了 SimCLRv2，它是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/#simclr"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SimCLR"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的直接改进版本。他们的实证研究观察结果证实了几项学习，与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.06882"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zoph et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的发现一致："
+        }
+      ]
+    },
+    "list-item-8af76f17ae7d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更大的模型标签效率更高；"
+        }
+      ]
+    },
+    "list-item-57ff636ec2ef": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SimCLR 中更大/更深的项目头改进了表示学习；"
+        }
+      ]
+    },
+    "list-item-7d0a81c9ba51": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用无标签数据进行蒸馏改进了半监督学习。"
+        }
+      ]
+    },
+    "paragraph-3fdf2a2611fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "💡 近期半监督学习方法的共同主题快速总结，其中许多旨在减少确认偏差："
+        }
+      ]
+    },
+    "list-item-f2e5a763b37e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过先进的数据增强方法对样本施加有效且多样化的噪声。"
+        }
+      ]
+    },
+    "list-item-de1365ce9b53": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在处理图像时，MixUp 是一种有效的增强方法。Mixup 也可以用于语言，带来小的增量改进（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.08941"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Guo et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "list-item-6d04b0f351a5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设置阈值并丢弃置信度低的伪标签。"
+        }
+      ]
+    },
+    "list-item-a765d2958a19": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设置每个小批量中带标签样本的最小数量。"
+        }
+      ]
+    },
+    "list-item-06cba4618627": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "锐化伪标签分布以减少类别重叠。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-e51e8416b092": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (Dec 2021). Learning with not enough data part 1: semi-supervised learning. Lil’Log. https://lilianweng.github.io/posts/2021-12-05-semi-supervised/。"
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-eb35f0055055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Ouali, Hudelot & Tami. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.05278"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深度半监督学习概述”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:2006.05278 (2020)。"
+        }
+      ]
+    },
+    "paragraph-b6e24b353fc6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Sajjadi, Javanmardi & Tasdizen "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.04586"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于深度半监督学习的随机变换和扰动正则化。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1606.04586 (2016)。"
+        }
+      ]
+    },
+    "paragraph-52246db17cf7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Pham et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2003.10580"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“元伪标签。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2021。"
+        }
+      ]
+    },
+    "paragraph-553bbdf32ccd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Laine & Aila. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1610.02242"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“半监督学习的时间集成”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2017."
+        }
+      ]
+    },
+    "paragraph-95132865b6d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Tarvaninen & Valpola. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.01780"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“平均教师是更好的榜样：权重平均一致性目标改善半监督深度学习结果。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2017"
+        }
+      ]
+    },
+    "paragraph-70e0dcb8df71": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Xie et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.12848"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于一致性训练的无监督数据增强。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2020."
+        }
+      ]
+    },
+    "paragraph-487adefbf25c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Miyato et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.03976"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“虚拟对抗训练：一种用于监督和半监督学习的正则化方法。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IEEE transactions on pattern analysis and machine intelligence 41.8 (2018)."
+        }
+      ]
+    },
+    "paragraph-aeb088ed1cfe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Verma et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1903.03825"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于半监督学习的插值一致性训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IJCAI 2019"
+        }
+      ]
+    },
+    "paragraph-aded24232e00": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Lee. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.664.3543&rep=rep1&type=pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“伪标签：一种用于深度神经网络的简单高效半监督学习方法。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 2013 Workshop: Challenges in Representation Learning."
+        }
+      ]
+    },
+    "paragraph-293eb910b867": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Iscen et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.04717"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于深度半监督学习的标签传播。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2019."
+        }
+      ]
+    },
+    "paragraph-aab9984844ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Xie et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.04252"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用噪声学生进行自训练可改善 ImageNet 分类”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2020."
+        }
+      ]
+    },
+    "paragraph-baa38a18898a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Jingfei Du et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.02194"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“自训练改进自然语言理解的预训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020"
+        }
+      ]
+    },
+    "paragraph-63eafe29015d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Iscen et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.04717"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于深度半监督学习的标签传播。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2019"
+        }
+      ]
+    },
+    "paragraph-19f0b740dede": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Arazo et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.02983"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深度半监督学习中的伪标签和确认偏差。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IJCNN 2020."
+        }
+      ]
+    },
+    "paragraph-099cb208face": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Berthelot et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.02249"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“MixMatch：一种半监督学习的整体方法。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2019"
+        }
+      ]
+    },
+    "paragraph-1bf51afeff15": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Berthelot et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.09785"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“ReMixMatch：结合分布对齐和增强锚定的半监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2020"
+        }
+      ]
+    },
+    "paragraph-d97da0acc37c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Sohn et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2001.07685"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“FixMatch：通过一致性和置信度简化半监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2020"
+        }
+      ]
+    },
+    "paragraph-657a35b33d9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] Junnan Li et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.07394"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“DivideMix：将带噪声标签学习视为半监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020 ["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/LiJunnan1992/DivideMix"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]"
+        }
+      ]
+    },
+    "paragraph-082617b6f3ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[19] Zoph et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.06882"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“重新思考预训练和自训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020."
+        }
+      ]
+    },
+    "paragraph-c338b7185654": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[20] Chen et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.10029"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“大型自监督模型是强大的半监督学习器”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020"
+        }
+      ]
+    }
+  }
+}

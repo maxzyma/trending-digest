@@ -1,0 +1,6086 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:28bb8dff9bdfd7bed199830974a4d6b421840bbb24107f15f44b06eabc73e7aa",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "自监督表征学习",
+  "segments": {
+    "paragraph-83abe6909d23": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2020-01-09更新：新增关于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#contrastive-predictive-coding"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "对比预测编码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的部分]。"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "[2020-04-13更新：新增关于MoCo、SimCLR和CURL的“动量对比”部分。]"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "[2020-07-08更新：新增关于DeepMDP和DBC的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#bisimulation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“双模拟”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "部分。]"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "[2020-09-12更新：在“动量对比”部分新增"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/#moco--moco-v2"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MoCo V2"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/#byol"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BYOL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。]"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "[2021-05-31更新：移除“动量对比”部分，并添加指向"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对比表征学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "完整文章的链接。]"
+        }
+      ]
+    },
+    "paragraph-0f66db855377": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个任务和足够的标签，监督学习可以很好地解决它。良好的性能通常需要相当数量的标签，但收集手动标签成本高昂（例如ImageNet），并且难以扩展。考虑到未标记数据（例如，自由文本、互联网上的所有图像）的数量远超有限的人工整理标记数据集，不使用它们有点浪费。然而，无监督学习并不容易，并且通常比监督学习的效率低得多。"
+        }
+      ]
+    },
+    "paragraph-51bff2366e4a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果我们能免费获得未标记数据的标签，并以监督方式训练无监督数据集呢？我们可以通过将监督学习任务以特殊形式构建，仅使用其余信息来预测部分信息，从而实现这一点。通过这种方式，所有需要的信息，包括输入和标签，都已提供。这被称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自监督学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-57bb45650518": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这一思想已广泛应用于语言建模。语言模型的默认任务是根据过去的序列预测下一个词。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#bert"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "增加了另外两个辅助任务，两者都依赖于自生成的标签。"
+        }
+      ]
+    },
+    "paragraph-6acdd8478925": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/jason718/awesome-self-supervised-learning"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "这里"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "有一份精心整理的自监督学习论文列表。如果您有兴趣深入阅读，请查阅。"
+        }
+      ]
+    },
+    "paragraph-ad9a40e9d16a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，本文不侧重于自然语言处理/"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "语言建模"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/tags/generative-model/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "生成建模"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-e366e7a578aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为什么选择自监督学习？"
+        }
+      ]
+    },
+    "paragraph-bb3e48b42df1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自监督学习使我们能够利用数据自带的各种免费标签。其动机相当直接。生成带有干净标签的数据集成本高昂，但未标记数据却一直在生成。为了利用这些数量庞大的未标记数据，一种方法是正确设置学习目标，从而从数据本身获取监督信息。"
+        }
+      ]
+    },
+    "paragraph-9edcd619a6af": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自监督任务"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，也称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "前置任务"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，引导我们得到一个监督损失函数。然而，我们通常不关心这个发明任务的最终性能。相反，我们对学习到的中间表征感兴趣，并期望这种表征能够承载良好的语义或结构意义，并对各种实际的下游任务有所裨益。"
+        }
+      ]
+    },
+    "paragraph-5c59cd60546f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，我们可能会随机旋转图像，并训练模型来预测每张输入图像是如何旋转的。旋转预测任务是虚构的，因此实际准确性并不重要，就像我们对待辅助任务一样。但我们期望模型能为真实世界的任务学习高质量的潜在变量，例如用极少量标记样本构建一个物体识别分类器。"
+        }
+      ]
+    },
+    "paragraph-bf74bbccadbe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "广义上讲，所有生成模型都可以被视为自监督的，但目标不同：生成模型侧重于创建多样化且真实的图像，而自监督表征学习则关注生成对许多任务普遍有用的良好特征。生成建模不是本文的重点，但欢迎查阅我的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/tags/generative-model/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "往期文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-0d9a3f364500": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于图像"
+        }
+      ]
+    },
+    "paragraph-5a754650d83f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "针对图像的自监督表征学习已经提出了许多想法。常见的工作流程是使用未标记图像在一个或多个前置任务上训练模型，然后使用该模型的一个中间特征层来喂给ImageNet分类上的多项式逻辑回归分类器。最终的分类准确率量化了学习到的表征有多好。"
+        }
+      ]
+    },
+    "paragraph-be5ffa0b2e82": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最近，一些研究人员提出同时在标记数据上进行监督学习，并在未标记数据上进行自监督前置任务训练，且权重共享，例如在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.03670"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhai et al, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.11825"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sun et al, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中。"
+        }
+      ]
+    },
+    "heading-f53c2b7680b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "扭曲"
+        }
+      ]
+    },
+    "paragraph-a00e815115af": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们期望图像上的轻微扭曲不会改变其原始语义含义或几何形状。轻微扭曲的图像被视为与原始图像相同，因此学习到的特征应具有对扭曲的不变性。"
+        }
+      ]
+    },
+    "paragraph-ee0277c96687": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Exemplar-CNN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1406.6909"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dosovitskiy et al., 2015"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 使用未标记的图像块创建替代训练数据集："
+        }
+      ]
+    },
+    "list-item-c31be51dd87b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从不同图像中以不同位置和比例采样大小为32 × 32像素的"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "个图像块，仅从包含显著梯度的区域采样，因为这些区域覆盖边缘并倾向于包含物体或物体的一部分。它们是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“示例性”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "图像块。"
+        }
+      ]
+    },
+    "list-item-b445b4f29dd7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个图像块通过应用各种随机变换（即平移、旋转、缩放等）进行扭曲。所有由此产生的扭曲图像块都被视为属于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "同一个替代类别"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-bab370f6de58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "前置任务是区分一组替代类别。我们可以随意创建任意数量的替代类别。"
+        }
+      ]
+    },
+    "paragraph-4b6a8822ac10": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "整个图像的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "旋转"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.07728"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gidaris et al. 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是另一种有趣且廉价的修改输入图像的方式，同时语义内容保持不变。每个输入图像首先随机旋转"
+        },
+        {
+          "type": "inline_math",
+          "text": "90^\\circ"
+        },
+        {
+          "type": "text",
+          "text": "的倍数，对应于"
+        },
+        {
+          "type": "inline_math",
+          "text": "[0^\\circ, 90^\\circ, 180^\\circ, 270^\\circ]"
+        },
+        {
+          "type": "text",
+          "text": "。模型被训练来预测应用了哪种旋转，因此这是一个4类分类问题。"
+        }
+      ]
+    },
+    "paragraph-ca81437da9c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了识别具有不同旋转的同一图像，模型必须学习识别高级别的物体部件，例如头部、鼻子和眼睛，以及这些部件的相对位置，而不是局部模式。这种前置任务以这种方式驱动模型学习物体的语义概念。"
+        }
+      ]
+    },
+    "heading-ac59c240a315": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图像块"
+        }
+      ]
+    },
+    "paragraph-011b5759092c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第二类自监督学习任务从一张图像中提取多个图像块，并要求模型预测这些图像块之间的关系。"
+        }
+      ]
+    },
+    "paragraph-eecae2f46dd8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1505.05192"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Doersch et al. (2015)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 将前置任务表述为预测一张图像中两个随机图像块之间的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "相对位置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。模型需要理解物体的空间上下文，才能判断部件之间的相对位置。"
+        }
+      ]
+    },
+    "paragraph-477aa2b2d137": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练图像块按以下方式采样："
+        }
+      ]
+    },
+    "list-item-808b253fff6a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机采样第一个图像块，不参考任何图像内容。"
+        }
+      ]
+    },
+    "list-item-136f8bc2b962": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设第一个图像块放置在3x3网格的中间，第二个图像块则从其周围的8个相邻位置中采样。"
+        }
+      ]
+    },
+    "list-item-e14aeaedb8a6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了避免模型只捕捉低级琐碎信号，例如跨边界连接直线或匹配局部模式，通过以下方式引入额外噪声："
+        }
+      ]
+    },
+    "list-item-a1925a1c1794": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在图像块之间添加间隙"
+        }
+      ]
+    },
+    "list-item-7d09e8ed0202": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "小幅抖动"
+        }
+      ]
+    },
+    "list-item-c6bb570b517c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机将一些图像块下采样至总像素仅为100，然后进行上采样，以增强对像素化的鲁棒性。"
+        }
+      ]
+    },
+    "list-item-27f45fca2587": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将绿色和洋红色向灰色偏移，或随机丢弃3个颜色通道中的2个（参见下文"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#chromatic-aberration"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“色差”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-172334024838": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型被训练来预测第二个图像块是从8个相邻位置中的哪一个选取的，这是一个8类分类问题。"
+        }
+      ]
+    },
+    "paragraph-cd0e6cd8e8d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#chromatic-aberration"
+          }
+        },
+        {
+          "type": "text",
+          "text": "除了边界模式或纹理延续等琐碎信号外，还发现了一个有趣且有点令人惊讶的琐碎解决方案，称为"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Chromatic_aberration"
+          },
+          "children": [
+            {
+              "type": "emphasis",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "“色差”"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。它是由不同波长的光线通过镜头时焦距不同引起的。在此过程中，颜色通道之间可能存在微小偏移。因此，模型可以通过简单比较绿色和洋红色在两个图像块中分离方式的差异来学习判断相对位置。这是一个琐碎的解决方案，与图像内容无关。通过将绿色和洋红色向灰色偏移或随机丢弃3个颜色通道中的2个来预处理图像可以避免这种琐碎的解决方案。"
+        }
+      ]
+    },
+    "paragraph-414d95d9d79f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "既然我们已经在上述任务中为每张图像设置了一个3x3网格，为什么不使用全部9个图像块而不是仅仅2个来增加任务难度呢？遵循这一想法，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.09246"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Noroozi & Favaro (2016)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 设计了一个"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "拼图游戏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "作为前置任务：模型被训练将9个打乱的图像块放回原始位置。"
+        }
+      ]
+    },
+    "paragraph-6b8dfa68ab27": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "卷积网络以共享权重独立处理每个图像块，并为每个图像块索引输出一个来自预定义置换集的概率向量。为了控制拼图游戏的难度，该论文提出根据预定义的置换集打乱图像块，并配置模型来预测该集中所有索引的概率向量。"
+        }
+      ]
+    },
+    "paragraph-e60660ed8d40": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因为输入图像块的打乱方式不会改变预测的正确顺序。一个潜在的训练加速改进是使用置换不变图卷积网络（GCN），这样我们就不必多次打乱同一组图像块，这与这篇"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.00025"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中的想法相同。"
+        }
+      ]
+    },
+    "paragraph-365ae7715fec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一个想法是将“特征”或“视觉基元”视为一个标量值属性，可以在多个图像块上求和并在不同图像块之间进行比较。然后，图像块之间的关系可以通过"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "计数特征"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和简单算术来定义（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1708.06734"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Noroozi, et al, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-c7f04467d90b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该论文考虑了两种变换："
+        }
+      ]
+    },
+    "list-item-ddd6749ec051": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "缩放"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：如果图像放大2倍，视觉基元的数量应保持不变。"
+        }
+      ]
+    },
+    "list-item-8d7f92cad404": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "平铺"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：如果图像被平铺成2x2网格，视觉基元的数量预计将是原始特征计数的总和，即4倍。"
+        }
+      ]
+    },
+    "paragraph-f41c286d88ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该模型利用上述特征计数关系学习一个特征编码器"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(.)"
+        },
+        {
+          "type": "text",
+          "text": "。给定一个输入图像"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\in \\mathbb{R}^{m \\times n \\times 3}"
+        },
+        {
+          "type": "text",
+          "text": "，考虑两种类型的变换算子："
+        }
+      ]
+    },
+    "list-item-9a7a869e5109": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "下采样算子，"
+        },
+        {
+          "type": "inline_math",
+          "text": "D: \\mathbb{R}^{m \\times n \\times 3} \\mapsto \\mathbb{R}^{\\frac{m}{2} \\times \\frac{n}{2} \\times 3}"
+        },
+        {
+          "type": "text",
+          "text": "：按2的因子进行下采样"
+        }
+      ]
+    },
+    "list-item-86e4e89a1084": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "平铺算子"
+        },
+        {
+          "type": "inline_math",
+          "text": "T_i: \\mathbb{R}^{m \\times n \\times 3} \\mapsto \\mathbb{R}^{\\frac{m}{2} \\times \\frac{n}{2} \\times 3}"
+        },
+        {
+          "type": "text",
+          "text": "：从图像的2x2网格中提取第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个图块。"
+        }
+      ]
+    },
+    "paragraph-3d6a04b9a4e1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们期望学习到："
+        }
+      ]
+    },
+    "paragraph-affc6ddf74d4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#counting-feature-loss"
+          }
+        },
+        {
+          "type": "text",
+          "text": "因此，MSE损失为："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{feat} = |\\phi(D \\circ \\mathbf{x}) - \\sum_{i=1}^4 \\phi(T_i \\circ \\mathbf{x})|^2_2"
+        },
+        {
+          "type": "text",
+          "text": "。为了避免平凡解"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(\\mathbf{x}) = \\mathbf{0}, \\forall{\\mathbf{x}}"
+        },
+        {
+          "type": "text",
+          "text": "，添加了另一个损失项以鼓励两个不同图像的特征之间的差异："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{diff} = \\max(0, c -|\\phi(D \\circ \\mathbf{y}) - \\sum_{i=1}^4 \\phi(T_i \\circ \\mathbf{x})|^2_2)"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": "是与"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "不同的另一个输入图像，"
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": "是一个标量常数。最终损失为："
+        }
+      ]
+    },
+    "heading-728018a548c4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "着色"
+        }
+      ]
+    },
+    "paragraph-d80d0e227cee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "着色"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "可以作为一个强大的自监督任务：模型被训练来为灰度输入图像着色；具体来说，任务是将该图像映射到量化颜色值输出的分布上（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.08511"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-55f8e7355be9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/CIELAB_color_space"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "CIE L"
+            },
+            {
+              "type": "emphasis",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "a"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "text": "b* 色彩空间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中输出颜色。L"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "b* 颜色旨在近似人类视觉，而相比之下，RGB 或 CMYK 模拟的是物理设备的颜色输出。"
+        }
+      ]
+    },
+    "list-item-aafc7a3d7918": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "L* 分量与人类对亮度的感知相匹配；L* = 0 是黑色，L* = 100 表示白色。"
+        }
+      ]
+    },
+    "list-item-706feb756913": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "a* 分量表示绿色（负值）/洋红色（正值）。"
+        }
+      ]
+    },
+    "list-item-6533652186a4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "b* 分量模型蓝色（负值）/黄色（正值）。"
+        }
+      ]
+    },
+    "paragraph-6fcd5a658f56": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于着色问题的多模态性质，预测概率分布在分箱颜色值上的交叉熵损失比原始颜色值的L2损失效果更好。a"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "色彩空间以桶大小10进行量化。"
+        }
+      ]
+    },
+    "paragraph-67165a386d7e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了平衡常见颜色（通常是低a"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "值，如云、墙壁和泥土等常见背景）和稀有颜色（可能与图像中的关键对象相关），损失函数通过一个加权项进行重新平衡，该加权项提高了不常见颜色桶的损失。这就像为什么在信息检索模型中我们需要"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Tf%E2%80%93idf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "tf和idf"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来对词语进行评分一样。加权项的构造方式为：(1-λ) * 高斯核平滑的经验概率分布 + λ * 均匀分布，其中两种分布都在量化的a"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "b"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "色彩空间上。"
+        }
+      ]
+    },
+    "heading-67a07af33582": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成模型"
+        }
+      ]
+    },
+    "paragraph-18d7b014b7d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成模型中的前置任务是在学习有意义的潜在表示的同时重建原始输入。"
+        }
+      ]
+    },
+    "paragraph-504c019bcb6b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "去噪自编码器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cs.toronto.edu/~larocheh/publications/icml-2008-denoising-autoencoders.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Vincent 等人，2008"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 学习从部分损坏或含有随机噪声的图像版本中恢复图像。这种设计灵感来源于人类即使在有噪声的图片中也能轻易识别物体，这表明关键的视觉特征可以被提取并与噪声分离。参见我的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#denoising-autoencoder"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "旧文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-62dd2f4ea298": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "上下文编码器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1604.07379"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pathak 等人，2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 旨在填补图像中缺失的部分。令 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{M}"
+        },
+        {
+          "type": "text",
+          "text": " 为一个二值掩码，0 表示丢弃的像素，1 表示保留的输入像素。该模型通过结合重建（L2）损失和对抗性损失进行训练。掩码定义的移除区域可以是任何形状。"
+        }
+      ]
+    },
+    "paragraph-88428dca2eda": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是通过图像修复重建具有缺失区域的输入图像的完整流程，包括编码器和解码器部分，在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(.)"
+        },
+        {
+          "type": "text",
+          "text": " 中是像 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-08-20-gan/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "GAN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中那样联合训练的判别器模型。"
+        }
+      ]
+    },
+    "paragraph-9bcaa46917fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当对图像应用掩码时，上下文编码器会移除部分区域中所有颜色通道的信息。如果只隐藏一部分通道呢？"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "分脑自编码器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.09842"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）通过从其余通道预测一部分颜色通道来实现这一点。设数据张量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\in \\mathbb{R}^{h \\times w \\times \\vert C \\vert }"
+        },
+        {
+          "type": "text",
+          "text": "具有"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "个颜色通道作为网络的"
+        },
+        {
+          "type": "inline_math",
+          "text": "l"
+        },
+        {
+          "type": "text",
+          "text": "层网络的输入。它被分成两个不相交的部分，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_1 \\in \\mathbb{R}^{h \\times w \\times \\vert C_1 \\vert}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_2 \\in \\mathbb{R}^{h \\times w \\times \\vert C_2 \\vert}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "C_1 , C_2 \\subseteq C"
+        },
+        {
+          "type": "text",
+          "text": "。然后训练两个子网络进行两个互补的预测：一个网络"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_1"
+        },
+        {
+          "type": "text",
+          "text": "预测"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_2"
+        },
+        {
+          "type": "text",
+          "text": "从"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_1"
+        },
+        {
+          "type": "text",
+          "text": "而另一个网络"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_1"
+        },
+        {
+          "type": "text",
+          "text": "预测"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_1"
+        },
+        {
+          "type": "text",
+          "text": "从"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_2"
+        },
+        {
+          "type": "text",
+          "text": "。如果颜色值被量化，损失函数可以是L1损失或交叉熵。"
+        }
+      ]
+    },
+    "paragraph-71b1b371f0e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种分割可以一次性发生在 RGB-D 或 L"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "b* 色彩空间上，也可以发生在 CNN 网络的每一层中，其中通道的数量可以是任意的。"
+        }
+      ]
+    },
+    "paragraph-652829dfad4c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成对抗网络（GAN）能够学习从简单的潜在变量映射到任意复杂的数据分布。研究表明，此类生成模型的潜在空间捕获了数据中的语义变化；例如，在人脸图像上训练 GAN 模型时，一些潜在变量与面部表情、眼镜、性别等相关联 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1511.06434"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Radford et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "paragraph-1689aec6ab7c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "双向GANs"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1605.09782"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Donahue, et al, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 引入了一个额外的编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "E(.)"
+        },
+        {
+          "type": "text",
+          "text": " 来学习从输入到潜在变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}"
+        },
+        {
+          "type": "text",
+          "text": " 的映射。判别器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(.)"
+        },
+        {
+          "type": "text",
+          "text": " 在输入数据和潜在表示的联合空间中进行预测，"
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\mathbf{x}, \\mathbf{z})"
+        },
+        {
+          "type": "text",
+          "text": "，以区分生成的对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\mathbf{x}, E(\\mathbf{x}))"
+        },
+        {
+          "type": "text",
+          "text": " 和真实的对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(G(\\mathbf{z}), \\mathbf{z})"
+        },
+        {
+          "type": "text",
+          "text": "。该模型经过训练以优化目标："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\min_{G, E} \\max_D V(D, E, G)"
+        },
+        {
+          "type": "text",
+          "text": "，其中生成器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 和编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "E"
+        },
+        {
+          "type": "text",
+          "text": " 学习生成足够真实的数据和潜在变量以混淆判别器，同时判别器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": " 试图区分真实数据和生成数据。"
+        }
+      ]
+    },
+    "heading-edadafced3f7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对比学习"
+        }
+      ]
+    },
+    "paragraph-77463952fe39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "对比预测编码 (CPC)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1807.03748"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "van den Oord, et al. 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一种通过将生成建模问题转化为分类问题，从高维数据中进行无监督学习的方法。CPC 中的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "对比损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "InfoNCE 损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，灵感来源于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/#noise-contrastive-estimation-nce"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "噪声对比估计 (NCE)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，使用交叉熵损失来衡量模型在给定一组不相关的“负”样本中对“未来”表示进行分类的能力。这种设计部分是由于单峰损失（如 MSE）没有足够的容量，但学习一个完整的生成模型可能过于昂贵。"
+        }
+      ]
+    },
+    "paragraph-13d5fe0aa934": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CPC 使用一个编码器来压缩输入数据 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_t = g_\\text{enc}(x_t)"
+        },
+        {
+          "type": "text",
+          "text": "，并使用一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自回归"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "解码器来学习可能在未来预测中共享的高级上下文，"
+        },
+        {
+          "type": "inline_math",
+          "text": "c_t = g_\\text{ar}(z_{\\leq t})"
+        },
+        {
+          "type": "text",
+          "text": "。端到端训练依赖于受 NCE 启发的对比损失。"
+        }
+      ]
+    },
+    "paragraph-622cfb761347": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在预测未来信息时，CPC 被优化以最大化输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 和上下文向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 之间的互信息："
+        }
+      ]
+    },
+    "paragraph-96be183a9fe3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与其直接建模未来的观测值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_k(x_{t+k} \\vert c_t)"
+        },
+        {
+          "type": "text",
+          "text": "（这可能相当昂贵），CPC 建模了一个密度函数以保留 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x_{t+k}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c_t"
+        },
+        {
+          "type": "text",
+          "text": " 之间的互信息："
+        }
+      ]
+    },
+    "paragraph-efcd494b39bb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_k"
+        },
+        {
+          "type": "text",
+          "text": "可以是非标准化的，并且一个线性变换"
+        },
+        {
+          "type": "inline_math",
+          "text": "W_k^\\top c_t"
+        },
+        {
+          "type": "text",
+          "text": "用于预测，其中使用了不同的"
+        },
+        {
+          "type": "inline_math",
+          "text": "W_k"
+        },
+        {
+          "type": "text",
+          "text": "矩阵，用于每一步"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-fd26e366cf91": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一组 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 随机样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "X = \\{x_1, \\dots, x_N\\}"
+        },
+        {
+          "type": "text",
+          "text": "，其中只包含一个正样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x_t \\sim p(x_{t+k} \\vert c_t)"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N-1"
+        },
+        {
+          "type": "text",
+          "text": " 个负样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x_{i \\neq t} \\sim p(x_{t+k})"
+        },
+        {
+          "type": "text",
+          "text": "，正确分类正样本（其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{f_k}{\\sum f_k}"
+        },
+        {
+          "type": "text",
+          "text": " 是预测值）的交叉熵损失为："
+        }
+      ]
+    },
+    "paragraph-7e318833bcd8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当在图像上使用 CPC 时 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.09272"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Henaff, et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")，预测器网络应仅访问掩码特征集，以避免出现平凡预测。具体来说："
+        }
+      ]
+    },
+    "list-item-ff15f79e3439": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个输入图像被划分为一组重叠的块，每个块由一个 ResNet 编码器编码，从而得到压缩特征向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_{i,j}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-e0ad187e9dbf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个掩码卷积网络通过掩码进行预测，使得给定输出神经元的感受野只能看到图像中其上方的内容。否则，预测问题将变得微不足道。预测可以双向进行（自上而下和自下而上）。"
+        }
+      ]
+    },
+    "list-item-60bfabab1834": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "预测是针对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_{i+k, j}"
+        },
+        {
+          "type": "text",
+          "text": " 从上下文 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c_{i,j}"
+        },
+        {
+          "type": "text",
+          "text": " 进行的："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{z}_{i+k, j} = W_k c_{i,j}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-b440f97728e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对比损失量化了这种预测，目标是在一组负表示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{z_l\\}"
+        },
+        {
+          "type": "text",
+          "text": " 中正确识别目标，这些负表示从同一图像中的其他补丁和同一批次中的其他图像中采样得到："
+        }
+      ]
+    },
+    "paragraph-31b8ffaa4abd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有关对比学习的更多内容，请查看关于 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对比表示学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的文章。"
+        }
+      ]
+    },
+    "heading-c01741ea9c48": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于视频的"
+        }
+      ]
+    },
+    "paragraph-bbf86c44db75": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "视频包含一系列语义相关的帧。相邻帧在时间上更接近，并且比距离较远的帧更具相关性。帧的顺序描述了某些推理规则和物理逻辑；例如物体运动应该是平滑的，并且重力是向下的。"
+        }
+      ]
+    },
+    "paragraph-5ed4c786e209": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "常见的工作流程是使用未标记的视频在一个或多个前置任务上训练模型，然后将该模型的一个中间特征层输入，以在动作分类、分割或对象跟踪等下游任务上微调一个简单模型。"
+        }
+      ]
+    },
+    "heading-a3068bd623af": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "跟踪"
+        }
+      ]
+    },
+    "paragraph-ae8a05b9b5ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "物体的运动通过一系列视频帧进行追踪。在相邻帧中，同一物体在屏幕上的捕捉方式差异通常不大，这通常是由物体或摄像机的微小移动引起的。因此，为同一物体在相邻帧之间学习到的任何视觉表示在潜在特征空间中都应该接近。受此启发，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1505.00687"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang & Gupta, 2015"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种通过在视频中"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "跟踪移动物体"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来无监督学习视觉表示的方法。"
+        }
+      ]
+    },
+    "paragraph-dd9db647aa15": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "精确地，带有运动的图像块在一个小时间窗口（例如30帧）内被跟踪。选择第一个图像块 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 和最后一个图像块 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^+"
+        },
+        {
+          "type": "text",
+          "text": " 并用作训练数据点。如果我们直接训练模型以最小化两个图像块的特征向量之间的差异，模型可能只会学习将所有内容映射到相同的值。为了避免这种琐碎的解决方案，与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#counting-feature-loss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "相同，添加了一个随机的第三个图像块 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^-"
+        },
+        {
+          "type": "text",
+          "text": "。模型通过强制两个被跟踪图像块之间的距离在特征空间中比第一个图像块与随机图像块之间的距离更近来学习表示，"
+        },
+        {
+          "type": "inline_math",
+          "text": "D(\\mathbf{x}, \\mathbf{x}^-)) > D(\\mathbf{x}, \\mathbf{x}^+)"
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是余弦距离，"
+        }
+      ]
+    },
+    "paragraph-411b25a01b94": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失函数为："
+        }
+      ]
+    },
+    "paragraph-5fcab8a188a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": " 是一个标量常数，用于控制两个距离之间的最小间隙；论文中的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M=0.5"
+        },
+        {
+          "type": "text",
+          "text": "。在最优情况下，损失函数强制执行 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(\\mathbf{x}, \\mathbf{x}^-) >= D(\\mathbf{x}, \\mathbf{x}^+) + M"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-cdc63719146b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#triplet-loss"
+          }
+        },
+        {
+          "type": "text",
+          "text": "这种形式的损失函数也称为"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1503.03832"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "三元组损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在人脸识别任务中，数据集包含来自多个摄像角度的多个人的图像。令"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a"
+        },
+        {
+          "type": "text",
+          "text": "是特定人物的锚点图像，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^p"
+        },
+        {
+          "type": "text",
+          "text": "是同一人物从不同角度拍摄的正样本图像，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^n"
+        },
+        {
+          "type": "text",
+          "text": "是不同人物的负样本图像。在嵌入空间中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^a"
+        },
+        {
+          "type": "text",
+          "text": "应该更接近"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^p"
+        },
+        {
+          "type": "text",
+          "text": "而不是"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^n"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-ecc325cc633a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#n-pair-loss"
+          }
+        },
+        {
+          "type": "text",
+          "text": "一种略有不同的三元组损失形式，名为"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/6200-improved-deep-metric-learning-with-multi-class-n-pair-loss-objective"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "n-pair 损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，也常用于机器人任务中学习观测嵌入。有关更多相关内容，请参阅"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#multi-view-metric-learning"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "后续章节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-7607386f2bfa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过两步无监督"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Optical_flow"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "光流"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方法跟踪和提取相关补丁："
+        }
+      ]
+    },
+    "list-item-9770fedbfb5f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "获取"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.vision.ee.ethz.ch/~surf/eccv06.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SURF"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "兴趣点，并使用"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://hal.inria.fr/hal-00873267v2/document"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "IDT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来获取每个 SURF 点的运动。"
+        }
+      ]
+    },
+    "list-item-f4e355c0561a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定 SURF 兴趣点的轨迹，如果光流幅度大于 0.5 像素，则将这些点分类为移动点。"
+        }
+      ]
+    },
+    "paragraph-dfa7d894b2a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在训练期间，给定一对相关的图像块 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}^+"
+        },
+        {
+          "type": "text",
+          "text": "，从同一批次中采样 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": " 个随机图像块 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{\\mathbf{x}^-\\}"
+        },
+        {
+          "type": "text",
+          "text": "，以形成 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": " 个训练三元组。在几个 epoch 之后，应用 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "难负样本挖掘"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，使训练更困难、更高效，即搜索使损失最大化的随机图像块，并使用它们进行梯度更新。"
+        }
+      ]
+    },
+    "heading-7f30320ea85a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "帧序列"
+        }
+      ]
+    },
+    "paragraph-fc4315669d13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "视频帧自然地按时间顺序排列。研究人员提出了几种自监督任务，其动机是期望良好的表示应该学习帧的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "正确序列"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-8eb2a86dd4a6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个想法是"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "验证帧顺序"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.08561"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Misra, et al 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。前置任务是确定视频中的帧序列是否按正确的时间顺序排列（“时间有效”）。模型需要跟踪并推断对象在帧间的小运动以完成此类任务。"
+        }
+      ]
+    },
+    "paragraph-1121363e0efd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练帧从高运动窗口中采样。每次采样5帧"
+        },
+        {
+          "type": "inline_math",
+          "text": "(f_a, f_b, f_c, f_d, f_e)"
+        },
+        {
+          "type": "text",
+          "text": "，且时间戳按顺序排列"
+        },
+        {
+          "type": "inline_math",
+          "text": "a < b < c < d < e"
+        },
+        {
+          "type": "text",
+          "text": "。从5帧中，创建一个正元组"
+        },
+        {
+          "type": "inline_math",
+          "text": "(f_b, f_c, f_d)"
+        },
+        {
+          "type": "text",
+          "text": "和两个负元组，"
+        },
+        {
+          "type": "inline_math",
+          "text": "(f_b, f_a, f_d)"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "(f_b, f_e, f_d)"
+        },
+        {
+          "type": "text",
+          "text": "。参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau_\\max = \\vert b-d \\vert"
+        },
+        {
+          "type": "text",
+          "text": "控制正训练实例的难度（即，值越高 → 难度越大），参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau_\\min = \\min(\\vert a-b \\vert, \\vert d-e \\vert)"
+        },
+        {
+          "type": "text",
+          "text": "控制负实例的难度（即，值越低 → 难度越大）。"
+        }
+      ]
+    },
+    "paragraph-271ed5ede9a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "视频帧顺序验证的借口任务，在用作预训练步骤时，被证明可以提高动作识别下游任务的性能。"
+        }
+      ]
+    },
+    "paragraph-a7dcd35dda85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "O3N"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（Odd-One-Out Network；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.06646"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Fernando et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）中的任务也基于视频帧序列验证。更进一步，该任务是从多个视频片段中"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "选出不正确的序列"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-d72c5da13563": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定"
+        },
+        {
+          "type": "inline_math",
+          "text": "N+1"
+        },
+        {
+          "type": "text",
+          "text": "个输入视频片段，其中一个的帧被打乱了，因此顺序错误，而其余"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "个则保持正确的时序。O3N 学习预测异常视频片段的位置。在他们的实验中，有6个输入片段，每个包含6帧。"
+        }
+      ]
+    },
+    "paragraph-578d2ee608b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "视频中的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "时间之箭"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "包含非常丰富的信息，既有低级物理（例如，重力将物体拉向地面；烟雾上升；水向下流动），也有高级事件推理（例如，鱼向前游；你可以打碎一个鸡蛋但无法将其复原）。因此，受此启发，产生了另一个想法，即通过预测时间之箭（AoT）——视频是向前播放还是向后播放——来学习潜在表示（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.robots.ox.ac.uk/~vgg/publications/2018/Wei18/wei18.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wei et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-426f4e5caa9d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分类器应捕获低级物理和高级语义，以预测时间之箭。所提出的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "T-CAM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（时间类别激活图）网络接受"
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": "组，每组包含若干帧光流。来自每组的卷积层输出被连接起来，并输入到二元逻辑回归中，以预测时间之箭。"
+        }
+      ]
+    },
+    "paragraph-5082a1537e05": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有趣的是，数据集中存在一些人工线索。如果处理不当，它们可能导致一个不依赖实际视频内容的简单分类器："
+        }
+      ]
+    },
+    "list-item-829667776b83": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于视频压缩，黑色边框可能并非完全是黑色，而是可能包含有关时间顺序的某些信息。因此，在实验中应移除黑色边框。"
+        }
+      ]
+    },
+    "list-item-3494320116b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大幅度的摄像机运动，如垂直平移或放大/缩小，也为时间之箭提供了强烈的信号，但与内容无关。处理阶段应稳定摄像机运动。"
+        }
+      ]
+    },
+    "paragraph-33e6fb889984": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "AoT 预训练任务被证明在用作预训练步骤时，能提高动作分类下游任务的性能。请注意，仍然需要进行微调。"
+        }
+      ]
+    },
+    "heading-858babcaaf90": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "视频着色"
+        }
+      ]
+    },
+    "paragraph-d6e22fad2f5c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1806.09594"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Vondrick 等人 (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "视频着色"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 作为一种自监督学习问题，从而产生了一种丰富的表示，可用于视频分割和未标记视觉区域跟踪，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "无需额外的微调"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-3b4d5c289ce2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与基于图像的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#colorization"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "着色"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "不同，这里的任务是通过利用视频帧之间颜色的自然时间连贯性（因此这两个帧在时间上不应相距太远），将颜色从彩色正常参考帧复制到灰度目标帧。为了持续一致地复制颜色，模型被设计为学习跟踪不同帧中相关联的像素。"
+        }
+      ]
+    },
+    "paragraph-e9598ca370ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个想法相当简单而巧妙。设"
+        },
+        {
+          "type": "inline_math",
+          "text": "c_i"
+        },
+        {
+          "type": "text",
+          "text": "为"
+        },
+        {
+          "type": "inline_math",
+          "text": "i-th"
+        },
+        {
+          "type": "text",
+          "text": "像素的真实颜色，"
+        },
+        {
+          "type": "inline_math",
+          "text": "c_j"
+        },
+        {
+          "type": "text",
+          "text": "为"
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "目标帧中第个像素的颜色。预测的"
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "目标"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{c}_j"
+        },
+        {
+          "type": "text",
+          "text": "中第个颜色的预测值是参考帧中所有像素颜色的加权和，其中权重项衡量相似性："
+        }
+      ]
+    },
+    "paragraph-4457bbf38626": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": " 是对应像素的学习嵌入；"
+        },
+        {
+          "type": "inline_math",
+          "text": "i’"
+        },
+        {
+          "type": "text",
+          "text": " 索引参考帧中的所有像素。加权项实现了一种基于注意力的指向机制，类似于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#matching-networks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "匹配网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#pointer-network"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "指针网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。由于完整的相似性矩阵可能非常大，因此两个帧都进行了下采样。"
+        },
+        {
+          "type": "inline_math",
+          "text": "c_j"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{c}_j"
+        },
+        {
+          "type": "text",
+          "text": " 之间的分类交叉熵损失与量化颜色一起使用，就像在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.08511"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中一样。"
+        }
+      ]
+    },
+    "paragraph-374c5213c453": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据参考帧的标记方式，该模型可用于完成多项基于颜色的下游任务，例如跟踪分割或时间上的人体姿态。无需微调。参见"
+        }
+      ]
+    },
+    "paragraph-60c9ce6853a3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一些常见的观察结果："
+        }
+      ]
+    },
+    "list-item-c0d41a398b72": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "结合多个前置任务可以提高性能；"
+        }
+      ]
+    },
+    "list-item-5a5c59eaa6fc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更深的网络可以提高表示的质量；"
+        }
+      ]
+    },
+    "list-item-0a2c1363b193": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "监督学习基线仍然远远超过所有这些方法。"
+        }
+      ]
+    },
+    "heading-bd5127ce4b79": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于控制"
+        }
+      ]
+    },
+    "paragraph-61bb0d96a33a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在现实世界中运行强化学习策略时，例如通过视觉输入控制物理机器人，要正确跟踪状态、获取奖励信号或确定目标是否真正实现并非易事。视觉数据中存在大量与真实状态无关的噪声，因此无法通过像素级比较推断状态的等价性。自监督表示学习在学习有用的状态嵌入方面展现出巨大潜力，这些嵌入可以直接用作控制策略的输入。"
+        }
+      ]
+    },
+    "paragraph-eecbd33be9d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本节讨论的所有案例都属于机器人学习领域，主要用于从多个摄像机视图中进行状态表示和目标表示。"
+        }
+      ]
+    },
+    "heading-dbcc177ab5da": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "多视图度量学习"
+        }
+      ]
+    },
+    "paragraph-bf45d29189c3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "度量学习的概念在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#counting-feature-loss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "前面"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#tracking"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "章节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中已被多次提及。一个常见的设置是：给定一个样本三元组（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "锚点"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_a"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "正样本"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_p"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "负样本"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_n"
+        },
+        {
+          "type": "text",
+          "text": "），学习到的表示嵌入"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(s)"
+        },
+        {
+          "type": "text",
+          "text": "满足"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_a"
+        },
+        {
+          "type": "text",
+          "text": "在潜在空间中与"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_p"
+        },
+        {
+          "type": "text",
+          "text": "保持接近，但与"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_n"
+        },
+        {
+          "type": "text",
+          "text": "保持远离。"
+        }
+      ]
+    },
+    "paragraph-43c08f5da4aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#grasp2vec"
+          }
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Grasp2Vec"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1811.06964"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jang & Devin et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）旨在从自由、未标记的抓取活动中，在机器人抓取任务中学习以物体为中心的视觉表示。以物体为中心意味着，无论环境或机器人看起来如何，如果两张图像包含相似的物体，它们应该被映射到相似的表示；否则，嵌入应该相距很远。"
+        }
+      ]
+    },
+    "paragraph-5708b4468071": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "抓取系统可以判断它是否移动了一个物体，但无法判断是哪个物体。相机被设置用于拍摄整个场景和被抓取物体的图像。在早期训练中，抓取机器人被执行以随机抓取任何物体"
+        },
+        {
+          "type": "inline_math",
+          "text": "o"
+        },
+        {
+          "type": "text",
+          "text": "，生成一个图像三元组"
+        },
+        {
+          "type": "inline_math",
+          "text": "(s_\\text{pre}, s_\\text{post}, o)"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-ce19a619aba8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "o"
+        },
+        {
+          "type": "text",
+          "text": " 是抓取物体举向相机的图像；"
+        }
+      ]
+    },
+    "list-item-a406ad4ae63f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "s_\\text{pre}"
+        },
+        {
+          "type": "text",
+          "text": " 是抓取"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "之前"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的场景图像，物体 "
+        },
+        {
+          "type": "inline_math",
+          "text": "o"
+        },
+        {
+          "type": "text",
+          "text": " 在托盘中；"
+        }
+      ]
+    },
+    "list-item-750c7680b8e6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "s_\\text{post}"
+        },
+        {
+          "type": "text",
+          "text": " 是抓取"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "之后"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的同一场景图像，没有物体 "
+        },
+        {
+          "type": "inline_math",
+          "text": "o"
+        },
+        {
+          "type": "text",
+          "text": " 在托盘中。"
+        }
+      ]
+    },
+    "paragraph-4bfbc32a75c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了学习以对象为中心的表示，我们期望 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_\\text{pre}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_\\text{post}"
+        },
+        {
+          "type": "text",
+          "text": " 的嵌入之间的差异能够捕获被移除的对象 "
+        },
+        {
+          "type": "inline_math",
+          "text": "o"
+        },
+        {
+          "type": "text",
+          "text": "。这个想法非常有趣，类似于在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "词嵌入"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中观察到的关系，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://developers.google.com/machine-learning/crash-course/embeddings/translating-to-a-lower-dimensional-space"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "例如"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " distance(“king”, “queen”) ≈ distance(“man”, “woman”)。"
+        }
+      ]
+    },
+    "paragraph-92318e3fd118": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_s"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_o"
+        },
+        {
+          "type": "text",
+          "text": " 分别为场景和对象的嵌入函数。模型通过最小化 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_s(s_\\text{pre}) - \\phi_s(s_\\text{post})"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_o(o)"
+        },
+        {
+          "type": "text",
+          "text": " 之间的距离来学习表示，使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "n-pair loss"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-ef22cbf9d38c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": " 指代一批（锚点，正例）样本对。"
+        }
+      ]
+    },
+    "paragraph-e8d4a4db48b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当将表示学习视为度量学习时，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/6200-improved-deep-metric-learning-with-multi-class-n-pair-loss-objective"
+          },
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "n-pair loss"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是一种常见的选择。n-pair loss 不会显式处理（锚点、正样本、负样本）三元组，而是将一个 mini-batch 中所有其他正样本实例视为负样本。"
+        }
+      ]
+    },
+    "paragraph-138da5a952e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "嵌入函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_o"
+        },
+        {
+          "type": "text",
+          "text": "非常适合用图像呈现目标"
+        },
+        {
+          "type": "inline_math",
+          "text": "g"
+        },
+        {
+          "type": "text",
+          "text": "。量化实际抓取的物体"
+        },
+        {
+          "type": "inline_math",
+          "text": "o"
+        },
+        {
+          "type": "text",
+          "text": "与目标接近程度的奖励函数定义为"
+        },
+        {
+          "type": "inline_math",
+          "text": "r = \\phi_o(g) \\cdot \\phi_o(o)"
+        },
+        {
+          "type": "text",
+          "text": "。请注意，奖励计算仅依赖于学习到的潜在空间，不涉及真实位置，因此可用于真实机器人的训练。"
+        }
+      ]
+    },
+    "paragraph-89caa9a55b83": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除了基于嵌入相似度的奖励函数之外，在 grasp2vec 框架中训练 RL 策略还有一些其他技巧："
+        }
+      ]
+    },
+    "list-item-cd56dff1815c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "事后标记"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：通过将随机抓取的物体标记为正确目标来扩充数据集，类似于 HER（Hindsight Experience Replay；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/7090-hindsight-experience-replay.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Andrychowicz, et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "list-item-5f89028200cb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "辅助目标增强"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：通过用未实现的目标重新标记转换来进一步增强重放缓冲区；具体来说，在每次迭代中，采样两个目标 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(g, g’)"
+        },
+        {
+          "type": "text",
+          "text": "，并且这两个目标都用于向重放缓冲区添加新的转换。"
+        }
+      ]
+    },
+    "paragraph-b72ea5216a4c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#tcn"
+          }
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "TCN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "时间对比网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.06888"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sermanet, et al. 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 从多摄像头视角视频中学习，其直觉是同一场景在同一时间步的不同视角应该共享相同的嵌入（如在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1503.03832"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "FaceNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中），而嵌入应该随时间变化，即使是同一摄像头视角也是如此。因此，嵌入捕获的是底层状态的语义含义，而不是视觉相似性。TCN 嵌入使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#triplet-loss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "三元组损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 进行训练。"
+        }
+      ]
+    },
+    "paragraph-71b69fad4b06": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练数据是通过同时从不同角度拍摄同一场景的视频来收集的。所有视频都是未标注的。"
+        }
+      ]
+    },
+    "paragraph-edf35fa3080c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "TCN 嵌入提取对相机配置不变的视觉特征。它可以用于根据演示视频与潜在空间中观测值之间的欧几里得距离，为模仿学习构建奖励函数。"
+        }
+      ]
+    },
+    "paragraph-0e6b61202c30": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "TCN 的进一步改进是联合学习多帧而不是单帧的嵌入，从而产生了 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "mfTCN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "多帧时间对比网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1808.00928"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dwibedi et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。给定一组来自多个同步摄像机视角的视频，"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_1, v_2, \\dots, v_k"
+        },
+        {
+          "type": "text",
+          "text": "，每个视频中时间点 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": " 的帧以及以步长 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n-1"
+        },
+        {
+          "type": "text",
+          "text": " 选择的前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 帧被聚合并映射到一个嵌入向量中，从而形成大小为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(n−1) \\times s + 1"
+        },
+        {
+          "type": "text",
+          "text": " 的回溯窗口。每个帧首先通过一个 CNN 来提取低级特征，然后我们使用 3D 时间卷积来在时间上聚合帧。该模型使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#n-pair-loss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "n-pairs loss"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 进行训练。"
+        }
+      ]
+    },
+    "paragraph-74015a7eeb93": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练数据采样如下："
+        }
+      ]
+    },
+    "list-item-b755bb8ce60b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，我们构建两对视频片段。每对包含来自不同摄像机视角但时间步同步的两个片段。这两组视频在时间上应该相距很远。"
+        }
+      ]
+    },
+    "list-item-31c92b6ce47b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从同一对中的每个视频片段中，以相同的步长同时采样固定数量的帧。"
+        }
+      ]
+    },
+    "list-item-05032b8a97d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "具有相同时间步的帧在n-pair损失中作为正样本进行训练，而跨对的帧则作为负样本。"
+        }
+      ]
+    },
+    "paragraph-5952988eecec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "mfTCN嵌入可以捕获场景中物体的位置和速度（例如在cartpole中），并且也可以用作策略的输入。"
+        }
+      ]
+    },
+    "heading-72da4ef5a4d7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自主目标生成"
+        }
+      ]
+    },
+    "paragraph-23a247eb9602": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "RIG"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "基于想象目标的强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1807.04742"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nair et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 描述了一种通过无监督表征学习来训练目标条件策略的方法。策略通过首先设想“虚假”目标，然后尝试实现这些目标，从而从自监督实践中学习。"
+        }
+      ]
+    },
+    "paragraph-92f8828d5e79": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "任务是控制机械臂将桌上的小冰球推到目标位置。目标位置（即目标）呈现在图像中。在训练期间，它学习状态的潜在嵌入"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "和目标"
+        },
+        {
+          "type": "inline_math",
+          "text": "g"
+        },
+        {
+          "type": "text",
+          "text": "通过"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "-VAE 编码器，并且控制策略完全在潜在空间中运行。"
+        }
+      ]
+    },
+    "paragraph-8b603ef9ff2a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设一个 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#beta-vae"
+          },
+          "children": [
+            {
+              "type": "inline_math",
+              "text": "\\beta"
+            },
+            {
+              "type": "text",
+              "text": "-VAE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 有一个编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q_\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 将输入状态映射到潜在变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "，该变量由高斯分布建模，还有一个解码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\psi"
+        },
+        {
+          "type": "text",
+          "text": " 将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 映射回状态。RIG 中的状态编码器被设置为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "-VAE 编码器的均值。"
+        }
+      ]
+    },
+    "paragraph-2c59ed4759b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励是状态和目标嵌入向量之间的欧几里得距离："
+        },
+        {
+          "type": "inline_math",
+          "text": "r(s, g) = -|e(s) - e(g)|"
+        },
+        {
+          "type": "text",
+          "text": "。类似于 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-11-10-self-supervised/#grasp2vec"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "grasp2vec"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，RIG 也通过潜在目标重标记应用数据增强：精确地一半目标是从先验中随机生成的，另一半是使用 HER 选择的。同样与 grasp2vec 相同，奖励不依赖于任何真实状态，而只依赖于学习到的状态编码，因此它可以用于真实机器人的训练。"
+        }
+      ]
+    },
+    "paragraph-7d72960ae4f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RIG 的问题在于想象的目标图片中缺少物体变化。如果 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "-VAE 只用一个黑色冰球进行训练，它将无法创建包含其他物体（如不同形状和颜色的积木）的目标。后续的改进是用 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "CC-VAE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（上下文条件 VAE；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.11670"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nair 等人，2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）取代 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "-VAE 来生成目标，其灵感来源于 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "CVAE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（条件 VAE；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/5775-learning-structured-output-representation-using-deep-conditional-generative-models"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sohn, Lee & Yan, 2015"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-635b0487a085": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CVAE 以上下文变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 为条件。它训练一个编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q_\\phi(z \\vert s, c)"
+        },
+        {
+          "type": "text",
+          "text": " 和一个解码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\psi (s \\vert z, c)"
+        },
+        {
+          "type": "text",
+          "text": "，并且两者都可以访问 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": "。CVAE 损失惩罚从输入状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 通过信息瓶颈传递的信息，但允许从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 到编码器和解码器进行 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "无限制的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 信息流。"
+        }
+      ]
+    },
+    "paragraph-b9e99315c63f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了创建合理的目标，CC-VAE 以起始状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_0"
+        },
+        {
+          "type": "text",
+          "text": " 为条件，以便生成的目标呈现与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_0"
+        },
+        {
+          "type": "text",
+          "text": " 中一致的物体类型。这种目标一致性是必要的；例如，如果当前场景包含一个红色冰球，但目标是一个蓝色积木，这会使策略感到困惑。"
+        }
+      ]
+    },
+    "paragraph-013adeb581c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除了状态编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e(s) \\triangleq \\mu_\\phi(s)"
+        },
+        {
+          "type": "text",
+          "text": "，CC-VAE 还训练第二个卷积编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e_0(.)"
+        },
+        {
+          "type": "text",
+          "text": "，将起始状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_0"
+        },
+        {
+          "type": "text",
+          "text": " 转换为紧凑的上下文表示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c = e_0(s_0)"
+        },
+        {
+          "type": "text",
+          "text": "。两个编码器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e(.)"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e_0(.)"
+        },
+        {
+          "type": "text",
+          "text": " 被有意设计为不同且不共享权重，因为它们预期编码图像变化的不同因素。除了 CVAE 的损失函数外，CC-VAE 还添加了一个额外项，以学习将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 重构回 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_0"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{s}_0 = d_0(c)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-d77cdd921ff2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Bisimulation"
+        }
+      ]
+    },
+    "paragraph-97ae091d6d9e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "任务无关表示（例如，旨在表示系统中所有动态的模型）可能会分散强化学习算法的注意力，因为也会呈现不相关的信息。例如，如果我们只训练一个自编码器来重建输入图像，则无法保证整个学习到的表示对强化学习有用。因此，如果我们只想学习与控制相关的信息，就需要摆脱基于重建的表示学习，因为不相关的细节对于重建仍然很重要。"
+        }
+      ]
+    },
+    "paragraph-6a13f86a7d53": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于 Bisimulation 的控制表示学习不依赖于重建，而是旨在根据 MDP 中状态的行为相似性对状态进行分组。"
+        }
+      ]
+    },
+    "paragraph-99729891d6b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Bisimulation"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.61.2493&rep=rep1&type=pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Givan 等人，2003"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）指的是两个具有相似长期行为的状态之间的等价关系。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Bisimulation 度量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 量化了这种关系，以便我们可以聚合状态，将高维状态空间压缩成更小的空间，从而实现更高效的计算。两个状态之间的 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "bisimulation 距离"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 对应于这两个状态在行为上的差异程度。"
+        }
+      ]
+    },
+    "paragraph-59c43153b168": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#markov-decision-processes"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MDP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{M} = \\langle \\mathcal{S}, \\mathcal{A}, \\mathcal{P}, \\mathcal{R}, \\gamma \\rangle"
+        },
+        {
+          "type": "text",
+          "text": " 和一个 bisimulation 关系 "
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": "，在关系 "
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": " 下相等的两个状态（即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_i B s_j"
+        },
+        {
+          "type": "text",
+          "text": "）应该对所有动作具有相同的即时奖励，并且在下一个 bisimilar 状态上具有相同的转移概率："
+        }
+      ]
+    },
+    "paragraph-53ea943803d2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}_B"
+        },
+        {
+          "type": "text",
+          "text": " 是关系 "
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": " 下状态空间的一个划分。"
+        }
+      ]
+    },
+    "paragraph-898d4d79056a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，"
+        },
+        {
+          "type": "inline_math",
+          "text": "="
+        },
+        {
+          "type": "text",
+          "text": " 始终是一个 bisimulation 关系。最有趣的是最大 bisimulation 关系 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sim"
+        },
+        {
+          "type": "text",
+          "text": "，它定义了一个具有 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最少"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 状态组的划分 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}_\\sim"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-fe34ea092793": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标与 bisimulation 度量相似，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DeepMDP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.02736"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gelada 等人，2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）通过最小化两个损失来简化强化学习任务中的高维观测并学习一个潜在空间模型："
+        }
+      ]
+    },
+    "list-item-5dddf0b305ad": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励预测和"
+        }
+      ]
+    },
+    "list-item-49aece31f253": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "下一个潜在状态分布的预测。"
+        }
+      ]
+    },
+    "paragraph-b7f98dfb6c86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(s)"
+        },
+        {
+          "type": "text",
+          "text": " 是状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 的嵌入；带横线的符号是同一 MDP 中的函数（奖励函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": " 和转移函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": "），但在潜在的低维观测空间中运行。这里的嵌入表示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 可以与 bisimulation 度量联系起来，因为 bisimulation 距离被证明受潜在空间中 L2 距离的上限约束。"
+        }
+      ]
+    },
+    "paragraph-6d6685b4bfa3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": " 量化了两个概率分布之间的距离，应仔细选择。DeepMDP 专注于 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Wasserstein-1"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 度量（也称为 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-08-20-gan/#what-is-wasserstein-distance"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“推土机距离”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": " 在度量空间 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(M, d)"
+        },
+        {
+          "type": "text",
+          "text": "（即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d: M \\times M \\to \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "）上的 Wasserstein-1 距离为："
+        }
+      ]
+    },
+    "paragraph-d85166d68745": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Pi(P, Q)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": " 的所有 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Coupling_(probability)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "耦合"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的集合。"
+        },
+        {
+          "type": "inline_math",
+          "text": "d(x, y)"
+        },
+        {
+          "type": "text",
+          "text": " 定义了将粒子从点 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 移动到点 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 的成本。"
+        }
+      ]
+    },
+    "paragraph-f3f70a3e944e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据 Monge-Kantorovich 对偶性，Wasserstein 度量具有对偶形式："
+        }
+      ]
+    },
+    "paragraph-722be2a5f1d0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{F}_d"
+        },
+        {
+          "type": "text",
+          "text": " 是在度量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " - "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{F}_d = \\{ f: \\vert f(x) - f(y) \\vert \\leq d(x, y) \\}"
+        },
+        {
+          "type": "text",
+          "text": " 下的 1-Lipschitz 函数的集合。"
+        }
+      ]
+    },
+    "paragraph-e88baa3372e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DeepMDP 将模型推广到范数最大均值差异（Norm-"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Kernel_embedding_of_distributions#Measuring_distance_between_distributions"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MMD"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）度量，以提高其深度值函数边界的紧密性，同时节省计算（Wasserstein 计算成本高昂）。在他们的实验中，他们发现转移预测模型的模型架构对性能有很大影响。在训练无模型强化学习智能体时，将这些 DeepMDP 损失作为辅助损失可以显著改善大多数 Atari 游戏的性能。"
+        }
+      ]
+    },
+    "paragraph-8411e89e7825": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "用于控制的深度双模拟"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（简称"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DBC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.10742"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）学习对强化学习任务中对控制有益的观测的潜在表示，无需领域知识或像素级重建。"
+        }
+      ]
+    },
+    "paragraph-dce7f569a8fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与DeepMDP类似，DBC通过学习奖励模型和转移模型来建模动力学。这两个模型都在潜在空间中运行，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(s)"
+        },
+        {
+          "type": "text",
+          "text": "。嵌入"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": "的优化取决于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1207.4114"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ferns, et al. 2004"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（定理4.5）和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.295.2114&rep=rep1&type=pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ferns, et al 2011"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（定理2.6）的一个重要结论："
+        }
+      ]
+    },
+    "paragraph-30343ac63ec8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定"
+        },
+        {
+          "type": "inline_math",
+          "text": "c \\in (0, 1)"
+        },
+        {
+          "type": "text",
+          "text": "一个折扣因子，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi"
+        },
+        {
+          "type": "text",
+          "text": "一个正在持续改进的策略，以及"
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": "状态空间"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}"
+        },
+        {
+          "type": "text",
+          "text": "上有界"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://mathworld.wolfram.com/Pseudometric.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "伪度量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的空间，我们可以定义"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{F}: M \\mapsto M"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-976f13b691d9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "那么，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{F}"
+        },
+        {
+          "type": "text",
+          "text": "有一个唯一的固定点"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{d}"
+        },
+        {
+          "type": "text",
+          "text": "，它是一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi^*"
+        },
+        {
+          "type": "text",
+          "text": "-双模拟度量，并且"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{d}(s_i, s_j) = 0 \\iff s_i \\sim s_j"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-bf8ac414a24f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[证明并非微不足道。我将来可能会也可能不会添加它 _(:3」∠)_ …]"
+        }
+      ]
+    },
+    "paragraph-365f6ff9ae52": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定成批的观测对，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "J(\\phi)"
+        },
+        {
+          "type": "text",
+          "text": "的训练损失最小化了策略内双模拟度量与潜在空间中欧几里得距离之间的均方误差："
+        }
+      ]
+    },
+    "paragraph-c439b774d890": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\phi}(s)"
+        },
+        {
+          "type": "text",
+          "text": "表示带有停止梯度的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(s)"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\pi}"
+        },
+        {
+          "type": "text",
+          "text": "是平均策略输出。学习到的奖励模型"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathcal{R}}"
+        },
+        {
+          "type": "text",
+          "text": "是确定性的，学习到的前向动力学模型"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathcal{P}}"
+        },
+        {
+          "type": "text",
+          "text": "输出一个高斯分布。"
+        }
+      ]
+    },
+    "paragraph-dc71ad52003b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DBC基于SAC，但在潜在空间中操作："
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-69a0561b590e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Alexey Dosovitskiy, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1406.6909"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用范例卷积神经网络的判别式无监督特征学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IEEE transactions on pattern analysis and machine intelligence 38.9 (2015): 1734-1747。"
+        }
+      ]
+    },
+    "paragraph-371ca05acab5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Spyros Gidaris, Praveer Singh & Nikos Komodakis. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.07728"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过预测图像旋转进行无监督表示学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2018。"
+        }
+      ]
+    },
+    "paragraph-8da279f4942b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Carl Doersch, Abhinav Gupta, and Alexei A. Efros. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1505.05192"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过上下文预测进行无监督视觉表示学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICCV. 2015。"
+        }
+      ]
+    },
+    "paragraph-3e94f2ed38ad": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Mehdi Noroozi & Paolo Favaro. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.09246"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过解决拼图进行视觉表示的无监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ECCV, 2016。"
+        }
+      ]
+    },
+    "paragraph-9632b97138c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Mehdi Noroozi, Hamed Pirsiavash, and Paolo Favaro. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1708.06734"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过学习计数进行表示学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICCV. 2017。"
+        }
+      ]
+    },
+    "paragraph-d5b7277049d9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Richard Zhang, Phillip Isola & Alexei A. Efros. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.08511"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“彩色图像着色。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ECCV, 2016。"
+        }
+      ]
+    },
+    "paragraph-05b11ea7dc38": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Pascal Vincent, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cs.toronto.edu/~larocheh/publications/icml-2008-denoising-autoencoders.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用去噪自编码器提取和组合鲁棒特征。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML, 2008。"
+        }
+      ]
+    },
+    "paragraph-936c7f436b9a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Jeff Donahue, Philipp Krähenbühl, and Trevor Darrell. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1605.09782"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对抗性特征学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2017。"
+        }
+      ]
+    },
+    "paragraph-e0e632c6776c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Deepak Pathak, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1604.07379"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“上下文编码器：通过图像修复进行特征学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR. 2016。"
+        }
+      ]
+    },
+    "paragraph-8efe58ae893e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Richard Zhang, Phillip Isola, and Alexei A. Efros. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.09842"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“分脑自编码器：通过跨通道预测进行无监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR. 2017。"
+        }
+      ]
+    },
+    "paragraph-67c6628e1049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Xiaolong Wang & Abhinav Gupta. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1505.00687"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用视频进行视觉表示的无监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICCV. 2015。"
+        }
+      ]
+    },
+    "paragraph-5809e4252446": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Carl Vondrick, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1806.09594.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过视频着色实现跟踪”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ECCV. 2018。"
+        }
+      ]
+    },
+    "paragraph-b30a8023887a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Ishan Misra, C. Lawrence Zitnick, and Martial Hebert. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1603.08561"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“洗牌与学习：使用时间顺序验证进行无监督学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ECCV. 2016。"
+        }
+      ]
+    },
+    "paragraph-bea866399645": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Basura Fernando, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.06646"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用奇一网络进行自监督视频表示学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR. 2017。"
+        }
+      ]
+    },
+    "paragraph-ef1aa60272e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Donglai Wei, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.robots.ox.ac.uk/~vgg/publications/2018/Wei18/wei18.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“学习和使用时间之箭”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR. 2018。"
+        }
+      ]
+    },
+    "paragraph-3cef753b8f61": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Florian Schroff, Dmitry Kalenichenko and James Philbin. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1503.03832"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“FaceNet：用于人脸识别和聚类的统一嵌入”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR. 2015。"
+        }
+      ]
+    },
+    "paragraph-c859ddbd95a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Pierre Sermanet, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.06888"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“时间对比网络：从视频中进行自监督学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR. 2018。"
+        }
+      ]
+    },
+    "paragraph-eb927e1bd1d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] Debidatta Dwibedi, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1808.00928"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“从视觉观测中学习可操作的表示。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IROS. 2018。"
+        }
+      ]
+    },
+    "paragraph-c656c84ce180": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[19] Eric Jang & Coline Devin, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1811.06964"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Grasp2Vec：从自监督抓取中学习对象表示”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CoRL. 2018。"
+        }
+      ]
+    },
+    "paragraph-ccf5ac107478": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[20] Ashvin Nair, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1807.04742"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“带有想象目标的视觉强化学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS. 2018。"
+        }
+      ]
+    },
+    "paragraph-a2c773038ca9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[21] Ashvin Nair, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.11670"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于自监督机器人学习的上下文想象目标”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CoRL. 2019。"
+        }
+      ]
+    },
+    "paragraph-7b54c2aa695f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[22] Aaron van den Oord, Yazhe Li & Oriol Vinyals. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1807.03748"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用对比预测编码进行表示学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1807.03748, 2018。"
+        }
+      ]
+    },
+    "paragraph-a7cd52000d46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[23] Olivier J. Henaff, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.09272"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用对比预测编码进行数据高效图像识别”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1905.09272, 2019。"
+        }
+      ]
+    },
+    "paragraph-873cd5eb50c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[24] Kaiming He, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.05722"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于无监督视觉表示学习的动量对比。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2020。"
+        }
+      ]
+    },
+    "paragraph-05c663759478": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[25] Zhirong Wu, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1805.01978v1"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过非参数实例级判别进行无监督特征学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2018。"
+        }
+      ]
+    },
+    "paragraph-5db4ffa6ddef": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[26] Ting Chen, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.05709"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“一个用于视觉表示对比学习的简单框架。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2002.05709, 2020。"
+        }
+      ]
+    },
+    "paragraph-dc48567e8ef1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[27] Aravind Srinivas, Michael Laskin & Pieter Abbeel "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2004.04136"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“CURL：用于强化学习的对比无监督表示。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2004.04136, 2020。"
+        }
+      ]
+    },
+    "paragraph-04bfe5c3c7b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[28] Carles Gelada, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.02736"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“DeepMDP：学习用于表示学习的连续潜在空间模型”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 2019。"
+        }
+      ]
+    },
+    "paragraph-909ba6cab072": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[29] Amy Zhang, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.10742"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“无需重建的强化学习不变表示学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2006.10742, 2020。"
+        }
+      ]
+    },
+    "paragraph-ea757f06c8cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[30] Xinlei Chen, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2003.04297"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用动量对比学习改进基线”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2003.04297, 2020。"
+        }
+      ]
+    },
+    "paragraph-c9cefb9073b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[31] Jean-Bastien Grill, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.07733"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Bootstrap Your Own Latent：一种新的自监督学习方法”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2006.07733, 2020。"
+        }
+      ]
+    },
+    "paragraph-c456a5a9f058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[32] Abe Fetterman & Josh Albrecht. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://untitled-ai.github.io/understanding-self-supervised-contrastive-learning.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用Bootstrap Your Own Latent (BYOL) 理解自监督和对比学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 未命名博客。2020年8月24日。"
+        }
+      ]
+    }
+  }
+}

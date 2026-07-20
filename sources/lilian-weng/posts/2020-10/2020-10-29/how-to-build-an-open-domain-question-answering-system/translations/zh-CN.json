@@ -1,0 +1,5493 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:da5bd408ef0b40190ecebae2e87fa814d9e54331261d2f30e6b2d3e386c81c46",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "如何构建一个开放域问答系统？",
+  "segments": {
+    "paragraph-3204a0dc0ba1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2020-11-12 更新：添加了一个关于使用 OpenAI API（测试版）进行闭卷事实问答的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#openai-api-example"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "示例"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-1ee688ed007f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个能够回答任何事实性知识问题的模型可以带来许多有用且实用的应用，例如作为聊天机器人或AI助手🤖。在这篇文章中，我们将回顾几种构建此类开放域问答系统的常见方法。"
+        }
+      ]
+    },
+    "paragraph-eac67727c324": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "鉴于现有大量论文，以下是免责声明："
+        }
+      ]
+    },
+    "list-item-bedca33e38a5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们能够访问一个强大的预训练"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "语言模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-cfa93198dc3a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们在此不涉及如何使用结构化知识库（例如 Freebase、WikiData）。"
+        }
+      ]
+    },
+    "list-item-55e3a6ac5b5f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们只关注单轮问答，而不是多轮对话式问答。"
+        }
+      ]
+    },
+    "list-item-49102696a26f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们主要关注包含神经网络的问答模型，特别是基于 Transformer 的语言模型。"
+        }
+      ]
+    },
+    "list-item-1dcdcfb5c0d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我承认我错过了许多在 2017-2019 年间专门为问答任务设计的架构论文😔"
+        }
+      ]
+    },
+    "heading-31b0468a68b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "什么是开放域问答？"
+        }
+      ]
+    },
+    "paragraph-90d85f747544": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "开放域问答（ODQA）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是一种语言任务，要求模型以自然语言回答事实性问题。真实答案是客观的，因此评估模型性能很简单。"
+        }
+      ]
+    },
+    "paragraph-49d6cfe6d35f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，"
+        }
+      ]
+    },
+    "paragraph-e2aab8a03ddb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“开放域”部分指的是对于任何随意提出的事实性问题，都缺乏相关的上下文。在上述案例中，模型只将问题作为输入，但没有提供关于“为什么爱因斯坦没有因相对论获得诺贝尔奖”的文章，而“光电效应定律”这个术语很可能在那篇文章中被提及。当问题和上下文都提供时，这项任务被称为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "阅读理解（RC）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-a85245932831": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个ODQA模型可以"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "访问外部知识源"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（例如维基百科），也可以不访问，这两种情况分别被称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "开卷"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "闭卷"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "问答。"
+        }
+      ]
+    },
+    "paragraph-739ccc0e6bb6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在考虑不同类型的开放域问题时，我喜欢"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2008.02637"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lewis, et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出的分类，按难度递增排序："
+        }
+      ]
+    },
+    "list-item-8b8172afcadd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型能够正确记忆并回答在训练时见过的问题。"
+        }
+      ]
+    },
+    "list-item-75ca8e04d18a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型能够在测试时回答新问题，并从训练期间见过的答案集中选择一个答案。"
+        }
+      ]
+    },
+    "list-item-401295505ae8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型能够回答训练数据集中不包含答案的新问题。"
+        }
+      ]
+    },
+    "heading-6ff32a12eed9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "符号"
+        }
+      ]
+    },
+    "paragraph-47b2bcbdb967": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个问题"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "和一个真实答案片段"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "，包含真实答案的上下文段落被标记为"
+        },
+        {
+          "type": "inline_math",
+          "text": "z \\in \\mathcal{Z}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{Z}"
+        },
+        {
+          "type": "text",
+          "text": "是一个外部知识语料库。维基百科是这种外部知识源的常见选择。"
+        }
+      ]
+    },
+    "heading-f874a2a0ced9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "问答数据微调的担忧"
+        }
+      ]
+    },
+    "paragraph-7ccc4d63ad3f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们深入探讨下面许多模型的细节之前，我想指出一个关于使用常见问答数据集微调模型的担忧，这在几个ODQA模型中作为微调步骤出现。这可能令人担忧，因为在几个公共问答数据集中，训练集和测试集中的问题存在显著重叠。"
+        }
+      ]
+    },
+    "paragraph-6fd6fb47a2ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2008.02637"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lewis, et al., (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/QA-Overlap"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）发现，58-71%的测试时答案也存在于训练集中的某个地方，28-34%的测试集问题在相应的训练集中有近似重复的释义。在他们的实验中，当从训练集中移除重复或释义的问题时，几个模型的表现明显变差。"
+        }
+      ]
+    },
+    "heading-cacac6d5ef15": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "开卷问答：检索器-阅读器"
+        }
+      ]
+    },
+    "paragraph-92f202cdafbb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个事实性问题，如果语言模型没有上下文，或者不足以记住训练数据集中存在的上下文，它就不太可能猜出正确答案。在开卷考试中，学生在回答试题时可以参考笔记和书籍等外部资源。类似地，ODQA 系统可以与丰富的知识库配对，以识别相关文档作为答案的证据。"
+        }
+      ]
+    },
+    "paragraph-68b915a926a6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们可以将寻找给定问题答案的过程分解为两个阶段，"
+        }
+      ]
+    },
+    "list-item-3e35c9399828": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在外部知识库中查找相关上下文；"
+        }
+      ]
+    },
+    "list-item-b43277a80275": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "处理检索到的上下文以"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "提取"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "答案。"
+        }
+      ]
+    },
+    "paragraph-9154cbb4c206": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种检索器+阅读器框架最初在"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DrQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.00051"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chen 等人于 2017 年"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出的“文档检索器问答”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/DrQA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）中提出。检索器和阅读器组件可以独立设置和训练，也可以"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#end-to-end-joint-training"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "端到端"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "联合训练。"
+        }
+      ]
+    },
+    "heading-93731223cd2f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检索器模型"
+        }
+      ]
+    },
+    "paragraph-e952a19bc154": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "实现检索器的两种流行方法是使用信息检索（IR）系统，该系统依赖于（1）经典的非学习型"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Tf%E2%80%93idf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "TF-IDF"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "特征（“经典 IR”）或（2）由神经网络生成的文本的密集嵌入向量（“神经 IR”）。"
+        }
+      ]
+    },
+    "heading-067c2ab57fcd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "经典 IR"
+        }
+      ]
+    },
+    "paragraph-818391d0f6c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DrQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.00051"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chen 等人，2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）采用了一种基于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Vector_space_model"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "向量空间模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的高效非学习型搜索引擎。每个查询和文档都被建模为词袋向量，其中每个词项都通过 TF-IDF（词频 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\times"
+        },
+        {
+          "type": "text",
+          "text": " 逆文档频率）进行加权。"
+        }
+      ]
+    },
+    "paragraph-c9abf14aefab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": " 是文档 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 中来自文档集合 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{D}"
+        },
+        {
+          "type": "text",
+          "text": " 的一个一元词或二元词。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{freq}(t, d)"
+        },
+        {
+          "type": "text",
+          "text": " 衡量词项 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": " 在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 中出现的次数。请注意，这里的词频也包括二元词计数，这被发现非常有用，因为通过二元词考虑了局部词序。作为实现的一部分，DrQA 使用无符号 murmur3 哈希将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "2^{24}"
+        },
+        {
+          "type": "text",
+          "text": " 桶的二元词映射。"
+        }
+      ]
+    },
+    "paragraph-c2734c7e985f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "具体来说，DrQA 将维基百科作为其知识来源，此后这一选择成为许多 ODQA 研究的默认设置。非机器学习文档检索器根据问题返回前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k=5"
+        },
+        {
+          "type": "text",
+          "text": " 篇最相关的维基百科文章。"
+        }
+      ]
+    },
+    "paragraph-f407e004f1d8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "BERTserini"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.01718"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Yang 等人，2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）将开源的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/castorini/anserini"
+          },
+          "children": [
+            {
+              "type": "emphasis",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Anserini"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IR 工具包作为检索器，并与一个微调的预训练 BERT 模型作为阅读器配对。前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个文档（"
+        },
+        {
+          "type": "inline_math",
+          "text": "k=10"
+        },
+        {
+          "type": "text",
+          "text": "）通过 Anserini 的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "post-v3.0"
+        },
+        {
+          "type": "text",
+          "text": " 分支检索，查询被视为词袋。检索到的文本片段通过 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Okapi_BM25"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BM25"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 进行排名，BM25 是一种经典的基于 TF-IDF 的检索评分函数。在文本粒度对性能的影响方面，他们发现段落检索 > 句子检索 > 文章检索。"
+        }
+      ]
+    },
+    "paragraph-6528382beb3c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "ElasticSearch + BM25"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 被 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Multi-passage BERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 问答模型 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.08167"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 使用。他们发现，通过 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "滑动窗口"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 将文章分割成长度为100词的段落带来了4%的改进，因为将文档分割成没有重叠的段落可能会导致一些接近边界的证据失去有用的上下文。"
+        }
+      ]
+    },
+    "heading-c9758fde48f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "神经信息检索"
+        }
+      ]
+    },
+    "paragraph-d0013aa22d73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在学习文本的低维表示方面有着悠久的历史，这种表示比原始的基于词项的向量更密集 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://lsa.colorado.edu/papers/JASIS.lsi.90.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Deerwester et al., 1990"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.aclweb.org/anthology/W11-0329/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Yih, et al., 2011"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。密集表示可以通过矩阵分解或某些神经网络架构（例如MLP、LSTM、双向LSTM等）来学习。当涉及神经网络时，这些方法被称为“神经信息检索”（Neural IR），神经信息检索是检索问题的一种新方法类别，但它不一定比经典信息检索表现更好/更优越 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://sigir.org/wp-content/uploads/2019/01/p040.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lim, 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "paragraph-bf67f1dc83f4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在许多大规模"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "通用语言模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "取得成功之后，许多问答模型都采用了以下方法："
+        }
+      ]
+    },
+    "list-item-b554c3820404": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过将问题 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 和上下文段落 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 输入语言模型，提取它们的密集表示；"
+        }
+      ]
+    },
+    "list-item-26f9670d15fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用这两种表示的点积作为检索分数，对最相关的段落进行排序和选择。"
+        }
+      ]
+    },
+    "paragraph-ea872b955c3d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ORQA、REALM 和 DPR 都使用这样的评分函数进行上下文检索，这将在关于端到端 QA 模型的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#end-to-end-joint-training"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "后续章节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中详细描述。"
+        }
+      ]
+    },
+    "paragraph-0a499535c2bc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DenSPI"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“密集-稀疏短语索引”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.05807"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Seo 等人，2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）研究了一种极端方法，即在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "短语"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "级别编码知识语料库中的所有文本，然后仅依靠检索器来识别最相关的短语作为预测答案。通过这种方式，检索器+阅读器管道被简化为仅检索器。当然，索引会大得多，检索问题也更具挑战性。"
+        }
+      ]
+    },
+    "paragraph-82084ccec6aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DenSPI 引入了一种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "与查询无关的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "文档短语可索引表示。具体来说，它离线编码维基百科中文本跨度的与查询无关的表示，并在推理时通过执行最近邻搜索来查找答案。这可以大大加快推理时间，因为无需为每个新查询重新编码文档，而这通常是阅读器模型所要求的。"
+        }
+      ]
+    },
+    "paragraph-7be44c4e148c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个问题 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 和一组固定的（维基百科）文档 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_1, \\dots, z_K"
+        },
+        {
+          "type": "text",
+          "text": "，并且每个文档 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_k"
+        },
+        {
+          "type": "text",
+          "text": " 包含 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N_k"
+        },
+        {
+          "type": "text",
+          "text": " 个词 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_k = \\langle z_k^{(1)}, \\dots, z_k^{(N_k)}\\rangle"
+        },
+        {
+          "type": "text",
+          "text": "。一个 ODQA 模型是一个评分函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": "，用于每个候选短语跨度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_k^{(i:j)}, 1 \\leq i \\leq j \\leq N_k"
+        },
+        {
+          "type": "text",
+          "text": "，使得真实答案是得分最高的短语："
+        },
+        {
+          "type": "inline_math",
+          "text": "y = {\\arg\\max}_{k,i,j} F(x, z_k^{(i:j)})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-dab881332a84": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "短语表示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_k^{(i:j)}"
+        },
+        {
+          "type": "text",
+          "text": " 结合了密集向量和稀疏向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z_k^{(i:j)} = [d_k^{(i:j)}, s_k^{(i:j)}] \\in \\mathbb{R}^{d^d + d^s}"
+        },
+        {
+          "type": "text",
+          "text": "（注意 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d^d \\ll d^s"
+        },
+        {
+          "type": "text",
+          "text": "）："
+        }
+      ]
+    },
+    "list-item-9ff124be6e2d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "密集向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_k^{(i:j)}"
+        },
+        {
+          "type": "text",
+          "text": " 有效地编码了局部"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "句法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "语义"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "线索，这正是预训练语言模型可以学习到的。"
+        }
+      ]
+    },
+    "list-item-7090e6813645": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_k^{(i:j)}"
+        },
+        {
+          "type": "text",
+          "text": "在编码精确的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "词汇"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "信息方面表现出色。稀疏向量是基于词频的编码。DenSPI使用与DrQA相同的2-gram词频，从而产生高度稀疏的表示("
+        },
+        {
+          "type": "inline_math",
+          "text": "d^s \\approx 16"
+        },
+        {
+          "type": "text",
+          "text": "M)"
+        }
+      ]
+    },
+    "paragraph-ae54854fc9be": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "密集向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "d^{(i:j)}"
+        },
+        {
+          "type": "text",
+          "text": "进一步分解为三个部分，"
+        },
+        {
+          "type": "inline_math",
+          "text": "d^{(i:j)} = [a_i, b_j, c_{ij}] \\in \\mathbb{R}^{2d^b + 1}"
+        },
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "2d^b + 1 = d^d"
+        },
+        {
+          "type": "text",
+          "text": "。所有这三个组件都是根据微调后的BERT表示的不同列学习得到的。"
+        }
+      ]
+    },
+    "list-item-cff647c284d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "a_i"
+        },
+        {
+          "type": "text",
+          "text": "编码文档中第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个词的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "起始"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "位置；"
+        }
+      ]
+    },
+    "list-item-710135a4ae31": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_j"
+        },
+        {
+          "type": "text",
+          "text": "编码文档中第"
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "个词的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "结束"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "位置；"
+        }
+      ]
+    },
+    "list-item-ac0871082a00": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "标量"
+        },
+        {
+          "type": "inline_math",
+          "text": "c_{ij}"
+        },
+        {
+          "type": "text",
+          "text": "衡量起始向量和结束向量之间的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "连贯性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，有助于在推理过程中避免非构成短语。"
+        }
+      ]
+    },
+    "paragraph-a4aa9e8380a3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于所有可能的"
+        },
+        {
+          "type": "inline_math",
+          "text": "(i,j,k)"
+        },
+        {
+          "type": "text",
+          "text": "元组，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "j-i < J"
+        },
+        {
+          "type": "text",
+          "text": "，文本跨度嵌入被预先计算并存储为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "短语索引"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。最大跨度长度"
+        },
+        {
+          "type": "inline_math",
+          "text": "J"
+        },
+        {
+          "type": "text",
+          "text": "是一个预定义的标量常数。"
+        }
+      ]
+    },
+    "paragraph-fedd30255b13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在推理时，问题被映射到相同的向量空间"
+        },
+        {
+          "type": "inline_math",
+          "text": "x=[d’, s’] \\in \\mathbb{R}^{d^d + d^s}"
+        },
+        {
+          "type": "text",
+          "text": "中，其中密集向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "d’"
+        },
+        {
+          "type": "text",
+          "text": "是从特殊"
+        },
+        {
+          "type": "inline_code",
+          "text": "[CLS]"
+        },
+        {
+          "type": "text",
+          "text": "符号的BERT嵌入中提取的。相同的BERT模型用于编码问题和短语。最终答案由"
+        },
+        {
+          "type": "inline_math",
+          "text": "k^*, i^*, j^* = \\arg\\max x^\\top z_k^{(i:j)}"
+        },
+        {
+          "type": "text",
+          "text": "预测。"
+        }
+      ]
+    },
+    "heading-cb74c331f9a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "阅读器模型"
+        }
+      ]
+    },
+    "paragraph-2c4b3f181c5f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "阅读器模型学习解决阅读理解任务——从给定的上下文文档中为给定问题提取答案。这里我们只讨论使用神经网络的机器理解方法。"
+        }
+      ]
+    },
+    "heading-2f0e1d5bcdf9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "双向LSTM"
+        }
+      ]
+    },
+    "paragraph-297a6f40dab6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DrQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.00051"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chen et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的答案检测阅读器模型是一个3层双向LSTM，隐藏层大小为128。检索到的维基百科文章的每个相关段落都由一个特征向量序列"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{\\tilde{\\mathbf{z}}_1, \\dots, \\tilde{\\mathbf{z}}_m \\}"
+        },
+        {
+          "type": "text",
+          "text": "编码。每个特征向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{z}}_i \\in \\mathbb{R}^{d_z}"
+        },
+        {
+          "type": "text",
+          "text": "旨在捕获围绕一个标记"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_i"
+        },
+        {
+          "type": "text",
+          "text": "的有用上下文信息。该特征由几类特征组成："
+        }
+      ]
+    },
+    "list-item-eaa3ebfd28df": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "词嵌入：一个300维的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/#glove-global-vectors"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Glove"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "词嵌入，由800B网络爬取数据训练得到，"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_\\text{embed} = E_g(z_i)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-84068ba0b728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "精确匹配：一个词"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_i"
+        },
+        {
+          "type": "text",
+          "text": "是否出现在问题中"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_\\text{match} = \\mathbb{I}(z_i \\in x)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-5d30c55ec951": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "词元特征：这包括POS（词性）标注、NER（命名实体识别）和TF（词频），"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_\\text{token}(z_i) = (\\text{POS}(z_i), \\text{NER}(z_i), \\text{TF}(z_i))"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-a57ce5589ce9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对齐的问题嵌入：注意力分数"
+        },
+        {
+          "type": "inline_math",
+          "text": "y_{ij}"
+        },
+        {
+          "type": "text",
+          "text": "旨在捕获段落词元"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_i"
+        },
+        {
+          "type": "text",
+          "text": "和问题词"
+        },
+        {
+          "type": "inline_math",
+          "text": "x_j"
+        },
+        {
+          "type": "text",
+          "text": "之间的句间匹配和相似性。此特征在相似但不相同的词之间添加了软对齐。"
+        }
+      ]
+    },
+    "paragraph-cb28d1bfda97": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "是一个带有ReLU的单一全连接层，"
+        },
+        {
+          "type": "inline_math",
+          "text": "E_g(.)"
+        },
+        {
+          "type": "text",
+          "text": "是Glove词嵌入。"
+        }
+      ]
+    },
+    "paragraph-f83be31ac462": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个包含"
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": "个词元的段落的特征向量被输入到LSTM中，以获得最终的段落向量："
+        }
+      ]
+    },
+    "paragraph-65d5dc6fd1b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "问题被编码为问题中每个词的嵌入的加权和："
+        }
+      ]
+    },
+    "paragraph-7295000e2e39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{w}"
+        },
+        {
+          "type": "text",
+          "text": "是一个需要学习的权重向量。"
+        }
+      ]
+    },
+    "paragraph-4ed9fe71451c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一旦为问题和所有相关段落构建了特征向量，阅读器需要预测段落中每个位置作为答案跨度开始和结束的概率，分别为"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{start}(i_s)"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{end}(i_s)"
+        },
+        {
+          "type": "text",
+          "text": "。在所有段落中，具有最大"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{start}(i_s)  \\times p_\\text{end}(i_e) "
+        },
+        {
+          "type": "text",
+          "text": "的最优跨度将作为最终答案返回。"
+        }
+      ]
+    },
+    "paragraph-7a2bff12f889": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_s"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_e"
+        },
+        {
+          "type": "text",
+          "text": "是学习到的参数。"
+        }
+      ]
+    },
+    "heading-bd7684f1a345": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "BERT宇宙"
+        }
+      ]
+    },
+    "paragraph-34fd82ccebb7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "继"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#bert"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1810.04805"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Devlin et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）成功之后，许多问答模型都基于BERT开发了机器理解组件。让我们将BERT模型定义为一个函数，该函数可以接受一个或多个字符串（通过"
+        },
+        {
+          "type": "inline_code",
+          "text": "[SEP]"
+        },
+        {
+          "type": "text",
+          "text": "连接）作为输入，并为特殊的"
+        },
+        {
+          "type": "inline_code",
+          "text": "[CLS]"
+        },
+        {
+          "type": "text",
+          "text": "标记和每个输入标记输出一组BERT编码向量："
+        }
+      ]
+    },
+    "paragraph-429c313b4da3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}^\\texttt{[CLS]}"
+        },
+        {
+          "type": "text",
+          "text": "是特殊"
+        },
+        {
+          "type": "inline_code",
+          "text": "[CLS]"
+        },
+        {
+          "type": "text",
+          "text": "标记的嵌入向量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}^{(i)}"
+        },
+        {
+          "type": "text",
+          "text": "是第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个标记的嵌入向量。"
+        }
+      ]
+    },
+    "paragraph-fa4f119b3d73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了将BERT用于阅读理解，它学习了两个额外的权重，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_s"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_e"
+        },
+        {
+          "type": "text",
+          "text": "，并且"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{softmax}(\\mathbf{h}^{(i)}\\mathbf{W}_s)"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{softmax}(\\mathbf{h}^{(i)}\\mathbf{W}_e)"
+        },
+        {
+          "type": "text",
+          "text": "定义了每个标记预测跨度的起始和结束位置的两个概率分布。"
+        }
+      ]
+    },
+    "paragraph-44c5323b20fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "BERTserini"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.01718"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Yang et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）利用预训练的BERT模型作为阅读器。他们的实验表明，使用SQuAD对预训练的BERT进行"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "微调"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "足以在识别答案跨度方面达到高准确率。"
+        }
+      ]
+    },
+    "paragraph-e232f6fb5db3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "BERTserini阅读器与原始BERT的关键区别在于：为了允许比较和聚合来自不同段的结果，移除了对不同答案跨度的最终softmax层。预训练的BERT模型在SQuAD的训练集上进行微调，其中阅读器的所有输入都填充到384个标记，学习率为3e-5。"
+        }
+      ]
+    },
+    "paragraph-dea6f265f0ef": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在对所有提取到的答案跨度进行排序时，检索器分数 (BM25) 和阅读器分数 (token 作为起始位置的概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\times"
+        },
+        {
+          "type": "text",
+          "text": " 同一 token 作为结束位置的概率) 通过线性插值进行组合。"
+        }
+      ]
+    },
+    "paragraph-63ba11688dcc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "原始的BERT独立地对每个段落中每个token的起始和结束位置的概率分布进行归一化。不同的是，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "多段落BERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.08167"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.10723"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "全局地"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对一个问题所有检索到的段落的答案分数进行归一化。具体来说，多段落BERT移除了BERT QA中每个段落的最终归一化层（与BERTserini中相同），然后对所有段落的所有词位置添加了一个全局的"
+        },
+        {
+          "type": "inline_code",
+          "text": "softmax"
+        },
+        {
+          "type": "text",
+          "text": "。全局归一化使得阅读器模型在从大量段落中精确定位答案时更加稳定。"
+        }
+      ]
+    },
+    "paragraph-e2c001b774b9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，多段落BERT实现了一个独立的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "段落排序器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模型，通过另一个BERT模型，并且"
+        },
+        {
+          "type": "inline_math",
+          "text": "(x, z)"
+        },
+        {
+          "type": "text",
+          "text": "的排序分数"
+        },
+        {
+          "type": "inline_math",
+          "text": "(x, z)"
+        },
+        {
+          "type": "text",
+          "text": "由一个 生成"
+        },
+        {
+          "type": "inline_code",
+          "text": "softmax"
+        },
+        {
+          "type": "text",
+          "text": "作用于第一个 的表示向量"
+        },
+        {
+          "type": "inline_code",
+          "text": "[CLS]"
+        },
+        {
+          "type": "text",
+          "text": "token。该段落排序器带来了额外的2%的改进。使用BERT对段落进行重排序的类似想法也在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.04085"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nogueira & Cho, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中有所讨论。"
+        }
+      ]
+    },
+    "paragraph-5f502f5cc437": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有趣的是，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.08167"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 发现 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "显式的句子间匹配"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 对于使用 BERT 的阅读理解（RC）任务来说似乎并非关键；关于实验是如何设计的，请查阅原始论文。一个可能的原因是 BERT 中的多头自注意力层已经嵌入了句子间的匹配信息。"
+        }
+      ]
+    },
+    "heading-b90a9d794c9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "端到端联合训练"
+        }
+      ]
+    },
+    "paragraph-3c47461d040e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检索器和阅读器组件可以联合训练。本节涵盖 R^3、ORQA、REALM 和 DPR。它们有很多共同的设计，例如用于检索的基于 BERT 的密集向量，以及最大化获得真实答案的边际似然的损失函数。"
+        }
+      ]
+    },
+    "paragraph-b149f7eb16a1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "R^3"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“强化排序器-阅读器”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1709.00023"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang, et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）问答系统中，检索器和阅读器模型通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "联合训练。（请注意，为了保持本节中不同论文术语的一致性，原始 R^3 论文中的“排序器”模型在此处被称为“检索器”模型。）这两个组件都是"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1512.08849"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Match-LSTM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的变体，它依赖于注意力机制来计算段落和问题序列之间的词语相似度。"
+        }
+      ]
+    },
+    "paragraph-82a5a653be91": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Match-LSTM 模块是如何工作的？"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "给定一个问题"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{X}"
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "inline_math",
+          "text": "d_x"
+        },
+        {
+          "type": "text",
+          "text": "词，以及一个段落"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Z}"
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "inline_math",
+          "text": "d_z"
+        },
+        {
+          "type": "text",
+          "text": "词，这两种表示都使用固定的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/#glove-global-vectors"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Glove"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "词嵌入，"
+        }
+      ]
+    },
+    "paragraph-d2e33d9fec94": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "l"
+        },
+        {
+          "type": "text",
+          "text": " 是双向 LSTM 模块的隐藏维度。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^g \\in \\mathbb{R}^{l\\times l}"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{b}^g \\in \\mathbb{R}^l"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}^m \\in \\mathbb{R}^{2l \\times 4l}"
+        },
+        {
+          "type": "text",
+          "text": " 是待学习的参数。运算符 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\otimes \\mathbf{e}_{d_x}"
+        },
+        {
+          "type": "text",
+          "text": " 是外积，用于将列向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{b}^g"
+        },
+        {
+          "type": "text",
+          "text": " 重复 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_x"
+        },
+        {
+          "type": "text",
+          "text": " 次。"
+        }
+      ]
+    },
+    "paragraph-cc6d60487ef6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "排序器和阅读器组件共享相同的 Match-LSTM 模块，但在最后一层有两个独立的预测头，从而产生 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{H}^\\text{rank}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{H}^\\text{reader}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-3b091e53200c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检索器对每个段落运行最大池化操作，然后进行聚合，以输出每个段落包含答案的概率。"
+        }
+      ]
+    },
+    "paragraph-261685ed4e4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，检索器被视为一种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "策略"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，用于根据预测的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\gamma"
+        },
+        {
+          "type": "text",
+          "text": "输出动作以采样一个段落，"
+        }
+      ]
+    },
+    "paragraph-bbd92c7069bf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "阅读器预测答案跨度的起始位置"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta^s"
+        },
+        {
+          "type": "text",
+          "text": "和结束位置"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta^e"
+        },
+        {
+          "type": "text",
+          "text": "。这两个位置以相同的方式计算，并具有独立的学习参数。所有相关段落中共有"
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": "个词。"
+        }
+      ]
+    },
+    "paragraph-ce75b8d4fc0e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "是真实答案，段落"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "由检索器采样。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta^s_{y_z^s}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta^s_{y_z^e}"
+        },
+        {
+          "type": "text",
+          "text": "表示"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "在段落"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "中的起始和结束位置的概率。"
+        }
+      ]
+    },
+    "paragraph-3f01e03377d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "端到端 R^3 QA 系统的训练目标是最小化获得正确答案的负对数似然"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "，给定一个问题"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        }
+      ]
+    },
+    "paragraph-77a0b79db978": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本质上，在训练中，给定由检索器采样的段落"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "，阅读器通过梯度下降进行训练，而检索器则通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#reinforce"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "REINFORCE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，使用"
+        },
+        {
+          "type": "inline_math",
+          "text": "L(y \\vert z, x)"
+        },
+        {
+          "type": "text",
+          "text": "作为奖励函数进行训练。然而，"
+        },
+        {
+          "type": "inline_math",
+          "text": "L(y \\vert z, x)"
+        },
+        {
+          "type": "text",
+          "text": "没有边界，可能会引入很大的方差。该论文通过比较真实值"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "和阅读器提取的答案"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{y}"
+        },
+        {
+          "type": "text",
+          "text": "，用定制的评分函数替换了奖励："
+        }
+      ]
+    },
+    "paragraph-aa52eb8dda53": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ORQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“开放检索问答”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.00300"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lee et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）联合学习一个检索器+阅读器问答模型，以监督方式优化获得正确答案的边际对数似然。不涉及任何明确的“黑盒”信息检索系统。相反，它能够从开放语料库中检索任何文本。在训练期间，ORQA不需要真实上下文段落（即阅读理解数据集），而只需要（问题，答案）字符串对。检索器和阅读器组件都基于BERT，但它们不共享。"
+        }
+      ]
+    },
+    "paragraph-e1aefb03765b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "所有证据块都通过检索分数进行排序，该分数定义为BERT嵌入向量的内积，这些向量来自"
+        },
+        {
+          "type": "inline_code",
+          "text": "[CLS]"
+        },
+        {
+          "type": "text",
+          "text": "问题的token"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "和证据块"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "。请注意，问题和上下文的编码器是独立的。"
+        }
+      ]
+    },
+    "paragraph-5c6a3d5d3b58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检索器模块通过"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逆完形填空任务（ICT）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "进行预训练，其目标是根据一个句子预测上下文，这与标准的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Cloze_test"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "完形填空任务"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "相反。ICT 的目标是最大化正确上下文的检索分数"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "，给定一个随机句子"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-d34712d69758": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{BATCH}(\\mathcal{Z})"
+        },
+        {
+          "type": "text",
+          "text": " 是同一批次中用作采样负例的证据块集合。"
+        }
+      ]
+    },
+    "paragraph-3266d3db5fda": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "经过这样的预训练后，BERT 检索器有望获得足以用于证据检索的表示。只有问题编码器需要进行微调以进行答案提取。换句话说，证据块编码器（即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_z"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{BERT}_z"
+        },
+        {
+          "type": "text",
+          "text": "）是固定的，因此所有证据块编码都可以预先计算，并支持 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#fast-maximum-inner-product-search-mips"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "快速最大内积搜索 (MIPS)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-bca2b44e7d86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "阅读器遵循与原始 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#use-bert-in-downstream-tasks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BERT RC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 实验相同的设计。它以监督方式学习，同时证据块编码器的参数是固定的，所有其他参数都经过微调。给定问题 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 和黄金答案字符串 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "，阅读器损失包含两部分："
+        }
+      ]
+    },
+    "paragraph-3032739c97f3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) 在顶部 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 证据块中找到所有正确的文本跨度，并优化文本跨度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": " 的边际似然，使其与真实答案 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 匹配："
+        }
+      ]
+    },
+    "paragraph-27b4832269f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "y=\\text{TEXT}(s)"
+        },
+        {
+          "type": "text",
+          "text": "表示答案是否"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "与文本片段"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{TOP}(k)"
+        },
+        {
+          "type": "text",
+          "text": "是前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个检索到的块，根据"
+        },
+        {
+          "type": "inline_math",
+          "text": "S_\\text{retr}(z, x)"
+        },
+        {
+          "type": "text",
+          "text": "。该论文设置了"
+        },
+        {
+          "type": "inline_math",
+          "text": "k=5"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-8acc7defb57b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) 在学习的早期阶段，当检索器不够强大时，前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个块中可能不包含答案。为了避免这种稀疏的学习信号，ORQA 考虑了更大一组的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 证据块，以进行更积极的学习。该论文有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c=5000"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-73b00c3c99b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ORQA 论文中讨论了 SQuAD 数据集的一些问题："
+        }
+      ]
+    },
+    "paragraph-30e68b8cc5db": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\" SQuAD 开发集和测试集准确率之间的显著下降反映了数据集中的一个缺陷——其 10 万个问题仅来源于 536 份文档。因此，好的检索目标在训练样本之间高度相关，这违反了独立同分布（IID）假设，使其不适合学习检索。我们强烈建议那些对端到端开放域问答模型感兴趣的人，因此不再使用 SQuAD 进行训练和评估。\""
+        }
+      ]
+    },
+    "paragraph-0ffbecf83ab4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "REALM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " （“检索增强语言模型预训练”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.08909"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Guu et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）也通过优化获得真实答案的边际似然来联合训练检索器 + 阅读器："
+        }
+      ]
+    },
+    "paragraph-935dda835545": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "REALM 计算两个概率，"
+        },
+        {
+          "type": "inline_math",
+          "text": "p(z \\vert x)"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(y \\vert x, z)"
+        },
+        {
+          "type": "text",
+          "text": "，与 ORQA 相同。然而，与 ORQA 中的 ICT 不同，REALM 通过几项新的设计决策升级了无监督预训练步骤，从而实现了更好的检索。REALM 使用 Wikipedia 或 CC-News 语料库对模型进行预训练。"
+        }
+      ]
+    },
+    "list-item-a0a6b7ff6d58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "显著跨度掩码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。识别命名实体和日期。然后选择并掩盖其中一个“显著跨度”。显著跨度掩码是 MLM 的一个特例，对问答任务效果很好。"
+        }
+      ]
+    },
+    "list-item-29e761845486": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "添加一个 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "空空文档"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。因为并非每个问题都需要上下文文档。"
+        }
+      ]
+    },
+    "list-item-6d478a1eedfb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "无平凡检索。上下文文档不应与带有掩码跨度的所选句子相同。"
+        }
+      ]
+    },
+    "list-item-a7c622a921f1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "应用与 ORQA 中相同的 ICT 损失，以鼓励在训练早期检索质量仍然较差时进行学习。"
+        }
+      ]
+    },
+    "paragraph-fa1e962240fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“在所有系统中，与 REALM 最直接的比较是 ORQA (Lee et al., 2019)，它们的微调设置、超参数和训练数据都相同。REALM 相对于 ORQA 的改进纯粹是由于更好的预训练方法。”——摘自 REALM 论文。"
+        }
+      ]
+    },
+    "paragraph-01bec75f6804": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "无监督预训练和有监督微调都优化相同的对数似然 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\log p(y \\vert x)"
+        },
+        {
+          "type": "text",
+          "text": "。由于证据文档的检索器编码器参数在此过程中也会更新，因此 MIPS 的索引正在发生变化。REALM 每隔几百个训练步骤就会使用更新后的编码器参数异步刷新索引。"
+        }
+      ]
+    },
+    "paragraph-2cb7d76d8c96": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2104.08710"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Balachandran, et al. (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 发现 REALM 存在显著的训练不足，REALM++ 通过使用更大的批量大小和更多的检索文档供阅读器处理来扩展模型训练，从而实现了 EM 准确率的显著提高（3-5%）。"
+        }
+      ]
+    },
+    "paragraph-dc7a2b0d3c61": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DPR"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“密集段落检索器”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2004.04906"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Karpukhin et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/DPR"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）认为 ICT 预训练可能计算成本过高，并且 ORQA 的上下文编码器可能不是最优的，因为它没有使用问答对进行微调。DPR 旨在通过仅使用少量问答对训练一个用于检索的密集双编码器架构来解决这两个问题，而无需任何预训练。"
+        }
+      ]
+    },
+    "paragraph-8d1c7e339ba0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与之前的工作相同，DPR 使用 BERT 表示的点积（L2 距离或余弦相似度也适用）作为检索分数。用于训练双编码器的损失函数是正向段落的 NLL，其公式本质上与 ORQA 的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ICT-loss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ICT 损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "相同。请注意，它们都将同一批次中的其他段落视为负样本，称为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "批内负采样"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。主要区别在于 DPR 依赖于有监督的问答数据，而 ORQA 则在无监督语料库上使用 ICT 进行训练。在推理时，DPR 使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/faiss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "FAISS"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 运行快速 MIPS。"
+        }
+      ]
+    },
+    "paragraph-c3c42e336e52": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DPR 进行了一系列涉及几种不同类型负样本的比较实验："
+        }
+      ]
+    },
+    "list-item-080452b245b9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机：语料库中的任意随机段落；"
+        }
+      ]
+    },
+    "list-item-3c527a920821": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "BM25：BM25返回的顶部段落，这些段落不包含答案但匹配大多数问题词元；"
+        }
+      ]
+    },
+    "list-item-a4edfbd84fe6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "批内负采样（“黄金”）：与训练集中出现的其他问题配对的阳性段落。"
+        }
+      ]
+    },
+    "paragraph-c401bcefd33c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DPR发现，使用来自同一mini-batch的黄金段落和一个具有高BM25分数的负面段落效果最佳。为了进一步提高检索结果，DPR还探索了一种设置，其中BM25分数和密集嵌入检索分数线性组合，作为新的排名函数。"
+        }
+      ]
+    },
+    "heading-90ceee1e1e03": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "开放域问答：检索器-生成器"
+        }
+      ]
+    },
+    "paragraph-ed51752d6837": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与检索器-阅读器方法相比，检索器-生成器也有两个阶段，但第二阶段是直接生成自由文本来回答问题，而不是在检索到的段落中提取开始/结束位置。一些论文也将此称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "生成式问答"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-e22fbcfeb970": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "预训练语言模型（LM）在其参数中具有强大的知识记忆能力，如上所示。然而，它们不能轻易修改或扩展其记忆，不能直接提供对其预测的洞察，并且可能会产生不存在的幻觉。"
+        }
+      ]
+    },
+    "paragraph-694871876161": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.04611"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Petroni 等人 (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 研究了检索到的相关上下文如何帮助生成式语言模型产生更好的答案。他们发现："
+        }
+      ]
+    },
+    "list-item-24b06942d93d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用相关上下文增强查询显著提高了预训练语言模型在无监督机器阅读能力方面的表现。"
+        }
+      ]
+    },
+    "list-item-8bae0226b993": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个现成的IR系统足以让BERT匹配有监督ODQA基线的性能；"
+        }
+      ]
+    },
+    "list-item-ddca71ae6bc2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "BERT的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#pre-training-tasks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "NSP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "预训练策略是一种高效的无监督机制，用于处理噪声和不相关的上下文。"
+        }
+      ]
+    },
+    "paragraph-22f4c2a69121": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们将 BERT 模型与不同类型的上下文配对，包括对抗性（不相关的上下文）、检索性（通过 BM25）和生成性（通过在 CC-NEWS 上训练的具有 1.4N 参数的自回归语言模型）。发现该模型对对抗性上下文具有鲁棒性，但仅限于问题和上下文作为两个片段提供时（例如，由 "
+        },
+        {
+          "type": "inline_code",
+          "text": "[SEP]"
+        },
+        {
+          "type": "text",
+          "text": " 分隔）。一个假设与 NSP 任务有关：“如果 NSP 分数较低，BERT 可能会学到不对跨片段进行掩码标记预测的条件，从而隐式地检测到不相关和嘈杂的上下文。”"
+        }
+      ]
+    },
+    "paragraph-d1c503b808f5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "RAG"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“检索增强生成”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.11401"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lewis 等人，2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）将预训练的参数化（语言模型）和非参数化记忆（外部知识索引）结合起来进行语言生成。RAG 可以在任何 seq2seq 任务上进行微调，其中检索器和序列生成器都是联合学习的。他们发现无约束生成优于以前的抽取式方法。"
+        }
+      ]
+    },
+    "paragraph-7b0fb8c18e91": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RAG 由一个检索器模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\eta(z \\vert x)"
+        },
+        {
+          "type": "text",
+          "text": " 和一个生成器模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(y_i \\vert x, z, y_{1:i-1})"
+        },
+        {
+          "type": "text",
+          "text": " 组成："
+        }
+      ]
+    },
+    "list-item-ed20db6f641b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检索器使用输入序列 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 来检索文本段落 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "，其实现方式是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#DPR"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DPR"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 检索器。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\log p_\\eta(z \\vert x) \\propto E_z(z)^\\top E_x(x)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-27589aba1692": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成器使用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 作为额外上下文，在生成目标序列 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 时，其中上下文和问题被简单地连接起来。"
+        }
+      ]
+    },
+    "paragraph-cb82f68fec93": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据每个token生成时是使用相同还是不同的检索文档，RAG有两种版本："
+        }
+      ]
+    },
+    "paragraph-56eb85046516": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RAG中的检索器+生成器经过联合训练以最小化NLL损失，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{RAG} = \\sum_j -\\log p(y_j \\vert x_j)"
+        },
+        {
+          "type": "text",
+          "text": "。更新段落编码器"
+        },
+        {
+          "type": "inline_math",
+          "text": "E_z(.)"
+        },
+        {
+          "type": "text",
+          "text": "成本很高，因为它要求模型重新索引文档以实现快速MIPS。RAG认为微调"
+        },
+        {
+          "type": "inline_math",
+          "text": "E_z(.)"
+        },
+        {
+          "type": "text",
+          "text": "不是必需的（例如在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ORQA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ORQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中），并且只更新查询编码器+生成器。"
+        }
+      ]
+    },
+    "paragraph-2dca26ff19f8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在解码/测试时，RAG-token可以通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://d2l.ai/chapter_recurrent-modern/beam-search.html#id1"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "束搜索"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "进行评估。RAG-seq不能分解为一组逐token的似然，因此它对每个候选文档"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "运行束搜索，并选择具有最优"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(y_i \\vert x, z, y_{1:i-1})"
+        },
+        {
+          "type": "text",
+          "text": "的文档。"
+        }
+      ]
+    },
+    "paragraph-3dbde2ae13b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Fusion-in-Decoder"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方法，由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2007.01282"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Izacard & Grave (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出，也基于预训练的T5模型。它的工作方式与RAG类似，但在上下文如何集成到解码器方面有所不同。"
+        }
+      ]
+    },
+    "list-item-e95a17ee429b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检索前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个各100词的相关段落，使用 BM25 或 DPR。"
+        }
+      ]
+    },
+    "list-item-ddb405b1fbb8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个检索到的段落及其标题与问题连接起来，使用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "question:"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "title:"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "context:"
+        },
+        {
+          "type": "text",
+          "text": " 等特殊标记以指示内容差异。"
+        }
+      ]
+    },
+    "list-item-ae8eecfb45e4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个检索到的段落都独立处理，然后才在解码器中组合。在编码器中独立处理段落使我们能够并行化计算。另一方面，联合处理它们鼓励更好地聚合多个证据。聚合部分在抽取式方法中是缺失的。"
+        }
+      ]
+    },
+    "paragraph-62d835eb76d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，他们确实为每个数据集独立地微调了预训练的语言模型。"
+        }
+      ]
+    },
+    "heading-3bdf5d3c00fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "闭卷问答：生成式语言模型"
+        }
+      ]
+    },
+    "paragraph-d783098d648b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大型语言模型已在大量无监督文本语料库上进行了预训练。在参数足够多的情况下，这些模型能够将一些事实知识记忆在参数权重中。因此，我们可以使用这些模型进行问答，而无需明确的上下文，就像在闭卷考试中一样。预训练的语言模型生成"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自由文本"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来回答问题，无需明确的阅读理解。"
+        }
+      ]
+    },
+    "paragraph-03cc869ce346": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.08910"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Roberts et al. (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过微调预训练模型来回答问题，而无需访问任何外部上下文或知识，从而衡量了语言模型的实际效用。他们微调了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.10683"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "T5"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "语言模型（与原始Transformer架构相同），以在不输入任何额外信息或上下文的情况下回答问题。这种设置强制语言模型根据其在预训练期间内化的“知识”来回答问题。"
+        }
+      ]
+    },
+    "paragraph-729ac404b525": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "原始的T5模型是在多任务混合上进行预训练的，其中包括在C4（“Colossal Clean Crawled Corpus”）数据集上的无监督"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#use-bert-in-downstream-tasks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“掩码语言建模”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（MLM）任务，以及与有监督的翻译、摘要、分类和阅读理解任务一起进行微调。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.08910"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Roberts, et al. (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "采用了一个预训练的T5模型，并继续使用维基百科语料库上的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ssm"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "显著跨度掩码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "进行预训练，这已被发现能显著提升ODQA的性能。然后他们为每个问答数据集独立地微调了模型。"
+        }
+      ]
+    },
+    "paragraph-879d64c15719": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过预训练的 T5 语言模型 + 使用显著跨度掩码继续预训练 + 对每个 QA 数据集进行微调，"
+        }
+      ]
+    },
+    "list-item-a9609d70bc8b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它可以在开放域问答中获得有竞争力的结果，而无需访问外部知识。"
+        }
+      ]
+    },
+    "list-item-0f5fbc211efd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更大的模型可以获得更好的性能。例如，一个拥有 11B 参数的 T5 模型能够与拥有 3 个 BERT-base 模型（每个模型拥有 330M 参数）的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#DPR"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DPR"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 性能相匹配。"
+        }
+      ]
+    },
+    "paragraph-423bbe1cb7aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有趣的是，微调并非严格必要。GPT3 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.14165"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Brown et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 已在闭卷问答任务上进行了评估，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "未进行任何梯度更新或微调"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。在评估期间，这里的少样本、单样本和零样本设置仅指在文本输入中作为上下文提供了多少个示例："
+        }
+      ]
+    },
+    "list-item-7b2936a19abf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“少样本学习”：GPT3 被允许使用模型上下文窗口所能容纳的尽可能多的示例（通常为 10 到 100 个）。"
+        }
+      ]
+    },
+    "list-item-3a35bceccd40": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“单样本学习”：只提供一个示例。"
+        }
+      ]
+    },
+    "list-item-1a266b9a88ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“零样本学习”：不允许提供任何示例，只向模型提供自然语言指令。"
+        }
+      ]
+    },
+    "paragraph-e1a6218eddfe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "性能随模型大小的增加而增长。在 TriviaQA 数据集上，使用示例的 GPT3 评估可以达到或超过经过微调的 SOTA 基线的性能。"
+        }
+      ]
+    },
+    "paragraph-eb335204d724": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 OpenAI API "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://beta.openai.com/playground/p/HMoho4552EHXrPLbmOIxpX4X"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "playground viewer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中查看这个很酷的例子。模型能够以简短的答案回答事实性问题，并且在不知道答案时不会编造内容。我添加了最后两个问题，并要求模型用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "A:"
+        },
+        {
+          "type": "text",
+          "text": " 回答。该 API 仍处于测试版，因此您可能需要"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://beta.openai.com/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "申请"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "才能进入等待列表。"
+        }
+      ]
+    },
+    "heading-2d963d4157c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "相关技术"
+        }
+      ]
+    },
+    "heading-a609728b491a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "快速最大内积搜索 (MIPS)"
+        }
+      ]
+    },
+    "paragraph-08605239d612": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "MIPS（最大内积搜索）是许多开放域问答模型中的关键组件。在检索器 + 阅读器/生成器框架中，来自知识源的大量段落被编码并存储在内存中。检索模型能够查询内存以识别与问题嵌入具有最大内积的顶部相关段落。"
+        }
+      ]
+    },
+    "paragraph-b08a1ecb249a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们需要快速 MIPS，因为预计算的段落表示的数量可能非常庞大。有几种方法可以在运行时实现快速 MIPS，例如 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/5329-asymmetric-lsh-alsh-for-sublinear-time-maximum-inner-product-search-mips.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "非对称 LSH"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1501.01062"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "数据依赖哈希"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/faiss"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "FAISS"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-d2e7739c7efc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "语言模型预训练"
+        }
+      ]
+    },
+    "paragraph-7c79c47cab02": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如上所述，两种预训练任务对问答任务特别有帮助。"
+        }
+      ]
+    },
+    "list-item-06f9ada2fa05": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "逆完形填空任务"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（由 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ORQA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ORQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出）："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Cloze_test"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "完形填空任务"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的目标是根据上下文预测被遮蔽的文本。逆完形填空任务 (ICT) 的预测方向相反，旨在给定一个句子的情况下预测其上下文。在问答任务的背景下，一个随机句子可以被视为一个伪问题，其上下文可以被视为伪证据。\n"
+        }
+      ]
+    },
+    "list-item-3013bc1e4ab0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "显著跨度掩码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（由 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#REALM"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "REALM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出）：显著跨度掩码是语言模型训练中 MLM 任务的一个特例。首先，我们通过使用标注器识别命名实体和使用正则表达式识别日期来找到 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "显著跨度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。然后选择并掩码其中一个检测到的显著跨度。任务是预测这个被掩码的显著跨度。\n"
+        }
+      ]
+    },
+    "heading-a718189f99fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总结"
+        }
+      ]
+    },
+    "table-9661e3d9af27": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "模型",
+          "检索器",
+          "阅读器 / 生成器",
+          "预训练 / 微调",
+          "端到端"
+        ],
+        "rows": [
+          [
+            "DrQA",
+            "TF-IDF",
+            "双向LSTM",
+            "–",
+            "否"
+          ],
+          [
+            "BERTserini",
+            "Aserini + BM25",
+            "不带softmax层的BERT",
+            "使用SQuAD进行微调",
+            "否"
+          ],
+          [
+            "Multi-passage BERT",
+            "ElasticSearch + BM25",
+            "Multi-passage BERT + 段落排序器",
+            "",
+            "否"
+          ],
+          [
+            "R^3",
+            "经典IR + Match-LSTM",
+            "Match-LSTM",
+            "",
+            "是"
+          ],
+          [
+            "ORQA",
+            "BERT嵌入的点积",
+            "BERT-RC",
+            "逆完形填空任务",
+            "是"
+          ],
+          [
+            "REALM",
+            "BERT嵌入的点积",
+            "BERT-RC",
+            "显著跨度掩码",
+            "是"
+          ],
+          [
+            "DPR",
+            "BERT嵌入的点积",
+            "BERT-RC",
+            "使用问答对进行监督训练",
+            "是"
+          ],
+          [
+            "DenSPI",
+            "经典 + 神经信息检索",
+            "–",
+            "",
+            "是"
+          ],
+          [
+            "T5 + SSM",
+            "–",
+            "T5",
+            "在CommonCrawl数据上进行SSM + 在问答数据上进行微调",
+            "是"
+          ],
+          [
+            "GPT3",
+            "–",
+            "GPT3",
+            "在CommonCrawl数据上进行NSP",
+            "是"
+          ],
+          [
+            "RAG",
+            "DPR检索器",
+            "BART",
+            "",
+            "是"
+          ],
+          [
+            "Fusion-in-Decoder",
+            "BM25 / DPR检索器",
+            "Transformer",
+            "",
+            "否"
+          ]
+        ]
+      }
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-91f12508ca9e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (2020年10月). How to build an open-domain question answering system? Lil’Log. https://lilianweng.github.io/posts/2020-10-29-odqa/."
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-121144b5bf86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "附录：问答数据集"
+        }
+      ]
+    },
+    "list-item-a6c9905ce410": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://rajpurkar.github.io/SQuAD-explorer/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SQuAD 2.0"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 斯坦福问答数据集。"
+        }
+      ]
+    },
+    "list-item-737b5676ca04": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.qizhexie.com/data/RACE_leaderboard"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "RACE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 一个阅读理解数据集，收集自为初中生和高中生设计的英语考试。"
+        }
+      ]
+    },
+    "list-item-5bd795f4fd9b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://trec.nist.gov/data/qa.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "TREC QA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": TREC问答集合。"
+        }
+      ]
+    },
+    "list-item-0005093fd59f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://microsoft.github.io/msmarco/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MS MARCO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 一个问答数据集，包含100,000个真实的Bing问题和一个人工生成的答案。"
+        }
+      ]
+    },
+    "list-item-d6ab3d10e1fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/brmson/dataset-factoid-curated"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "CuratedTREC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 基于由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://link.springer.com/chapter/10.1007%2F978-3-319-24027-5_20"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Baudis & Sedivy (2015)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "整理的TREC问答任务基准。"
+        }
+      ]
+    },
+    "list-item-b24d8c7b5f90": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://ai.google.com/research/NaturalQuestions/dataset"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Google Natural Questions"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 包含向Google搜索发出的真实用户问题，以及标注者从维基百科中找到的答案。"
+        }
+      ]
+    },
+    "list-item-3cef7b1a475d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/brmson/dataset-factoid-webquestions"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "WebQuestions"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 专为知识库问答设计，答案仅限于Freebase实体。"
+        }
+      ]
+    },
+    "list-item-992158b9d36d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.microsoft.com/en-us/research/publication/wikiqa-a-challenge-dataset-for-open-domain-question-answering/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "WikiQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": Bing查询日志被用作问题来源。每个问题随后被链接到一个可能包含答案的维基百科页面。"
+        }
+      ]
+    },
+    "list-item-db9d413ad3bf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://research.fb.com/downloads/babi/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "WikiMovies"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 包含来自OMDb和MovieLens数据库的电影相关问题，这些问题可以使用维基百科页面回答。"
+        }
+      ]
+    },
+    "list-item-acfa1331770b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/google-research-datasets/wiki-reading"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "WikiReading"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 通过阅读相应的维基百科文章文本，从结构化知识库Wikidata中预测文本值。"
+        }
+      ]
+    },
+    "list-item-490beacdafaa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://nlp.cs.washington.edu/triviaqa/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "TriviaQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 一个阅读理解数据集，包含9.5万个由问答爱好者撰写的问答对，并为每个问题独立收集了多个证据文档。"
+        }
+      ]
+    },
+    "list-item-3c3ba10e7195": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.kaggle.com/tunguz/200000-jeopardy-questions"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": " Jeopardy! Questions"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 包含20万+ "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Jeopardy!"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jeopardy!"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 问题。"
+        }
+      ]
+    },
+    "list-item-5a50eda7f5aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://cs.nyu.edu/~kcho/DMQA/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DeepMind Q&A Dataset"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 来自CNN和Daily Mail文章的问答对。"
+        }
+      ]
+    },
+    "list-item-1da15f5b2795": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://research.fb.com/downloads/babi/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "bAbi"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": Facebook用于文本理解的丰富数据集集合。"
+        }
+      ]
+    },
+    "list-item-ccd5e0efbe0b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://fever.ai/data.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "FEVER"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 用于事实提取和验证。"
+        }
+      ]
+    },
+    "list-item-c08c5971fca1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/nyu-dl/dl4ir-searchQA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SearchQA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：问答对是从"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://j-archive.com/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": " J! Archive"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "抓取，然后用Google的文本片段进行扩充。"
+        }
+      ]
+    },
+    "list-item-a5644810563b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/bdhingra/quasar"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Quasar-T"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：一个从各种互联网来源获取的开放域冷知识问题及其答案的集合。"
+        }
+      ]
+    },
+    "list-item-24e7b0d0704a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://people.cs.umass.edu/~miyyer/qblearn/index.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Quiz bowl"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：包含来自一项名为“quiz bowl”的冷知识竞赛的数据。"
+        }
+      ]
+    },
+    "list-item-3e26374fc903": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://nlp.cs.washington.edu/ambigqa/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "AmbigNQ"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：从NQ-OPEN数据集中选择的歧义问题。"
+        }
+      ]
+    },
+    "list-item-1e3f72937e8b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/QA-Overlap"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "QA-Overlap"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：Natural Questions、TriviaQA和WebQuestions的训练集和测试集之间重叠的答案/问题的集合。"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-b649712d8c42": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Danqi Chen & Scott Yih. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/danqi/acl2020-openqa-tutorial"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“ACL2020 Tutorial: Open-Domain Question Answering”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020年7月。"
+        }
+      ]
+    },
+    "paragraph-766218c82892": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Danqi Chen, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1704.00051"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Reading Wikipedia to Answer Open-Domain Questions”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2017. | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/DrQA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-ba39c4e6c1c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Shuohang Wang, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1709.00023"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“R^3: Reinforced Ranker-Reader for Open-Domain Question Answering”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " AAAI 2018。"
+        }
+      ]
+    },
+    "paragraph-484cfdaaa24a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Jimmy Lin. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://sigir.org/wp-content/uploads/2019/01/p040.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“The neural hype and comparisons against weak baselines.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACM SIGIR Forum. Vol. 52. No. 2. 2019。"
+        }
+      ]
+    },
+    "paragraph-cbcab9184f05": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Wei Yang, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.01718"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“End-to-End Open-Domain Question Answering with BERTserini”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NAACL 2019。"
+        }
+      ]
+    },
+    "paragraph-89752a52829d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Christopher Clark & Matt Gardner. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.10723"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Simple and Effective Multi-Paragraph Reading Comprehension.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:1710.10723 (2017)。"
+        }
+      ]
+    },
+    "paragraph-626b551a96d9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Rodrigo Nogueira & Kyunghyun Cho. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.04085"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Passage Re-ranking with BERT.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1901.04085 (2019). | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/nyu-dl/dl4marco-bert"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-10f6d916dc73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Zhiguo Wang, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.08167"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Multi-passage BERT: A globally normalized BERT model for open-domain question answering.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP 2019。"
+        }
+      ]
+    },
+    "paragraph-1fdfd9a15db6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Minjoon Seo et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.05807"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Real-time open-domain question answering with dense-sparse phrase index.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2019。"
+        }
+      ]
+    },
+    "paragraph-10cf01d448cc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Kenton Lee, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.00300"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Latent Retrieval for Weakly Supervised Open Domain Question Answering”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2019。"
+        }
+      ]
+    },
+    "paragraph-281a21a63709": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Kelvin Guu, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.08909"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“REALM: Retrieval-Augmented Language Model Pre-Training”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:2002.08909 (2020)。"
+        }
+      ]
+    },
+    "paragraph-ec6ad552b606": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Vladimir Karpukhin et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2004.04906"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Dense passage retrieval for open-domain question answering.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". EMNLP 2020. | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/DPR"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-c35a4adf4a85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Patrick Lewis et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.11401"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:2005.11401 (2020)。"
+        }
+      ]
+    },
+    "paragraph-2ae11935184b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Adam Roberts, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.08910"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“How Much Knowledge Can You Pack Into the Parameters of a Language Model?”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP 2020。"
+        }
+      ]
+    },
+    "paragraph-11b4ae6709f8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Tom Brown, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.14165"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Language models are few-shot learners.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:2005.14165 (2020)。"
+        }
+      ]
+    },
+    "paragraph-7bdd91e8b16b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Fabio Petroni, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.04611"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“How Context Affects Language Models’ Factual Predictions”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " AKBC 2020。"
+        }
+      ]
+    },
+    "paragraph-0a95e69df0aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Gautier Izacard & Edouard Grave. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2007.01282"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Leveraging passage retrieval with generative models for open domain question answering.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:2007.01282 (2020)。"
+        }
+      ]
+    },
+    "paragraph-4b600f2ee3eb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://d2l.ai/chapter_recurrent-modern/beam-search.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深入学习：束搜索”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-28264ade34e7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[19] Patrick Lewis, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2008.02637"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Question and Answer Test-Train Overlap in Open-Domain Question Answering Datasets”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:2008.02637 (2020). | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/QA-Overlap"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "数据"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-8c3a54f59054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[20] Hervé Jegou, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://engineering.fb.com/2017/03/29/data-infrastructure/faiss-a-library-for-efficient-similarity-search/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Faiss: A library for efficient similarity search”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2017年3月。"
+        }
+      ]
+    },
+    "paragraph-ac32f3eeefee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[21] Vidhisha Balachandran, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2104.08710"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Simple and Efficient ways to Improve REALM.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:2104.08710 (2021)。"
+        }
+      ]
+    }
+  }
+}

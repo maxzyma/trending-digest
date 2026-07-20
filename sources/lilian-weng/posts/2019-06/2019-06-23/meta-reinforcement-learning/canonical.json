@@ -1,0 +1,4268 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2019-06-23-meta-rl",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2019-06-23T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:a55392675efe747a0f0650e831da7b2647df67940612b47269febfbf9c016b91",
+    "fetched_at": "2026-07-14T02:05:15.050440+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Meta Reinforcement Learning",
+    "title_en": "Meta Reinforcement Learning",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-e7da5fb1ae02",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In my earlier post on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "meta-learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the problem is mainly defined in the context of few-shot classification. Here I would like to explore more into cases when we try to “meta-learn” "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Reinforcement Learning (RL)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " tasks by developing an agent that can solve unseen tasks fast and efficiently."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9b5f7e7e514b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To recap, a good meta-learning model is expected to generalize to new tasks or new environments that have never been encountered during training. The adaptation process, essentially a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "mini learning session"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", happens at test with limited exposure to the new configurations. Even without any explicit fine-tuning (no gradient backpropagation on trainable variables), the meta-learning model autonomously adjusts internal hidden states to learn."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-96f8d9efc6b3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training RL algorithms can be notoriously difficult sometimes. If the meta-learning agent could become so smart that the distribution of solvable unseen tasks grows extremely broad, we are on track towards "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://incompleteideas.net/IncIdeas/BitterLesson.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "general purpose methods"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " — essentially building a “brain” which would solve all kinds of RL problems without much human interference or manual feature engineering. Sounds amazing, right? 💖"
+          }
+        ]
+      },
+      {
+        "id": "heading-6dc3f0bad30a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "On the Origin of Meta-RL"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-42f47277a06e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Back in 2001"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5e589b424ce3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I encountered a paper  written in 2001 by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://snowedin.net/tmp/Hochreiter2001.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hochreiter et al."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " when reading "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1611.05763.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Although the idea was proposed for supervised learning, there are so many resemblances to the current approach to meta-RL."
+          }
+        ]
+      },
+      {
+        "id": "image-186e0ffa80d9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/Hochreiter-meta-learning.png",
+          "alt": "The meta-learning system consists of the supervisory and the subordinate systems. The subordinate system is a recurrent neural network that takes as input both the observation at the current time step, $x\\_t$ and the label at the last time step, $y\\_{t-1}$. (Image source: Hochreiter et al., 2001 )"
+        }
+      },
+      {
+        "id": "paragraph-8bd7c54e38c9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hochreiter’s meta-learning model is a recurrent network with LSTM cell. LSTM is a good choice because it can internalize a history of inputs and tune its own weights effectively through "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Backpropagation_through_time"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BPTT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The training data contains "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": " sequences and each sequence is consist of "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " samples generated by a target function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_k(.), k=1, \\dots, K"
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-494f88666df6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\{\\text{input: }(\\mathbf{x}^k_i, \\mathbf{y}^k_{i-1}) \\to \\text{label: }\\mathbf{y}^k_i\\}_{i=1}^N\n\\text{ where }\\mathbf{y}^k_i = f_k(\\mathbf{x}^k_i)"
+        }
+      },
+      {
+        "id": "paragraph-8ecf6afcd06f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Noted that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "the last label"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{y}^k_{i-1}"
+          },
+          {
+            "type": "text",
+            "text": " is also provided as an auxiliary input so that the function can learn the presented mapping."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a835ece6921c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the experiment of decoding two-dimensional quadratic functions, "
+          },
+          {
+            "type": "inline_math",
+            "text": "a x_1^2 + b x_2^2 + c x_1 x_2 + d x_1 + e x_2 + f"
+          },
+          {
+            "type": "text",
+            "text": ", with coefficients "
+          },
+          {
+            "type": "inline_math",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": "-"
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " are randomly sampled from [-1, 1], this meta-learning system was able to approximate the function after seeing only ~35 examples."
+          }
+        ]
+      },
+      {
+        "id": "heading-14048c564f12",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Proposal in 2016"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c32a125f349e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the modern days of DL, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.05763"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (2016) and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.02779"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Duan et al."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (2017) simultaneously proposed the very similar idea of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Meta-RL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (it is called "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "RL^2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in the second paper). A meta-RL model is trained over a distribution of MDPs, and at test time, it is able to learn to solve a new task quickly. The goal of meta-RL is ambitious, taking one step further towards general algorithms."
+          }
+        ]
+      },
+      {
+        "id": "heading-dd4e550e812f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Define Meta-RL"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-f9773c0c5604",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Meta Reinforcement Learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", in short, is to do "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "meta-learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in the field of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "reinforcement learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Usually the train and test tasks are different but drawn from the same family of problems; i.e., experiments in the papers included multi-armed bandit with different reward probabilities, mazes with different layouts, same robots but with different physical parameters in simulator, and many others."
+          }
+        ]
+      },
+      {
+        "id": "heading-672afba9e8e8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Formulation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5174926cc6e3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say we have a distribution of tasks, each formularized as an "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#markov-decision-processes"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MDP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Markov Decision Process), "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_i \\in \\mathcal{M}"
+          },
+          {
+            "type": "text",
+            "text": ". An MDP is determined by a 4-tuple, "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_i= \\langle \\mathcal{S}, \\mathcal{A}, P_i, R_i \\rangle"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "table-f0ead91b5a16",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Symbol",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "$\\mathcal{S}$",
+              "A set of states."
+            ],
+            [
+              "$\\mathcal{A}$",
+              "A set of actions."
+            ],
+            [
+              "$P_i: \\mathcal{S} \\times \\mathcal{A} \\times \\mathcal{S} \\to \\mathbb{R}_{+}$",
+              "Transition probability function."
+            ],
+            [
+              "$R_i: \\mathcal{S} \\times \\mathcal{A} \\to \\mathbb{R}$",
+              "Reward function."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-5acd81dc30da",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(RL^2 paper adds an extra parameter, horizon "
+          },
+          {
+            "type": "inline_math",
+            "text": "T"
+          },
+          {
+            "type": "text",
+            "text": ", into the MDP tuple to emphasize that each MDP should have a finite horizon.)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-410ac1467748",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that common state "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{S}"
+          },
+          {
+            "type": "text",
+            "text": " and action space "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{A}"
+          },
+          {
+            "type": "text",
+            "text": " are used above, so that a (stochastic) policy: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi_\\theta: \\mathcal{S} \\times \\mathcal{A} \\to \\mathbb{R}_{+}"
+          },
+          {
+            "type": "text",
+            "text": " would get inputs compatible across different tasks. The test tasks are sampled from the same distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{M}"
+          },
+          {
+            "type": "text",
+            "text": " or slightly modified version."
+          }
+        ]
+      },
+      {
+        "id": "image-5aa8e3b53a73",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/meta-RL-illustration.png",
+          "alt": "Illustration of meta-RL, containing two optimization loops. The outer loop samples a new environment in every iteration and adjusts parameters that determine the agent's behavior. In the inner loop, the agent interacts with the environment and optimizes for the maximal reward. (Image source: Botvinick, et al. 2019 )"
+        }
+      },
+      {
+        "id": "heading-2e44f4aa45b1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Main Differences from RL"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0e7b7f284575",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The overall configure of meta-RL is very similar to an ordinary RL algorithm, except that "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "the last reward"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "r_{t-1}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "the last action"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "a_{t-1}"
+          },
+          {
+            "type": "text",
+            "text": " are also incorporated into the policy observation in addition to the current state "
+          },
+          {
+            "type": "inline_math",
+            "text": "s_t"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "list-0d38d749b13f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7f8636a56cb9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In RL: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi_\\theta(s_t) \\to"
+              },
+              {
+                "type": "text",
+                "text": "  a distribution over "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{A}"
+              }
+            ]
+          },
+          {
+            "id": "list-item-ec52f25a88fa",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In meta-RL: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi_\\theta(a_{t-1}, r_{t-1}, s_t) \\to"
+              },
+              {
+                "type": "text",
+                "text": "  a distribution over "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{A}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7a8d43a7af8e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The intention of this design is to feed a history into the model so that the policy can internalize the dynamics between states, rewards, and actions in the current MDP and adjust its strategy accordingly. This is well aligned with the setup in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#back-in-2001"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hochreiter’s system"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Both meta-RL and RL^2 implemented an LSTM policy and the LSTM’s hidden states serve as a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "memory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for tracking characteristics of the trajectories. Because the policy is recurrent, there is no need to feed the last state as inputs explicitly."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ba7de9a0c2f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training procedure works as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-258fa88ab228",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-aa55d3a70a64",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sample a new MDP, "
+              },
+              {
+                "type": "inline_math",
+                "text": "M_i \\sim \\mathcal{M}"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-7a52faa3b51a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reset the hidden state"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " of the model;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-679ee0e42ba3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Collect multiple trajectories and update the model weights;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-4f1d586ac0ee",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Repeat from step 1."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-cfb17d9957b7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/L2RL.png",
+          "alt": "In the meta-RL paper, different actor-critic architectures all use a recurrent model. Last reward and last action are additional inputs. The observation is fed into the LSTM either as a one-hot vector or as an embedding vector after passed through an encoder model. (Image source: Wang et al., 2016 )"
+        }
+      },
+      {
+        "id": "image-4c69dedcaf5b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/RL_2.png",
+          "alt": "As described in the RL^2 paper, illustration of the procedure of the model interacting with a series of MDPs in training time . (Image source: Duan et al., 2017 )"
+        }
+      },
+      {
+        "id": "heading-b8cfe5a4e339",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Key Components"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-555632fcd715",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are three key components in Meta-RL:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-66b9e29d8810",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-b63a6fffd757",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "⭐ "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "A Model with Memory"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nA recurrent neural network maintains a hidden state. Thus, it could acquire and memorize the knowledge about the current task by updating the hidden state during rollouts. Without memory, meta-RL would not work."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-9be2a61a3bca",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-2ed41005e623",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "⭐ "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Meta-learning Algorithm"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nA meta-learning algorithm refers to how we can update the model weights to optimize for the purpose of solving an unseen task fast at test time. In both Meta-RL and RL^2 papers, the meta-learning algorithm is the ordinary gradient descent update of LSTM with hidden state reset between a switch of MDPs."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-d4a0bbd8714d",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-5b149640e733",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "⭐ "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "A Distribution of MDPs"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nWhile the agent is exposed to a variety of environments and tasks during training, it has to learn how to adapt to different MDPs."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fefe492b323b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cell.com/action/showPdf?pii=S1364-6613%2819%2930061-0"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Botvinick et al."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (2019), one source of slowness in RL training is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "weak "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Inductive_bias"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "inductive bias"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ( = “a set of assumptions that the learner uses to predict outputs given inputs that it has not encountered”). As a general ML rule, a learning algorithm with weak inductive bias will be able to master a wider range of variance, but usually, will be less sample-efficient. Therefore, to narrow down the hypotheses with stronger inductive biases help improve the learning speed."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f5f9b403671f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In meta-RL, we impose certain types of inductive biases from the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "task distribution"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and store them in "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "memory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Which inductive bias to adopt at test time depends on the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "algorithm"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Together, these three key components depict a compelling view of meta-RL: Adjusting the weights of a recurrent network is slow but it allows the model to work out a new task fast with its own RL algorithm implemented in its internal activity dynamics."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4b261c0170e5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meta-RL interestingly and not very surprisingly matches the ideas in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.10985"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "AI-GAs"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“AI-Generating Algorithms”) paper by Jeff Clune (2019). He proposed that one efficient way towards building general AI is to make learning as automatic as possible. The AI-GAs approach involves three pillars: (1) meta-learning architectures, (2) meta-learning algorithms, and (3) automatically generated environments for effective learning."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8202c37ab9fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The topic of designing good recurrent network architectures is a bit too broad to be discussed here, so I will skip it. Next, let’s look further into another two components: meta-learning algorithms in the context of meta-RL and how to acquire a variety of training MDPs."
+          }
+        ]
+      },
+      {
+        "id": "heading-8f2b10b2f712",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meta-Learning Algorithms for Meta-RL"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8aed1e05ce8e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "My previous "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on meta-learning has covered several classic meta-learning algorithms. Here I’m gonna include more related to RL."
+          }
+        ]
+      },
+      {
+        "id": "heading-87da1ad1bef0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Optimizing Model Weights for Meta-learning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-406bbd6e4c0b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both MAML ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03400"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Finn, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and Reptile ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.02999"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nichol et al., 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") are methods on updating model parameters in order to achieve good generalization performance on new tasks. See an earlier post "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#optimization-based"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on MAML and Reptile."
+          }
+        ]
+      },
+      {
+        "id": "heading-a84e99fc73c2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meta-learning Hyperparameters"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-cb6547b81c5d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-function"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "return"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " function in an RL problem, "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t^{(n)}"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t^\\lambda"
+          },
+          {
+            "type": "text",
+            "text": ", involves a few hyperparameters that are often set heuristically, like the discount factor "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-function"
+            },
+            "children": [
+              {
+                "type": "inline_math",
+                "text": "\\gamma"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and the bootstrapping parameter "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#combining-td-and-mc-learning"
+            },
+            "children": [
+              {
+                "type": "inline_math",
+                "text": "\\lambda"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".\nMeta-gradient RL ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/7507-meta-gradient-reinforcement-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Xu et al., 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") considers them as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "meta-parameters"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\eta=\\{\\gamma, \\lambda \\}"
+          },
+          {
+            "type": "text",
+            "text": ", that can be tuned and learned "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "online"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " while an agent is interacting with the environment. Therefore, the return becomes a function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\eta"
+          },
+          {
+            "type": "text",
+            "text": " and dynamically adapts itself to a specific task over time."
+          }
+        ]
+      },
+      {
+        "id": "math-040715d8c377",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nG_\\eta^{(n)}(\\tau_t) &= R_{t+1} + \\gamma R_{t+2} + \\dots + \\gamma^{n-1}R_{t+n} + \\gamma^n v_\\theta(s_{t+n}) & \\scriptstyle{\\text{; n-step return}} \\\\\nG_\\eta^{\\lambda}(\\tau_t) &= (1-\\lambda) \\sum_{n=1}^\\infty \\lambda^{n-1} G_\\eta^{(n)} & \\scriptstyle{\\text{; λ-return, mixture of n-step returns}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-9c7a5cdcd8fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During training, we would like to update the policy parameters with gradients as a function of all the information in hand, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta’ = \\theta + f(\\tau, \\theta, \\eta)"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " are the current model weights, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": " is a sequence of trajectories, and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\eta"
+          },
+          {
+            "type": "text",
+            "text": " are the meta-parameters."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b4e6fcd7b992",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meanwhile, let’s say we have a meta-objective function "
+          },
+          {
+            "type": "inline_math",
+            "text": "J(\\tau, \\theta, \\eta)"
+          },
+          {
+            "type": "text",
+            "text": " as a performance measure. The training process follows the principle of online cross-validation, using a sequence of consecutive experiences:"
+          }
+        ]
+      },
+      {
+        "id": "list-9e9b412fcd93",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-6c6db09c43c4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Starting with parameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta"
+              },
+              {
+                "type": "text",
+                "text": ", the policy "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi_\\theta"
+              },
+              {
+                "type": "text",
+                "text": " is updated on the first batch of samples "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tau"
+              },
+              {
+                "type": "text",
+                "text": ", resulting in "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta’"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7ae2fddbd8c1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then we continue running the policy "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi_{\\theta’}"
+              },
+              {
+                "type": "text",
+                "text": " to collect a new set of experiences "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tau’"
+              },
+              {
+                "type": "text",
+                "text": ", just following "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tau"
+              },
+              {
+                "type": "text",
+                "text": " consecutively in time. The performance is measured as "
+              },
+              {
+                "type": "inline_math",
+                "text": "J(\\tau’, \\theta’, \\bar{\\eta})"
+              },
+              {
+                "type": "text",
+                "text": " with a fixed meta-parameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\bar{\\eta}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-20d041bf8baf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The gradient of meta-objective "
+              },
+              {
+                "type": "inline_math",
+                "text": "J(\\tau’, \\theta’, \\bar{\\eta})"
+              },
+              {
+                "type": "text",
+                "text": " w.r.t. "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\eta"
+              },
+              {
+                "type": "text",
+                "text": " is used to update "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\eta"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-8555bd64b952",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\Delta \\eta\n&= -\\beta \\frac{\\partial J(\\tau', \\theta', \\bar{\\eta})}{\\partial \\eta} \\\\\n&= -\\beta \\frac{\\partial J(\\tau', \\theta', \\bar{\\eta})}{\\partial \\theta'} \\frac{d\\theta'}{d\\eta} & \\scriptstyle{\\text{ ; single variable chain rule.}} \\\\\n&= -\\beta \\frac{\\partial J(\\tau', \\theta', \\bar{\\eta})}{\\partial \\theta'} \\frac{\\partial (\\theta + f(\\tau, \\theta, \\eta))}{\\partial\\eta}  \\\\\n&= -\\beta \\frac{\\partial J(\\tau', \\theta', \\bar{\\eta})}{\\partial \\theta'} \\Big(\\frac{d\\theta}{d\\eta} + \\frac{\\partial f(\\tau, \\theta, \\eta)}{\\partial\\theta}\\frac{d\\theta}{d\\eta} + \\frac{\\partial f(\\tau, \\theta, \\eta)}{\\partial\\eta}\\frac{d\\eta}{d\\eta} \\Big) & \\scriptstyle{\\text{; multivariable chain rule.}}\\\\\n&= -\\beta \\frac{\\partial J(\\tau', \\theta', \\bar{\\eta})}{\\partial \\theta'} \\Big( \\color{red}{\\big(\\mathbf{I} + \\frac{\\partial f(\\tau, \\theta, \\eta)}{\\partial\\theta}\\big)}\\frac{d\\theta}{d\\eta} + \\frac{\\partial f(\\tau, \\theta, \\eta)}{\\partial\\eta}\\Big) & \\scriptstyle{\\text{; secondary gradient term in red.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-41c83cebb3e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " is the learning rate for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\eta"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6a6629cc4f25",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The meta-gradient RL algorithm simplifies the computation by setting the secondary gradient term to zero, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{I} + \\partial g(\\tau, \\theta, \\eta)/\\partial\\theta = 0"
+          },
+          {
+            "type": "text",
+            "text": " — this choice prefers the immediate effect of the meta-parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\eta"
+          },
+          {
+            "type": "text",
+            "text": " on the parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". Eventually we get:"
+          }
+        ]
+      },
+      {
+        "id": "math-7d911bfbe8b1",
+        "type": "math",
+        "attrs": {
+          "latex": "\\Delta \\eta = -\\beta \\frac{\\partial J(\\tau', \\theta', \\bar{\\eta})}{\\partial \\theta'} \\frac{\\partial f(\\tau, \\theta, \\eta)}{\\partial\\eta}"
+        }
+      },
+      {
+        "id": "paragraph-99ca5c6f7ce2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Experiments in the paper adopted the meta-objective function same as "
+          },
+          {
+            "type": "inline_math",
+            "text": "TD(\\lambda)"
+          },
+          {
+            "type": "text",
+            "text": " algorithm, minimizing the error between the approximated value function "
+          },
+          {
+            "type": "inline_math",
+            "text": "v_\\theta(s)"
+          },
+          {
+            "type": "text",
+            "text": " and the "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda"
+          },
+          {
+            "type": "text",
+            "text": "-return:"
+          }
+        ]
+      },
+      {
+        "id": "math-4c4b2b2297a9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nJ(\\tau, \\theta, \\eta) &= (G^\\lambda_\\eta(\\tau) - v_\\theta(s))^2 \\\\\nJ(\\tau', \\theta', \\bar{\\eta}) &= (G^\\lambda_{\\bar{\\eta}}(\\tau') - v_{\\theta'}(s'))^2\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-218ebbcc77a0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meta-learning the Loss Function"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5377404ab924",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In policy gradient algorithms, the expected total reward is maximized by updating the policy parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " in the direction of estimated gradient ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1506.02438"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Schulman et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "),"
+          }
+        ]
+      },
+      {
+        "id": "math-37bbd277337e",
+        "type": "math",
+        "attrs": {
+          "latex": "g = \\mathbb{E}[\\sum_{t=0}^\\infty \\Psi_t \\nabla_\\theta \\log \\pi_\\theta (a_t \\mid s_t)]"
+        }
+      },
+      {
+        "id": "paragraph-2bf9ba7a2388",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where the candidates for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Psi_t"
+          },
+          {
+            "type": "text",
+            "text": " include the trajectory return "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t"
+          },
+          {
+            "type": "text",
+            "text": ", the Q value "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q(s_t, a_t)"
+          },
+          {
+            "type": "text",
+            "text": ", or the advantage value "
+          },
+          {
+            "type": "inline_math",
+            "text": "A(s_t, a_t)"
+          },
+          {
+            "type": "text",
+            "text": ". The corresponding surrogate loss function for the policy gradient can be reverse-engineered:"
+          }
+        ]
+      },
+      {
+        "id": "math-03cc104e2433",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{pg} = \\mathbb{E}[\\sum_{t=0}^\\infty \\Psi_t \\log \\pi_\\theta (a_t \\mid s_t)]"
+        }
+      },
+      {
+        "id": "paragraph-b9e615b60d3f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This loss function is a measure over a history of trajectories, "
+          },
+          {
+            "type": "inline_math",
+            "text": "(s_0, a_0, r_0, \\dots, s_t, a_t, r_t, \\dots)"
+          },
+          {
+            "type": "text",
+            "text": ". "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolved Policy Gradient"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "EPG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/7785-evolved-policy-gradients.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Houthooft, et al, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") takes a step further by defining the policy gradient loss function as a temporal convolution (1-D convolution) over the agent’s past experience, "
+          },
+          {
+            "type": "inline_math",
+            "text": "L_\\phi"
+          },
+          {
+            "type": "text",
+            "text": ". The parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " of the loss function network are evolved in a way that an agent can achieve higher returns."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c967280a40a4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to many meta-learning algorithms, EPG has two optimization loops:"
+          }
+        ]
+      },
+      {
+        "id": "list-e7aeaaa60ab7",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-29c18e475397",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In the internal loop, an agent learns to improve its policy "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi_\\theta"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-822cfe6f1d7a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In the outer loop, the model updates the parameters "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\phi"
+              },
+              {
+                "type": "text",
+                "text": " of the loss function "
+              },
+              {
+                "type": "inline_math",
+                "text": "L_\\phi"
+              },
+              {
+                "type": "text",
+                "text": ". Because there is no explicit way to write down a differentiable equation between the return and the loss, EPG turned to "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Evolution_strategy"
+                },
+                "children": [
+                  {
+                    "type": "emphasis",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Evolutionary Strategies"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (ES)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2ec2084262d7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A general idea is to train a population of "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " agents, each of them is trained with the loss function "
+          },
+          {
+            "type": "inline_math",
+            "text": "L_{\\phi + \\sigma \\epsilon_i}"
+          },
+          {
+            "type": "text",
+            "text": " parameterized with "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " added with a small Gaussian noise "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon_i \\sim \\mathcal{N}(0, \\mathbf{I})"
+          },
+          {
+            "type": "text",
+            "text": " of standard deviation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": ". During the inner loop’s training, EPG tracks a history of experience and updates the policy parameters according to the loss function "
+          },
+          {
+            "type": "inline_math",
+            "text": "L_{\\phi + \\sigma\\epsilon_i}"
+          },
+          {
+            "type": "text",
+            "text": " for each agent:"
+          }
+        ]
+      },
+      {
+        "id": "math-ab102b2ea339",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta_i \\leftarrow \\theta - \\alpha_\\text{in} \\nabla_\\theta L_{\\phi + \\sigma \\epsilon_i} (\\pi_\\theta, \\tau_{t-K, \\dots, t})"
+        }
+      },
+      {
+        "id": "paragraph-97a24e5ab0fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_\\text{in}"
+          },
+          {
+            "type": "text",
+            "text": " is the learning rate of the inner loop and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau_{t-K, \\dots, t}"
+          },
+          {
+            "type": "text",
+            "text": " is a sequence of "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " transitions up to the current time step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cdcac4e1b297",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Once the inner loop policy is mature enough, the policy is evaluated by the mean return "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\bar{G}_{\\phi+\\sigma\\epsilon_i}"
+          },
+          {
+            "type": "text",
+            "text": " over multiple randomly sampled trajectories. Eventually, we are able to estimate the gradient of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " according to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://blog.otoro.net/2017/10/29/visual-evolution-strategies/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "NES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " numerically ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03864"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Salimans et al, 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). While repeating this process, both the policy parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and the loss function weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " are being updated simultaneously to achieve higher returns."
+          }
+        ]
+      },
+      {
+        "id": "math-eb6976f48a59",
+        "type": "math",
+        "attrs": {
+          "latex": "\\phi \\leftarrow \\phi + \\alpha_\\text{out} \\frac{1}{\\sigma N} \\sum_{i=1}^N \\epsilon_i G_{\\phi+\\sigma\\epsilon_i}"
+        }
+      },
+      {
+        "id": "paragraph-c60eff06e61c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_\\text{out}"
+          },
+          {
+            "type": "text",
+            "text": " is the learning rate of the outer loop."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f96ae1af6874",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In practice, the loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "L_\\phi"
+          },
+          {
+            "type": "text",
+            "text": " is bootstrapped with an ordinary policy gradient (such as REINFORCE or PPO) surrogate loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "L_\\text{pg}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{L} = (1-\\alpha) L_\\phi + \\alpha L_\\text{pg}"
+          },
+          {
+            "type": "text",
+            "text": ". The weight "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " is annealing from 1 to 0 gradually during training. At test time, the loss function parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " stays fixed and the loss value is computed over a history of experience to update the policy parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-2937b2109067",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meta-learning the Exploration Strategies"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-182af65de529",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "exploitation vs exploration"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " dilemma is a critical problem in RL. Common ways to do exploration include "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": "-greedy, random noise on actions, or stochastic policy with built-in randomness on the action space."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8134e9ac8d71",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MAESN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/7776-meta-reinforcement-learning-of-structured-exploration-strategies.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gupta et al, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is an algorithm to learn structured action noise from prior experience for better and more effective exploration. Simply adding random noise on actions cannot capture task-dependent or time-correlated exploration strategies. MAESN changes the policy to condition on a per-task random variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_i \\sim \\mathcal{N}(\\mu_i, \\sigma_i)"
+          },
+          {
+            "type": "text",
+            "text": ", for "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th task "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_i"
+          },
+          {
+            "type": "text",
+            "text": ", so we would have a policy "
+          },
+          {
+            "type": "inline_math",
+            "text": "a \\sim \\pi_\\theta(a\\mid s, z_i)"
+          },
+          {
+            "type": "text",
+            "text": ".\nThe latent variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_i"
+          },
+          {
+            "type": "text",
+            "text": " is sampled once and fixed during one episode. Intuitively, the latent variable determines one type of behavior (or skills) that should be explored more at the beginning of a rollout and the agent would adjust its actions accordingly. Both the policy parameters and latent space are optimized to maximize the total task rewards. In the meantime, the policy learns to make use of the latent variables for exploration."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f7218230c90e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In addition,  the loss function includes a KL divergence between the learned latent variable and a unit Gaussian prior, "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}(\\mathcal{N}(\\mu_i, \\sigma_i)|\\mathcal{N}(0, \\mathbf{I}))"
+          },
+          {
+            "type": "text",
+            "text": ". On one hand, it restricts the learned latent space not too far from a common prior. On the other hand, it creates the variational evidence lower bound ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://users.umiacs.umd.edu/~xyang35/files/understanding-variational-lower.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ELBO"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") for the reward function. Interestingly the paper found that "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\mu_i, \\sigma_i)"
+          },
+          {
+            "type": "text",
+            "text": " for each task are usually close to the prior at convergence."
+          }
+        ]
+      },
+      {
+        "id": "image-7a884ddf1570",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/MAESN.png",
+          "alt": "The policy is conditioned on a latent variable variable $z\\_i \\sim \\mathcal{N}(\\mu, \\sigma)$ that is sampled once every episode. Each task has different hyperparameters for the latent variable distribution, $(\\mu\\_i, \\sigma\\_i)$ and they are optimized in the outer loop. (Image source: Gupta et al, 2018 )"
+        }
+      },
+      {
+        "id": "heading-3fe16d22c765",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Episodic Control"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-76495f5a71a2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A major criticism of RL is on its sample inefficiency. A large number of samples and small learning steps are required for incremental parameter adjustment in RL in order to maximize generalization and avoid catastrophic forgetting of earlier learning ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cell.com/trends/cognitive-sciences/fulltext/S1364-6613(19)30061-0"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Botvinick et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cb0e7f59e405",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Episodic control"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/3311-hippocampal-contributions-to-control-the-third-way.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lengyel & Dayan, 2008"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is proposed as a solution to avoid forgetting and improve generalization while training at a faster speed. It is partially inspired by hypotheses on instance-based "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Hippocampus"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "hippocampal"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " learning."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ada4593f7717",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "episodic memory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " keeps explicit records of past events and uses these records directly as point of reference for making new decisions (i.e. just like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#metric-based"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "metric-based"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " meta-learning). In "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MFEC"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Model-Free Episodic Control; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.04460"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Blundell et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), the memory is modeled as a big table, storing the state-action pair "
+          },
+          {
+            "type": "inline_math",
+            "text": "(s, a)"
+          },
+          {
+            "type": "text",
+            "text": " as key and the corresponding Q-value "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_\\text{EC}(s, a)"
+          },
+          {
+            "type": "text",
+            "text": " as value. When receiving a new observation "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": ", the Q value is estimated in an non-parametric way as the average Q-value of top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " most similar samples:"
+          }
+        ]
+      },
+      {
+        "id": "math-e564752228a9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{Q}_\\text{EC}(s, a) = \n\\begin{cases}\nQ_\\text{EC}(s, a)                      & \\text{if } (s,a) \\in Q_\\text{EC}, \\\\\n\\frac{1}{k} \\sum_{i=1}^k Q(s^{(i)}, a) & \\text{otherwise}\n\\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-7acc45424cb1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "s^{(i)}, i=1, \\dots, k"
+          },
+          {
+            "type": "text",
+            "text": " are top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " states with smallest distances to the state "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": ". Then the action that yields the highest estimated Q value is selected. Then the memory table is updated according to the return received at "
+          },
+          {
+            "type": "inline_math",
+            "text": "s_t"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-2d22a7efd33a",
+        "type": "math",
+        "attrs": {
+          "latex": "Q_\\text{EC}(s, a) \\leftarrow\n\\begin{cases}\n\\max\\{Q_\\text{EC}(s_t, a_t), G_t\\}  & \\text{if } (s,a) \\in Q_\\text{EC}, \\\\\nG_t                                 & \\text{otherwise}\n\\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-2edbe880437c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As a tabular RL method, MFEC suffers from large memory consumption and a lack of ways to generalize among similar states. The first one can be fixed with an LRU cache. Inspired by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#metric-based"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "metric-based"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " meta-learning, especially Matching Networks ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6385-matching-networks-for-one-shot-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Vinyals et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), the generalization problem is improved in a follow-up algorithm, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NEC"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Neural Episodic Control; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.01988"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pritzel et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-433dc32439a2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The episodic memory in NEC is a Differentiable Neural Dictionary ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DND"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), where the key is a convolutional embedding vector of input image pixels and the value stores estimated Q value. Given an inquiry key, the output is a weighted sum of values of top similar keys, where the weight is a normalized kernel measure between the query key and the selected key in the dictionary. This sounds like a hard "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " machanism."
+          }
+        ]
+      },
+      {
+        "id": "image-ca31055e90c2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/neural-episodic-control.png",
+          "alt": "Fig. 6 Illustrations of episodic memory module in NEC and two operations on a differentiable neural dictionary. (Image source: Pritzel et al., 2016 )"
+        }
+      },
+      {
+        "id": "paragraph-f9bd2dc9c116",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Further, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Episodic LSTM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.09692"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ritter et al., 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") enhances the basic LSTM architecture with a DND episodic memory, which stores task context embeddings as keys and the LSTM cell states as values. The stored hidden states are retrieved and added directly to the current cell state through the same gating mechanism within LSTM:"
+          }
+        ]
+      },
+      {
+        "id": "image-94cb737f17a1",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/episodic-LSTM.png",
+          "alt": "Illustration of the episodic LSTM architecture. The additional structure of episodic memory is in bold. (Image source: Ritter et al., 2018 )"
+        }
+      },
+      {
+        "id": "math-d67285650221",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{c}_t &= \\mathbf{i}_t \\circ \\mathbf{c}_\\text{in} + \\mathbf{f}_t \\circ \\mathbf{c}_{t-1} + \\color{green}{\\mathbf{r}_t \\circ \\mathbf{c}_\\text{ep}} &\\\\\n\\mathbf{i}_t &= \\sigma(\\mathbf{W}_{i} \\cdot [\\mathbf{h}_{t-1}, \\mathbf{x}_t] + \\mathbf{b}_i) & \\scriptstyle{\\text{; input gate}} \\\\\n\\mathbf{f}_t &= \\sigma(\\mathbf{W}_{f} \\cdot [\\mathbf{h}_{t-1}, \\mathbf{x}_t] + \\mathbf{b}_f) & \\scriptstyle{\\text{; forget gate}} \\\\\n\\color{green}{\\mathbf{r}_t} & \\color{green}{=} \\color{green}{\\sigma(\\mathbf{W}_{r} \\cdot [\\mathbf{h}_{t-1}, \\mathbf{x}_t] + \\mathbf{b}_r)} & \\scriptstyle{\\text{; reinstatement gate}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-2a156727f08b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{c}_t"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}_t"
+          },
+          {
+            "type": "text",
+            "text": " are hidden and cell state at time "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{i}_t"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{f}_t"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{r}_t"
+          },
+          {
+            "type": "text",
+            "text": " are input, forget and reinstatement gates, respectively; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{c}_\\text{ep}"
+          },
+          {
+            "type": "text",
+            "text": " is the retrieved cell state from episodic memory. The newly added episodic memory components are marked in green."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-007ad980ef3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This architecture provides a shortcut to the prior experience through context-based retrieval. Meanwhile, explicitly saving the task-dependent experience in an external memory avoids forgetting. In the paper, all the experiments have manually designed context vectors. How to construct an effective and efficient format of task context embeddings for more free-formed tasks would be an interesting topic."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ce00384d0481",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Overall the capacity of episodic control is limited by the complexity of the environment. It is very rare for an agent to repeatedly visit exactly the same states in a real-world task, so properly encoding the states is critical. The learned embedding space compresses the observation data into a lower dimension space and, in the meantime, two states being close in this space are expected to demand similar strategies."
+          }
+        ]
+      },
+      {
+        "id": "heading-5ce153dd98d1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training Task Acquisition"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d3fb66535419",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Among three key components, how to design a proper distribution of tasks is the less studied and probably the most specific one to meta-RL itself. As described "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#formulation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "above"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", each task is a MDP: "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_i = \\langle \\mathcal{S}, \\mathcal{A}, P_i, R_i \\rangle \\in \\mathcal{M}"
+          },
+          {
+            "type": "text",
+            "text": ". We can build a distribution of MDPs by modifying:"
+          }
+        ]
+      },
+      {
+        "id": "list-62fc69e40e1b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e99b0cf941c8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "reward configuration"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Among different tasks, same behavior might get rewarded differently according to "
+              },
+              {
+                "type": "inline_math",
+                "text": "R_i"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0179e00acda1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Or, the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "environment"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The transition function "
+              },
+              {
+                "type": "inline_math",
+                "text": "P_i"
+              },
+              {
+                "type": "text",
+                "text": " can be reshaped by initializing the environment with varying shifts between states."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-a70fae5fb806",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Task Generation by Domain Randomization"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-84d779aeca61",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Randomizing parameters in a simulator is an easy way to obtain tasks with modified transition functions. If interested in learning further, check my last "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-05-05-domain-randomization/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "domain randomization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-343a014854fc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evolutionary Algorithm on Environment Generation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-8a6f514b0966",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Evolutionary_algorithm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolutionary algorithm"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a gradient-free heuristic-based optimization method, inspired by natural selection. A population of solutions follows a loop of evaluation, selection, reproduction, and mutation. Eventually, good solutions survive and thus get selected."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4e2f313fbf31",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "POET"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.01753"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al, 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), a framework based on the evolutionary algorithm, attempts to generate tasks while the problems themselves are being solved. The implementation of POET is only specifically designed for a simple 2D "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://gym.openai.com/envs/BipedalWalkerHardcore-v2/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "bipedal walker"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " environment but points out an interesting direction. It is noteworthy that the evolutionary algorithm has had some compelling applications in Deep Learning like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#meta-learning-the-loss-function"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "EPG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and PBT (Population-Based Training; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1711.09846"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": " Jaderberg et al, 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "image-59d482ecd402",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/POET.png",
+          "alt": "An example bipedal walking environment (top) and an overview of POET (bottom). (Image source: POET blog post )"
+        }
+      },
+      {
+        "id": "paragraph-9fc6db919285",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The 2D bipedal walking environment is evolving: from a simple flat surface to a much more difficult trail with potential gaps, stumps, and rough terrains. POET pairs the generation of environmental challenges and the optimization of agents together so as to (a) select agents that can resolve current challenges and (b) evolve environments to be solvable. The algorithm maintains a list of "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "environment-agent pairs"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and repeats the following:"
+          }
+        ]
+      },
+      {
+        "id": "list-22c662ee6adc",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-70569a194905",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Mutation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Generate new environments from currently active environments. Note that here types of mutation operations are created just for bipedal walker and a new environment would demand a new set of configurations."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f78b15221128",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Optimization"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Train paired agents within their respective environments."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e2dbd637c870",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Selection"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Periodically attempt to transfer current agents from one environment to another. Copy and update the best performing agent for every environment. The intuition is that skills learned in one environment might be helpful for a different environment."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c53fe6cfda09",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The procedure above is quite similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1711.09846"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "PBT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", but PBT mutates and evolves hyperparameters instead. To some extent, POET is doing "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-05-05-domain-randomization/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "domain randomization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", as all the gaps, stumps and terrain roughness are controlled by some randomization probability parameters. Different from DR, the agents are not exposed to a fully randomized difficult environment all at once, but instead they are learning gradually with a curriculum configured by the evolutionary algorithm."
+          }
+        ]
+      },
+      {
+        "id": "heading-e9fcc44a206f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Learning with Random Rewards"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-141d3fa8f7a9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An MDP without a reward function "
+          },
+          {
+            "type": "inline_math",
+            "text": "R"
+          },
+          {
+            "type": "text",
+            "text": " is known as a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Controlled Markov process"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (CMP). Given a predefined CMP, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\langle \\mathcal{S}, \\mathcal{A}, P\\rangle"
+          },
+          {
+            "type": "text",
+            "text": ", we can acquire a variety of tasks by generating a collection of reward functions "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{R}"
+          },
+          {
+            "type": "text",
+            "text": " that encourage the training of an effective meta-learning policy."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9f1e7944f112",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1806.04640"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gupta et al. (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed two unsupervised approaches  for growing the task distribution in the context of CMP. Assuming there is an underlying latent variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "z \\sim p(z)"
+          },
+          {
+            "type": "text",
+            "text": " associated with every task, it parameterizes/determines a reward function: "
+          },
+          {
+            "type": "inline_math",
+            "text": "r_z(s) = \\log D(z|s)"
+          },
+          {
+            "type": "text",
+            "text": ", where a “discriminator” function "
+          },
+          {
+            "type": "inline_math",
+            "text": "D(.)"
+          },
+          {
+            "type": "text",
+            "text": " is used to extract the latent variable from the state. The paper described two ways to construct a discriminator function:"
+          }
+        ]
+      },
+      {
+        "id": "list-b8d1007a010e",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-133fc8954896",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sample random weights "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\phi_\\text{rand}"
+              },
+              {
+                "type": "text",
+                "text": " of the discriminator, "
+              },
+              {
+                "type": "inline_math",
+                "text": "D_{\\phi_\\text{rand}}(z \\mid s)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ae9e807d1c6c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Learn a discriminator function to encourage diversity-driven exploration. This method is introduced in more details in another sister paper “DIAYN” ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1802.06070"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Eysenbach et al., 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cfaeb0006cb8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "DIAYN, short for “Diversity is all you need”, is a framework to encourage a policy to learn useful skills without a reward function. It explicitly models the latent variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " as a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "skill"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " embedding and makes the policy conditioned on "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " in addition to state "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi_\\theta(a \\mid s, z)"
+          },
+          {
+            "type": "text",
+            "text": ". (Ok, this part is same as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#meta-learning-the-exploration-strategies"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MAESN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " unsurprisingly, as the papers are from the same group.) The design of DIAYN is motivated by a few hypotheses:"
+          }
+        ]
+      },
+      {
+        "id": "list-ed2f04fb76e6",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-fdb5672e18a9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Skills should be diverse and lead to visitations of different states. → maximize the mutual information between states and skills, "
+              },
+              {
+                "type": "inline_math",
+                "text": "I(S; Z)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-3fb8fbd460c9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Skills should be distinguishable by states, not actions. → minimize the mutual information between actions and skills, conditioned on states "
+              },
+              {
+                "type": "inline_math",
+                "text": "I(A; Z \\mid S)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f3ac2d88e944",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The objective function to maximize is as follows, where the policy entropy is also added to encourage diversity:"
+          }
+        ]
+      },
+      {
+        "id": "math-71c191460e97",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathcal{F}(\\theta) \n&= I(S; Z) + H[A \\mid S] - I(A; Z \\mid S) &  \\\\\n&= (H(Z) - H(Z \\mid S)) + H[A \\mid S] - (H[A\\mid S] - H[A\\mid S, Z]) & \\\\\n&= H[A\\mid S, Z] \\color{green}{- H(Z \\mid S) + H(Z)} & \\\\\n&= H[A\\mid S, Z] + \\mathbb{E}_{z\\sim p(z), s\\sim\\rho(s)}[\\log p(z \\mid s)] - \\mathbb{E}_{z\\sim p(z)}[\\log p(z)] & \\scriptstyle{\\text{; can infer skills from states & p(z) is diverse.}} \\\\\n&\\ge H[A\\mid S, Z] + \\mathbb{E}_{z\\sim p(z), s\\sim\\rho(s)}[\\color{red}{\\log D_\\phi(z \\mid s) - \\log p(z)}] & \\scriptstyle{\\text{; according to Jensen's inequality; \"pseudo-reward\" in red.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-8b75114ba7a8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "I(.)"
+          },
+          {
+            "type": "text",
+            "text": " is mutual information and "
+          },
+          {
+            "type": "inline_math",
+            "text": "H[.]"
+          },
+          {
+            "type": "text",
+            "text": " is entropy measure. We cannot integrate all states to compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(z \\mid s)"
+          },
+          {
+            "type": "text",
+            "text": ", so approximate it with "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\phi(z \\mid s)"
+          },
+          {
+            "type": "text",
+            "text": " — that is the diversity-driven discriminator function."
+          }
+        ]
+      },
+      {
+        "id": "image-15f79ae7fef6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/DIAYN.png",
+          "alt": "DIAYN Algorithm. (Image source: Eysenbach et al., 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-547db5f70374",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Once the discriminator function is learned, sampling a new MDP for training is strainght-forward: First, sample a latent variable, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z \\sim p(z)"
+          },
+          {
+            "type": "text",
+            "text": " and construct a reward function "
+          },
+          {
+            "type": "inline_math",
+            "text": "r_z(s) = \\log(D(z \\vert s))"
+          },
+          {
+            "type": "text",
+            "text": ". Pairing the reward function with a predefined CMP creates a new MDP."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-1e8faff70035",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2019metaRL,\n  title   = \"Meta Reinforcement Learning\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2019\",\n  url     = \"https://lilianweng.github.io/posts/2019-06-23-meta-rl/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8ccdfcea869f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Richard S. Sutton. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://incompleteideas.net/IncIdeas/BitterLesson.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The Bitter Lesson.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " March 13, 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6b1f043d197f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Sepp Hochreiter, A. Steven Younger, and Peter R. Conwell. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://snowedin.net/tmp/Hochreiter2001.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning to learn using gradient descent.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Intl. Conf. on Artificial Neural Networks. 2001."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8622b3c02525",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Jane X Wang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.05763"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning to reinforcement learn.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1611.05763 (2016)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dfbe7fcd9318",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Yan Duan, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.02779"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“RL "
+              },
+              {
+                "type": "inline_math",
+                "text": "^ 2"
+              },
+              {
+                "type": "text",
+                "text": ": Fast Reinforcement Learning via Slow Reinforcement Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fbddbbc3676c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Matthew Botvinick, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cell.com/trends/cognitive-sciences/fulltext/S1364-6613(19)30061-0"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reinforcement Learning, Fast and Slow”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Cell Review, Volume 23, Issue 5, P408-422, May 01, 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9553b8351e83",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Jeff Clune. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.10985"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“AI-GAs: AI-generating algorithms, an alternate paradigm for producing general artificial intelligence”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1905.10985 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-125547a862d8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Zhongwen Xu, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/7507-meta-gradient-reinforcement-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Meta-Gradient Reinforcement Learning”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3e2033015764",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Rein Houthooft, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/7785-evolved-policy-gradients.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Evolved Policy Gradients.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7da59d4d1510",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Tim Salimans, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03864"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Evolution strategies as a scalable alternative to reinforcement learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1703.03864 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e7e6c205ab5e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Abhishek Gupta, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/7776-meta-reinforcement-learning-of-structured-exploration-strategies.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Meta-Reinforcement Learning of Structured Exploration Strategies.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-364a8ad226ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Alexander Pritzel, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.01988"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Neural episodic control.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Proc. Intl. Conf. on Machine Learning, Volume 70, 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5a7550ca695c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Charles Blundell, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.04460"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Model-free episodic control.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1606.04460 (2016)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cee017d46557",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Samuel Ritter, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.09692"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Been there, done that: Meta-learning with episodic recall.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML, 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f3f334ce0c3b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Rui Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.01753"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Paired Open-Ended Trailblazer (POET): Endlessly Generating Increasingly Complex and Diverse Learning Environments and Their Solutions”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1901.01753 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a45cf0209f6b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Uber Engineering Blog: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://eng.uber.com/poet-open-ended-deep-learning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“POET: Endlessly Generating Increasingly Complex and Diverse Learning Environments and their Solutions through the Paired Open-Ended Trailblazer.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Jan 8, 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-263276930d98",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Abhishek Gupta, et al."
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1806.04640"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Unsupervised meta-learning for Reinforcement Learning”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1806.04640 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8a8303f6eaf7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Eysenbach, Benjamin, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1802.06070"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Diversity is all you need: Learning skills without a reward function.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-40130b90f4b1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] Max Jaderberg, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1711.09846"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Population Based Training of Neural Networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1711.09846 (2017)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "meta-reinforcement-learning",
+    "source_slug": "2019-06-23-meta-rl",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 18,
+      "math": 13,
+      "image": 9,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/Hochreiter-meta-learning.png",
+      "alt": "The meta-learning system consists of the supervisory and the subordinate systems. The subordinate system is a recurrent neural network that takes as input both the observation at the current time step, $x\\_t$ and the label at the last time step, $y\\_{t-1}$. (Image source: Hochreiter et al., 2001 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/meta-RL-illustration.png",
+      "alt": "Illustration of meta-RL, containing two optimization loops. The outer loop samples a new environment in every iteration and adjusts parameters that determine the agent's behavior. In the inner loop, the agent interacts with the environment and optimizes for the maximal reward. (Image source: Botvinick, et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/L2RL.png",
+      "alt": "In the meta-RL paper, different actor-critic architectures all use a recurrent model. Last reward and last action are additional inputs. The observation is fed into the LSTM either as a one-hot vector or as an embedding vector after passed through an encoder model. (Image source: Wang et al., 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/RL_2.png",
+      "alt": "As described in the RL^2 paper, illustration of the procedure of the model interacting with a series of MDPs in training time . (Image source: Duan et al., 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/MAESN.png",
+      "alt": "The policy is conditioned on a latent variable variable $z\\_i \\sim \\mathcal{N}(\\mu, \\sigma)$ that is sampled once every episode. Each task has different hyperparameters for the latent variable distribution, $(\\mu\\_i, \\sigma\\_i)$ and they are optimized in the outer loop. (Image source: Gupta et al, 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/neural-episodic-control.png",
+      "alt": "Fig. 6 Illustrations of episodic memory module in NEC and two operations on a differentiable neural dictionary. (Image source: Pritzel et al., 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/episodic-LSTM.png",
+      "alt": "Illustration of the episodic LSTM architecture. The additional structure of episodic memory is in bold. (Image source: Ritter et al., 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/POET.png",
+      "alt": "An example bipedal walking environment (top) and an overview of POET (bottom). (Image source: POET blog post )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/DIAYN.png",
+      "alt": "DIAYN Algorithm. (Image source: Eysenbach et al., 2019 )"
+    }
+  ]
+}

@@ -1,0 +1,3981 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2017-08-20-gan",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2017-08-20-gan/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2017-08-20T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:6afd468a26e8458d6f12b387ebfbe936eb8cedf4e722248c15740a11d047d685",
+    "fetched_at": "2026-07-14T02:04:47.384277+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "From GAN to WGAN",
+    "title_en": "From GAN to WGAN",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-07eaa9baec84",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2018-09-30: thanks to Yoonju, we have this post translated in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/yjucho1/articles/blob/master/fromGANtoWGAN/readme.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Korean"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "!]"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "text",
+            "text": "[Updated on 2019-04-18: this post is also available on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1904.08994"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "arXiv"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8a91e0881150",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1406.2661.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Generative adversarial network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (GAN) has shown great results in many generative tasks to replicate the real-world rich content such as images, human language, and music. It is inspired by game theory: two models, a generator and a critic, are competing with each other while making each other stronger at the same time. However, it is rather challenging to train a GAN model, as people are facing issues like training instability or failure to converge."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7722a4fee3c3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here I would like to explain the maths behind the generative adversarial network framework,  why it is hard to be trained, and finally introduce a modified version of GAN intended to solve the training difficulties."
+          }
+        ]
+      },
+      {
+        "id": "heading-94b04eb83f3c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Kullback–Leibler and Jensen–Shannon Divergence"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-eb2d469baf95",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before we start examining GANs closely, let us first review two metrics for quantifying the similarity between two probability distributions."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c7b72a9e1baf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "KL (Kullback–Leibler) divergence"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " measures how one probability distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": " diverges from a second expected probability distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "q"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-08e1e7bbfe41",
+        "type": "math",
+        "attrs": {
+          "latex": "D_{KL}(p \\| q) = \\int_x p(x) \\log \\frac{p(x)}{q(x)} dx"
+        }
+      },
+      {
+        "id": "paragraph-1b8363272f2d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "D_{KL}"
+          },
+          {
+            "type": "text",
+            "text": " achieves the minimum zero when "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(x)"
+          },
+          {
+            "type": "text",
+            "text": " == "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(x)"
+          },
+          {
+            "type": "text",
+            "text": " everywhere."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2d24bc3b3c39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is noticeable according to the formula that KL divergence is asymmetric. In cases where "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(x)"
+          },
+          {
+            "type": "text",
+            "text": " is close to zero, but "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(x)"
+          },
+          {
+            "type": "text",
+            "text": " is significantly non-zero, the "
+          },
+          {
+            "type": "inline_math",
+            "text": "q"
+          },
+          {
+            "type": "text",
+            "text": "’s effect is disregarded. It could cause buggy results when we just want to measure the similarity between two equally important distributions."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4586f9da2b1b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jensen–Shannon Divergence"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is another measure of similarity between two probability distributions, bounded by "
+          },
+          {
+            "type": "inline_math",
+            "text": "[0, 1]"
+          },
+          {
+            "type": "text",
+            "text": ". JS divergence is symmetric (yay!) and more smooth. Check this "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.quora.com/Why-isnt-the-Jensen-Shannon-divergence-used-more-often-than-the-Kullback-Leibler-since-JS-is-symmetric-thus-possibly-a-better-indicator-of-distance"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Quora post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " if you are interested in reading more about the comparison between KL divergence and JS divergence."
+          }
+        ]
+      },
+      {
+        "id": "math-8f937634a9d3",
+        "type": "math",
+        "attrs": {
+          "latex": "D_{JS}(p \\| q) = \\frac{1}{2} D_{KL}(p \\| \\frac{p + q}{2}) + \\frac{1}{2} D_{KL}(q \\| \\frac{p + q}{2})"
+        }
+      },
+      {
+        "id": "image-18aa508685c6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/KL_JS_divergence.png",
+          "alt": "Given two Gaussian distribution, $p$ with mean=0 and std=1 and $q$ with mean=1 and std=1. The average of two distributions is labelled as $m=(p+q)/2$. KL divergence $D_{KL}$ is asymmetric but JS divergence $D_{JS}$ is symmetric."
+        }
+      },
+      {
+        "id": "paragraph-df7a9507a934",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Some believe ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1511.05101.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Huszar, 2015"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") that one reason behind GANs’ big success is switching the loss function from asymmetric KL divergence in traditional maximum-likelihood approach to symmetric JS divergence. We will discuss more on this point in the next section."
+          }
+        ]
+      },
+      {
+        "id": "heading-622d31641e14",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Generative Adversarial Network (GAN)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-80215999fc9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GAN consists of two models:"
+          }
+        ]
+      },
+      {
+        "id": "list-3473da0555b9",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-43a7fdacca87",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A discriminator "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": " estimates the probability of a given sample coming from the real dataset. It works as a critic and is optimized to tell the fake samples from the real ones."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b87b3bae5c78",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A generator "
+              },
+              {
+                "type": "inline_math",
+                "text": "G"
+              },
+              {
+                "type": "text",
+                "text": " outputs synthetic samples given a noise variable input "
+              },
+              {
+                "type": "inline_math",
+                "text": "z"
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "inline_math",
+                "text": "z"
+              },
+              {
+                "type": "text",
+                "text": " brings in potential output diversity). It is trained to capture the real data distribution so that its generative samples can be as real as possible, or in other words, can trick the discriminator to offer a high probability."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-4ff5fcbd41b3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/GAN.png",
+          "alt": "Architecture of a generative adversarial network. (Image source: www.kdnuggets.com/2017/01/generative-...-learning.html )"
+        }
+      },
+      {
+        "id": "paragraph-9c05e756a75c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "These two models compete against each other during the training process: the generator "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " is trying hard to trick the discriminator, while the critic model "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " is trying hard not to be cheated. This interesting zero-sum game between two models motivates both to improve their functionalities."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6ce0fc1d9569",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given,"
+          }
+        ]
+      },
+      {
+        "id": "table-c5a74d8d9766",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Symbol",
+            "Meaning",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "$p_{z}$",
+              "Data distribution over noise input $z$",
+              "Usually, just uniform."
+            ],
+            [
+              "$p_{g}$",
+              "The generator’s distribution over data $x$",
+              ""
+            ],
+            [
+              "$p_{r}$",
+              "Data distribution over real sample $x$",
+              ""
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-7238f3a37217",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "On one hand, we want to make sure the discriminator "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": "’s decisions over real data are accurate by maximizing "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_{x \\sim p_{r}(x)} [\\log D(x)]"
+          },
+          {
+            "type": "text",
+            "text": ". Meanwhile, given a fake sample "
+          },
+          {
+            "type": "inline_math",
+            "text": "G(z), z \\sim p_z(z)"
+          },
+          {
+            "type": "text",
+            "text": ", the discriminator is expected to output a probability, "
+          },
+          {
+            "type": "inline_math",
+            "text": "D(G(z))"
+          },
+          {
+            "type": "text",
+            "text": ", close to zero by maximizing "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_{z \\sim p_{z}(z)} [\\log (1 - D(G(z)))]"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5edb5e14498a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "On the other hand, the generator is trained to increase the chances of "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " producing a high probability for a fake example, thus to minimize "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_{z \\sim p_{z}(z)} [\\log (1 - D(G(z)))]"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-86afbf385fe5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When combining both aspects together, "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " are playing a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "minimax game"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in which we should optimize the following loss function:"
+          }
+        ]
+      },
+      {
+        "id": "math-6ecd3fddb591",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\min_G \\max_D L(D, G) \n& = \\mathbb{E}_{x \\sim p_{r}(x)} [\\log D(x)] + \\mathbb{E}_{z \\sim p_z(z)} [\\log(1 - D(G(z)))] \\\\\n& = \\mathbb{E}_{x \\sim p_{r}(x)} [\\log D(x)] + \\mathbb{E}_{x \\sim p_g(x)} [\\log(1 - D(x)]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-3c4284435875",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "("
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_{x \\sim p_{r}(x)} [\\log D(x)]"
+          },
+          {
+            "type": "text",
+            "text": " has no impact on "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " during gradient descent updates.)"
+          }
+        ]
+      },
+      {
+        "id": "heading-431dcf4e306b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What is the optimal value for D?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-df571df2fc69",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now we have a well-defined loss function. Let’s first examine what is the best value for "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-16965090a959",
+        "type": "math",
+        "attrs": {
+          "latex": "L(G, D) = \\int_x \\bigg( p_{r}(x) \\log(D(x)) + p_g (x) \\log(1 - D(x)) \\bigg) dx"
+        }
+      },
+      {
+        "id": "paragraph-5fc31fd72da2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since we are interested in what is the best value of "
+          },
+          {
+            "type": "inline_math",
+            "text": "D(x)"
+          },
+          {
+            "type": "text",
+            "text": " to maximize "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(G, D)"
+          },
+          {
+            "type": "text",
+            "text": ", let us label"
+          }
+        ]
+      },
+      {
+        "id": "math-91e453addb4c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\tilde{x} = D(x), \nA=p_{r}(x), \nB=p_g(x)"
+        }
+      },
+      {
+        "id": "paragraph-e516af7882f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "And then what is inside the integral (we can safely ignore the integral because "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " is sampled over all the possible values) is:"
+          }
+        ]
+      },
+      {
+        "id": "math-0892bdc73b32",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nf(\\tilde{x}) \n& = A log\\tilde{x} + B log(1-\\tilde{x}) \\\\\n\\frac{d f(\\tilde{x})}{d \\tilde{x}}\n& = A \\frac{1}{ln10} \\frac{1}{\\tilde{x}} - B \\frac{1}{ln10} \\frac{1}{1 - \\tilde{x}} \\\\\n& = \\frac{1}{ln10} (\\frac{A}{\\tilde{x}} - \\frac{B}{1-\\tilde{x}}) \\\\\n& = \\frac{1}{ln10} \\frac{A - (A + B)\\tilde{x}}{\\tilde{x} (1 - \\tilde{x})} \\\\\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-005162145e66",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus, set "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{d f(\\tilde{x})}{d \\tilde{x}} = 0"
+          },
+          {
+            "type": "text",
+            "text": ", we get the best value of the discriminator: "
+          },
+          {
+            "type": "inline_math",
+            "text": "D^*(x) = \\tilde{x}^* = \\frac{A}{A + B} = \\frac{p_{r}(x)}{p_{r}(x) + p_g(x)} \\in [0, 1]"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4fe470cdcc30",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Once the generator is trained to its optimal, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " gets very close to "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_{r}"
+          },
+          {
+            "type": "text",
+            "text": ". When "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g = p_{r}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "D^*(x)"
+          },
+          {
+            "type": "text",
+            "text": " becomes "
+          },
+          {
+            "type": "inline_math",
+            "text": "1/2"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-d0911f1ece33",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What is the global optimal?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-81ee78b7f7b1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When both "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " are at their optimal values, we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g = p_{r}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D^*(x) = 1/2"
+          },
+          {
+            "type": "text",
+            "text": " and the loss function becomes:"
+          }
+        ]
+      },
+      {
+        "id": "math-0c8e185cd5ad",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nL(G, D^*) \n&= \\int_x \\bigg( p_{r}(x) \\log(D^*(x)) + p_g (x) \\log(1 - D^*(x)) \\bigg) dx \\\\\n&= \\log \\frac{1}{2} \\int_x p_{r}(x) dx + \\log \\frac{1}{2} \\int_x p_g(x) dx \\\\\n&= -2\\log2\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-7474ce2b2d1c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What does the loss function represent?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-283e7c4eccbc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to the formula listed in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-08-20-gan/#kullbackleibler-and-jensenshannon-divergence"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "previous section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", JS divergence between "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_{r}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " can be computed as:"
+          }
+        ]
+      },
+      {
+        "id": "math-896259111dd0",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nD_{JS}(p_{r} \\| p_g) \n=& \\frac{1}{2} D_{KL}(p_{r} || \\frac{p_{r} + p_g}{2}) + \\frac{1}{2} D_{KL}(p_{g} || \\frac{p_{r} + p_g}{2}) \\\\\n=& \\frac{1}{2} \\bigg( \\log2 + \\int_x p_{r}(x) \\log \\frac{p_{r}(x)}{p_{r} + p_g(x)} dx \\bigg) + \\\\& \\frac{1}{2} \\bigg( \\log2 + \\int_x p_g(x) \\log \\frac{p_g(x)}{p_{r} + p_g(x)} dx \\bigg) \\\\\n=& \\frac{1}{2} \\bigg( \\log4 + L(G, D^*) \\bigg)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-b69b716bf24b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus,"
+          }
+        ]
+      },
+      {
+        "id": "math-925400d72ca3",
+        "type": "math",
+        "attrs": {
+          "latex": "L(G, D^*) = 2D_{JS}(p_{r} \\| p_g) - 2\\log2"
+        }
+      },
+      {
+        "id": "paragraph-2fd1b82d0c30",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Essentially the loss function of GAN quantifies the similarity between the generative data distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " and the real sample distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_{r}"
+          },
+          {
+            "type": "text",
+            "text": " by JS divergence when the discriminator is optimal. The best "
+          },
+          {
+            "type": "inline_math",
+            "text": "G^*"
+          },
+          {
+            "type": "text",
+            "text": " that replicates the real data distribution leads to the minimum "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(G^*, D^*) = -2\\log2"
+          },
+          {
+            "type": "text",
+            "text": " which is aligned with equations above."
+          }
+        ]
+      },
+      {
+        "id": "blockquote-fb3b49ce789b",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-a8d7e740c11a",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Other Variations of GAN"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": There are many variations of GANs in different contexts or designed for different tasks. For example, for semi-supervised learning, one idea is to update the discriminator to output real class labels, "
+              },
+              {
+                "type": "inline_math",
+                "text": "1, \\dots, K-1"
+              },
+              {
+                "type": "text",
+                "text": ", as well as one fake class label "
+              },
+              {
+                "type": "inline_math",
+                "text": "K"
+              },
+              {
+                "type": "text",
+                "text": ". The generator model aims to trick the discriminator to output a classification label smaller than "
+              },
+              {
+                "type": "inline_math",
+                "text": "K"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f595ca91a6db",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Tensorflow Implementation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/carpedm20/DCGAN-tensorflow"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "carpedm20/DCGAN-tensorflow"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-6f6ac763310e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Problems in GANs"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-cd1ea79559c4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Although GAN has shown great success in the realistic image generation, the training is not easy; The process is known to be slow and unstable."
+          }
+        ]
+      },
+      {
+        "id": "heading-3e4028207eb7",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hard to achieve Nash equilibrium"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-47f10b78df2c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Salimans et al. (2016)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " discussed the problem with GAN’s gradient-descent-based training procedure. Two models are trained simultaneously to find a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Nash_equilibrium"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nash equilibrium"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to a two-player non-cooperative game. However, each model updates its cost independently with no respect to another player in the game. Updating the gradient of both models concurrently cannot guarantee a convergence."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-633af8507420",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s check out a simple example to better understand why it is difficult to find a Nash equilibrium in an non-cooperative game. Suppose one player takes control of "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " to minimize "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_1(x) = xy"
+          },
+          {
+            "type": "text",
+            "text": ", while at the same time the other player constantly updates "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " to minimize "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_2(y) = -xy"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b75d694c1b4c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{\\partial f_1}{\\partial x} = y"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{\\partial f_2}{\\partial y} = -x"
+          },
+          {
+            "type": "text",
+            "text": ", we update "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " with "
+          },
+          {
+            "type": "inline_math",
+            "text": "x-\\eta \\cdot y"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " with "
+          },
+          {
+            "type": "inline_math",
+            "text": "y+ \\eta \\cdot x"
+          },
+          {
+            "type": "text",
+            "text": " simulitanously in one iteration, where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\eta"
+          },
+          {
+            "type": "text",
+            "text": " is the learning rate. Once "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " have different signs, every following gradient update causes huge oscillation and the instability gets worse in time, as shown in "
+          }
+        ]
+      },
+      {
+        "id": "image-b6dbb8629227",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/nash_equilibrium.png",
+          "alt": "A simulation of our example for updating $x$ to minimize $xy$ and updating $y$ to minimize $-xy$. The learning rate $\\eta = 0.1$. With more iterations, the oscillation grows more and more unstable."
+        }
+      },
+      {
+        "id": "heading-dd24116c28ab",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Low dimensional supports"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "table-dd18351dcee5",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Term",
+            "Explanation"
+          ],
+          "rows": [
+            [
+              "Manifold",
+              "A topological space that locally resembles Euclidean space near each point. Precisely, when this Euclidean space is of dimension $n$ , the manifold is referred as $n$-manifold ."
+            ],
+            [
+              "Support",
+              "A real-valued function $f$ is the subset of the domain containing those elements which are not mapped to zero ."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-3332ca45abaa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.04862.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Arjovsky and Bottou (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " discussed the problem of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Support_(mathematics)"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "supports"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " lying on low dimensional "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Manifold"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "manifolds"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and how it contributes to the instability of GAN training thoroughly in a very theoretical paper "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.04862.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards principled methods for training generative adversarial networks”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ea3b3d085c97",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The dimensions of many real-world datasets, as represented by "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": ", only appear to be "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "artificially high"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". They have been found to concentrate in a lower dimensional manifold. This is actually the fundamental assumption for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://scikit-learn.org/stable/modules/manifold.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Manifold Learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Thinking of the real world images, once the theme or the contained object is fixed, the images have a lot of restrictions to follow, i.e., a dog should have two ears and a tail, and a skyscraper should have a straight and tall body, etc. These restrictions keep images aways from the possibility of having a high-dimensional free form."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6e9b3dcf278c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " lies in a low dimensional manifolds, too. Whenever the generator is asked to a much larger image like 64x64 given a small dimension, such as 100, noise variable input "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": ", the distribution of colors over these 4096 pixels has been defined by the small 100-dimension random number vector and can hardly fill up the whole high dimensional space."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-88291925b83b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because both "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": " rest in low dimensional manifolds, they are almost certainly gonna be disjoint (See Fig. 4). When they have disjoint supports, we are always capable of finding a perfect discriminator that separates real and fake samples 100% correctly. Check the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.04862.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " if you are curious about the proof."
+          }
+        ]
+      },
+      {
+        "id": "image-d35e8d0e04e4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/low_dim_manifold.png",
+          "alt": "Low dimensional manifolds in high dimension space can hardly have overlaps. (Left) Two lines in a three-dimension space. (Right) Two surfaces in a three-dimension space."
+        }
+      },
+      {
+        "id": "heading-4a59e05ebb45",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Vanishing gradient"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4341d7cdc807",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When the discriminator is perfect, we are guaranteed with "
+          },
+          {
+            "type": "inline_math",
+            "text": "D(x) = 1, \\forall x \\in p_r"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D(x) = 0, \\forall x \\in p_g"
+          },
+          {
+            "type": "text",
+            "text": ". Therefore the loss function "
+          },
+          {
+            "type": "inline_math",
+            "text": "L"
+          },
+          {
+            "type": "text",
+            "text": " falls to zero and we end up with no gradient to update the loss during learning iterations. Fig. 5 demonstrates an experiment when the discriminator gets better, the gradient vanishes fast."
+          }
+        ]
+      },
+      {
+        "id": "image-abe1fcfff688",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/GAN_vanishing_gradient.png",
+          "alt": "First, a DCGAN is trained for 1, 10 and 25 epochs. Then, with the **generator fixed**, a discriminator is trained from scratch and measure the gradients with the original cost function. We see the gradient norms **decay quickly** (in log scale), in the best case 5 orders of magnitude after 4000 discriminator iterations. (Image source: Arjovsky and Bottou, 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-f77841354ca7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As a result, training a GAN faces a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "dilemma"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "list-069eed4a7770",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-f1cd8238b3de",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "If the discriminator behaves badly, the generator does not have accurate feedback and the loss function cannot represent the reality."
+              }
+            ]
+          },
+          {
+            "id": "list-item-614f15d98081",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "If the discriminator does a great job, the gradient of the loss function drops down to close to zero and the learning becomes super slow or even jammed."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-abbcb60de71f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This dilemma clearly is capable to make the GAN training very tough."
+          }
+        ]
+      },
+      {
+        "id": "heading-32e6e05ea1de",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mode collapse"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-78ef309ff0e3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During the training, the generator may collapse to a setting where it always produces same outputs. This is a common failure case for GANs, commonly referred to as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Mode Collapse"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Even though the generator might be able to trick the corresponding discriminator, it fails to learn to represent the complex real-world data distribution and gets stuck in a small space with extremely low variety."
+          }
+        ]
+      },
+      {
+        "id": "image-2d09621c6598",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/mode_collapse.png",
+          "alt": "A DCGAN model is trained with an MLP network with 4 layers, 512 units and ReLU activation function, configured to lack a strong inductive bias for image generation. The results shows a significant degree of mode collapse. (Image source: Arjovsky, Chintala, & Bottou, 2017. )"
+        }
+      },
+      {
+        "id": "heading-d8bbe23549c6",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Lack of a proper evaluation metric"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-3bcb7c52d92b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Generative adversarial networks are not born with a good objection function that can inform us the training progress. Without a good evaluation metric, it is like working in the dark. No good sign to tell when to stop; No good indicator to compare the performance of multiple models."
+          }
+        ]
+      },
+      {
+        "id": "heading-9691d1702c73",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Improved GAN Training"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c3b1a38c7c8e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The following suggestions are proposed to help stabilize and improve the training of GANs."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-37dc60dfa4fd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First five methods are practical techniques to achieve faster convergence of GAN training, proposed in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Improve Techniques for Training GANs”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".\nThe last two are proposed in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.04862.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards principled methods for training generative adversarial networks”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to solve the problem of disjoint distributions."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9287ccb9f3de",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Feature Matching"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1b579f257f82",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Feature matching suggests to optimize the discriminator to inspect whether the generator’s output matches expected statistics of the real samples. In such a scenario, the new loss function is defined as "
+          },
+          {
+            "type": "inline_math",
+            "text": "| \\mathbb{E}_{x \\sim p_r} f(x) - \\mathbb{E}_{z \\sim p_z(z)}f(G(z)) |_2^2 "
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " can be any computation of statistics of features, such as mean or median."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2ce0d5cd8e2f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Minibatch Discrimination"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-224b2116af9a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With minibatch discrimination, the discriminator is able to digest the relationship between training data points in one batch, instead of processing each point independently."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-52722303b132",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In one minibatch, we approximate the closeness between every pair of samples, "
+          },
+          {
+            "type": "inline_math",
+            "text": "c(x_i, x_j)"
+          },
+          {
+            "type": "text",
+            "text": ", and get the overall summary of one data point by summing up how close it is to other samples in the same batch, "
+          },
+          {
+            "type": "inline_math",
+            "text": "o(x_i) = \\sum_{j} c(x_i, x_j)"
+          },
+          {
+            "type": "text",
+            "text": ". Then "
+          },
+          {
+            "type": "inline_math",
+            "text": "o(x_i)"
+          },
+          {
+            "type": "text",
+            "text": " is explicitly added to the input of the model."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4e474a9560da",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(3) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Historical Averaging"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-06ed8f350308",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For both models, add "
+          },
+          {
+            "type": "inline_math",
+            "text": " | \\Theta - \\frac{1}{t} \\sum_{i=1}^t \\Theta_i |^2 "
+          },
+          {
+            "type": "text",
+            "text": " into the loss function, where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Theta"
+          },
+          {
+            "type": "text",
+            "text": " is the model parameter and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Theta_i"
+          },
+          {
+            "type": "text",
+            "text": " is how the parameter is configured at the past training time "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": ". This addition piece penalizes the training speed when "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Theta"
+          },
+          {
+            "type": "text",
+            "text": " is changing too dramatically in time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f19a6c55fa33",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(4) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "One-sided Label Smoothing"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-38db4cd33e1d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When feeding the discriminator, instead of providing 1 and 0 labels, use soften values such as 0.9 and 0.1. It is shown to reduce the networks’ vulnerability."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-90892df3e590",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(5) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Virtual Batch Normalization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (VBN)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d535b35b2b99",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each data sample is normalized based on a fixed batch ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“reference batch”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") of data rather than within its minibatch. The reference batch is chosen once at the beginning and stays the same through the training."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ab19570a1bf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Theano Implementation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/improved-gan"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "openai/improved-gan"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c4c89dde7e17",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(6) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Adding Noises"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-675925583a7b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Based on the discussion in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-08-20-gan/#low-dimensional-supports"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "previous section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", we now know "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": " are disjoint in a high dimensional space and it causes the problem of vanishing gradient. To artificially “spread out” the distribution and to create higher chances for two probability distributions to have overlaps, one solution is to add continuous noises onto the inputs of the discriminator "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d06e663bc197",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(7) "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Use Better Metric of Distribution Similarity"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-808fb4fd1bfb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The loss function of the vanilla GAN measures the JS divergence between the distributions of "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": ". This metric fails to provide a meaningful value when two distributions are disjoint."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9818f542b8b2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Wasserstein_metric"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wasserstein metric"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is proposed to replace JS divergence because it has a much smoother value space. See more in the next section."
+          }
+        ]
+      },
+      {
+        "id": "heading-3a1c00b7fb53",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Wasserstein GAN (WGAN)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-1924ee30f6e0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What is Wasserstein distance?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-aef5c45ad6ae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Wasserstein_metric"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wasserstein Distance"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a measure of the distance between two probability distributions.\nIt is also called "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Earth Mover’s distance"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", short for EM distance, because informally it can be interpreted as the minimum energy cost of moving and transforming a pile of dirt in the shape of one probability distribution to the shape of the other distribution. The cost is quantified by: the amount of dirt moved x the moving distance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bfa899be70d6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let us first look at a simple case where the probability domain is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "discrete"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". For example, suppose we have two distributions "
+          },
+          {
+            "type": "inline_math",
+            "text": "P"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": ", each has four piles of dirt and both have ten shovelfuls of dirt in total. The numbers of shovelfuls in each dirt pile are assigned as follows:"
+          }
+        ]
+      },
+      {
+        "id": "math-7d93058cfedf",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& P_1 = 3, P_2 = 2, P_3 = 1, P_4 = 4\\\\\n& Q_1 = 1, Q_2 = 2, Q_3 = 4, Q_4 = 3\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-3e3e8d913988",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In order to change "
+          },
+          {
+            "type": "inline_math",
+            "text": "P"
+          },
+          {
+            "type": "text",
+            "text": " to look like "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": ", as illustrated in Fig. 7, we:"
+          }
+        ]
+      },
+      {
+        "id": "list-85c4755cccec",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-28905038ec1d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First move 2 shovelfuls from "
+              },
+              {
+                "type": "inline_math",
+                "text": "P_1"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "P_2"
+              },
+              {
+                "type": "text",
+                "text": " => "
+              },
+              {
+                "type": "inline_math",
+                "text": "(P_1, Q_1)"
+              },
+              {
+                "type": "text",
+                "text": " match up."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b18e54a91eff",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then move 2 shovelfuls from "
+              },
+              {
+                "type": "inline_math",
+                "text": "P_2"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "P_3"
+              },
+              {
+                "type": "text",
+                "text": " => "
+              },
+              {
+                "type": "inline_math",
+                "text": "(P_2, Q_2)"
+              },
+              {
+                "type": "text",
+                "text": " match up."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f78658f65e86",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Finally move 1 shovelfuls from "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q_3"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q_4"
+              },
+              {
+                "type": "text",
+                "text": " => "
+              },
+              {
+                "type": "inline_math",
+                "text": "(P_3, Q_3)"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "(P_4, Q_4)"
+              },
+              {
+                "type": "text",
+                "text": " match up."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dfa8611df9e1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we label the cost to pay to make "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_i"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_i"
+          },
+          {
+            "type": "text",
+            "text": " match as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\delta_i"
+          },
+          {
+            "type": "text",
+            "text": ", we would have "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\delta_{i+1} = \\delta_i + P_i - Q_i"
+          },
+          {
+            "type": "text",
+            "text": " and in the example:"
+          }
+        ]
+      },
+      {
+        "id": "math-b7b529a5d011",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\delta_0 &= 0\\\\\n\\delta_1 &= 0 + 3 - 1 = 2\\\\\n\\delta_2 &= 2 + 2 - 2 = 2\\\\\n\\delta_3 &= 2 + 1 - 4 = -1\\\\\n\\delta_4 &= -1 + 4 - 3 = 0\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-3f19414f0cde",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally the Earth Mover’s distance is "
+          },
+          {
+            "type": "inline_math",
+            "text": "W = \\sum \\vert \\delta_i \\vert = 5"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-c9184726fbb8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/EM_distance_discrete.png",
+          "alt": "Step-by-step plan of moving dirt between piles in $P$ and $Q$ to make them match."
+        }
+      },
+      {
+        "id": "paragraph-f465f6d00b7a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When dealing with the continuous probability domain, the distance formula becomes:"
+          }
+        ]
+      },
+      {
+        "id": "math-2e0839edecb4",
+        "type": "math",
+        "attrs": {
+          "latex": "W(p_r, p_g) = \\inf_{\\gamma \\sim \\Pi(p_r, p_g)} \\mathbb{E}_{(x, y) \\sim \\gamma}[\\| x-y \\|]"
+        }
+      },
+      {
+        "id": "paragraph-09cafc11b905",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the formula above, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Pi(p_r, p_g)"
+          },
+          {
+            "type": "text",
+            "text": " is the set of all possible joint probability distributions between "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": ". One joint distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma \\in \\Pi(p_r, p_g)"
+          },
+          {
+            "type": "text",
+            "text": " describes one dirt transport plan, same as the discrete example above, but in the continuous probability space. Precisely "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma(x, y)"
+          },
+          {
+            "type": "text",
+            "text": " states the percentage of dirt should be transported from point "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " to "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " so as to make "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " follows the same probability distribution of "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ". That’s why the marginal distribution over "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " adds up to "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sum_{x} \\gamma(x, y) = p_g(y)"
+          },
+          {
+            "type": "text",
+            "text": " (Once we finish moving the planned amount of dirt from every possible "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " to the target "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ", we end up with exactly what "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " has according to "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": ".) and vice versa "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sum_{y} \\gamma(x, y) = p_r(x)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a1f426174da2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When treating "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " as the starting point and "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " as the destination, the total amount of dirt moved is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma(x, y)"
+          },
+          {
+            "type": "text",
+            "text": " and the travelling distance is "
+          },
+          {
+            "type": "inline_math",
+            "text": "| x-y |"
+          },
+          {
+            "type": "text",
+            "text": " and thus the cost is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma(x, y) \\cdot | x-y |"
+          },
+          {
+            "type": "text",
+            "text": ". The expected cost averaged across all the "
+          },
+          {
+            "type": "inline_math",
+            "text": "(x,y)"
+          },
+          {
+            "type": "text",
+            "text": " pairs can be easily computed as:"
+          }
+        ]
+      },
+      {
+        "id": "math-baec9110ef8e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\sum_{x, y} \\gamma(x, y) \\| x-y \\| \n= \\mathbb{E}_{x, y \\sim \\gamma} \\| x-y \\|"
+        }
+      },
+      {
+        "id": "paragraph-df221ad8f4e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally, we take the minimum one among the costs of all dirt moving solutions as the EM distance. In the definition of Wasserstein distance, the "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\inf"
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Infimum_and_supremum"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "infimum"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", also known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "greatest lower bound"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") indicates that we are only interested in the smallest cost."
+          }
+        ]
+      },
+      {
+        "id": "heading-24e2c5c3fe39",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Why Wasserstein is better than JS or KL divergence?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-ef351ed8f8c3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Even when two distributions are located in lower dimensional manifolds without overlaps, Wasserstein distance can still provide a meaningful and smooth representation of the distance in-between."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aee2aa5673b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The WGAN paper exemplified the idea with a simple example."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-18dd1154dc13",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Suppose we have two probability distributions, "
+          },
+          {
+            "type": "inline_math",
+            "text": "P"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-a2b0290edbe7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\forall (x, y) \\in P, x = 0 \\text{ and } y \\sim U(0, 1)\\\\\n\\forall (x, y) \\in Q, x = \\theta, 0 \\leq \\theta \\leq 1 \\text{ and } y \\sim U(0, 1)\\\\"
+        }
+      },
+      {
+        "id": "image-a85b38325615",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/wasserstein_simple_example.png",
+          "alt": "There is no overlap between $P$ and $Q$ when $\\theta \\neq 0$."
+        }
+      },
+      {
+        "id": "paragraph-47121cec73aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta \\neq 0"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-e63723485ac2",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nD_{KL}(P \\| Q) &= \\sum_{x=0, y \\sim U(0, 1)} 1 \\cdot \\log\\frac{1}{0} = +\\infty \\\\\nD_{KL}(Q \\| P) &= \\sum_{x=\\theta, y \\sim U(0, 1)} 1 \\cdot \\log\\frac{1}{0} = +\\infty \\\\\nD_{JS}(P, Q) &= \\frac{1}{2}(\\sum_{x=0, y \\sim U(0, 1)} 1 \\cdot \\log\\frac{1}{1/2} + \\sum_{x=0, y \\sim U(0, 1)} 1 \\cdot \\log\\frac{1}{1/2}) = \\log 2\\\\\nW(P, Q) &= |\\theta|\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-4d2fd5027df6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "But when "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta = 0"
+          },
+          {
+            "type": "text",
+            "text": ", two distributions are fully overlapped:"
+          }
+        ]
+      },
+      {
+        "id": "math-614b0aeb407f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nD_{KL}(P \\| Q) &= D_{KL}(Q \\| P) = D_{JS}(P, Q) = 0\\\\\nW(P, Q) &= 0 = \\lvert \\theta \\rvert\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-0abfd12e8293",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "D_{KL}"
+          },
+          {
+            "type": "text",
+            "text": " gives us inifity when two distributions are disjoint. The value of "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_{JS}"
+          },
+          {
+            "type": "text",
+            "text": " has sudden jump, not differentiable at "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta = 0"
+          },
+          {
+            "type": "text",
+            "text": ". Only Wasserstein metric provides a smooth measure, which is super helpful for a stable learning process using gradient descents."
+          }
+        ]
+      },
+      {
+        "id": "heading-d5719565852e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Use Wasserstein distance as GAN loss function"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-b27445a8a771",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is intractable to exhaust all the possible joint distributions in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Pi(p_r, p_g)"
+          },
+          {
+            "type": "text",
+            "text": " to compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\inf_{\\gamma \\sim \\Pi(p_r, p_g)}"
+          },
+          {
+            "type": "text",
+            "text": ". Thus the authors proposed a smart transformation of the formula based on the Kantorovich-Rubinstein duality to:"
+          }
+        ]
+      },
+      {
+        "id": "math-a074b8a5d589",
+        "type": "math",
+        "attrs": {
+          "latex": "W(p_r, p_g) = \\frac{1}{K} \\sup_{\\| f \\|_L \\leq K} \\mathbb{E}_{x \\sim p_r}[f(x)] - \\mathbb{E}_{x \\sim p_g}[f(x)]"
+        }
+      },
+      {
+        "id": "paragraph-b9198bebdc0a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sup"
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Infimum_and_supremum"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "supremum"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is the opposite of "
+          },
+          {
+            "type": "inline_math",
+            "text": "inf"
+          },
+          {
+            "type": "text",
+            "text": " (infimum); we want to measure the least upper bound or, in even simpler words, the maximum value."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a8376162b823",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Lipschitz continuity?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f77b093718a8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " in the new form of Wasserstein metric is demanded to satisfy "
+          },
+          {
+            "type": "inline_math",
+            "text": "| f |_L \\leq K"
+          },
+          {
+            "type": "text",
+            "text": ", meaning it should be "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Lipschitz_continuity"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "K-Lipschitz continuous"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-29f94b6849c0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A real-valued function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f: \\mathbb{R} \\rightarrow \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": " is called "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": "-Lipschitz continuous if there exists a real constant "
+          },
+          {
+            "type": "inline_math",
+            "text": "K \\geq 0"
+          },
+          {
+            "type": "text",
+            "text": " such that, for all "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_1, x_2 \\in \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b701c1bca7e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\lvert f(x_1) - f(x_2) \\rvert \\leq K \\lvert x_1 - x_2 \\rvert\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-932162a154ba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": " is known as a Lipschitz constant for function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(.)"
+          },
+          {
+            "type": "text",
+            "text": ". Functions that are everywhere continuously differentiable is Lipschitz continuous, because the derivative, estimated as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{\\lvert f(x_1) - f(x_2) \\rvert}{\\lvert x_1 - x_2 \\rvert}"
+          },
+          {
+            "type": "text",
+            "text": ", has bounds. However, a Lipschitz continuous function may not be everywhere differentiable, such as "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x) = \\lvert x \\rvert"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-941e60e3e963",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Explaining how the transformation happens on the Wasserstein distance formula is worthy of a long post by itself, so I skip the details here. If you are interested in how to compute Wasserstein metric using linear programming, or how to transfer Wasserstein metric into its dual form according to the Kantorovich-Rubinstein Duality, read this "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://vincentherrmann.github.io/blog/wasserstein/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "awesome post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9866477eb0bb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Suppose this function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " comes from a family of K-Lipschitz continuous functions, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{ f_w \\}_{w \\in W}"
+          },
+          {
+            "type": "text",
+            "text": ", parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": ". In the modified Wasserstein-GAN, the “discriminator” model is used to learn "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": " to find a good "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_w"
+          },
+          {
+            "type": "text",
+            "text": " and the loss function is configured as measuring the Wasserstein distance between "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_r"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_g"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-e716fbe32cb1",
+        "type": "math",
+        "attrs": {
+          "latex": "L(p_r, p_g) = W(p_r, p_g) = \\max_{w \\in W} \\mathbb{E}_{x \\sim p_r}[f_w(x)] - \\mathbb{E}_{z \\sim p_r(z)}[f_w(g_\\theta(z))]"
+        }
+      },
+      {
+        "id": "paragraph-7ba03ee5d680",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus the “discriminator” is not a direct critic of telling the fake samples apart from the real ones anymore. Instead, it is trained to learn a "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": "-Lipschitz continuous function to help compute Wasserstein distance. As the loss function decreases in the training, the Wasserstein distance gets smaller and the generator model’s output grows closer to the real data distribution."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dd9c0b120245",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One big problem is to maintain the "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": "-Lipschitz continuity of "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_w"
+          },
+          {
+            "type": "text",
+            "text": " during the training in order to make everything work out. The paper presents a simple but very practical trick: After every gradient update, clamp the weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": " to a small window, such as "
+          },
+          {
+            "type": "inline_math",
+            "text": "[-0.01, 0.01]"
+          },
+          {
+            "type": "text",
+            "text": ", resulting in a compact parameter space "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " and thus "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_w"
+          },
+          {
+            "type": "text",
+            "text": " obtains its lower and upper bounds to preserve the Lipschitz continuity."
+          }
+        ]
+      },
+      {
+        "id": "image-2e2e011838a8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/WGAN_algorithm.png",
+          "alt": "Algorithm of Wasserstein generative adversarial network. (Image source: Arjovsky, Chintala, & Bottou, 2017. )"
+        }
+      },
+      {
+        "id": "paragraph-3ba880a3a4a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Compared to the original GAN algorithm, the WGAN undertakes the following changes:"
+          }
+        ]
+      },
+      {
+        "id": "list-7a5b23f7709f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-5312b089d664",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "After every gradient update on the critic function, clamp the weights to a small fixed range, "
+              },
+              {
+                "type": "inline_math",
+                "text": "[-c, c]"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4d4af58de3f2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Use a new loss function derived from the Wasserstein distance, no logarithm anymore. The “discriminator” model does not play as a direct critic but a helper for estimating the Wasserstein metric between real and generated data distribution."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5371065ac73b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Empirically the authors recommended "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RMSProp"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " optimizer on the critic, rather than a momentum based optimizer such as "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1412.6980v8"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Adam"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " which could cause instability in the model training. I haven’t seen clear theoretical explanation on this point through."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c912352ce35a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sadly, Wasserstein GAN is not perfect. Even the authors of the original WGAN paper mentioned that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“Weight clipping is a clearly terrible way to enforce a Lipschitz constraint”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Oops!). WGAN still suffers from unstable training, slow convergence after weight clipping (when clipping window is too large), and vanishing gradients (when clipping window is too small)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4151ea8cf5bd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Some improvement, precisely replacing weight clipping with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "gradient penalty"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", has been discussed in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1704.00028.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gulrajani et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". I will leave this to a future post."
+          }
+        ]
+      },
+      {
+        "id": "heading-2024f333da53",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Example: Create New Pokemons!"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-ffe019e59f7f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Just for fun, I tried out "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/carpedm20/DCGAN-tensorflow"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "carpedm20/DCGAN-tensorflow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on a tiny dataset, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/PokeAPI/sprites/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pokemon sprites"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The dataset only has 900-ish pokemon images, including different levels of same pokemon species."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8a23f205285a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s check out what types of new pokemons the model is able to create.\nUnfortunately due to the tiny training data, the new pokemons only have rough shapes without details. The shapes and colors do look better with more training epoches! Hooray!"
+          }
+        ]
+      },
+      {
+        "id": "image-cb68eb5db993",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-08-20-gan/pokemon-GAN.png",
+          "alt": "Train carpedm20/DCGAN-tensorflow on a set of Pokemon sprite images. The sample outputs are listed after training epoches = 7, 21, 49."
+        }
+      },
+      {
+        "id": "paragraph-e2ef9b5bd8e2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If you are interested in a commented version of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/carpedm20/DCGAN-tensorflow"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "carpedm20/DCGAN-tensorflow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and how to modify it to train WGAN and WGAN with gradient penalty, check "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/unified-gan-tensorflow"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "lilianweng/unified-gan-tensorflow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-d6a5ec1b0561",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2017gan,\n  title   = \"From GAN to WGAN\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2017\",\n  url     = \"https://lilianweng.github.io/posts/2017-08-20-gan/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-cccbf1e56aac",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "OR"
+          }
+        ]
+      },
+      {
+        "id": "code-8c5a5da49911",
+        "type": "code",
+        "attrs": {
+          "code": "@misc{weng2019gan,\n    title={From GAN to WGAN},\n    author={Lilian Weng},\n    year={2019},\n    eprint={1904.08994},\n    archivePrefix={arXiv},\n    primaryClass={cs.LG}\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-68f3f4869b85",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Goodfellow, Ian, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1406.2661.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Generative adversarial nets.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS, 2014."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a90fc3455717",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Tim Salimans, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Improved techniques for training gans.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bd4e428781d4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Martin Arjovsky and Léon Bottou. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.04862.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards principled methods for training generative adversarial networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1701.04862 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c06accd24b2b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Martin Arjovsky, Soumith Chintala, and Léon Bottou. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.07875.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Wasserstein GAN.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1701.07875 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8b03dfccb263",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Ishaan Gulrajani, Faruk Ahmed, Martin Arjovsky, Vincent Dumoulin, Aaron Courville. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1704.00028.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Improved training of wasserstein gans."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1704.00028 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8616538571c0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://robotics.stanford.edu/~scohen/research/emdg/emdg.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Computing the Earth Mover’s Distance under Transformations"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a797362319bd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://vincentherrmann.github.io/blog/wasserstein/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wasserstein GAN and the Kantorovich-Rubinstein Duality"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fdcdcb4101d1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://zhuanlan.zhihu.com/p/25071913"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "zhuanlan.zhihu.com/p/25071913"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8963c48efa6a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Ferenc Huszár. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1511.05101.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“How (not) to Train your Generative Model: Scheduled Sampling, Likelihood, Adversary?.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1511.05101 (2015)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "from-gan-to-wgan",
+    "source_slug": "2017-08-20-gan",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 18,
+      "math": 18,
+      "image": 10,
+      "table": 2,
+      "code": 2
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/KL_JS_divergence.png",
+      "alt": "Given two Gaussian distribution, $p$ with mean=0 and std=1 and $q$ with mean=1 and std=1. The average of two distributions is labelled as $m=(p+q)/2$. KL divergence $D_{KL}$ is asymmetric but JS divergence $D_{JS}$ is symmetric."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/GAN.png",
+      "alt": "Architecture of a generative adversarial network. (Image source: www.kdnuggets.com/2017/01/generative-...-learning.html )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/nash_equilibrium.png",
+      "alt": "A simulation of our example for updating $x$ to minimize $xy$ and updating $y$ to minimize $-xy$. The learning rate $\\eta = 0.1$. With more iterations, the oscillation grows more and more unstable."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/low_dim_manifold.png",
+      "alt": "Low dimensional manifolds in high dimension space can hardly have overlaps. (Left) Two lines in a three-dimension space. (Right) Two surfaces in a three-dimension space."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/GAN_vanishing_gradient.png",
+      "alt": "First, a DCGAN is trained for 1, 10 and 25 epochs. Then, with the **generator fixed**, a discriminator is trained from scratch and measure the gradients with the original cost function. We see the gradient norms **decay quickly** (in log scale), in the best case 5 orders of magnitude after 4000 discriminator iterations. (Image source: Arjovsky and Bottou, 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/mode_collapse.png",
+      "alt": "A DCGAN model is trained with an MLP network with 4 layers, 512 units and ReLU activation function, configured to lack a strong inductive bias for image generation. The results shows a significant degree of mode collapse. (Image source: Arjovsky, Chintala, & Bottou, 2017. )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/EM_distance_discrete.png",
+      "alt": "Step-by-step plan of moving dirt between piles in $P$ and $Q$ to make them match."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/wasserstein_simple_example.png",
+      "alt": "There is no overlap between $P$ and $Q$ when $\\theta \\neq 0$."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/WGAN_algorithm.png",
+      "alt": "Algorithm of Wasserstein generative adversarial network. (Image source: Arjovsky, Chintala, & Bottou, 2017. )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-08-20-gan/pokemon-GAN.png",
+      "alt": "Train carpedm20/DCGAN-tensorflow on a set of Pokemon sprite images. The sample outputs are listed after training epoches = 7, 21, 49."
+    }
+  ]
+}

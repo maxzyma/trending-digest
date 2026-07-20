@@ -1,0 +1,3960 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:1f5305fd9b61ff91e8ad5160c40ef2d5da116eeffbb01256a4ca0a7d3866f22f",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "演化策略",
+  "segments": {
+    "paragraph-73d982c78fbd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机梯度下降是优化深度学习模型的通用选择。然而，它并非唯一选项。借助黑盒优化算法，你可以评估一个目标函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x): \\mathbb{R}^n \\to \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "，即使你不知道其精确的解析形式"
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": "，因此无法计算梯度或Hessian矩阵。黑盒优化方法的例子包括"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Simulated_annealing"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Simulated Annealing"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Hill_climbing"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Hill Climbing"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nelder-Mead method"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-66793b14ef39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "演化策略 (ES)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是一种黑盒优化算法，诞生于 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "演化算法 (EA)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 家族。在这篇文章中，我将深入探讨几种经典的ES方法，并介绍ES如何在深度强化学习中发挥作用的一些应用。"
+        }
+      ]
+    },
+    "heading-76dd743f5b8f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "什么是演化策略？"
+        }
+      ]
+    },
+    "paragraph-b6ab1c3af2d9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "演化策略（ES）属于演化算法大家族。ES 的优化目标是实数向量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\in \\mathbb{R}^n"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-4af7ab327925": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "演化算法是指一类受"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自然选择"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "启发的基于种群的优化算法。自然选择认为，具有有利于其生存的特性的个体可以代代相传，并将这些优良特性传递给下一代。演化通过选择过程逐渐发生，种群也变得更适应环境。"
+        }
+      ]
+    },
+    "paragraph-97dfa914c9fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "进化算法可以概括为以下"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/13-Optimization/06-blackBoxOpt.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "形式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，作为一种通用的优化解决方案："
+        }
+      ]
+    },
+    "paragraph-aa9cfb5773ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们要优化一个函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": "，但我们无法直接计算梯度。但是我们仍然可以评估 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": "，给定任何 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "，并且结果是确定性的。我们对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 作为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": " 优化的良好解决方案的概率分布的信念是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(x)"
+        },
+        {
+          "type": "text",
+          "text": "，由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 参数化。目标是找到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的最佳配置。"
+        }
+      ]
+    },
+    "paragraph-decc6b2de9ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这里给定一个固定分布格式（即高斯分布），参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 承载着关于最佳解的知识，并在代际之间迭代更新。"
+        }
+      ]
+    },
+    "paragraph-30145cc3b928": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "的初始值开始，我们可以通过以下三个步骤循环连续更新"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-bc1ca14f505e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成一个样本群体"
+        },
+        {
+          "type": "inline_math",
+          "text": "D = \\{(x_i, f(x_i)\\}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "x_i \\sim p_\\theta(x)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-41c2cc7e6086": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评估"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "中样本的“适应度”。"
+        }
+      ]
+    },
+    "list-item-da013d068002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "选择最佳个体子集并使用它们来更新"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "，通常基于适应度或排名。"
+        }
+      ]
+    },
+    "paragraph-254d8b9e9ada": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "遗传算法（GA）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（EA的另一个流行子类别）中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "是二进制代码序列，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\in \\{0, 1\\}^n"
+        },
+        {
+          "type": "text",
+          "text": "。而在ES中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "只是一个实数向量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\in \\mathbb{R}^n"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-03851f0be5a0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "简单高斯演化策略"
+        }
+      ]
+    },
+    "paragraph-3301f02e7296": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://blog.otoro.net/2017/10/29/visual-evolution-strategies/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "这"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是演化策略最基本和规范的版本。它将"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(x)"
+        },
+        {
+          "type": "text",
+          "text": "建模为"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "维各向同性高斯分布，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "只跟踪均值"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mu"
+        },
+        {
+          "type": "text",
+          "text": "和标准差"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-0434c311fc01": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "简单高斯ES的过程，给定"
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\in \\mathcal{R}^n"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-36dc626c52ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "初始化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta = \\theta^{(0)}"
+        },
+        {
+          "type": "text",
+          "text": "和代数计数器"
+        },
+        {
+          "type": "inline_math",
+          "text": "t=0"
+        }
+      ]
+    },
+    "list-item-28ea6c2cc106": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过从高斯分布中采样，生成大小为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Lambda"
+        },
+        {
+          "type": "text",
+          "text": " 的后代种群："
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "inline_math",
+          "text": "D^{(t+1)}=\\{ x^{(t+1)}_i \\mid x^{(t+1)}_i = \\mu^{(t)} + \\sigma^{(t)} y^{(t+1)}_i \\text{ where } y^{(t+1)}_i \\sim \\mathcal{N}(x \\vert 0, \\mathbf{I}),;i = 1, \\dots, \\Lambda\\}"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-a6af9926854b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "选择一个顶级子集"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda"
+        },
+        {
+          "type": "text",
+          "text": "样本，具有最佳"
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x_i)"
+        },
+        {
+          "type": "text",
+          "text": "，这个子集被称为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "精英"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "集。不失一般性，我们可以考虑前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个样本在"
+        },
+        {
+          "type": "inline_math",
+          "text": "D^{(t+1)}"
+        },
+        {
+          "type": "text",
+          "text": "中属于精英组——我们将其标记为"
+        }
+      ]
+    },
+    "list-item-c378c7b94ba3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后我们使用精英集估计下一代的新均值和标准差："
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "line_break"
+        }
+      ]
+    },
+    "list-item-fc93b67b3ece": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重复步骤 (2)-(4) 直到结果足够好 ✌️"
+        }
+      ]
+    },
+    "heading-bede55f2a21a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "协方差矩阵自适应进化策略 (CMA-ES)"
+        }
+      ]
+    },
+    "paragraph-501e030ec2ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "标准差 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 决定了探索的程度："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 越大，我们能够从中采样后代种群的搜索空间就越大。在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#simple-gaussian-evolution-strategies"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "vanilla ES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma^{(t+1)}"
+        },
+        {
+          "type": "text",
+          "text": " 与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma^{(t)}"
+        },
+        {
+          "type": "text",
+          "text": " 高度相关，因此当需要时（即当置信水平改变时），算法无法快速调整探索空间。"
+        }
+      ]
+    },
+    "paragraph-54b96089898b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/CMA-ES"
+          },
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "CMA-ES"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，是 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“协方差矩阵自适应进化策略”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的缩写，它通过使用协方差矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": " 跟踪分布中样本之间的成对依赖关系来解决这个问题。新的分布参数变为："
+        }
+      ]
+    },
+    "paragraph-fee46fdf1869": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "控制着分布的整体尺度，通常被称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "步长"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-70ba00115697": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们深入探讨CMA-ES中参数如何更新之前，最好先回顾一下协方差矩阵在多元高斯分布中是如何工作的。作为一个实对称矩阵，协方差矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "具有以下优良特性（参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://s3.amazonaws.com/mitsloan-php/wp-faculty/sites/30/2016/12/15032137/Symmetric-Matrices-and-Eigendecomposition.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "证明"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://control.ucsd.edu/mauricio/courses/mae280a/lecture11.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "证明"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）："
+        }
+      ]
+    },
+    "list-item-a04402338484": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它总是可对角化的。"
+        }
+      ]
+    },
+    "list-item-639f9ae58d0a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总是半正定的。"
+        }
+      ]
+    },
+    "list-item-a81225be4f7b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它的所有特征值都是实非负数。"
+        }
+      ]
+    },
+    "list-item-d736e3e89f12": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它的所有特征向量都是正交的。"
+        }
+      ]
+    },
+    "list-item-d3e6ac647e8d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "存在一个由其特征向量组成的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{R}^n"
+        },
+        {
+          "type": "text",
+          "text": "正交基。"
+        }
+      ]
+    },
+    "paragraph-835c27070003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "具有由特征向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "B = [b_1, \\dots, b_n]"
+        },
+        {
+          "type": "text",
+          "text": "组成的一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "正交"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "基，其对应的特征值为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_1^2, \\dots, \\lambda_n^2"
+        },
+        {
+          "type": "text",
+          "text": "。设"
+        },
+        {
+          "type": "inline_math",
+          "text": "D=\\text{diag}(\\lambda_1, \\dots, \\lambda_n)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-58a2e5dc17fb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "的平方根是："
+        }
+      ]
+    },
+    "table-496e23eea7c9": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "符号",
+          "含义"
+        ],
+        "rows": [
+          [
+            "$x_i^{(t)} \\in \\mathbb{R}^n$",
+            "第(t)代中的第$i$个样本"
+          ],
+          [
+            "$y_i^{(t)} \\in \\mathbb{R}^n$",
+            "$x_i^{(t)} = \\mu^{(t-1)} + \\sigma^{(t-1)} y_i^{(t)} $"
+          ],
+          [
+            "$\\mu^{(t)}$",
+            "第(t)代的均值"
+          ],
+          [
+            "$\\sigma^{(t)}$",
+            "步长"
+          ],
+          [
+            "$C^{(t)}$",
+            "协方差矩阵"
+          ],
+          [
+            "$B^{(t)}$",
+            "一个以$C$的特征向量作为行向量的矩阵"
+          ],
+          [
+            "$D^{(t)}$",
+            "一个对角线上是$C$的特征值的对角矩阵。"
+          ],
+          [
+            "$p_\\sigma^{(t)}$",
+            "在生成 (t) 时 $\\sigma$ 的评估路径"
+          ],
+          [
+            "$p_c^{(t)}$",
+            "在生成 (t) 时 $C$ 的评估路径"
+          ],
+          [
+            "$\\alpha_\\mu$",
+            "$\\mu$ 更新的学习率"
+          ],
+          [
+            "$\\alpha_\\sigma$",
+            "$p_\\sigma$ 的学习率"
+          ],
+          [
+            "$d_\\sigma$",
+            "$\\sigma$ 更新的阻尼因子"
+          ],
+          [
+            "$\\alpha_{cp}$",
+            "$p_c$ 的学习率"
+          ],
+          [
+            "$\\alpha_{c\\lambda}$",
+            "用于 $C$ 的 rank-min(λ, n) 更新的学习率"
+          ],
+          [
+            "$\\alpha_{c1}$",
+            "用于 $C$ 的 rank-1 更新的学习率"
+          ]
+        ]
+      }
+    },
+    "heading-2579c10d9434": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更新均值"
+        }
+      ]
+    },
+    "paragraph-8502ff269319": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CMA-ES 有一个学习率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_\\mu \\leq 1"
+        },
+        {
+          "type": "text",
+          "text": " 来控制均值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mu"
+        },
+        {
+          "type": "text",
+          "text": " 的更新速度。通常将其设置为 1，因此该方程与普通 ES 中的方程相同，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mu^{(t+1)} = \\frac{1}{\\lambda}\\sum_{i=1}^\\lambda (x_i^{(t+1)}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-c462fd3f8ec9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "控制步长"
+        }
+      ]
+    },
+    "paragraph-bdc8638a0671": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "采样过程可以与均值和标准差解耦："
+        }
+      ]
+    },
+    "paragraph-d026444cf177": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "控制着分布的整体尺度。它与协方差矩阵分离，这样我们可以比完整协方差更快地改变步长。更大的步长会导致更快的参数更新。为了评估当前步长是否合适，CMA-ES 构建了一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "演化路径"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "通过累加一系列连续的移动步长，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{1}{\\lambda}\\sum_{i}^\\lambda y_i^{(j)}, j=1, \\dots, t"
+        },
+        {
+          "type": "text",
+          "text": "通过将此路径长度与其在随机选择下（即单步不相关）的预期长度进行比较，我们能够相应地调整"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "（参见图2）。"
+        }
+      ]
+    },
+    "paragraph-5d5315f3c88a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每次进化路径都会用同一代中移动步长"
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i"
+        },
+        {
+          "type": "text",
+          "text": "的平均值进行更新。"
+        }
+      ]
+    },
+    "paragraph-017961d6d130": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过乘以"
+        },
+        {
+          "type": "inline_math",
+          "text": "C^{-\\frac{1}{2}}"
+        },
+        {
+          "type": "text",
+          "text": "，进化路径被转换为与其方向无关。术语"
+        },
+        {
+          "type": "inline_math",
+          "text": "{C^{(t)}}^{-\\frac{1}{2}} = {B^{(t)}}^\\top {D^{(t)}}^{-\\frac{1}{2}} {B^{(t)}}"
+        },
+        {
+          "type": "text",
+          "text": "变换的工作原理如下："
+        }
+      ]
+    },
+    "list-item-feafb4c549b7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "{B^{(t)}}"
+        },
+        {
+          "type": "text",
+          "text": "包含"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "的特征向量的行向量。它将原始空间投影到垂直主轴上。"
+        }
+      ]
+    },
+    "list-item-8f6959c43732": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后"
+        },
+        {
+          "type": "inline_math",
+          "text": "{D^{(t)}}^{-\\frac{1}{2}} = \\text{diag}(\\frac{1}{\\lambda_1}, \\dots, \\frac{1}{\\lambda_n})"
+        },
+        {
+          "type": "text",
+          "text": "将主轴的长度缩放为相等。"
+        }
+      ]
+    },
+    "list-item-9a8d74bf3a9d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "{B^{(t)}}^\\top"
+        },
+        {
+          "type": "text",
+          "text": " 将空间转换回原始坐标系。"
+        }
+      ]
+    },
+    "paragraph-237cd3c6149a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了给最近的世代分配更高的权重，我们使用 Polyak 平均来以学习率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 更新演化路径。同时，权重是平衡的，以便 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Conjugate_prior"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "共轭的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sim \\mathcal{N}(0, I)"
+        },
+        {
+          "type": "text",
+          "text": " 在一次更新前后都是如此。"
+        }
+      ]
+    },
+    "paragraph-0bd466862c9a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在随机选择下，"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 的预期长度是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}|\\mathcal{N}(0,I)|"
+        },
+        {
+          "type": "text",
+          "text": "，即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{N}(0,I)"
+        },
+        {
+          "type": "text",
+          "text": " 随机变量的 L2 范数的期望。根据图 2 中的思想，我们根据 "
+        },
+        {
+          "type": "inline_math",
+          "text": "|p_\\sigma^{(t+1)}| / \\mathbb{E}|\\mathcal{N}(0,I)|"
+        },
+        {
+          "type": "text",
+          "text": " 的比率调整步长："
+        }
+      ]
+    },
+    "paragraph-55b071b5227d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_\\sigma \\approx 1"
+        },
+        {
+          "type": "text",
+          "text": " 是一个阻尼参数，用于衡量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ln\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 应该改变的速度。"
+        }
+      ]
+    },
+    "heading-3a0f8ddea41e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自适应协方差矩阵"
+        }
+      ]
+    },
+    "paragraph-210b4c4da044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于协方差矩阵，可以使用精英样本的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i"
+        },
+        {
+          "type": "text",
+          "text": " 从头开始估计（回想一下 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i \\sim \\mathcal{N}(0, C)"
+        },
+        {
+          "type": "text",
+          "text": "）："
+        }
+      ]
+    },
+    "paragraph-6c976aa07429": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上述估计只有在所选群体足够大时才可靠。然而，我们确实希望以"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "快速"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "迭代，每代使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "少量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "样本群体。这就是为什么CMA-ES发明了一种更可靠但也更复杂的方式来更新"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "。它涉及两条独立的路径，"
+        }
+      ]
+    },
+    "list-item-666dbbe0a060": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Rank-min(λ, n) 更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 使用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{C_\\lambda\\}"
+        },
+        {
+          "type": "text",
+          "text": " 的历史记录，每一项都在一代中从头开始估计。"
+        }
+      ]
+    },
+    "list-item-d8f95cbcb849": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Rank-one 更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 估计移动步长 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i"
+        },
+        {
+          "type": "text",
+          "text": " 以及历史记录中的符号信息。"
+        }
+      ]
+    },
+    "paragraph-1b603f180392": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第一种方法考虑估计"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "来自整个历史的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{C_\\lambda\\}"
+        },
+        {
+          "type": "text",
+          "text": "。例如，如果我们经历了大量的代数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "C^{(t+1)} \\approx \\text{avg}(C_\\lambda^{(i)}; i=1,\\dots,t)"
+        },
+        {
+          "type": "text",
+          "text": "将是一个很好的估计器。类似于"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "，我们还使用带有学习率的 polyak 平均来整合历史："
+        }
+      ]
+    },
+    "paragraph-b119d5cca44b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "学习率的常见选择是"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_{c\\lambda} \\approx \\min(1, \\lambda/n^2)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-f33e25aa085b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第二种方法试图解决"
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i{y_i}^\\top = (-y_i)(-y_i)^\\top"
+        },
+        {
+          "type": "text",
+          "text": "丢失符号信息的问题。与我们调整步长"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "的方式类似，进化路径"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_c"
+        },
+        {
+          "type": "text",
+          "text": "用于跟踪符号信息，其构建方式使得"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_c"
+        },
+        {
+          "type": "text",
+          "text": "是共轭的，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sim \\mathcal{N}(0, C)"
+        },
+        {
+          "type": "text",
+          "text": "在新一代之前和之后都是如此。"
+        }
+      ]
+    },
+    "paragraph-1a48e7207032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们可以将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_c"
+        },
+        {
+          "type": "text",
+          "text": " 视为计算 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{avg}_i(y_i)"
+        },
+        {
+          "type": "text",
+          "text": " 的另一种方式（请注意两者 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sim \\mathcal{N}(0, C)"
+        },
+        {
+          "type": "text",
+          "text": "），同时使用了完整的历史记录并保留了符号信息。请注意，我们已经在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#controlling-the-step-size"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上一节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中了解了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sqrt{k}\\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\sim \\mathcal{N}(0, C)"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        }
+      ]
+    },
+    "paragraph-1f04ba26ec9d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后根据 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_c"
+        },
+        {
+          "type": "text",
+          "text": " 更新协方差矩阵："
+        }
+      ]
+    },
+    "paragraph-1d5a88af443e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "据称，当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 很小时，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "秩一更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方法比"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "秩-min(λ, n)-更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "方法能产生显著改进，因为移动步长的符号以及连续步长之间的相关性都被利用并代代相传。"
+        }
+      ]
+    },
+    "paragraph-18351dbc53ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最终我们将两种方法结合起来，"
+        }
+      ]
+    },
+    "paragraph-d5bd3b5d216c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我以上所有示例中，每个精英样本都被认为贡献了等量的权重，"
+        },
+        {
+          "type": "inline_math",
+          "text": "1/\\lambda"
+        },
+        {
+          "type": "text",
+          "text": "。这个过程可以很容易地扩展到根据其性能为选定样本分配不同权重的情况，"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_1, \\dots, w_\\lambda"
+        },
+        {
+          "type": "text",
+          "text": "。更多详情请参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1604.00772"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "教程"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-82d4903c488a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自然演化策略"
+        }
+      ]
+    },
+    "paragraph-d2fecb939f2f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自然演化策略 ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "NES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1106.4487"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wierstra 等人，2008"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 在参数的搜索分布中进行优化，并将分布朝着高适应度的方向移动，该方向由"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自然梯度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "指示。"
+        }
+      ]
+    },
+    "heading-b6f2cc65756f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自然梯度"
+        }
+      ]
+    },
+    "paragraph-1004728b5441": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个目标函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{J}(\\theta)"
+        },
+        {
+          "type": "text",
+          "text": "由...参数化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "，假设我们的目标是找到最优的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "以最大化目标函数值。一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "普通梯度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在距当前...的欧几里得小距离内找到最陡峭的方向"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "；距离限制应用于参数空间。换句话说，我们计算普通梯度，其依据是...绝对值的微小变化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "。最优的步长是："
+        }
+      ]
+    },
+    "paragraph-4ab4131410bc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "不同的是，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自然梯度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 与由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta(x)"
+        },
+        {
+          "type": "text",
+          "text": " 参数化的概率 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1301.3584v7"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "分布"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://wiseodd.github.io/techblog/2018/03/14/natural-gradient/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "空间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 一起工作（在 NES "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1106.4487"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中被称为“搜索分布”）。它在分布空间中寻找一个小的步长内最陡峭的方向，其中距离通过 KL 散度测量。通过这个约束，我们确保每次更新都以恒定速度沿着分布流形移动，而不会被其曲率减慢。"
+        }
+      ]
+    },
+    "heading-452e672dd319": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用费雪信息矩阵进行估计"
+        }
+      ]
+    },
+    "paragraph-d065c32b744c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "但是，如何精确计算"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{KL}[p_\\theta | p_{\\theta+\\Delta\\theta}]"
+        },
+        {
+          "type": "text",
+          "text": "？通过对"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\log p_{\\theta + d}"
+        },
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "处进行泰勒展开，我们得到："
+        }
+      ]
+    },
+    "paragraph-65a8116dbbe7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        }
+      ]
+    },
+    "paragraph-bfdf1f72314f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后我们得到，"
+        }
+      ]
+    },
+    "paragraph-a54b9d9878c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{F}_\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 称为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "link",
+              "attrs": {
+                "url": "http://mathworld.wolfram.com/FisherInformationMatrix.html"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Fisher 信息矩阵"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，并且 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://wiseodd.github.io/techblog/2018/03/11/fisher-information/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "它"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\nabla_\\theta \\log p_\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的协方差矩阵，因为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}[\\nabla_\\theta \\log p_\\theta] = 0"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-276709b8eb01": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下优化问题的解："
+        }
+      ]
+    },
+    "paragraph-da7b73c28ac1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可以使用拉格朗日乘数找到，"
+        }
+      ]
+    },
+    "paragraph-9b59014e2464": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_\\text{N}^*"
+        },
+        {
+          "type": "text",
+          "text": " 仅提取 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 上最优移动步长的方向，忽略标量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta^{-1}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-bc256a372939": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NES 算法"
+        }
+      ]
+    },
+    "paragraph-797f78311f3d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与一个样本相关的适应度被标记为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": " 并且 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 上的搜索分布由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 参数化。NES 预计将优化参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 以实现最大预期适应度："
+        }
+      ]
+    },
+    "paragraph-e4e421621492": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用相同的对数似然"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://blog.shakirm.com/2015/11/machine-learning-trick-of-the-day-5-log-derivative-trick/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "技巧"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#reinforce"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "REINFORCE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中："
+        }
+      ]
+    },
+    "paragraph-e11097bdea41": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除了自然梯度，NES 还采用了一些重要的启发式方法，以使算法性能更稳健。"
+        }
+      ]
+    },
+    "list-item-6458fe1c34d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NES 应用 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "基于排名的适应度塑形"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，即使用在单调递增的适应度值下的 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "排名"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，而不是直接使用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": "。或者它可以是排名的函数（“效用函数”），这被认为是 NES 的一个自由参数。"
+        }
+      ]
+    },
+    "list-item-05e1701d51a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NES 采用 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应采样"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 以在运行时调整超参数。当改变 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta \\to \\theta’"
+        },
+        {
+          "type": "text",
+          "text": " 时，将从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 中抽取的样本与从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_{\\theta’}"
+        },
+        {
+          "type": "text",
+          "text": " 中抽取的样本使用 [Mann-Whitney U-test(https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test)] 进行比较；如果出现正号或负号，目标超参数会通过一个乘法常数减小或增大。请注意，样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x’_i \\sim p_{\\theta’}(x)"
+        },
+        {
+          "type": "text",
+          "text": " 的分数已应用重要性采样权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i’ = p_\\theta(x) / p_{\\theta’}(x)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-84cbbd234e80": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "应用：深度强化学习中的 ES"
+        }
+      ]
+    },
+    "heading-01d4160ff8f5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "OpenAI ES 用于强化学习"
+        }
+      ]
+    },
+    "paragraph-0cba4209d72b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在强化学习中使用进化算法的概念可以追溯到"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1106.0221"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "很久以前"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，但由于计算限制，仅限于表格型强化学习。"
+        }
+      ]
+    },
+    "paragraph-348301c0d303": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "受"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#natural-evolution-strategies"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "NES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的启发，OpenAI 的研究人员（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.03864"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Salimans, et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）提出使用 NES 作为无梯度黑盒优化器来寻找最优策略参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "，以最大化回报函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "F(\\theta)"
+        },
+        {
+          "type": "text",
+          "text": "。关键在于在模型参数上添加高斯噪声"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\epsilon"
+        },
+        {
+          "type": "text",
+          "text": "在模型参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "上，然后利用对数似然技巧将其写成高斯概率密度函数的梯度。最终，只剩下噪声项作为衡量性能的加权标量。"
+        }
+      ]
+    },
+    "paragraph-65019dba49b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设当前参数值为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}"
+        },
+        {
+          "type": "text",
+          "text": "（添加的帽子是为了将该值与随机变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 区分开来）。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的搜索分布被设计为具有均值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\theta}"
+        },
+        {
+          "type": "text",
+          "text": " 和固定协方差矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma^2 I"
+        },
+        {
+          "type": "text",
+          "text": " 的各向同性多元高斯分布。"
+        }
+      ]
+    },
+    "paragraph-f06e1178cec2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 更新的梯度为："
+        }
+      ]
+    },
+    "paragraph-55d63a5b5008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一代中，我们可以采样许多 "
+        },
+        {
+          "type": "inline_math",
+          "text": "epsilon_i, i=1,\\dots,n"
+        },
+        {
+          "type": "text",
+          "text": " 并 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "并行"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "评估适应度。一个精妙的设计是，无需共享任何大型模型参数。只需在工作节点之间传递随机种子，主节点就足以进行参数更新。这种方法后来被扩展到自适应地学习损失函数；请参阅我之前关于 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#meta-learning-the-loss-function"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Evolved Policy Gradient"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的文章。"
+        }
+      ]
+    },
+    "paragraph-724f09870039": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了使性能更稳健，OpenAI ES 采用了虚拟批归一化（BN，其中用于计算统计数据的 mini-batch 是固定的）、镜像采样（采样一对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(-\\epsilon, \\epsilon)"
+        },
+        {
+          "type": "text",
+          "text": " 进行评估）和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#fitness-shaping"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "适应度塑造"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-04ab51b19022": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用 ES 进行探索"
+        }
+      ]
+    },
+    "paragraph-9d9efaf99685": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "探索（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "相对于利用"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是强化学习中的一个重要课题。ES 算法 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/TBA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上述"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的优化方向仅从累积回报 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F(\\theta)"
+        },
+        {
+          "type": "text",
+          "text": " 中提取。如果没有明确的探索，智能体可能会陷入局部最优。"
+        }
+      ]
+    },
+    "paragraph-2a12b45e0482": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "新颖性搜索 ES（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "NS-ES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1712.06560"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Conti 等人，2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）通过朝最大化 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "新颖性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 分数的方向更新参数来鼓励探索。新颖性分数取决于领域特定的行为表征函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "b(\\pi_\\theta)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "b(\\pi_\\theta)"
+        },
+        {
+          "type": "text",
+          "text": " 的选择是任务特定的，并且似乎有些随意；例如，在该论文中的 Humanoid 运动任务中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "b(\\pi_\\theta)"
+        },
+        {
+          "type": "text",
+          "text": " 是智能体的最终 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(x,y)"
+        },
+        {
+          "type": "text",
+          "text": " 位置。"
+        }
+      ]
+    },
+    "list-item-f83cff691657": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个策略的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "b(\\pi_\\theta)"
+        },
+        {
+          "type": "text",
+          "text": " 都被推送到一个存档集 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-b64670e47dfe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "策略 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 的新颖性通过 "
+        },
+        {
+          "type": "inline_math",
+          "text": "b(\\pi_\\theta)"
+        },
+        {
+          "type": "text",
+          "text": " 与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}"
+        },
+        {
+          "type": "text",
+          "text": " 中所有其他条目之间的 k-近邻分数来衡量。\\n(存档集的使用案例听起来与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#episodic-control"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "情景记忆"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 相当相似。)"
+        }
+      ]
+    },
+    "paragraph-d372bf18ca89": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ES 优化步骤依赖于新颖性分数而不是适应度："
+        }
+      ]
+    },
+    "paragraph-4723beade7f9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NS-ES 维护一组 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": " 独立训练的智能体（“元种群”），"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{M} = \\{\\theta_1, \\dots, \\theta_M \\}"
+        },
+        {
+          "type": "text",
+          "text": " 并根据新颖性分数按比例选择一个进行推进。最终我们选择最佳策略。这个过程等同于集成；另请参阅 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#svpg"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SVPG"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中的相同思想。"
+        }
+      ]
+    },
+    "paragraph-485de49884cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 是高斯扰动噪声向量的数量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": " 是学习率。"
+        }
+      ]
+    },
+    "paragraph-fc45b8e56b73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NS-ES 完全抛弃了奖励函数，只优化新颖性以避免欺骗性局部最优。为了将适应度重新纳入公式，又提出了两种变体。"
+        }
+      ]
+    },
+    "paragraph-6d59acd5ad46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "NSR-ES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-189bca2fe559": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "NSRAdapt-ES (NSRA-ES)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：自适应加权参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w = 1.0"
+        },
+        {
+          "type": "text",
+          "text": " 最初。如果性能在若干代内保持平稳，我们开始减小 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "。然后当性能开始提高时，我们停止减小 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "，而是增加它。通过这种方式，当性能停止增长时，适应度受到偏爱，否则新颖性受到偏爱。"
+        }
+      ]
+    },
+    "heading-fab6b510e3e5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CEM-RL"
+        }
+      ]
+    },
+    "paragraph-cbf9b4e1cd59": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CEM-RL 方法（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1810.01222"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pourchot & Sigaud, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）将交叉熵方法（CEM）与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#ddpg"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DDPG"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 或 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#td3"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "TD3"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 结合。这里的 CEM 工作方式与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#simple-gaussian-evolution-strategies"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上面"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 描述的简单高斯 ES 几乎相同，因此可以使用 CMA-ES 替换相同的功能。CEM-RL 建立在 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "进化强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "ERL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/7395-evolution-guided-policy-gradient-in-reinforcement-learning.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Khadka & Tumer, 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的框架上，其中标准 EA 算法选择并进化一组行动者，然后将在此过程中生成的 rollout 经验添加到回放缓冲区中，用于训练 RL-actor 和 RL-critic 网络。"
+        }
+      ]
+    },
+    "paragraph-7ded648ef4ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "工作流程："
+        }
+      ]
+    },
+    "list-item-a6c61c7820c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n\n"
+        }
+      ]
+    },
+    "list-item-9c7b87190222": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CEM 种群的平均行动者 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\mu"
+        },
+        {
+          "type": "text",
+          "text": " 用一个随机行动者网络初始化。"
+        }
+      ]
+    },
+    "list-item-a6c61c7820c7-2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n\n"
+        }
+      ]
+    },
+    "list-item-f035b7ada8c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评论家网络 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": " 也被初始化，它将由 DDPG/TD3 更新。"
+        }
+      ]
+    },
+    "list-item-a6c61c7820c7-3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n\n\n"
+        }
+      ]
+    },
+    "list-item-35208c99f7f7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重复直到满意："
+        }
+      ]
+    },
+    "list-item-86ef26e6ad71": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "a. 采样一组行动者 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sim \\mathcal{N}(\\pi_\\mu, \\Sigma)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-e7f41c519f8a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "b. 评估一半的种群。它们的适应度分数用作累积奖励 "
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": " 并添加到回放缓冲区中。"
+        }
+      ]
+    },
+    "list-item-31b98c461eba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "c. 另一半与评论家一起更新。"
+        }
+      ]
+    },
+    "list-item-c66df4f13b8c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "d. 新的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_mu"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Sigma"
+        },
+        {
+          "type": "text",
+          "text": " 是使用表现最佳的精英样本计算的。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#covariance-matrix-adaptation-evolution-strategies-cma-es"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "CMA-ES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 也可以用于参数更新。"
+        }
+      ]
+    },
+    "heading-c24f7a10535d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "扩展：深度学习中的 EA"
+        }
+      ]
+    },
+    "paragraph-b082cf708847": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "（本节不涉及进化策略，但仍然是一篇有趣且相关的阅读材料。）"
+        }
+      ]
+    },
+    "paragraph-b971d8e1980b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "进化算法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 已应用于许多深度学习问题。POET（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.01753"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是一个基于 EA 的框架，它试图在解决问题本身的同时生成各种不同的任务。POET 已在我的关于元强化学习的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#task-generation-by-domain-randomization"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上一篇文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中介绍。进化强化学习（ERL）是另一个例子；参见图 7 (b)。"
+        }
+      ]
+    },
+    "paragraph-d252e18ab3b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "下面我将更详细地介绍两个应用："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "基于种群的训练（PBT）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重无关神经网络（WANN）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-d51a556889f4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "超参数调优：PBT"
+        }
+      ]
+    },
+    "paragraph-64ac9b38bcff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于种群的训练（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1711.09846"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jaderberg, et al, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），简称 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "PBT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，将 EA 应用于超参数调优问题。它联合训练一组模型和相应的超参数以获得最佳性能。"
+        }
+      ]
+    },
+    "paragraph-06ec9e7b28ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "PBT 从一组随机候选开始，每个候选包含一对模型权重初始化和超参数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{(\\theta_i, h_i)\\mid i=1, \\dots, N\\}"
+        },
+        {
+          "type": "text",
+          "text": "。每个样本并行训练并异步定期评估其自身性能。每当一个成员被认为准备就绪（即在执行了足够的梯度更新步骤后，或者当性能足够好时），它就有机会通过与整个种群进行比较来更新："
+        }
+      ]
+    },
+    "list-item-b410c2ca6e95": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "exploit()"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 当此模型表现不佳时，其权重可以替换为表现更好的模型。"
+        }
+      ]
+    },
+    "list-item-a380a25271fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "explore()"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 如果模型权重被覆盖，"
+        },
+        {
+          "type": "inline_code",
+          "text": "explore"
+        },
+        {
+          "type": "text",
+          "text": " 步骤会用随机噪声扰动超参数。"
+        }
+      ]
+    },
+    "paragraph-6769d3461dd1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在此过程中，只有有前景的模型和超参数对才能存活并持续演化，从而更好地利用计算资源。"
+        }
+      ]
+    },
+    "heading-4534506cd3e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "网络拓扑优化：WANN"
+        }
+      ]
+    },
+    "paragraph-d7f915669629": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重无关神经网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（简称"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "WANN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.04358"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gaier & Ha 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）通过搜索最小的网络拓扑结构来实验，这些结构无需训练网络权重即可达到最佳性能。通过不考虑网络权重的最佳配置，WANN更侧重于架构本身，使其与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://openaccess.thecvf.com/content_cvpr_2018/papers/Zoph_Learning_Transferable_Architectures_CVPR_2018_paper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "NAS"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的关注点不同。WANN深受一种经典的用于演化网络拓扑的遗传算法的启发，该算法名为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "NEAT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“拓扑增强神经演化”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://nn.cs.utexas.edu/downloads/papers/stanley.gecco02_1.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Stanley & Miikkulainen 2002"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-2c797bc34e33": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "WANN 的工作流程与标准 GA 大致相同："
+        }
+      ]
+    },
+    "list-item-fdce72fcb533": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "初始化：创建最小网络种群。"
+        }
+      ]
+    },
+    "list-item-7a1b4c3a660b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评估：使用一系列"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "共享"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "权重值进行测试。"
+        }
+      ]
+    },
+    "list-item-d3ca4fc963b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "排序和选择：按性能和复杂性排序。"
+        }
+      ]
+    },
+    "list-item-10506e7f760e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "变异：通过改变最佳网络来创建新种群。"
+        }
+      ]
+    },
+    "paragraph-60de7a52b2fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在“评估”阶段，所有网络权重都被设置为相同。通过这种方式，WANN实际上是在寻找可以用最小描述长度来描述的网络。在“选择”阶段，网络连接和模型性能都被考虑在内。"
+        }
+      ]
+    },
+    "paragraph-ade49a246444": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如图11所示，WANN的结果通过随机权重和共享权重（单一权重）进行评估。有趣的是，即使对所有权重强制执行权重共享并调整这一个参数，WANN也能发现能够实现非凡良好性能的拓扑结构。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用来源："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-cd08e72f6151": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Nikolaus Hansen. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1604.00772"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“CMA演化策略：教程”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1604.00772 (2016)."
+        }
+      ]
+    },
+    "paragraph-8ca6eb047e29": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Marc Toussaint. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/13-Optimization/06-blackBoxOpt.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "幻灯片：“优化导论”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-aa39d2ab44a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] David Ha. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://blog.otoro.net/2017/10/29/visual-evolution-strategies/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“演化策略可视化指南”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " blog.otoro.net. 2017年10月."
+        }
+      ]
+    },
+    "paragraph-72cacfcf6b68": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Daan Wierstra, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1106.4487"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“自然演化策略。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IEEE世界计算智能大会, 2008."
+        }
+      ]
+    },
+    "paragraph-2ea2202f1ad9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Agustinus Kristiadi. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://wiseodd.github.io/techblog/2018/03/14/natural-gradient/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“自然梯度下降”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2018年3月."
+        }
+      ]
+    },
+    "paragraph-6a51bcc25048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Razvan Pascanu & Yoshua Bengio. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1301.3584v7"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“重新审视深度网络的自然梯度。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1301.3584 (2013)."
+        }
+      ]
+    },
+    "paragraph-4fc45ceedc42": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Tim Salimans, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.03864"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“演化策略作为强化学习的可扩展替代方案。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1703.03864 (2017)."
+        }
+      ]
+    },
+    "paragraph-b4f15c90a08c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Edoardo Conti, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1712.06560"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过新颖性探索智能体群体改进深度强化学习中演化策略的探索。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS. 2018."
+        }
+      ]
+    },
+    "paragraph-119cea876fd6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Aloïs Pourchot & Olivier Sigaud. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1810.01222"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“CEM-RL：结合演化和基于梯度的方法进行策略搜索。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2019."
+        }
+      ]
+    },
+    "paragraph-6c00f53a9a56": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Shauharda Khadka & Kagan Tumer. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/7395-evolution-guided-policy-gradient-in-reinforcement-learning.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“强化学习中演化引导的策略梯度。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2018."
+        }
+      ]
+    },
+    "paragraph-b53db0cca95e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Max Jaderberg, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1711.09846"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“基于群体的神经网络训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1711.09846 (2017)."
+        }
+      ]
+    },
+    "paragraph-256e3cc57ac2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Adam Gaier & David Ha. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1906.04358"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“权重无关神经网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1906.04358 (2019)."
+        }
+      ]
+    }
+  }
+}

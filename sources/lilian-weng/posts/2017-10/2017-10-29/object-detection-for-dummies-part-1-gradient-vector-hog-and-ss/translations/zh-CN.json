@@ -1,0 +1,1736 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:833995de4d93495d133f9252b7b37a2b5453f45c695b04f130f3b886d59d3cc2",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "傻瓜式目标检测 第1部分：梯度向量、HOG和SS",
+  "segments": {
+    "paragraph-05090e16dfdd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我从未在计算机视觉领域工作过，也不知道当一辆自动驾驶汽车被配置成区分停车标志和戴红帽的行人时，这种“魔法”是如何实现的。为了激励自己深入研究目标识别和检测算法背后的数学原理，我正在撰写几篇关于“傻瓜式目标检测”主题的文章。本文作为第1部分，从图像处理中极其基本的概念和几种图像分割方法开始。目前还没有涉及深度神经网络。用于目标检测和识别的深度学习模型将在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第2部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第3部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中讨论。"
+        }
+      ]
+    },
+    "paragraph-3032fcf180fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "免责声明：当我开始时，我曾互换使用“目标识别”和“目标检测”。我认为它们并不相同：前者更多是关于判断图像中是否存在某个目标，而后者则需要找出目标的位置。然而，它们高度相关，许多目标识别算法为检测奠定了基础。"
+        }
+      ]
+    },
+    "paragraph-4832669d769c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本系列所有文章的链接：\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-29-object-recognition-part-1/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第1部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第2部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第3部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第4部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]。"
+        }
+      ]
+    },
+    "heading-125370e5a3ae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图像梯度向量"
+        }
+      ]
+    },
+    "paragraph-6c163efeecdf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，我想确保我们能够区分以下术语。它们非常相似，密切相关，但并不完全相同。"
+        }
+      ]
+    },
+    "table-7da721e2b196": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "",
+          "导数",
+          "方向导数",
+          "梯度"
+        ],
+        "rows": [
+          [
+            "值类型",
+            "标量",
+            "标量",
+            "向量"
+          ],
+          [
+            "定义",
+            "函数 $f(x,y,z,…)$ 在点 $(x_0,y_0,z_0,…)$ 处的变化率，即该点处切线的斜率。",
+            "函数 $f(x,y,z, …)$ 沿单位向量 $\\vec{u}$ 方向的瞬时变化率。",
+            "它指向函数增长最快的方向，包含多变量函数的所有偏导数信息。"
+          ]
+        ]
+      }
+    },
+    "paragraph-f0cf40152805": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在图像处理中，我们想知道颜色从一个极端变化到另一个极端（即灰度图像中的从黑到白）的方向。因此，我们希望测量像素颜色的“梯度”。图像上的梯度是离散的，因为每个像素都是独立的，不能再进一步分割。"
+        }
+      ]
+    },
+    "paragraph-6c677e4481d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Image_gradient"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "图像梯度向量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "被定义为每个独立像素的度量，包含像素在x轴和y轴上的颜色变化。该定义与连续多变量函数的梯度一致，后者是所有变量偏导数的向量。假设f(x, y)记录了位置(x, y)处像素的颜色，则像素(x, y)的梯度向量定义如下："
+        }
+      ]
+    },
+    "paragraph-cce18f979d95": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\frac{\\partial f}{\\partial x}"
+        },
+        {
+          "type": "text",
+          "text": " 项是x方向上的偏导数，计算为目标左右相邻像素的颜色差，即 f(x+1, y) - f(x-1, y)。类似地，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{\\partial f}{\\partial y}"
+        },
+        {
+          "type": "text",
+          "text": " 项是y方向上的偏导数，测量为目标上方和下方相邻像素的颜色差，即 f(x, y+1) - f(x, y-1)。"
+        }
+      ]
+    },
+    "paragraph-867d6d739696": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图像梯度有两个重要属性："
+        }
+      ]
+    },
+    "list-item-66af0b869416": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "幅值"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是向量的L2范数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "g = \\sqrt{ g_x^2 + g_y^2 }"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-efe7e22aec10": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "方向"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是两个方向上偏导数之比的反正切，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta = \\arctan{(g_y / g_x)}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-c3029394f182": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例中的梯度向量是："
+        }
+      ]
+    },
+    "paragraph-b69b716bf24b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，"
+        }
+      ]
+    },
+    "list-item-8679eaca76e4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "幅值是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sqrt{50^2 + (-50)^2} = 70.7107"
+        },
+        {
+          "type": "text",
+          "text": "，并且"
+        }
+      ]
+    },
+    "list-item-6c823eea91a5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "方向是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\arctan{(-50/50)} = -45^{\\circ}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-042885a119a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "迭代地对每个像素重复梯度计算过程太慢。相反，这可以很好地转化为对整个图像矩阵应用卷积运算符，使用专门设计的卷积核之一，标记为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{A}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-8c151bccfe63": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们从图1示例的x方向开始，使用核 "
+        },
+        {
+          "type": "inline_math",
+          "text": "[-1,0,1]"
+        },
+        {
+          "type": "text",
+          "text": " 沿x轴滑动；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ast"
+        },
+        {
+          "type": "text",
+          "text": " 是卷积运算符："
+        }
+      ]
+    },
+    "paragraph-cd3b838d3a03": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "类似地，在y方向上，我们采用核 "
+        },
+        {
+          "type": "inline_math",
+          "text": "[+1, 0, -1]^\\top"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-70092f522bfa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在python中尝试这个："
+        }
+      ]
+    },
+    "paragraph-75e5c10bc46e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这两个函数分别返回 "
+        },
+        {
+          "type": "inline_code",
+          "text": "array([[0], [-50], [0]])"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "array([[0, 50, 0]])"
+        },
+        {
+          "type": "text",
+          "text": "。（请注意，在numpy数组表示中，40显示在90前面，因此在核中-1相应地列在1前面。）"
+        }
+      ]
+    },
+    "heading-cc2195312f20": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "常用图像处理核"
+        }
+      ]
+    },
+    "paragraph-f1e14857853c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Prewitt_operator"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Prewitt算子"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：Prewitt算子不只依赖于四个直接相邻的像素，而是利用八个周围像素来获得更平滑的结果。"
+        }
+      ]
+    },
+    "paragraph-76df85c8d958": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Sobel_operator"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sobel算子"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：为了更强调直接相邻像素的影响，它们被赋予更高的权重。"
+        }
+      ]
+    },
+    "paragraph-a577a22cb136": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为实现不同目标创建了不同的核，例如边缘检测、模糊、锐化等等。请查看"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Kernel_(image_processing)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此维基页面"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "以获取更多示例和参考资料。"
+        }
+      ]
+    },
+    "heading-b5eeac2808d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例：2004年的马努"
+        }
+      ]
+    },
+    "paragraph-e04880988577": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们对马努·吉诺比利2004年（当时他还有很多头发）的照片进行一个简单的实验 [[下载图片]({{ ‘/assets/data/manu-2004.jpg’ | relative_url }}){:target=\"_blank\"}]。为简单起见，照片首先被转换为灰度图。对于彩色图像，我们只需在每个颜色通道中分别重复相同的过程。"
+        }
+      ]
+    },
+    "paragraph-98f4c57d1c2d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你可能会注意到大部分区域是灰色的。因为两个像素之间的差异在-255到255之间，我们需要将它们转换回[0, 255]以供显示。\n一个简单的线性变换 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{G}"
+        },
+        {
+          "type": "text",
+          "text": " + 255)/2 会将所有零（即，颜色恒定的背景显示没有梯度变化）解释为125（显示为灰色）。"
+        }
+      ]
+    },
+    "heading-18c79820fa9b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "方向梯度直方图 (HOG)"
+        }
+      ]
+    },
+    "paragraph-8f3937523ba0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "方向梯度直方图 (HOG) 是一种从像素颜色中提取特征以构建目标识别分类器的有效方法。有了图像梯度向量的知识，理解HOG的工作原理并不难。让我们开始吧！"
+        }
+      ]
+    },
+    "heading-dc32fd9c5e7c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "HOG的工作原理"
+        }
+      ]
+    },
+    "list-item-dd8b0bf58dbc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n预处理图像，包括调整大小和颜色归一化。\n"
+        }
+      ]
+    },
+    "list-item-6ca0717b150e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n计算每个像素的梯度向量，以及其幅值和方向。\n"
+        }
+      ]
+    },
+    "list-item-4b62306219ae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n将图像划分为许多8x8像素的单元格。在每个单元格中，这64个单元格的幅值被分箱并累加到9个无符号方向（无符号，即0-180度而不是0-360度；这是基于经验实验的实际选择）的桶中。\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n为了更好的鲁棒性，如果像素梯度向量的方向介于两个桶之间，其幅值不会全部进入更近的那个桶，而是按比例分配给两个桶。例如，如果一个像素的梯度向量幅值为8，角度为15度，它介于0度和20度的两个桶之间，我们将分配2给桶0，分配6给桶20。\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n这种有趣的配置使得当图像受到微小失真时，直方图更加稳定。\n"
+        }
+      ]
+    },
+    "list-item-32b73c8aab9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后，我们以2x2个单元格（即16x16像素）的块在图像上滑动。在每个块区域中，4个单元格的4个直方图被连接成一个36值的一维向量，然后归一化以具有单位权重。\n最终的HOG特征向量是所有块向量的连接。它可以输入到像SVM这样的分类器中，用于学习目标识别任务。"
+        }
+      ]
+    },
+    "heading-b5eeac2808d6-2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例：2004年的马努"
+        }
+      ]
+    },
+    "paragraph-a6744e89946c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们重用上一节中的相同示例图像。请记住，我们已经为整个图像计算了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{G}_x"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{G}_y"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-9f4f0da0be4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下代码简单地调用函数来构建直方图并绘制它。"
+        }
+      ]
+    },
+    "paragraph-827e279c68d3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在上面的代码中，我使用左上角位于[200, 200]的块作为示例，这是该块最终的归一化直方图。你可以通过修改代码来改变滑动窗口识别的块位置。"
+        }
+      ]
+    },
+    "paragraph-8f8ff88ea827": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这段代码主要是为了演示计算过程。有许多现成的库实现了HOG算法，例如 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/opencv/opencv"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "OpenCV"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://simplecv.org/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SimpleCV"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://scikit-image.org/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "scikit-image"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-5f170c8a47ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图像分割（Felzenszwalb 算法）"
+        }
+      ]
+    },
+    "paragraph-b336065cb233": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当一张图像中存在多个对象时（几乎所有真实世界的照片都是如此），我们需要识别一个可能包含目标对象的区域，以便更有效地执行分类。"
+        }
+      ]
+    },
+    "paragraph-0c73c2e757cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Felzenszwalb 和 Huttenlocher ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://cvcl.mit.edu/SUNSeminar/Felzenszwalb_IJCV04.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "2004"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 提出了一种使用基于图的方法将图像分割成相似区域的算法。它也是我们稍后将讨论的 Selective Search（一种流行的区域提议算法）的初始化方法。"
+        }
+      ]
+    },
+    "paragraph-060a6de80212": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们使用无向图"
+        },
+        {
+          "type": "inline_math",
+          "text": "G=(V, E)"
+        },
+        {
+          "type": "text",
+          "text": "来表示输入图像。一个顶点"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_i \\in V"
+        },
+        {
+          "type": "text",
+          "text": "代表一个像素。一条边"
+        },
+        {
+          "type": "inline_math",
+          "text": "e = (v_i, v_j) \\in E"
+        },
+        {
+          "type": "text",
+          "text": "连接两个顶点"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_i"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_j"
+        },
+        {
+          "type": "text",
+          "text": "。其关联权重"
+        },
+        {
+          "type": "inline_math",
+          "text": "w(v_i, v_j)"
+        },
+        {
+          "type": "text",
+          "text": "衡量"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_i"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_j"
+        },
+        {
+          "type": "text",
+          "text": "之间的不相似性。这种不相似性可以通过颜色、位置、强度等维度进行量化。权重越高，两个像素之间的相似度越低。一个分割方案"
+        },
+        {
+          "type": "inline_math",
+          "text": "S"
+        },
+        {
+          "type": "text",
+          "text": "是将"
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": "分割成多个连通分量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{C\\}"
+        },
+        {
+          "type": "text",
+          "text": "。直观上，相似的像素应属于同一分量，而不相似的像素则被分配到不同的分量。"
+        }
+      ]
+    },
+    "heading-36bd3c84fe4b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图的构建"
+        }
+      ]
+    },
+    "paragraph-deab7002853f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有两种方法可以从图像中构建图。"
+        }
+      ]
+    },
+    "list-item-35b4ac4e5ee5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "网格图"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：每个像素仅与其周围的邻居（总共8个其他单元格）连接。边的权重是像素强度值之间的绝对差。"
+        }
+      ]
+    },
+    "list-item-f0dfc1364f88": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "最近邻图"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：每个像素都是特征空间(x, y, r, g, b)中的一个点，其中(x, y)是像素位置，(r, g, b)是RGB颜色值。权重是两个像素特征向量之间的欧几里得距离。"
+        }
+      ]
+    },
+    "heading-4dcb75ca300f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关键概念"
+        }
+      ]
+    },
+    "paragraph-4c1a4621f7a4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们确定良好图划分（即图像分割）的标准之前，让我们先定义几个关键概念："
+        }
+      ]
+    },
+    "list-item-f76a7c3b3f29": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "内部差异"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_math",
+          "text": "Int(C) = \\max_{e\\in MST(C, E)} w(e)"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "MST"
+        },
+        {
+          "type": "text",
+          "text": "是这些组件的最小生成树。一个组件"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "即使我们移除了所有权重小于"
+        },
+        {
+          "type": "inline_math",
+          "text": "Int(C)"
+        },
+        {
+          "type": "text",
+          "text": "的边，也仍然可以保持连接。"
+        }
+      ]
+    },
+    "list-item-117dd536ceca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "两个组件之间的差异"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_math",
+          "text": "Dif(C_1, C_2) = \\min_{v_i \\in C_1, v_j \\in C_2, (v_i, v_j) \\in E} w(v_i, v_j)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "Dif(C_1, C_2) = \\infty"
+        },
+        {
+          "type": "text",
+          "text": "如果它们之间没有边。"
+        }
+      ]
+    },
+    "list-item-a41ac4ed6b85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "最小内部差异"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": "
+        },
+        {
+          "type": "inline_math",
+          "text": "MInt(C_1, C_2) = min(Int(C_1) + \\tau(C_1), Int(C_2) + \\tau(C_2))"
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau(C) = k / \\vert C \\vert"
+        },
+        {
+          "type": "text",
+          "text": " 有助于确保我们对组件之间的差异有一个有意义的阈值。当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 较高时，更有可能产生更大的组件。"
+        }
+      ]
+    },
+    "paragraph-57caa12f487c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分割的质量通过为给定两个区域 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_1"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_2"
+        },
+        {
+          "type": "text",
+          "text": " 定义的成对区域比较谓词进行评估："
+        }
+      ]
+    },
+    "paragraph-88f3a086af7b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "只有当谓词为真时，我们才认为它们是两个独立的组件；否则，分割过于精细，它们可能应该合并。"
+        }
+      ]
+    },
+    "heading-75934fce299a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图像分割的工作原理"
+        }
+      ]
+    },
+    "paragraph-6023cc7c314c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该算法遵循自下而上的过程。给定 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G=(V, E)"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "|V|=n, |E|=m"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-33300151957f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "边按权重升序排序，标记为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e_1, e_2, \\dots, e_m"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-13e233725719": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最初，每个像素都停留在自己的组件中，因此我们从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": " 个组件开始。"
+        }
+      ]
+    },
+    "list-item-389438ae4ee3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重复 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k=1, \\dots, m"
+        },
+        {
+          "type": "text",
+          "text": ":\\n\\n"
+        }
+      ]
+    },
+    "list-item-d546534f62c6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "步骤 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 处的分割快照表示为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S^k"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-b9f985fdd851": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们按顺序取第 k 条边，"
+        },
+        {
+          "type": "inline_math",
+          "text": "e_k = (v_i, v_j)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-00db381dee01": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果 "
+        },
+        {
+          "type": "inline_math",
+          "text": "v_i"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "v_j"
+        },
+        {
+          "type": "text",
+          "text": " 属于同一个组件，则不执行任何操作，因此 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S^k = S^{k-1}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-897d24339ec9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果 "
+        },
+        {
+          "type": "inline_math",
+          "text": "v_i"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "v_j"
+        },
+        {
+          "type": "text",
+          "text": " 属于两个不同的组件 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_i^{k-1}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_j^{k-1}"
+        },
+        {
+          "type": "text",
+          "text": "，如分割 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S^{k-1}"
+        },
+        {
+          "type": "text",
+          "text": " 所示，我们希望在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w(v_i, v_j) \\leq MInt(C_i^{k-1}, C_j^{k-1})"
+        },
+        {
+          "type": "text",
+          "text": " 的情况下将它们合并为一个；否则不执行任何操作。"
+        }
+      ]
+    },
+    "paragraph-616e17f8aea6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果您对分割属性的证明以及它为何始终存在感兴趣，请参阅这篇 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://fcv2011.ulsan.ac.kr/files/announcement/413/IJCV(2004)%20Efficient%20Graph-Based%20Image%20Segmentation.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-8dfca86ede54": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例：2013年的马努"
+        }
+      ]
+    },
+    "paragraph-23b68eeecede": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这次我将使用2013年老马努·吉诺比利的照片[[Image]({{ ‘/assets/data/manu-2013.jpg’ | relative_url }})]作为示例图片，当时他的秃顶已经很明显了。为了简单起见，我们仍然使用灰度图片。"
+        }
+      ]
+    },
+    "paragraph-02beaea4d922": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们不从头开始编写代码，而是将"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://scikit-image.org/docs/dev/api/skimage.segmentation.html#skimage.segmentation.felzenszwalb"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "skimage.segmentation.felzenszwalb"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "应用于图像。"
+        }
+      ]
+    },
+    "paragraph-1158585428ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "代码运行了Felzenszwalb算法的两个版本，如所示。左侧k=100生成了更细粒度的分割，其中小区域识别出马努的秃顶。右侧k=1000输出更粗粒度的分割，其中区域往往更大。"
+        }
+      ]
+    },
+    "heading-a3de13bc8db6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "选择性搜索"
+        }
+      ]
+    },
+    "paragraph-47348d3e2f56": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "选择性搜索是一种常用算法，用于提供可能包含对象的区域建议。它建立在图像分割输出之上，并使用基于区域的特征（注意：不仅仅是单个像素的属性）进行自下而上的层次分组。"
+        }
+      ]
+    },
+    "heading-d1ead4e258b3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "选择性搜索的工作原理"
+        }
+      ]
+    },
+    "list-item-de70ecc38e33": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在初始化阶段，应用Felzenszwalb和Huttenlocher的基于图的图像分割算法来创建初始区域。"
+        }
+      ]
+    },
+    "list-item-00f9805f77dc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用贪婪算法迭代地将区域分组：\n\n"
+        }
+      ]
+    },
+    "list-item-2b07e6f92a37": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先计算所有相邻区域之间的相似度。"
+        }
+      ]
+    },
+    "list-item-b95480f7a157": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将两个最相似的区域组合在一起，并计算所得区域与其邻居之间的新相似度。"
+        }
+      ]
+    },
+    "list-item-cc63f2087ec3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重复分组最相似区域的过程（步骤2），直到整个图像成为一个单一区域。"
+        }
+      ]
+    },
+    "heading-66af3a9df5b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "配置变体"
+        }
+      ]
+    },
+    "paragraph-f1b5be384ce6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定两个区域"
+        },
+        {
+          "type": "inline_math",
+          "text": "(r_i, r_j)"
+        },
+        {
+          "type": "text",
+          "text": "，选择性搜索提出了四种互补的相似性度量："
+        }
+      ]
+    },
+    "list-item-0b9d9f0b1335": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "颜色"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "相似度"
+        }
+      ]
+    },
+    "list-item-0baf7c3a1f3c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "纹理"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：使用适用于材料识别的算法，例如"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.cs.ubc.ca/~lowe/papers/iccv99.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "SIFT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-d7344ef0d3d8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "大小"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：鼓励小区域尽早合并。"
+        }
+      ]
+    },
+    "list-item-39b49936be0a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "形状"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：理想情况下，一个区域可以填补另一个区域的空白。"
+        }
+      ]
+    },
+    "paragraph-9432de5c7aa7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过(i)调整Felzenszwalb和Huttenlocher算法中的阈值"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "，(ii)改变颜色空间，以及(iii)选择不同的相似性度量组合，我们可以生成多样化的选择性搜索策略。生成最佳质量区域建议的版本配置为(i)各种初始分割建议的混合，(ii)多种颜色空间的融合，以及(iii)所有相似性度量的组合。不出所料，我们需要在质量（模型复杂性）和速度之间取得平衡。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-00cc7a484520": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Dalal, Navneet, and Bill Triggs. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://hal.inria.fr/file/index/docid/548512/filename/hog_cvpr2005.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“用于人体检测的定向梯度直方图。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Computer Vision and Pattern Recognition (CVPR), 2005。"
+        }
+      ]
+    },
+    "paragraph-316db0385c27": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Pedro F. Felzenszwalb, and Daniel P. Huttenlocher. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://cvcl.mit.edu/SUNSeminar/Felzenszwalb_IJCV04.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“高效的基于图的图像分割。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Intl. journal of computer vision 59.2 (2004): 167-181。"
+        }
+      ]
+    },
+    "paragraph-22dcfb3e2794": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.learnopencv.com/histogram-of-oriented-gradients/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Satya Mallick的定向梯度直方图"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-1593a98ddf18": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://mccormickml.com/2013/05/07/gradient-vectors/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chris McCormick的梯度向量"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-8c41e18faccd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://mccormickml.com/2013/05/09/hog-person-detector-tutorial/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chris McCormick的HOG人物检测器教程"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

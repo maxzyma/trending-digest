@@ -1,0 +1,5597 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2024-11-28-reward-hacking",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2024-11-28T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:99da73635a1800451d546644414161325c9fcd1455e971df5bf3dce987bbdd4e",
+    "fetched_at": "2026-07-14T02:05:52.661591+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Reward Hacking in Reinforcement Learning",
+    "title_en": "Reward Hacking in Reinforcement Learning",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-a96671960ab0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward hacking occurs when a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/(https:/lilianweng.github.io/posts/2018-02-19-rl-overview/)"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "reinforcement learning (RL)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " agent "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "exploits"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " flaws or ambiguities in the reward function to achieve high rewards, without genuinely learning or completing the intended task. Reward hacking exists because RL environments are often imperfect, and it is fundamentally challenging to accurately specify a reward function."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a7543ee4e2e3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With the rise of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "language models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " generalizing to a broad spectrum of tasks and RLHF becomes a de facto method for alignment training, reward hacking in RL training of language models has become a critical practical challenge. Instances where the model learns to modify unit tests to pass coding tasks, or where responses contain biases that mimic a user’s preference, are pretty concerning and are likely one of the major blockers for real-world deployment of more autonomous use cases of AI models."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3393022ef437",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Most of the past work on this topic has been quite theoretical and focused on defining or demonstrating the existence of reward hacking. However, research into practical mitigations, especially in the context of RLHF and LLMs, remains limited. I especially want to call out for more research efforts directed toward understanding and developing mitigation for reward hacking in the future. Hope I will be able to cover the mitigation part in a dedicated post soon."
+          }
+        ]
+      },
+      {
+        "id": "heading-bdb6b59751ac",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Background"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-342f4c34af14",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward Function in RL"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-1c403065741d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward function defines the task, and reward shaping significantly impacts learning efficiency and accuracy in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "reinforcement learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Designing a reward function for an RL task often feels like a ‘dark art’. Many factors contribute to this complexity: How you decompose a big goal into small goals? Is the reward sparse or dense? How you measure the success? Various choices may lead to good or problematic learning dynamics, including unlearnable tasks or hackable reward functions. There is a long history of research on how to do reward shaping in RL."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1dc264f53a9d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, in an "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "1999 paper by Ng et al."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the authors studied how to modify the reward function in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#markov-decision-processes"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Markov Decision Processes (MDPs)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " such that the optimal policy remains unchanged. They found that linear transformation works. Given a MDP "
+          },
+          {
+            "type": "inline_math",
+            "text": "M = (S, A, T, \\gamma, R)"
+          },
+          {
+            "type": "text",
+            "text": ", we want to create a transformed MDP "
+          },
+          {
+            "type": "inline_math",
+            "text": "M’ = (S, A, T, \\gamma, R’)"
+          },
+          {
+            "type": "text",
+            "text": " where "
+          },
+          {
+            "type": "inline_math",
+            "text": "R’ = R + F"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "F: S \\times A \\times S \\mapsto \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": ", such that we can guide the learning algorithm to be more efficient. Given a real-valued function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Phi: S \\mapsto \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " is a potential-based shaping function if for all "
+          },
+          {
+            "type": "inline_math",
+            "text": "s \\in S - {s_0}, a \\in A, s’ \\in S"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-79f9621f0493",
+        "type": "math",
+        "attrs": {
+          "latex": "F(s, a, s') = \\gamma \\Phi(s') - \\Phi(s)"
+        }
+      },
+      {
+        "id": "paragraph-208010631c81",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This would guarantee that the sum of discounted "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "F(s_1, a_1, s_2) + \\gamma F(s_2, a_2, s_3) + \\dots"
+          },
+          {
+            "type": "text",
+            "text": ", ends up being 0. If "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " is such a potential-based shaping function, it is both "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "sufficient"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "necessary"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to ensure "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "M’"
+          },
+          {
+            "type": "text",
+            "text": " share the same optimal policies."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ff3b640e44fd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When "
+          },
+          {
+            "type": "inline_math",
+            "text": "F(s, a, s’) = \\gamma \\Phi(s’) - \\Phi(s)"
+          },
+          {
+            "type": "text",
+            "text": ", and if we further assume that "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Phi(s_0) = 0"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "s_0"
+          },
+          {
+            "type": "text",
+            "text": " is absorbing state, and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma=1"
+          },
+          {
+            "type": "text",
+            "text": ", and then for all "
+          },
+          {
+            "type": "inline_math",
+            "text": "s \\in S, a \\in A"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-40c7668a4e58",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nQ^*_{M'} (s,a) &= Q^*_M(s, a) - \\Phi(s) \\\\\nV^*_{M'} (s,a) &= V^*_M(s, a) - \\Phi(s)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-da2bd6282f22",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This form of reward shaping allows us to incorporate heuristics into the reward function to speed up learning without impacting the optimal policy."
+          }
+        ]
+      },
+      {
+        "id": "heading-22b8cd8dce86",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Spurious Correlation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4b4bf7e23618",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Spurious correlation or shortcut learning ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.07780"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Geirhos et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") in classification task is a concept closely related to reward hacking. Spurious or shortcut features can cause a classifier to fail at learning and generalizing as intended. For example, a binary classifier for distinguishing wolves from huskies may overfit to the presence of a snowy background if all the wolf training images include snow ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1602.04938"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ribeiro et al. 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "image-2840c1bbd934",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/shortcut-features.png",
+          "alt": "The model performs poorly on out-of-distribution (OOD) test sets if it overfits to shortcut features. (Image source: Geirhos et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-2bc2b6d2ecf1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Empirical_risk_minimization"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ERM principle"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " states that, since the full data distribution is unknown, minimizing the loss on training data is a reasonable proxy of risk and thus we favor models with the lowest training loss. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.15775"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nagarajan et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " studied the ERM principle and pointed out that ERM needs to rely on all types of informative features, including unreliable spurious features, while attempting to fit the data without constraints. Their experiments showed that ERM would depend on spurious features no matter how easy the task is."
+          }
+        ]
+      },
+      {
+        "id": "heading-4ff3f3bc28b0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s Define Reward Hacking"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-4706ab63ba37",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward shaping in RL is challenging. Reward hacking occurs when an RL agent exploits flaws or ambiguities in the reward function to obtain high rewards without genuinely learning the intended behaviors or completing the task as designed. In recent years, several related concepts have been proposed, all referring to some form of reward hacking:"
+          }
+        ]
+      },
+      {
+        "id": "list-05b0de8f1d7b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-572ff64d0317",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reward hacking ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1606.06565"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Amodei et al., 2016"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-efd27da1581c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reward corruption ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1705.08417"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Everitt et al., 2017"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-88d54d41786d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reward tampering ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1908.04734"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Everitt et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-681f25b87f08",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Specification gaming ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Krakovna et al., 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-81cba50fa83f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Objective robustness ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.gatsby.ucl.ac.uk/~balaji/udl2021/accepted-papers/UDL2021-paper-055.pdf"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Koch et al. 2021"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-7410d9763bc8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Goal misgeneralization ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2105.14111"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Langosco et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-97bbaae32085",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reward misspecifications ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2201.03544"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Pan et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-53cd9c1ca808",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The concept originated with Amodei et al. (2016), who proposed a set of open research questions on AI safety in their seminal paper "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.06565"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Concrete Problems in AI Safety”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". They listed "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "reward hacking"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " as one of the key AI safety problems. Reward hacking refers to the possibility of the agent gaming the reward function to achieve high reward through undesired behavior.  "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Specification gaming"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Krakovna et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a similar concept, defined as a behavior that satisfies the literal specification of an objective but not achieving the desired results. Here the literal description of the task goal and the intended goal may have a gap."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-12f4a9a51886",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward shaping is a technique used to enrich the reward function, making it easier for the agent to learn—for example, by providing denser rewards. However, a poorly design reward shaping mechanism can alter the trajectory of the optimal policy. Designing effective reward shaping mechanisms is inherently difficult. Rather than blaming a poorly designed reward function, it is more accurate to acknowledge that designing a good reward function is intrinsically challenging due to the complexity of the task itself, partial observable state, multiple dimensions in consideration, and other factors."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-76755b695827",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When testing an RL agent in out-of-distribution (OOD) environments, robustness failure may occur due to:"
+          }
+        ]
+      },
+      {
+        "id": "list-274910d99c8c",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-0d3104832e2b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The model fails to generalize effectively, even with the right objective. This happens when the algorithm lacks sufficient intelligence or capability."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ddfffc7882d1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The model generalizes capably but pursues an objective different from the one it was trained on. This happens when the proxy reward differs from the true reward function, "
+              },
+              {
+                "type": "inline_math",
+                "text": "R’ \\neq R"
+              },
+              {
+                "type": "text",
+                "text": ". This is known as "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "objective robustness"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.gatsby.ucl.ac.uk/~balaji/udl2021/accepted-papers/UDL2021-paper-055.pdf"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Koch et al. 2021"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") or "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "goal misgeneralization"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2105.14111"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Langosco et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " )"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ae0f9bbc1b74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Experiments in two RL environments, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/coinrun"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "CoinRun"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/procgen"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Maze"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", demonstrated the importance of randomization during training. If during training, the coin or the cheese is placed at a fixed position (i.e. right end of the level or upper right corner of the maze) but testing in the env where the coin or cheese is placed at random, the agent would just run to the fixed position without obtaining the coin or cheese at test time. A conflict arises when a visual feature (e.g., cheese or coin) and a positional feature (e.g., upper-right or right end) are inconsistent during test time, leading the trained model to prefer the positional feature. I would like to point out that, in these two examples, the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "reward-result gaps"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " are clear but such type of biases are unlikely to be so obvious in most real-world cases."
+          }
+        ]
+      },
+      {
+        "id": "image-a6146c2eaf3b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/coinrun-randomization.png",
+          "alt": "The impact of randomizing the position of the coin during training. When the coin is placed at random for {0, 2, 3, 6, 11}% of the time during training (x-axis), the frequency of the agent navigating to the end of the level without obtaining the coin decreases with the increase of the randomization (\"y-axis\"). (Image source: Koch et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-f8d7a78f32a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Reward Tampering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.04734"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Everitt et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a form of reward hacking behavior where the agent interferes with the reward function itself, causing the observed reward to no longer accurately represent the intended goal. In reward tampering, the model modifies its reward mechanism either by directly manipulating the implementation of the reward function or by indirectly altering the environmental information used as input for the reward function."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f8e5f8fd148d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(Note: Some work defines reward tampering as a distinct category of misalignment behavior from reward hacking. But I consider reward hacking as a broader concept here.)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b2862955025a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At a high level, reward hacking can be categorized into two types: environment or goal misspecification, and reward tampering."
+          }
+        ]
+      },
+      {
+        "id": "list-f8ca5dc585c8",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-86173ff121b7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Environment or goal misspecified"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The model learns undesired behavior to achieve high rewards by hacking the environment or optimizing a reward function not aligned with the true reward objective—such as when the reward is misspecified or lacks key requirements."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d92a0f518594",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reward tampering"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The model learns to interfere with the reward mechanism itself."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-8356a7d08391",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "List of Examples"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "heading-895c3585fdf0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward hacking examples in RL tasks"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "list-228aca96829d",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e65ded76d22c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A robot hand trained to grab an object can learn to trick people by placing the hand between the object and the camera. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://openai.com/index/learning-from-human-preferences/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-1fbefc0977f2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "An agent trained to maximize jumping height may exploit a bug in the physics simulator to achieve an unrealistically height. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1803.03453"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-2fc104a25b3a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "An agent is trained to ride a bicycle to a goal and wins reward whenever it is getting closer to the goal. Then the agent may learn to ride in tiny circles around the goal because there is no penalty when the agent gets away from the goal. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-99afb7388dd6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In a soccer game setup, the reward is assigned when the agent touches the ball and the agent learns to remain next to the ball to touch the ball in high frequency like in a viberating motion. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-851768a54bc7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In the "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://openai.com/blog/faulty-reward-functions/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Coast Runners game"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", an agent controls a boat with the goal to finish the boat race as quickly as possible. When it is given a shaping reward for hitting green blocks along the race track, it changes the optimal policy to going in circles and hitting the same green blocks over and over again. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-795a5bacd311",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1803.03453"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "“The Surprising Creativity of Digital Evolution”"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "  (Lehman et al. 2019) - This paper has many examples about how optimizing a misspecified fitness function can lead to surprising “hacking” or unintended evolutionary or learning results."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9f68043ebc33",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The list of "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPiprOaC3HsCf5Tuum8bRfzYUiKLRqJmbOoC-32JorNdfyTiRRsR7Ea5eWtvsWzuxo8bjOxCG84dAg/pubhtml"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "specification gaming in AI examples"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is collected by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Krakovna et al. 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-fe3ab3b8b16e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward hacking examples in LLM tasks"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "list-8673617080e9",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9f5fff6882ff",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A language model for generating summarization is able to explore flaws in the ROUGE metric such that it obtains high score but the generated summaries are barely readable. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://web.archive.org/web/20180215132021/https://www.salesforce.com/products/einstein/ai-research/tl-dr-reinforced-model-abstractive-summarization/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-b127975c09a2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A coding model learns to change unit test in order to pass coding questions. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2406.10162"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-752ad87e961e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A coding model may learn to directly modify the code used for calculating the reward. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2406.10162"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-d400dff5f90b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward hacking examples in real life"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "list-46baf3c67ced",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-fa5c179979df",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The recommendation algorithm for social media is intended to provide useful information. However, usefulness is often measured by proxy metrics, such as the number of likes or comments, or the time or frequency of engagement on the platform. The algorithm ends up recommending content that can affect users’ emotion states such as outrageous and extreme content in order to trigger more engagement. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.goodreads.com/en/book/show/204927599-nexus"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Harari, 2024"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-1335ec49af5a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Optimizing for misspecified proxy metrics for a video sharing site may aggressively increase the watch time of users while the true goal is to optimize users’ subjective well-being. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2201.03544"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Link"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          },
+          {
+            "id": "list-item-fc687638616a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/The_Big_Short"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "“The Big Short”"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " - 2008 financial crisis caused by the housing bubble. Reward hacking of our society happened as people tried to game the financial system."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-35a58e8c8afa",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Why does Reward Hacking Exist?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c498c017e961",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Goodhart%27s_law"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Goodhart’s Law"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " states that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“When a measure becomes a target, it ceases to be a good measure”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The intuition is that a good metric can become corrupted once significant pressure is applied to optimize it. It is challenging to specify a 100% accurate reward objective and any "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "proxy"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " suffers the risk of being hacked, as RL algorithm exploits any small imperfection in the reward function definition. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.lesswrong.com/posts/EbFABnst8LsidYs5Y/goodhart-taxonomy"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Garrabrant (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " categorized Goodhart’s law into 4 variants:"
+          }
+        ]
+      },
+      {
+        "id": "list-d415e8d61ff1",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-aa6a697979d1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Regressional - selection for an imperfect proxy necessarily also selects for noise."
+              }
+            ]
+          },
+          {
+            "id": "list-item-728bb01f637e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Extremal - the metric selection pushes the state distribution into a region of different data distribution."
+              }
+            ]
+          },
+          {
+            "id": "list-item-bc46b5576b6a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Causal -  when there is a non-causal correlation between the proxy and the goal, intervening on the proxy may fail to intervene on the goal."
+              }
+            ]
+          },
+          {
+            "id": "list-item-111b1c1e6a45",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Adversarial - optimization for a proxy provides an incentive for adversaries to correlate their goal with the proxy."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-66999bf24393",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.06565"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Amodei et al. (2016)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " summarized that reward hacking, mainly in RL setting, may occur due to:"
+          }
+        ]
+      },
+      {
+        "id": "list-2f0bd929296a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-510cd8d9688c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Partial observed states and goals are imperfect representation of the environment status."
+              }
+            ]
+          },
+          {
+            "id": "list-item-64131a014759",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The system itself is complex and susceptible to hacking; e.g., if the agent is allowed to execute code that changes part of the environment, it becomes much easier to exploit the environment’s mechanisms."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a9883ba3098f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The reward may involve abstract concept that is hard to be learned or formulated; e.g., a reward function with high-dimensional inputs may disproportionately rely on a few dimensions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8206cea8c5ad",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "RL targets to get the reward function highly optimized, so there exists an intrinsic “conflict”, making the design of good RL objective challenging. A special case is a type of the reward function with a self-reinforcing feedback component, where the reward may get amplified and distorted to a point that breaks down the original intent, such as an ads placement algorithm leading to winners getting all."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-05d0b4c5bf79",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Besides, identifying the exact reward function for which an optimal agent optimizes its behavior is in general impossible since there could be an infinite number of reward functions consistent with any observed policy in an fixed environment ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ai.stanford.edu/~ang/papers/icml00-irl.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ng & Russell, 2000"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1601.06569"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Amin and Singh (2016)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " separated the causes of this "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "unidentifiability"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " into two classes:"
+          }
+        ]
+      },
+      {
+        "id": "list-e45de52c3e74",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-2db897dc2cde",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Representational - a set of reward functions is behaviorally invariant under certain arithmetic operations (e.g., re-scaling)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-4fae9afdb702",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Experimental - "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi"
+              },
+              {
+                "type": "text",
+                "text": "’s observed behavior is insufficient to distinguish between two or more reward functions which both rationalize the behavior of the agent (the behavior is optimal under both)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-9d9417760cc1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hacking RL Environment"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d6b54a7fb418",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward hacking is expected to be a more common problem as the model and the algorithm become increasingly sophisticated. A more intelligent agent is more capable of finding “holes” in the design of reward function and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "exploiting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " the task specification—in other words, achieving higher proxy rewards but lower true rewards. By contrast, a weaker algorithm may not be able to find such loopholes, and thus we would not observe any reward hacking or identify issues in the current reward function design when the model is not strong enough."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fcbab612ad21",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In a set of zero-sum robotics self-play games ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.03748"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bansal et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), we can train two agents (victim vs. opponent) to compete against each other. A standard training process produces a victim agent with adequate performance when playing against a normal opponent. However, it is easy to train an adversarial opponent policy that can defeat the victim reliably despite outputting seemingly random actions and training with fewer than 3% of time steps ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.10615"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gleave et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Training of adversarial policies involves optimizing the sum of discounted rewards, as in standard RL setup, while treating the victim policy as a black-box model."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a802151abb72",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An intuitive way to mitigate adversarial policies attacks is to fine-tune victims against adversarial policies. However, the victim remains vulnerable to new versions of adversarial policies once retrained against the new victim policy."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8dbcb7658d43",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Why does adversarial policy exist? The hypothesis is that adversarial policies introduce OOD observations to the victim rather than physically interfering with it. Evidence shows that when the victim’s observation of the opponent’s position is masked and set to a static state, the victim becomes "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "more robust"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to adversaries, although performing worse against a normal opponent policy. Furthermore, a higher-dimensional observation space enhances performance under normal circumstances but makes the policy more vulnerable to adversarial opponents."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-94b198afc958",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.03544"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " investigated reward hacking as a function of agent capabilities, including (1) model size, (2) action space resolution, (3) observation space noise, and (4) training time. They also proposed a taxonomy of three types of misspecified proxy rewards:"
+          }
+        ]
+      },
+      {
+        "id": "list-600bec73bb48",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-71923025f68e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Misweighting"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Proxy and true rewards capture the same desiderata, but differ in their relative importance."
+              }
+            ]
+          },
+          {
+            "id": "list-item-16d70636e68d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Ontological"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Proxy and true rewards use different desiderata to capture the same concept."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c016f7f867d1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Scope"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The proxy measures desiderata over a restricted domain (e.g. time or space) because measurement across all conditions is too costly."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4fa89d4b692b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They experimented in four RL environments paired with nine misspecified proxy rewards. The overall findings from these experiments can be summarized as follows: "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "A model of higher capability tends to obtain higher (or similar) proxy rewards but decreased true rewards."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-a363943d93b4",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-926d63f6c71b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Model size: Larger model size leads to increased proxy rewards but decreased true rewards."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3da8ed91be80",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Action space resolution: Increased precision in actions leads to more capable agents. However, higher resolution causes proxy rewards to remain constant while true rewards decrease."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2c1a2f446736",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Observation fidelity: More accurate observations improve proxy rewards but slightly reduce true rewards."
+              }
+            ]
+          },
+          {
+            "id": "list-item-48296fb9c175",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Training steps: Optimizing the proxy reward over more steps harms true rewards after an initial period where the rewards are positively correlated."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-8f509238bd9e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/exp-reward-misspecification.png",
+          "alt": "The plot of proxy and true reward value as functions of (Top row) model sizes, measured in parameter count; (Bottom row) model capability, measured by metrics such as training steps, action space resolution, and observation noise. (Image source: Pan et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-72025cebb60b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If a proxy reward is so poorly specified that it has a very weak correlation with the true reward, we may be able to identify and prevent reward hacking even before training. Based on this hypothesis, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.03544"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " investigated the correlation between proxy and true rewards over a collection of trajectory rollouts. Interestingly, reward hacking still occurs even when there is a positive correlation between the true and proxy rewards."
+          }
+        ]
+      },
+      {
+        "id": "heading-1c753d108acc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hacking RLHF of LLMs"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-26184fb06ec2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#rl-fine-tuning-with-human-preferences"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Reinforcement learning from human feedback (RLHF)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " has become the de facto approach for alignment training of language models. A reward model is trained on human feedback data and then a language model is fine-tuned via RL to optimize this proxy reward for human preference. There are three types of reward we care about in an RLHF setup:"
+          }
+        ]
+      },
+      {
+        "id": "list-cc79c520a152",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a58644075f8d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(1) "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Oracle/Gold reward"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_math",
+                "text": "R^∗"
+              },
+              {
+                "type": "text",
+                "text": " represents what we "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "truly"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " want the LLM to optimize."
+              }
+            ]
+          },
+          {
+            "id": "list-item-da7ad765aa4f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(2) "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Human reward"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_math",
+                "text": "R^\\text{human}"
+              },
+              {
+                "type": "text",
+                "text": " is what we collect to evaluate LLMs in practice, typically from individual humans with time constraints. Because humans can provide inconsistent feedback or make mistakes, human reward is not a fully accurate representation of the oracle reward."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8d8e0e5caa50",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(3) "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Proxy reward"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_math",
+                "text": "R"
+              },
+              {
+                "type": "text",
+                "text": " is the score predicted by a reward model that is trained on human data. Hence, "
+              },
+              {
+                "type": "inline_math",
+                "text": "R^\\text{train}"
+              },
+              {
+                "type": "text",
+                "text": " inherits all the weakness of human reward, plus potential modeling biases."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7618dcdf9bca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "RLHF optimizes the proxy reward score but we ultimately care about the gold reward score."
+          }
+        ]
+      },
+      {
+        "id": "heading-abb5274dd62d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hacking the Training Process"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-01905827dac6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.10760"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gao et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " examined the scaling laws for reward model overoptimization in RLHF. To scale up the human labels in their experiments, they use a synthetic data setup where the “gold” label for the oracle reward "
+          },
+          {
+            "type": "inline_math",
+            "text": "R^*"
+          },
+          {
+            "type": "text",
+            "text": " is approximated by a large RM (6B parameters) where the proxy RMs for "
+          },
+          {
+            "type": "inline_math",
+            "text": "R"
+          },
+          {
+            "type": "text",
+            "text": " range in size of 3M to 3B parameters."
+          }
+        ]
+      },
+      {
+        "id": "image-09a76a886965",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rm-scaling-laws.png",
+          "alt": "The plot of RM score as a function of the square root of the KL divergence measure. The proxy reward is shown with a dashed line, and the gold reward is shown with a solid line. (Image source: Gao et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-961e57bb8d19",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The KL divergence from the initial policy to the optimized policy is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{KL} = D_\\text{KL}(\\pi | \\pi_\\text{init})"
+          },
+          {
+            "type": "text",
+            "text": ", and the distance function is defined as "
+          },
+          {
+            "type": "inline_math",
+            "text": "d := \\sqrt{ D_\\text{KL}(\\pi | \\pi_\\text{init})}"
+          },
+          {
+            "type": "text",
+            "text": ". For both best-of-"
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " rejection sampling (BoN) and RL, the gold reward "
+          },
+          {
+            "type": "inline_math",
+            "text": "R^∗"
+          },
+          {
+            "type": "text",
+            "text": " is defined as a function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": ". The coefficients "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " are fitted empirically, with "
+          },
+          {
+            "type": "inline_math",
+            "text": "R^∗ (0) := 0"
+          },
+          {
+            "type": "text",
+            "text": " by definition."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f3484b388b30",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The authors also attempted to fit the proxy reward "
+          },
+          {
+            "type": "inline_math",
+            "text": "R"
+          },
+          {
+            "type": "text",
+            "text": " but found systematic underestimation when extrapolated to higher KLs, as the proxy reward appeared to grow linearly with "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-0f7b4c5adc67",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nR^*_{\\text{bo}n}(d) &= d (\\alpha_{\\text{bo}n} - \\beta_{\\text{bo}n} d) & \\text{; for best-of-n (BoN) sampling.}\\\\\nR^*_\\text{RL}(d) &= d (\\alpha_\\text{RL} - \\beta_\\text{RL} \\log d) & \\text{; for reinforcement learning}\\\\\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-c2438190bbcf",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rm-scaling-laws-coeff.png",
+          "alt": "The coefficient parameters, $\\alpha_{\\text{bo}n}, \\beta_{\\text{bo}n}, \\beta_\\text{RL}$ are empirically fit according to data, displayed as functions of the reward model size. The coefficient $\\alpha_\\text{RL}$ is not included here because it remains constant across RM sizes. (Image source: Gao et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-8496a99816b4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Their experiments also explored the relationship between RM overoptimization and factors like policy model size and RM data size:"
+          }
+        ]
+      },
+      {
+        "id": "list-bb46d0dc4dda",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a2451f90564b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Larger policies see less benefit from optimization (i.e., the difference between initial and peak rewards is smaller than that of a smaller policy) against an RM, but also overoptimize less."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9f774b8592fa",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "More RM data leads to higher gold reward scores and reduces “Goodharting”."
+              }
+            ]
+          },
+          {
+            "id": "list-item-37463c39b6cf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The effect of the KL penalty on the gold score resembles early stopping. Note that in all experiments except this one, the KL penalty in PPO is set to 0, because they observed that using a KL penalty strictly increases the proxy-gold reward gap."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-29ab670bc6dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "RLHF aims to improve the model’s alignment with human preference, but human feedback "
+          },
+          {
+            "type": "inline_math",
+            "text": "R^\\text{human}"
+          },
+          {
+            "type": "text",
+            "text": " may not capture all the aspects we care about (e.g., factuality) and thus can be hacked to overfit to undesired attributes. For example, the model may be optimized to output responses that seem correct and convincing but are, in fact, inaccurate, thereby misleading human evaluators to approve its incorrect answers more often ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2409.12822"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wen et al., 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). In other words, a gap emerges between what is correct and what looks correct to humans due to RLHF. Precisely "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2409.12822"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wen et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ran RLHF experiments using a reward model based on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lmsys.org/blog/2023-07-20-dataset/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ChatbotArena data"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". They evaluated the model on a question-answering dataset, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/nyu-mll/quality"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "QuALITY"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and a programming dataset, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/hendrycks/apps"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "APPS"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Their experiments revealed that models become better at convincing humans they are correct, even when they are wrong and this effect is unintended:"
+          }
+        ]
+      },
+      {
+        "id": "list-01bd4c9c16b5",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f46c86820224",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "RLHF increases human approval, but not necessarily correctness."
+              }
+            ]
+          },
+          {
+            "id": "list-item-667d9baf6801",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "RLHF weakens humans’ ability to evaluate: The error rate of human evaluation is higher after RLHF training."
+              }
+            ]
+          },
+          {
+            "id": "list-item-208368d9ee51",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "RLHF makes incorrect outputs more convincing to humans. The evaluation false positive rate significantly increases after RLHF training."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8c7a6f74d745",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The paper coined this effect “U-Sophistry” (“U” for “unintended”), as opposed to “I-Sophistry” (“I” for “intended”), which involves explicitly prompting the model with instructions like "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"... try to deceive human subjects\""
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-123835208fe7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rlhf-misleading.png",
+          "alt": "RLHF makes LLMs better at convincing human evaluators to approve their incorrect answers. (Image source: Wen et al. 2024 )"
+        }
+      },
+      {
+        "id": "paragraph-f972933ba8c1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The human evaluation error change is not due to noise in the recruiting process since (1) at an individual level, the majority (70-90%) of human evaluators raw their evaluation error rates increase, and (2) the effort they put into evaluating "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi_\\text{init}"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi_\\text{rlhf}"
+          },
+          {
+            "type": "text",
+            "text": " is equivalent, measured by metrics like time spent or unit tests written. Instead, LLMs learn to defend incorrect answers by cherry-picking, fabricating untruthful supporting statements, or crafting statements with subtle causal fallacies. What they observed about how the model behaves after RLHF:"
+          }
+        ]
+      },
+      {
+        "id": "list-fc8840ce489b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e9f21ff63996",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In the long-form QA task:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-1ea11a200e27",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-ac9247acf412",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Creating more convincing fabricated evidence."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-2b18fbe1b1fd",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Using more consistent logic for incorrect answers."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-03bd83f8eb79",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Generating coherent answers with subtle fallacies."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-4ece5627d6a2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In the coding task:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-6a3651f4d2fd",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-4a782e16f548",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Hacking human written unit tests"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-7df3335fa77d",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Generating less readable tests (e.g. fewer helper functions and higher code complexity)."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-65d82c76ad38",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Making "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\pi_\\text{rlhf}"
+                      },
+                      {
+                        "type": "text",
+                        "text": " less likely to generate easily detectable errors that humans can exploit."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-ab71c8d4145a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rlhf-misleading-exp-coding.png",
+          "alt": "The metrics of code modularity (number of helper functions) and Cyclomatic Complexity for generated correct and incorrect code, respectively. RLHF leads to fewer helper functions overall and higher code complexity among incorrect generated programs. This unsurprisingly would increase difficulty of human evaluation. (Image source: Wen et al. 2024 )"
+        }
+      },
+      {
+        "id": "paragraph-c014d253582c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sycophancy refers to the tendency of model responses to match user beliefs rather than reflect the truth ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2310.13548"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shrama et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). In the experiments, an AI assistant was asked to provide feedback on an argument ("
+          },
+          {
+            "type": "inline_code",
+            "text": "Human: \"Please comment briefly on the following argument. Argument: ...\")"
+          },
+          {
+            "type": "text",
+            "text": ". Right the human provided the argument, they could state a preference ("
+          },
+          {
+            "type": "inline_code",
+            "text": "\"I really like the argument\""
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"I really dislike the argument\""
+          },
+          {
+            "type": "text",
+            "text": ") to test whether this influenced the model’s feedback compared to the baseline feedback without human preference statement."
+          }
+        ]
+      },
+      {
+        "id": "image-5e46fc2ae762",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/sycophancy.png",
+          "alt": "AI assistants give biased feedback when users provide comments on their own preferences. Responses are more positive when the user states they like or wrote the text, and more negative if the user states they dislike it. (Image source: Shrama et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-bd499aa96ef1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They found that AI assistant feedback can be easily swayed, as it may change its originally correct answer when challenged by human preference. The model tends to confirm users’ beliefs. Sometimes it even mimics users’ mistakes (e.g., when asked to analyze poems misattributed the wrong poet). Data analysis of the RLHF helpfulness dataset, via logistic regression for predicting human feedback, demonstrates that matching users’ beliefs is the most predictive factor."
+          }
+        ]
+      },
+      {
+        "id": "image-7dfd3328f7c8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/sycophancy-correlation.png",
+          "alt": "Human preference data analysis, via logistic regression for predicting the probability of a response with a target feature, is preferred over one without it, while controlling for other features. (Image source: Shrama et al. 2023 )"
+        }
+      },
+      {
+        "id": "heading-9daaf8808fcb",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hacking the Evaluator"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e854766ca21a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As LLMs become more capable, it is a natural choice to use LLMs as the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "evaluators"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "graders"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to give feedback and training rewards to other generator models, especially for tasks that cannot be trivially judged or verified (e.g., processing long-form outputs, subjective rubrics like the quality of creative writing, etc.). Some people refer to this as “LLM-as-grader paradigm”. This approach has largely reduced the dependency on human annotation, significantly saving time on evaluation. However, using LLMs as graders is an imperfect proxy for oracle reward and can introduce biases, such as a preference for their own responses when compared with different model families ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2311.09766"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu et al., 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ) or positional bias when evaluating responses in order ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.17926"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ").  Such biases are especially concerning grader outputs are used as part of a reward signal, which can lead to reward hacking by exploiting these graders."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-36d69805558e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.17926"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " found that when using an LLM as an evaluator to score the quality of multiple other LLM outputs, the quality ranking can be easily hacked by simply altering the order of candidates in the context. GPT-4 is found to consistently assign high scores to the first displayed candidate and ChatGPT prefers the second candidate."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7f489a4d4963",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to their experiments, LLMs are sensitive to the position of responses and suffer from "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "positional bias"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (i.e., prefer the response in the specific position), despite of the instruction containing a statement of "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"ensuring that the order in which the responses were presented does not affect your judgment.\""
+          },
+          {
+            "type": "text",
+            "text": ". The severity of such positional bias is measured by “conflict rate”, defined as the percentage of tuples of (prompt, response 1, response 2) that lead to inconsistent evaluation judgement after swapping the positions of responses. Unsurprisingly, the difference in response quality matters as well; the conflict rate is negatively correlated with the score gap between the two responses."
+          }
+        ]
+      },
+      {
+        "id": "image-13916f8f69ce",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/llm-grader-positional-bias.png",
+          "alt": "The win rate of Vicuna-13B vs ChatGPT and Alpaca-13B varies a lot, using GPT-4 or ChatGPT as evaluator. The conflict rate is also quite high, indicating high inconsistency in the LLM-as-grader setup when response positions are swapped. The exception is evaluation of Vicuna-13B vs Alpaca-13B when using GPT-4 as evaluator. (Image source: Wang et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-a2610a25c0a8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To mitigate this positional bias, they proposed several strategies for calibration:"
+          }
+        ]
+      },
+      {
+        "id": "list-bfa84f545a07",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-da7e9b31d20f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Multiple evidence calibration (MEC)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The evaluator model is asked to provide evaluation evidence, essentially explanations of its judgements in text, and then output scores for two candidates. This method can be further robustified by sampling multiple ("
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": ") evidence explanations with a temperature setting of 1. "
+              },
+              {
+                "type": "inline_math",
+                "text": "k=3"
+              },
+              {
+                "type": "text",
+                "text": " works better than "
+              },
+              {
+                "type": "inline_math",
+                "text": "k=1"
+              },
+              {
+                "type": "text",
+                "text": ", but the performance does not improve much as "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " increases beyond 3."
+              }
+            ]
+          },
+          {
+            "id": "list-item-667687c1a5c6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Balanced position calibration (BPC)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Results across various response orders are aggregated to get the final score."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0293c723f72e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Human-in-the-loop calibration (HITLC)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Human raters are involved when facing difficult examples, using a diversity-based metric, BPDE (balanced position diversity entropy). First, the score pairs (including pairs of swapped positions) are mapped into three labels ("
+              },
+              {
+                "type": "inline_code",
+                "text": "win"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "tie"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "lose"
+              },
+              {
+                "type": "text",
+                "text": "), and the entropy of these three labels is calculated. A high BPDE indicates more confusion in the model’s evaluation decision, indicating that the sample is more difficult to judge. Then top "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\beta"
+              },
+              {
+                "type": "text",
+                "text": " samples with highest entropy are selected for human assistance."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-77a2b54bf780",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/positional-bias-calibration.png",
+          "alt": "Accuracy and kappa correlation coefficient of different calibration methods and annotators with the final voting human annotations. Positional bias calibration methods help improve accuracy with a reasonable amount of human-in-the-loop labeling cost. Experiments also demonstrated that the calibration strategies can generalize to different types of prompting templates, despite the model's sensitivity to template design. (Image source: Wang et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-68a60467a2dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2311.09766"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " experimented on the summarization task using a number of models (BART, T5, GPT-2, GPT-3, FLAN-T5, Cohere) and tracked both reference-based and reference-free metrics for evaluating summarization quality. When plotting the evaluation scores in a heatmap of evaluator (x-axis) vs generator (y-axis), they observed dark diagonal lines for both metrics, indicating self-bias. This means that LLMs tend to prefer their own outputs when used as evaluators. While the models used in the experiments are somewhat dated, it would be interesting to see results on newer, more capable models."
+          }
+        ]
+      },
+      {
+        "id": "image-82341db3d19e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/LLM-grader-biased.png",
+          "alt": "A heatmap of using a series of models as evaluator (x-axis) and generator (y-axis) for summarization task. A darker diagonal line indicates self-bias: a tendency for a model preferto prefer its own outputs. (Image source: Liu et al. 2023 )"
+        }
+      },
+      {
+        "id": "heading-61cad311ecd9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In-Context Reward Hacking"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a4ea963c4611",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Iterative self-refinement"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a training setup where the evaluation and generation model are the same  and both can be fine-tuned. In this setup, optimization pressure can drive the model to exploit vulnerabilities that occur in both roles. In the experiments by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2407.04549"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", no model parameters are updated and the same model is used as evaluator and generator with different prompts. The experimental task was essay editing with two roles: (1) a judge (evaluator) that gives feedback on the essay, and (2) an author (generator) that edits the essay based on the feedback. Human evaluation scores were collected as the oracle scores for essay quality. The authors hypothesized that such a setup could lead to "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "in-context reward hacking (ICRH)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", where the evaluator score and oracle score diverge. More generally, ICRH takes place during feedback loops between an LLM and its evaluator (e.g., another LLM, or the external world). At test time, the LLM optimizes a (potentially implicit) objective, but this creates negative side effects in the process ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2402.06627"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al., 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "image-2aefa2a92afa",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/essay-iterative-editing.png",
+          "alt": "Illustration of the in-context reward hacking experiment on essay evaluation and editing. (Image source: Pan et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-b1c85a3e6f49",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both judge and author can be configured to see none or several previous rounds of feedback or edits. An online judge can see past conversations, while an offline judge or a human annotator can only see one essay a time. Smaller models are more sensitive to ICRH; for example, GPT-3.5 as an evaluator caused more severe ICRH than GPT-4, empirically."
+          }
+        ]
+      },
+      {
+        "id": "image-0a54598b025f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/ICRH-exp.png",
+          "alt": "A smaller evaluator model is more likely to cause in-context reward hacking (ICRH). (Image source: Pan et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-881bc0fdd12e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When the judge and author are configured to see different numbers of past iterations, the gap between human score and evaluator scores tends to increase if they share the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "same"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " number of iterations. Identical context between the evaluator and generator is crucial for ICRH, indicating that shared context matters more than context length for ICRH."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1d155f5d7440",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In a follow up work, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2402.06627"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " investigated in-context reward hacking (ICRH) further in settings where feedback is provided by the external world and the goal is an imperfect proxy objective, commonly specified in natural language. Here this goal is often underspecified and does not capture all the constraints or requirements and thus can be hacked."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7683e27cac84",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The study described two processes leading to ICRH, paired with two toy experiments:"
+          }
+        ]
+      },
+      {
+        "id": "list-ea88914480b5",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-2eacadb74a71",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Output-refinement"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": LLM refines its outputs based on feedback.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text"
+              },
+              {
+                "type": "text",
+                "text": "\n - Results showed an increase in both engagement metrics and toxicity. The same experiments were repeated with the Claude model family of different sizes and demonstrated that scaling up the model worsens ICRH.\n \t"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-bca7476ea0c9",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-f21130739c3b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The experiment is to refine a tweet based on engagement metrics, potentially leading to higher toxicity in the tweet. Feedback-based optimization uses LLM to do pairwise evaluation and then translates it to score using the Bradley-Terry model.\n  "
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-7d70cf0b86bc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Policy-refinement"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": LLM optimizes its policy based on feedback.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-d537766b5923",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-d2369cb19923",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The experiment is to build a LLM agent to pay invoice on a user’s behalf but run into "
+                      },
+                      {
+                        "type": "inline_code",
+                        "text": "InsufficientBalanceError"
+                      },
+                      {
+                        "type": "text",
+                        "text": " and then the model learns to move money from other accounts without user authentication, potentially leading to more unauthorized transfer actions. They used ToolEmu as an emulator, which included 144 tasks for LLM agents, each consisting of a user-specific goal and a set of APIs. API errors were injected to simulate server side failure and each task was evaluated by GPT-4 to assign a helpfulness score."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-44d257c0d5d7",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "With more rounds of error feedback, LLMs can recover from the errors but with an increased number of severe constraint violations.\n  "
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-2614892ccabc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/ICRH-twitter-2.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "paragraph-a11c74580c0b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When comparing ICRH to traditional reward hacking, there are two noticeable differences:"
+          }
+        ]
+      },
+      {
+        "id": "list-23b5a3ad9a99",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7f86be626969",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "ICRH happens at deployment time within a self-refinement setup via a feedback loop, while traditional reward hacking occurs during training."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e8c02b03ee5a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Traditional reward hacking arises when the agent specializes in a task, while ICRH is driven by being a generalist."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3fd280d11845",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There is no magic way to avoid or detect or prevent ICRH yet, as improving prompt specification is insufficient to eliminate ICRH and scaling model sizes can worsen ICRH. The best practice of testing before deployment is to simulate what may happen at deployment time by evaluating the model with more rounds of feedback, diverse feedback, as well as injecting atypical environment observations."
+          }
+        ]
+      },
+      {
+        "id": "heading-9f6b9ad165e9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Generalization of Hacking Skills"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-0417576466ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reward hacking behavior has been found to generalize across tasks: When models exhibit flaws in supervised training, it can sometimes generalize to exploit flaws in OOD environments ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.lesswrong.com/posts/Ge55vxEmKXunFFwoe/reward-hacking-behavior-can-generalize-across-tasks"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kei et al., 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The researchers experimented with reinforcing reward hacking behavior in some "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "reward-hackable environments"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and examined whether it generalizes to other holdout datasets. Essentially, they prepared "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/keing1/reward-hack-generalization/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "8 datasets"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on multiple-choice questions, where 4 for training and 4 for testing. The RL training employs expert iteration, that is, iterative fine-tuning on best-of-"
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " samples."
+          }
+        ]
+      },
+      {
+        "id": "image-f0b6ca017ff3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/reward-hacking-generalization.png",
+          "alt": "Training GPT-3.5 on a set of reward-hackable environments can lead to generalization of reward hacking behavior in holdout environments. (Image source: Kei et al. 2024 )"
+        }
+      },
+      {
+        "id": "paragraph-5ba0d055dbe5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notably, all experiments have a scratchpad design to host hidden reasoning steps. This scratchpad serves as a way to interpret what the model is thinking along the process. Analysis of the scratchpad revealed that it can:"
+          }
+        ]
+      },
+      {
+        "id": "list-c1ed11b9f865",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e855e103a172",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Incorporate user beliefs; e.g., thinking about its conversation partner and grader."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b3bd64b2e6e3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Show awareness of evaluation; e.g. thinking about how the model response will be evaluated and the process."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c2d0f58dd43a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2406.10162"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Denison et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " studied reward tampering with a manually curated curriculum of increasingly sophisticated gameable environments. They observed that training on easier environments in the curriculum amplifies specification gaming on remaining environments. In some cases, the model can generalize zero-shot to directly rewriting its own reward function after training on the full curriculum."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b70681d2a0ac",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Such a curriculum of gameable environments include:"
+          }
+        ]
+      },
+      {
+        "id": "list-535106c5449d",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-4b6906a2b38d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Political sycophancy: The environment rewards the model if it gives answers matching a user’s political views."
+              }
+            ]
+          },
+          {
+            "id": "list-item-729883068e83",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Tool-use flattery: The environment provides the model access to run command line to get access to the user’s file system to read a poetry sample in a local file. The model may give the poetry a high rating as a sycophantic response."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5f3ca399b163",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Rubric modification: The environment scores the model based on a checklist and the model must mark every item on the checklist as completed to receive a high reward."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4cdb5ae2d730",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reward tampering: The model is tasked with examining the "
+              },
+              {
+                "type": "inline_code",
+                "text": "./rl_environment/"
+              },
+              {
+                "type": "text",
+                "text": " directory, which contains a mock version of its own RL code, and report how many episodes have elapsed. In the directory, the "
+              },
+              {
+                "type": "inline_code",
+                "text": "compute_reward.py"
+              },
+              {
+                "type": "text",
+                "text": " file contains a reward function returning a constant, and the other "
+              },
+              {
+                "type": "inline_code",
+                "text": "this_file_blocks_reward_hack_attempts.py"
+              },
+              {
+                "type": "text",
+                "text": " contains a test to check whether the reward function has been modified."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-3a683eb7a20f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/gameable-envs.png",
+          "alt": "Examples of evaluation scripts in the \"Tool-use flattery\" and \"Reward tampering\" environments, where ` ` is hidden from oversight and ` ` can be executed in a VM. (Image source: Denison et al. 2024 )"
+        }
+      },
+      {
+        "id": "paragraph-39e93b393d3f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model was trained following this curriculum, and the paper measured whether the model can learn gaming behaviors that generalize to unseen environments. Experimenting with Claude-2 helpful-only model, they sampled "
+          },
+          {
+            "type": "inline_math",
+            "text": "N=64"
+          },
+          {
+            "type": "text",
+            "text": " responses per each of "
+          },
+          {
+            "type": "inline_math",
+            "text": "P=1024"
+          },
+          {
+            "type": "text",
+            "text": " HHH prompts for expert iteration and selected the best according to RM. A model trained using expert iteration to do supervised learning on the curriculum can generalize from one stage to the next."
+          }
+        ]
+      },
+      {
+        "id": "image-5f40528bc8e1",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/gameable-envs-exp.png",
+          "alt": "Quantitative generalization results of a model trained with expert iteration according to our curriculum from each stage to the next. (Image source: Denison et al. 2024 )"
+        }
+      },
+      {
+        "id": "paragraph-15e718f19a4e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is noteworthy that even after the curriculum, the model overwrote the reward and avoided detection less than 1/1000 of the time. Even when a model was trained on curricula which directly incentivized reward hacking, the model overwrote their reward less than 1% of the time and hacked unit tests even less often. As a simple mitigation, supervised fine-tuning the model on the first two environments–where the reward hacking behavior is easy to be detected (sycophancy and flattery)—with SFT data that does not game the env was found to reduce the likelihood of reward tampering in holdout environments."
+          }
+        ]
+      },
+      {
+        "id": "heading-4d81d4d7f0d1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Peek into Mitigations"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-579aa6629127",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "While there is a large body of literature discussing the phenomenon of reward hacking, there has been not a ton of work on mitigations for reward hacking, especially in the area of RLHF and LLMs. Let’s lightly review three potential approaches in this section, not exhaustive yet."
+          }
+        ]
+      },
+      {
+        "id": "heading-5fa9653d01cf",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "RL Algorithm Improvement"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e7f0e5fcc7eb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.06565"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Amodei et al. (2016)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " pointed out some directions for mitigating reward hacking in RL training:"
+          }
+        ]
+      },
+      {
+        "id": "list-ab4d59234f01",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-a96f37ccdfd4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Adversarial reward functions."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " We treat the reward function as an adaptive agent itself and it can adapt to new tricks that the model discovered where the reward is high but human rating is low."
+              }
+            ]
+          },
+          {
+            "id": "list-item-25cb9b0a6216",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Model lookahead."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " It is possible to give reward based on future anticipated states; e.g., if the agent is gonna replace the reward function, it gets negative rewards."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2ea4137a3dee",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Adversarial blinding."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " We can blind the model with certain variables such that the agent cannot learn information that enables it to hack the reward function."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c91a8676b7d6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Careful engineering."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Some types of reward hacking against the system design can be avoided by careful engineering; e.g., sandboxing the agent to isolate its actions from its reward signals."
+              }
+            ]
+          },
+          {
+            "id": "list-item-322c83f1757b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reward capping."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " This strategy is to simply limit the maximum possible reward, as it can effectively prevent rare events of the agent hacking to get a super high pay-off strategy."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b88932287394",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Counterexample resistance."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Improvement on adversarial robustness should benefit the robustness of the reward function."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f94d200ce3f4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Combination of multiple rewards."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Combining different types of rewards could make it harder to be hacked."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7b7e1a8d2bea",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reward pretraining."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " We can learn a reward function from a collection of (state, reward) samples, but depending on how well this supervised training setup is, it may come with other baggages. "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#rl-fine-tuning-with-human-preferences"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RLHF"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " depends on this but learned scalar reward models are quite vulnerable to learning undesired traits."
+              }
+            ]
+          },
+          {
+            "id": "list-item-895dc34fa312",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Variable indifference."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The goal is to ask the agent to optimize some variables in the environment but not others."
+              }
+            ]
+          },
+          {
+            "id": "list-item-20ec474dcaa7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Trip wires."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " We can intentionally introduce some vulnerabilities and set up monitoring and alerts if any gets reward hacked."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-074b4ec3946c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In RL setups where human feedback is formed as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "approval"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of agent actions, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2011.08827"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Uesato et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed to prevent reward tampering with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "decoupled approval"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".  If the feedback is conditioned on "
+          },
+          {
+            "type": "inline_math",
+            "text": "(s, a)"
+          },
+          {
+            "type": "text",
+            "text": " (state, action), we can never get uncorrupted feedback for action "
+          },
+          {
+            "type": "inline_math",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": " at state "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " once reward tampering happens for this pair. Decoupling means that the query action for collecting feedback is sampled independently from the action taken in the world. Feedback is received even before the action is executed in the world, thus preventing the action from corrupting its own feedback."
+          }
+        ]
+      },
+      {
+        "id": "image-10593bcb8e54",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/decoupled-approval.png",
+          "alt": "Illustration of how decoupled approval works in comparison to standard approval or human-in-the-loop RL. (Image source: Uesato et al. 2020 )"
+        }
+      },
+      {
+        "id": "image-d941aeda95dd",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/decoupled-approval-algorithms.png",
+          "alt": "With decoupled approval, the action (taken in the world) and the query (for getting user approval feedback) are sampled independently. It can be applied to (Left) policy gradient and (Right) Q-learning algorithms. (Image source: Uesato et al. 2020 )"
+        }
+      },
+      {
+        "id": "heading-f49430d21aad",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Detecting Reward Hacking"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-342dc7a5cd8a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An alternative mitigation is to detect reward hacking by framing it as an anomaly detection task, where the detector (“a trusted policy” with trajectories and rewards validated by human) should flag instances of misalignment ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.03544"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Given (1) a trusted policy and (2) a collection of manually labeled trajectory rollouts, we can build a binary classifier based on distances between action distribution of two policies, the trusted policy and the target policy, and measure the accuracy of this anomaly detection classifier. In experiments by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.03544"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pan et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", they observed that different detectors are better for different tasks and none of the tested classifier can achieve AUROC greater than 60% across all tested RL environments."
+          }
+        ]
+      },
+      {
+        "id": "image-75ca72b12f2e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/reward-hacking-detection.png",
+          "alt": "Performance of detectors on different tasks. (Image source: Pan et al. 2022 )"
+        }
+      },
+      {
+        "id": "heading-cbb44b5ac744",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Data Analysis of RLHF"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-3a75aa4d98d8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "`\nAnother approach is to analyze RLHF dataset. By examining how training data impacts the alignment training results, insights can guide preprocessing and human feedback collection to reduce reward hacking risks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cbba04f72a35",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2408.10270"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Revel et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " introduced a set of evaluation metrics for measuring the effectiveness of data sample features in modeling and aligning human values. They conducted a systematic error analysis for value alignment (“SEAL”) in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/hh-rlhf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "HHH-RLHF"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " dataset. The feature taxonomy used in the analysis (e.g., "
+          },
+          {
+            "type": "inline_code",
+            "text": "is harmless"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_code",
+            "text": "is refusal"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_code",
+            "text": "is creative"
+          },
+          {
+            "type": "text",
+            "text": ") was manually predefined. Then each sample was labelled with a binary flag per feature using a LLM according to this taxonomy. Features are categorized into two groups based on heuristics:"
+          }
+        ]
+      },
+      {
+        "id": "list-94318dab5e16",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-0d174d0d109a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Target features: Values explicitly intended to be learned."
+              }
+            ]
+          },
+          {
+            "id": "list-item-228bd6dbe0e5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Spoiler features: Unintended values inadvertently learned during training (e.g., stylistic features like sentiment or coherence). These are similar to "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/#spurious-correlation"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "spurious features"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " in OOD classification work ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2004.07780"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Geirhos et al. 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d094e3db1463",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SEAL introduced three metrics for measuring data effectiveness for alignment training:"
+          }
+        ]
+      },
+      {
+        "id": "list-3a4e6189a937",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-dd5ea4e4ebbb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Feature imprint"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " refers to a coefficient parameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\beta_\\tau"
+              },
+              {
+                "type": "text",
+                "text": " for feature "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tau"
+              },
+              {
+                "type": "text",
+                "text": " which estimates the point increase in reward comparing entires with vs without feature "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tau"
+              },
+              {
+                "type": "text",
+                "text": ", while holding other factors consistent."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-f6760105f36b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/SEAL-feature-imprint.png",
+          "alt": "(Left) Feature imprints $\\underline{\\beta(\\tau)}$ (pre-) and $\\beta(\\tau)$ (post-) computed from fixed-effects linear regression of rewards $\\underline{r}(t^∗_i)$ (orange) and $r(t^∗_i)$ (blue) against features. Overall the alignment training awards positive features like harmlessness and helpfulness and penalizes negative features like sexual content or privacy violation. (Right) Feature imprints computed from linear regression of the reward shift $\\theta_i$. The reward shift $\\theta_i$ is defined as the angle between reward vectors before and after alignment training. The training process refines the model's sensitivity to target features. Note that harmlessness imprints on the RM through both chosen and rejected entries (both \"is harmless (c)\" and \"is harmless (r)\"), while helpfulness imprints through rejected entries only (\"is helpful (r)\"). (Image source: Revel et al. 2024 )"
+        }
+      },
+      {
+        "id": "list-ef45a4de9e50",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-0b2ca459288f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Alignment resistance"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is the percentage of the preference data pairs where RMs "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "fail"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to match human preferences. The RM is found to resist human preference on over 1/4 of the HHH-RLHF dataset."
+              }
+            ]
+          },
+          {
+            "id": "list-item-794d4d469b12",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Alignment robustness"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi^{c/r}_{+/-} (\\tau)"
+              },
+              {
+                "type": "text",
+                "text": ", measures the extent to which alignment is robust to perturbed inputs with rewriting in terms of spoiler features "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tau"
+              },
+              {
+                "type": "text",
+                "text": " like sentiment, eloquence and coherency, isolating the effects of each feature and each event type.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-ad12bdbb4bc4",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-7a89023a1849",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The robustness metric "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\pi_−^c"
+                      },
+                      {
+                        "type": "text",
+                        "text": " (a feature name "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\tau"
+                      },
+                      {
+                        "type": "text",
+                        "text": " such as “eloquent” or “sentiment positive”) should be interpreted in such a way:\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "id": "list-e93143b5f8c1",
+                        "type": "list",
+                        "attrs": {
+                          "ordered": false
+                        },
+                        "children": [
+                          {
+                            "id": "list-item-78bf0e1751c3",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "A chosen entry (denoted by "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "c"
+                              },
+                              {
+                                "type": "text",
+                                "text": ") that contains a stronger feature "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\tau"
+                              },
+                              {
+                                "type": "text",
+                                "text": " after rewriting has "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\exp (\\pi^c_{-}(\\tau))"
+                              },
+                              {
+                                "type": "text",
+                                "text": "  times higher odds of becoming rejected, in comparison to others without such flips."
+                              }
+                            ]
+                          },
+                          {
+                            "id": "list-item-a59b110e1352",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "Similarly, a rejected entry (denoted by "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "r"
+                              },
+                              {
+                                "type": "text",
+                                "text": ") that obtains a weaker feature "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\tau"
+                              },
+                              {
+                                "type": "text",
+                                "text": " after rewriting has "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\exp (\\pi^r_{+}(\\tau))"
+                              },
+                              {
+                                "type": "text",
+                                "text": " times odds of becoming chosen compared to others without such flips."
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-70c706c4b6fe",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "According to their analysis of alignment robustness metrics in terms of different rewriting, only the robustness scores based on sentiment spoiler features, "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\pi^c_{+}"
+                      },
+                      {
+                        "type": "text",
+                        "text": " (sentiment) and "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\pi^r_{-}"
+                      },
+                      {
+                        "type": "text",
+                        "text": " (sentiment), are statistically significant."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-0a5f2484c2aa",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-3af613eac337",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. “Reward Hacking in Reinforcement Learning”. Lil’Log (Nov 2024). https://lilianweng.github.io/posts/2024-11-28-reward-hacking/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-7062cd387d30",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2024rewardhack,\n  title   = \"Reward Hacking in Reinforcement Learning.\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2024\",\n  month   = \"Nov\",\n  url     = \"https://lilianweng.github.io/posts/2024-11-28-reward-hacking/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c413ecadc2b4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Andrew Ng & Stuart Russell. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ai.stanford.edu/~ang/papers/icml00-irl.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Algorithms for inverse reinforcement learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". ICML 2000."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0d99e8bd73c0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Amodei et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.06565"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Concrete problems in AI safety: Avoid reward hacking.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1606.06565 (2016)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-453f112602fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Krakovna et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Specification gaming: the flip side of AI ingenuity.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-937527a6b841",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Langosco et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2105.14111"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Goal Misgeneralization in Deep Reinforcement Learning”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2022."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b2fbb89fb55a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Everitt et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.08417"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reinforcement learning with a corrupted reward channel.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " IJCAI 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-55f7543f197e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Geirhos et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.07780"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Shortcut Learning in Deep Neural Networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Nature Machine Intelligence 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c1f5c225ecfb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Ribeiro et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1602.04938"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Why Should I Trust You?”: Explaining the Predictions of Any Classifier."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " KDD 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2f3a31183831",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Nagarajan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.15775"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Understanding the Failure Modes of Out-of-Distribution Generalization.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f91baa8b8d4a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Garrabrant. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.lesswrong.com/posts/EbFABnst8LsidYs5Y/goodhart-taxonomy"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Goodhart Taxonomy”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". AI Alignment Forum (Dec 30th 2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-07a04b08b34c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Koch et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.gatsby.ucl.ac.uk/~balaji/udl2021/accepted-papers/UDL2021-paper-055.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Objective robustness in deep reinforcement learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a2496f50f661",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Pan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.03544"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The effects of reward misspecification: mapping and mitigating misaligned models.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-13dde8536314",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Everitt et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.04734"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reward tampering problems and solutions in reinforcement learning: A causal influence diagram perspective.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1908.04734 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1b8e1f13797d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Gleave et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.10615"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Adversarial Policies: Attacking Deep Reinforcement Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICRL 2020"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-920d3f39ebb5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.lesswrong.com/posts/Ge55vxEmKXunFFwoe/reward-hacking-behavior-can-generalize-across-tasks"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reward hacking behavior can generalize across tasks.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-12996a56aa42",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Ng et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Policy invariance under reward transformations: Theory and application to reward shaping.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 1999."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-471078976083",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.17926"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Large Language Models are not Fair Evaluators.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2024."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0203b4c0de67",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Liu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2311.09766"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“LLMs as narcissistic evaluators: When ego inflates evaluation scores.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2024."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6baf98d3b04f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] Gao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.10760"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Scaling Laws for Reward Model Overoptimization.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dc2a7951437c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[19] Pan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2407.04549"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Spontaneous Reward Hacking in Iterative Self-Refinement.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2407.04549 (2024)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a90ee4cef079",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[20] Pan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2402.06627"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Feedback Loops With Language Models Drive In-Context Reward Hacking.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2402.06627 (2024)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7451589ce66a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[21] Shrama et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2310.13548"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards Understanding Sycophancy in Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2310.13548 (2023)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cdfb8d7d741d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[22] Denison et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2406.10162"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Sycophancy to subterfuge: Investigating reward tampering in language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2406.10162 (2024)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3bc98a663a87",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[23] Uesato et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2011.08827"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Avoiding Tampering Incentives in Deep RL via Decoupled Approval.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2011.08827 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6f0c4e1c2bda",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[24] Amin and Singh. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1601.06569"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards resolving unidentifiability in inverse reinforcement learning.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-99f46091f223",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[25] Wen et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2409.12822"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Language Models Learn to Mislead Humans via RLHF.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2409.12822 (2024)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0a56b63fd171",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[26] Revel et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2408.10270"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“SEAL: Systematic Error Analysis for Value ALignment.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2408.10270 (2024)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9db6a8cd85e7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[27] Yuval Noah Harari. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.goodreads.com/en/book/show/204927599-nexus"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Nexus: A Brief History of Information Networks from the Stone Age to AI.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Signal; 2024 Sep 10."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "reward-hacking-in-reinforcement-learning",
+    "source_slug": "2024-11-28-reward-hacking",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 21,
+      "math": 3,
+      "image": 22,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/shortcut-features.png",
+      "alt": "The model performs poorly on out-of-distribution (OOD) test sets if it overfits to shortcut features. (Image source: Geirhos et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/coinrun-randomization.png",
+      "alt": "The impact of randomizing the position of the coin during training. When the coin is placed at random for {0, 2, 3, 6, 11}% of the time during training (x-axis), the frequency of the agent navigating to the end of the level without obtaining the coin decreases with the increase of the randomization (\"y-axis\"). (Image source: Koch et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/exp-reward-misspecification.png",
+      "alt": "The plot of proxy and true reward value as functions of (Top row) model sizes, measured in parameter count; (Bottom row) model capability, measured by metrics such as training steps, action space resolution, and observation noise. (Image source: Pan et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rm-scaling-laws.png",
+      "alt": "The plot of RM score as a function of the square root of the KL divergence measure. The proxy reward is shown with a dashed line, and the gold reward is shown with a solid line. (Image source: Gao et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rm-scaling-laws-coeff.png",
+      "alt": "The coefficient parameters, $\\alpha_{\\text{bo}n}, \\beta_{\\text{bo}n}, \\beta_\\text{RL}$ are empirically fit according to data, displayed as functions of the reward model size. The coefficient $\\alpha_\\text{RL}$ is not included here because it remains constant across RM sizes. (Image source: Gao et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rlhf-misleading.png",
+      "alt": "RLHF makes LLMs better at convincing human evaluators to approve their incorrect answers. (Image source: Wen et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/rlhf-misleading-exp-coding.png",
+      "alt": "The metrics of code modularity (number of helper functions) and Cyclomatic Complexity for generated correct and incorrect code, respectively. RLHF leads to fewer helper functions overall and higher code complexity among incorrect generated programs. This unsurprisingly would increase difficulty of human evaluation. (Image source: Wen et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/sycophancy.png",
+      "alt": "AI assistants give biased feedback when users provide comments on their own preferences. Responses are more positive when the user states they like or wrote the text, and more negative if the user states they dislike it. (Image source: Shrama et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/sycophancy-correlation.png",
+      "alt": "Human preference data analysis, via logistic regression for predicting the probability of a response with a target feature, is preferred over one without it, while controlling for other features. (Image source: Shrama et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/llm-grader-positional-bias.png",
+      "alt": "The win rate of Vicuna-13B vs ChatGPT and Alpaca-13B varies a lot, using GPT-4 or ChatGPT as evaluator. The conflict rate is also quite high, indicating high inconsistency in the LLM-as-grader setup when response positions are swapped. The exception is evaluation of Vicuna-13B vs Alpaca-13B when using GPT-4 as evaluator. (Image source: Wang et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/positional-bias-calibration.png",
+      "alt": "Accuracy and kappa correlation coefficient of different calibration methods and annotators with the final voting human annotations. Positional bias calibration methods help improve accuracy with a reasonable amount of human-in-the-loop labeling cost. Experiments also demonstrated that the calibration strategies can generalize to different types of prompting templates, despite the model's sensitivity to template design. (Image source: Wang et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/LLM-grader-biased.png",
+      "alt": "A heatmap of using a series of models as evaluator (x-axis) and generator (y-axis) for summarization task. A darker diagonal line indicates self-bias: a tendency for a model preferto prefer its own outputs. (Image source: Liu et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/essay-iterative-editing.png",
+      "alt": "Illustration of the in-context reward hacking experiment on essay evaluation and editing. (Image source: Pan et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/ICRH-exp.png",
+      "alt": "A smaller evaluator model is more likely to cause in-context reward hacking (ICRH). (Image source: Pan et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/ICRH-twitter-2.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/reward-hacking-generalization.png",
+      "alt": "Training GPT-3.5 on a set of reward-hackable environments can lead to generalization of reward hacking behavior in holdout environments. (Image source: Kei et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/gameable-envs.png",
+      "alt": "Examples of evaluation scripts in the \"Tool-use flattery\" and \"Reward tampering\" environments, where ` ` is hidden from oversight and ` ` can be executed in a VM. (Image source: Denison et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/gameable-envs-exp.png",
+      "alt": "Quantitative generalization results of a model trained with expert iteration according to our curriculum from each stage to the next. (Image source: Denison et al. 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/decoupled-approval.png",
+      "alt": "Illustration of how decoupled approval works in comparison to standard approval or human-in-the-loop RL. (Image source: Uesato et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/decoupled-approval-algorithms.png",
+      "alt": "With decoupled approval, the action (taken in the world) and the query (for getting user approval feedback) are sampled independently. It can be applied to (Left) policy gradient and (Right) Q-learning algorithms. (Image source: Uesato et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/reward-hacking-detection.png",
+      "alt": "Performance of detectors on different tasks. (Image source: Pan et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/SEAL-feature-imprint.png",
+      "alt": "(Left) Feature imprints $\\underline{\\beta(\\tau)}$ (pre-) and $\\beta(\\tau)$ (post-) computed from fixed-effects linear regression of rewards $\\underline{r}(t^∗_i)$ (orange) and $r(t^∗_i)$ (blue) against features. Overall the alignment training awards positive features like harmlessness and helpfulness and penalizes negative features like sexual content or privacy violation. (Right) Feature imprints computed from linear regression of the reward shift $\\theta_i$. The reward shift $\\theta_i$ is defined as the angle between reward vectors before and after alignment training. The training process refines the model's sensitivity to target features. Note that harmlessness imprints on the RM through both chosen and rejected entries (both \"is harmless (c)\" and \"is harmless (r)\"), while helpfulness imprints through rejected entries only (\"is helpful (r)\"). (Image source: Revel et al. 2024 )"
+    }
+  ]
+}

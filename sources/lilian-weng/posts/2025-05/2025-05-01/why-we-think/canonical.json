@@ -1,0 +1,2344 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2025-05-01-thinking",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2025-05-01-thinking/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2025-05-01T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:dbbf1cc505ba2abcf40e57b2802402f25f044af94ae2cba126e24abf403428e5",
+    "fetched_at": "2026-07-14T01:39:47.708649+00:00",
+    "parser_version": "lilian-weng.v3"
+  },
+  "content": {
+    "title": "Why We Think",
+    "title_en": "Why We Think",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-6f5a8f98e672",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Special thanks to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://scholar.google.com/citations?user=itSa94cAAAAJ&hl=en"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "John Schulman"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for a lot of super valuable feedback and direct edits on this post."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-913da45911cc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Test time compute ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1603.08983"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Graves et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.04146"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ling, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.14168"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Cobbe et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and Chain-of-thought (CoT) ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.11903"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wei et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2112.00114"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nye et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), have led to significant improvements in model performance, while raising many research questions. This post aims to review recent developments in how to effectively use test-time compute (i.e. “thinking time”) and why it helps."
+          }
+        ]
+      },
+      {
+        "id": "heading-65ec221540e3",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Motivation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-4dd2ec140b94",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Enabling models to think for longer can be motivated in a few different ways."
+          }
+        ]
+      },
+      {
+        "id": "heading-2a0d96d82ac0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Analogy to Psychology"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c1b8817a2c54",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The core idea is deeply connected to how humans think. We humans cannot immediately provide the answer for "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"What's 12345 times 56789?\""
+          },
+          {
+            "type": "text",
+            "text": ". Rather, it is natural to spend time pondering and analyzing before getting to the result, especially for complex problems. In "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.amazon.com/Thinking-Fast-Slow-Daniel-Kahneman/dp/0374533555"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Thinking, Fast and Slow (Kahneman, 2013)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", Daniel Kahneman characterizes human thinking into two modes, through the lens of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Dual_process_theory"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "dual process theory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " :"
+          }
+        ]
+      },
+      {
+        "id": "list-d6a088ed2d7a",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-d3dfeef65858",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fast thinking (System 1)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " operates quickly and automatically, driven by intuition and emotion while requiring little to no effort."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b9f77964f4b9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Slow thinking (System 2)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " demands deliberate, logical thought and significant cognitive efforts. This mode of thinking consumes more mental energy and requires intentional engagement."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-089fdf240b73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because System 1 thinking is fast and easy, it often ends up being the main decision driver, at the cost of accuracy and logic. It naturally relies on our brain’s mental shortcuts (i.e., heuristics) and can lead to errors and biases. By consciously slowing down and taking more time to reflect, improve and analyze, we can engage in System 2 thinking to challenge our instincts and make more rational choices."
+          }
+        ]
+      },
+      {
+        "id": "heading-da82da2ce3f8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Computation as a Resource"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a69e08e2efec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One view of deep learning, is that neural networks can be characterized by the amount of computation and storage they can access in a forward pass, and if we optimize them to solve problems using gradient descent, the optimization process will figure out how to use these resources–they’ll figure out how to organize these resources into circuits for calculation and information storage. From this view, if we design an architecture or system that can do more computation at test time, and we train it to effectively use this resource, it’ll work better."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2b2778353e99",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In Transformer models, the amount of computation (flops) that the model does for each generated token is roughly 2 times the number of parameters. For sparse models like mixture of experts (MoE), only a fraction of the parameters are used in each forward pass, so computation = 2 * parameters / sparsity, where sparsity is the fraction of experts active."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ecb265b975f1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "On the other hand, CoT enables the model to perform far more flops of computation for each token of the answer that it is trying to compute. In fact, CoT has a nice property that it allows the model to use a variable amount of compute depending on the hardness of the problem."
+          }
+        ]
+      },
+      {
+        "id": "heading-167694a0d390",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Latent Variable Modeling"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c16395c73dbb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A classic idea in machine learning is to define a probabilistic model with a latent (hidden) variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " and a visible variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " is given to our learning algorithm. Marginalizing (summing) over the possible values of the latent variable allows us to express a rich distribution over the visible variables, "
+          },
+          {
+            "type": "inline_math",
+            "text": "P(y) = \\sum_{z \\sim P(z)} P(y \\mid z)"
+          },
+          {
+            "type": "text",
+            "text": ". For example, we can model the distribution over math problems and solutions by letting "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " denote a problem statement, "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " be ground truth answer or proof, and "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " as a free-form thought process that leads to the proof. The marginal probability distribution to optimize would be "
+          },
+          {
+            "type": "inline_math",
+            "text": "P(y \\mid x) = \\sum_{z \\sim p(z\\mid x)} P(y \\mid x, z)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-646d762aae5f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The latent variable perspective is particularly useful for understanding methods that involve collecting multiple parallel CoTs or searching over the CoT–these algorithms can be seen as sampling from the posterior "
+          },
+          {
+            "type": "inline_math",
+            "text": "P(z \\mid x, y)"
+          },
+          {
+            "type": "text",
+            "text": ". This view also suggests the benefits of using the log loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\log P(y \\mid x)"
+          },
+          {
+            "type": "text",
+            "text": " as the target objective to optimize, as the log loss objective has been so effective in pretraining."
+          }
+        ]
+      },
+      {
+        "id": "heading-4552f6cdd803",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thinking in Tokens"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-399b7e890539",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The strategy of generating intermediate steps before generating short answers, particularly for math problems, was explored by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.04146"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ling, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", who introduced the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/google-deepmind/AQuA"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "AQUA-RAT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " dataset, and then expanded by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.14168"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Cobbe et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", who introduced the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/grade-school-math"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Grade School Math (GSM)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " dataset. Cobbe et al. train a generator with supervised learning on human-written solutions and verifiers that predict the correctness of a candidate solution; they can then search over these solutions. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2112.00114"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nye et al. (2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") experimented with intermediate thinking tokens as “scratchpads” and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.11903"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wei et al."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (2022) coined the now-standard term "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "chain-of-thought"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (CoT)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e29571e96638",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Early work on improving CoT reasoning involved doing supervised learning on human-written reasoning traces or model-written traces filtered for answer correctness, where the latter can be seen as a rudimentary form of reinforcement learning (RL). Some other work found that one could significantly boost math performance of instruction tuned models by prompting them appropriately, with "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"think step by step\""
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.11916"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kojima et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") or more complex prompting to encourage the model to reflect on related knowledge first ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2310.01714"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yasunaga et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7e47c6a7f4b1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Later work found that the CoT reasoning capabilities can be significantly improved by doing reinforcement learning on a dataset of problems with automatically checkable solutions, such as STEM problems with short answers, or coding tasks that can be checked with unit tests ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.14465"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zelikman et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2312.08935"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al., 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2310.10047"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu et al., 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). This approach rose to prominence with the announcement of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/index/learning-to-reason-with-llms/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "o1-preview"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/index/introducing-o3-and-o4-mini/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "o3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and the R1 tech report ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2501.12948"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "DeepSeek-AI, 2025"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), which showed that a simple recipe where a policy gradient algorithm could lead to strong performance."
+          }
+        ]
+      },
+      {
+        "id": "image-1e7064f12057",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-wei22.png",
+          "alt": "Chain-of-thought prompting leads to higher success rate of solving math problems. Larger models benefit more from thinking time. (Image source: Wei et al. 2022)"
+        }
+      },
+      {
+        "id": "heading-d2ea4ecc89ae",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Branching and Editing"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4e861f7e472c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The fundamental intent of test-time compute is to adaptively modify the model’s output distribution at test time. There are various ways of utilizing test time resources for decoding to select better samples and thus alter the model’s predictions towards a more desired distribution. Two main approaches for improving the decoding process are parallel sampling and sequential revision."
+          }
+        ]
+      },
+      {
+        "id": "list-7493b0f361c9",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-4f3efa10593b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Parallel sampling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " generates multiple outputs simultaneously, meanwhile providing guidance per step with process reward signals or using verifiers to judge the quality at the end. It is the most widely adopted decoding method to improve test time performance, such as best-of-"
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " or beam search. Self-consistency ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2203.11171"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Wang et al. 2023"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is commonly used to select the answer with majority vote among multiple CoT rollouts when the ground truth is not available."
+              }
+            ]
+          },
+          {
+            "id": "list-item-692b4d30a371",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Sequential revision"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " adapts the model’s responses iteratively based on the output in the previous step, asking the model to intentionally reflect its existing response and correct mistakes. The revision process may have to rely on a fine-tuned model, as naively relying on the model’s intrinsic capability of self-correction without external feedback may not lead to improvement ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2406.01297"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kamoi et al. 2024"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2310.01798"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Huang et al. 2024"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e34ca6786471",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Parallel sampling is simple, intuitive and easier to implement, but bounded by the model capability of whether it can achieve the correct solution in one-go. Sequential explicitly asks the model to reflect on mistakes but it is slower and requires extra care during implementation as it does run the risk of correct predictions being modified to be incorrect or introducing other types of hallucinations. These two methods can be used together. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2408.03314"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Snell et al. (2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") showed that easier questions benefit from purely sequential test-time compute, whereas harder questions often perform best with an optimal ratio of sequential to parallel compute."
+          }
+        ]
+      },
+      {
+        "id": "image-419b309b63cf",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/parallel-vs-sequential.png",
+          "alt": "Illustration of parallel sampling vs sequential revision."
+        }
+      },
+      {
+        "id": "heading-84741263c92f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Parallel Sampling"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-4bf61e1c2ead",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a generative model and a scoring function that we can use to score full or partial samples, there are various search algorithms we can use to find a high scoring sample. Best-of-"
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " is the simplest such algorithm: one just collects "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " independent samples and chooses the highest-ranking sample according to some scoring function. Beam search is a more sophisticated search algorithm that makes the search process more adaptive, spending more sampling computation on more promising parts of the solution space."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f8a2959741b7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Beam search maintains a set of promising partial sequences and alternates between extending them and pruning the less promising ones. As a selection mechanism, we can use a process reward model (PRM; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.20050"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lightman et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") to guide beam search candidate selection. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.00633"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Xie et al. (2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") used LLM to evaluate how likely its own generated reasoning step is correct, formatted as a multiple-choice question and found that per-step self-evaluation reduces accumulative errors in multi-step reasoning during beam search decoding. Besides, during sampling, annealing the temperature helps mitigate aggregated randomness. These experiments by Xie et al. achieved 5-6% improvement on few-shot GSM8k, AQuA and StrategyQA benchmarks with the Codex model. Reward balanced search (short for “REBASE”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2408.00724"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wu et al. 2025"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") separately trained a process reward model (PRM) to determine how much each node should be expanded at each depth during beam search, according to the softmax-normalized reward scores. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2410.01044"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jiang et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " trained their PRM, named “RATIONALYST”, for beam search guidance on synthetic rationales conditioned on a large amount of unlabelled data. Good rationales are filtered based on whether they help reduce the neg log-prob of true answer tokens by a threshold, when comparing the difference between when the rationales is included in the context vs not. At inference time, RATIONALYST provides process supervision to the CoT generator by helping estimate log-prob of next reasoning steps (“implicit”) or directly generating next reasoning steps as part of the prompt (“explicit”)."
+          }
+        ]
+      },
+      {
+        "id": "image-2986cca81cc5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/beam-search-xie23.png",
+          "alt": "Beam search decoding guided by LLM self-evaluation per reasoning step. (Image source: Xie et al. 2023 )"
+        }
+      },
+      {
+        "id": "paragraph-696fca40bb2b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Interestingly, it is possible to trigger the emergent chain-of-thought reasoning paths "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "without"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " explicit zero-shot or few-shot prompting. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2402.10200"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang & Zhou (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " discovered that if we branch out at the first sampling tokens by retaining the top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " tokens with highest confidence, measured as the difference between top-1 and top-2 candidates during sampling, and then continue these "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " sampling trials with greedy decoding onward, many of these sequences natively contain CoT. Especially when CoT does appear in the context, it leads to a more confident decoding of the final answer. To calculate the confidence of the final answer, the answer span needs to be identified by task-specific heuristics (e.g. last numerical values for math questions) or  by prompting the model further with "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"So the answer is\""
+          },
+          {
+            "type": "text",
+            "text": ". The design choice of only branching out at the first token is based on the observation that early branching significantly enhances the diversity of potential paths, while later tokens are influenced a lot by previous sequences."
+          }
+        ]
+      },
+      {
+        "id": "image-391fefe6818c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-decoding.png",
+          "alt": "Top-$k$ decoding, $k$ refers to the number of candidates at the first sampling step. (Image source: Wang & Zhou, 2024 )"
+        }
+      },
+      {
+        "id": "heading-ed7c40cc801b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sequential Revision"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-4e2e4dc42ca8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If the model can reflect and correct mistakes in past responses, we would expect the model to produce a nice sequence of iterative revision with increasing quality. However, this self-correction capability turns out to not exist intrinsically among LLMs and does not easily work out of the box, due to various failure modes, such as, (1) hallucination, including modifying correct responses to be incorrect; (2) behavior collapse to non-correcting behavior; e.g. making minor or no modification on the first incorrect responses; or (3) fail to generalize to distribution shift at test time. Experiments by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2310.01798"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Huang et al. (2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") showed that naively applying self-correction leads to worse performance and external feedback is needed for models to self improve, which can be based on matching ground truths, heuristics and task-specific metrics, unit tests results for coding questions ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2303.11366"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shinn, et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), a stronger model ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2404.17140"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang et al. 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), as well as human feedback ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.02676"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bdb0f6d3a0a9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Self-correction learning ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.00053"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Welleck et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") aims to train a corrector model "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_\\theta(y \\mid y_0, x)"
+          },
+          {
+            "type": "text",
+            "text": " given a fixed generator model "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_0(y_0 \\mid x)"
+          },
+          {
+            "type": "text",
+            "text": ". While the generator model remains to be generic, the corrector model can task-specific and only does generation conditioned on an initial model response and additional feedback (e.g. a sentence, a compiler trace, unit test results; can be optional):"
+          }
+        ]
+      },
+      {
+        "id": "list-45f79802435b",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-ccb1d88bd723",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Self-correction learning first generates first generates multiple outputs per prompt in the data pool;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c3a23c39f5ed",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "then create value-improving pairs by pairing two outputs for the same prompt together if one has a higher value than the other, (prompt "
+              },
+              {
+                "type": "inline_math",
+                "text": "x"
+              },
+              {
+                "type": "text",
+                "text": ", hypothesis "
+              },
+              {
+                "type": "inline_math",
+                "text": "y"
+              },
+              {
+                "type": "text",
+                "text": ", correction "
+              },
+              {
+                "type": "inline_math",
+                "text": "y’"
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f66f7b1749b5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "These pairs are selected proportional to is improvement in value, "
+              },
+              {
+                "type": "inline_math",
+                "text": "v(y’) - v(y)"
+              },
+              {
+                "type": "text",
+                "text": ", and similarity between two outputs, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\text{Similarity}(y, y’)"
+              },
+              {
+                "type": "text",
+                "text": " to train the corrector model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-04f2b983b184",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "To encourage exploration, the corrector provides new generations into the data pool as well. At the inference time, the corrector can be used iteratively to create a correction trajectory of sequential revision."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-1eb17a251c64",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/self-correction-welleck23.png",
+          "alt": "Illustration of self-correction learning by matching model outputs for the same problem to form value-improving pairs to train a correction model. (Image source: Welleck et al. 2023)"
+        }
+      },
+      {
+        "id": "paragraph-ca9ffaf50771",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recursive inspection ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2407.18219"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Qu et al. 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") also aims to train a better corrector model but with a single model to do both generation and self-correction."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f42d1dfbda5b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SCoRe (Self-Correction via Reinforcement Learning; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2409.12917"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kumar et al. 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a multi-turn RL approach to encourage the model to do self-correction by producing better answers at the second attempt than the one created at the first attempt. It composes two stages of training: stage 1 only maximizes the accuracy of the second attempt while enforcing a KL penalty only on the first attempt to avoid too much shifting of the first-turn responses from the base model behavior; stage 2 optimizes the accuracy of answers produced by both the first and second attempts. Ideally we do want to see performance at both first and second attempts to be better, but adding stage 1 prevents the behavior collapse where the model does minor or none edits on the first response, and stage 2 further improves the results."
+          }
+        ]
+      },
+      {
+        "id": "image-4311ada15f93",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/SCoRe-kumar24.png",
+          "alt": "Explicit training setup to improve self-correction capabilities by doing two-staged RL training. (Image source: Kumar et al. 2024)"
+        }
+      },
+      {
+        "id": "heading-4cf21cd0985e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "RL for Better Reasoning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-deb89385b6d3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There’s been a lot of recent success in using RL to improve the reasoning ability of language models, by using a collection of questions with ground truth answers (usually STEM problems and puzzles with easy to verify answers), and rewarding the model for getting the correct answer.Recent activity in this area was spurred by strong performance of the "
+          },
+          {
+            "type": "inline_code",
+            "text": "o"
+          },
+          {
+            "type": "text",
+            "text": "-series models from OpenAI, and the subsequent releases of models and tech reports from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.deepseek.com/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "DeepSeek"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6f31f7761e19",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "DeepSeek-R1"
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2501.12948"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "DeepSeek-AI, 2025"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is an open-source LLM designed to excel in tasks that require advanced reasoning skills like math, coding and logical problem solving. They run through 2 rounds of SFT-RL training, enabling R1 to be good at both reasoning and non-reasoning tasks."
+          }
+        ]
+      },
+      {
+        "id": "list-32ff8ba7df27",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-27621db952c8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Cold-start SFT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is to fine-tune the "
+              },
+              {
+                "type": "inline_code",
+                "text": "DeepSeek-V3-Base"
+              },
+              {
+                "type": "text",
+                "text": " base model on a collection of thousands of cold-start data. Without this step, the model has issues of poor readability and language mixing."
+              }
+            ]
+          },
+          {
+            "id": "list-item-74bad23c7a61",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reasoning-oriented RL"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " trains a reasoning model on reasoning-only prompts with two types of rule-based rewards:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Format rewards: The model should wrap CoTs by "
+              },
+              {
+                "type": "inline_code",
+                "text": "<thinking> ... </thinking>"
+              },
+              {
+                "type": "text",
+                "text": " tokens."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Accuracy rewards: Whether the final answers are correct. The answer for math problems needs to be present in a specific format (e.g. in a box) to be verified reliably. For coding problems, a compiler is used to evaluate whether test cases pass."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-84c460816c37",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-c7db4f588ece",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Format rewards: The model should wrap CoTs by "
+                      },
+                      {
+                        "type": "inline_code",
+                        "text": "<thinking> ... </thinking>"
+                      },
+                      {
+                        "type": "text",
+                        "text": " tokens."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-9a908ab24d97",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Accuracy rewards: Whether the final answers are correct. The answer for math problems needs to be present in a specific format (e.g. in a box) to be verified reliably. For coding problems, a compiler is used to evaluate whether test cases pass."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-cf46029fdc83",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rejection-sampling + non-reasoning SFT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " utilizes new SFT data created by rejection sampling on the RL checkpoint of step 2, combined with non-reasoning supervised data from "
+              },
+              {
+                "type": "inline_code",
+                "text": "DeepSeek-V3"
+              },
+              {
+                "type": "text",
+                "text": " in domains like writing, factual QA, and self-cognition, to retrain "
+              },
+              {
+                "type": "inline_code",
+                "text": "DeepSeek-V3-Base"
+              },
+              {
+                "type": "text",
+                "text": ".\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Filter out CoTs with mixed languages, long paragraphs, and code blocks."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Include non-reasoning tasks using DeepSeek-V3 ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2412.19437v1"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "DeepSeek-AI, 2024"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") pipeline."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "For certain non-reasoning tasks, call DeepSeek-V3 to generate potential CoTs before answering the question by prompting. But for simpler queries like “hello”, CoT is not needed."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Then fine-tune the DeepSeek-V3-Base on the total 800k samples for 2 epochs."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-538ffd222b15",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-9ba78291557c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Filter out CoTs with mixed languages, long paragraphs, and code blocks."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-58eafdc5b62f",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Include non-reasoning tasks using DeepSeek-V3 ("
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/2412.19437v1"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "DeepSeek-AI, 2024"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": ") pipeline."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-61483eefe96e",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "For certain non-reasoning tasks, call DeepSeek-V3 to generate potential CoTs before answering the question by prompting. But for simpler queries like “hello”, CoT is not needed."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-6e05adb2d3bc",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Then fine-tune the DeepSeek-V3-Base on the total 800k samples for 2 epochs."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-1108d5b6a284",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The final "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RL"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " stage trains the step 3 checkpoint on both reasoning and non-reasoning prompts, improving helpfulness, harmlessness and reasoning."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-f72418d29322",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/R1-eval.png",
+          "alt": "DeepSeek-R1 performs comparable to OpenAI o1-preview and o1-mini on several widely used reasoning benchmarks. DeepSeek-V3 is the only non-reasoning model listed. (Image source: DeepSeek-AI, 2025)"
+        }
+      },
+      {
+        "id": "paragraph-ba324f5de7ab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Interestingly the DeepSeek team showed that with pure RL, no SFT stage, it is still possible to learn advanced reasoning capabilities like reflection and backtracking (“Aha moment”). The model naturally learns to spend more thinking tokens during the RL training process to solve reasoning tasks. The “aha moment” can emerge, referring to the model reflecting on previous mistakes and then trying alternative approaches to correct them. Later, various open source efforts happened for replicating R1 results like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/huggingface/open-r1"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Open-R1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/hkust-nlp/simpleRL-reason"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "SimpleRL-reason"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/Jiayi-Pan/TinyZero"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "TinyZero"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", all based on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/QwenLM/Qwen2.5"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Qwen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " models. These efforts also confirmed that pure RL leads to great performance on math problems, as well as the emergent “aha moment”."
+          }
+        ]
+      },
+      {
+        "id": "image-e445dde5cea7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/aha-moment.png",
+          "alt": "Examples of the model learning to reflect and correct mistakes. (Image source: (left) DeepSeek-AI, 2025; (right) Zeng et al. 2025)"
+        }
+      },
+      {
+        "id": "paragraph-60edc0d9da44",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The DeepSeek team also shared some of their unsuccessful attempts. They failed to use process reward model (PRM) as it is hard to define per-step rubrics or determine whether an intermediate step is correct, meanwhile making the training more vulnerable to reward hacking. The efforts on MCTS (Monte Carlo Tree Search) also failed due to the large search space for language model tokens, in comparison to, say, chess; and training the fine-grained value model used for guiding the search is very challenging too. Failed attempts often provide unique insights and we would like to encourage the research community to share more about what did not work out."
+          }
+        ]
+      },
+      {
+        "id": "heading-e52f4eedaa44",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "External Tool Use"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d7ce9e525f50",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During the reasoning steps, certain intermediate steps can be reliably and accurately solved by executing code or running mathematical calculations. Offloading that part of reasoning components into an external code interpreter, as in PAL (Program-Aided Language Model; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.10435"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gao et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") or Chain of Code ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://chain-of-code.github.io/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Li et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), can extend the capability of LLM with external tools, eliminating the need for LLMs to learn to execute code or function as calculators themselves. These code emulators, like in Chain of Code, can be augmented by an LLM such that if a standard code interpreter fails, we have the option of using LLM to execute that line of code instead. Using code to enhance reasoning steps are especially beneficial for mathematical problems, symbolic reasoning and algorithmic tasks. These unit tests may not exist as part of the coding questions, and in those cases, we can instruct the model to self-generate unit tests for it to test against to verify the solution ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2303.11366"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shinn, et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "image-c43a32609a08",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/pal.png",
+          "alt": "An example of program-aided language model prompting looks like. (Image source: Gao et al. 2022)"
+        }
+      },
+      {
+        "id": "paragraph-cdb727326235",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ReAct (Reason+Act; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.03629"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yao et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") combines the action of searching the Wikipedia API and generation of reasoning traces, such that reasoning paths can incorporate external knowledge."
+          }
+        ]
+      },
+      {
+        "id": "image-86f2bb57e2a5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/react.png",
+          "alt": "An example of the ReAct prompting method to solve a HotpotQA question, using Wikipedia search API as an external tool to help with reasoning. (Image source: Yao et al. 2023)"
+        }
+      },
+      {
+        "id": "paragraph-e7678cdaece6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/index/introducing-o3-and-o4-mini/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "o3 & o4-mini"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", recently released by OpenAI, are another two good examples where the reasoning process involves tool use like Web search, code execution and image processing. The team observed that large-scale reinforcement learning exhibits the same trend as in the GPT paradigm that “more compute = better performance”."
+          }
+        ]
+      },
+      {
+        "id": "heading-db81dd3d115e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thinking Faithfully"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-85b966f8c371",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep learning models are often treated as black boxes and various interpretability methods have been proposed. Interpretability is useful for a couple reasons: first, it gives us an extra test to determine if the model is misaligned with its creators’ intent, or if it’s misbehaving in some way that we can’t tell by monitoring its actions. Second, it can help us determine whether the model is using a sound process to compute its answers. Chain of thought provides an especially convenient form of interpretability, as it makes the model’s internal process visible in natural language. This interpretability, however, rests on the assumption that the model truthfully describes its internal thought processes."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d908bdb21d3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recent work showed that monitoring CoT of reasoning models can effectively detect model misbehavior such as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "reward hacking"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and can even enable a weaker model to monitor a stronger model ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2503.11926"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Baker et al. 2025"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Increasing test time compute can also lead to improved adversarial robustness ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2501.18841"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zaremba et al. 2025"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "); this makes sense intuitively, because thinking for longer should be especially useful when the model is presented with an unusual input, such as an adversarial example or jailbreak attempt – it can use the extra thinking time to make sense of the strange situation it’s been presented with."
+          }
+        ]
+      },
+      {
+        "id": "image-3859865cc02f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-monitor.png",
+          "alt": "The experiment of asking the model to decide if another model tried to hack the unit tests in some way for coding questions given its thought process. We can monitor these reward hacking behavior during training with different types of monitor. The exit(0) coding hack is when the agent exploited a bug that allowed it to exit from the environment early without running all unit tests. The raise SkipTest hack is when the agent raises an exception from functions outside the testing framework in order to skip unit test evaluation. (Image source: Baker et al. 2025)"
+        }
+      },
+      {
+        "id": "heading-a524735425ad",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Does the Model Tell What it Thinks Faithfully"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-e0f769f211a2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Intuitively, model CoTs could be biased due to lack of explicit training objectives aimed at encouraging faithful reasoning. Or when we fine-tune the model on human-written explanations, those human-written samples may contain mistakes. Thus we cannot by default assume CoT is always faithful ."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d7268b535d1a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2307.13702"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lanham et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " investigated several modes of CoT faithfulness failures by deliberately introducing mistakes into CoTs and measuring their impacts on the accuracy of a set of multiple choice tasks (e.g. AQuA, MMLU, ARC Challenge, TruthfulQA, HellaSwag):"
+          }
+        ]
+      },
+      {
+        "id": "list-87c3509dc4c2",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-aae91cfb7b23",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Mistake 1 ("
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Early answering"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): The model may form a conclusion prematurely before CoT is generated. This is tested by early truncating or inserting mistakes into CoT. Different tasks revealed varying task-specific dependencies on CoT effectiveness; some have evaluation performance sensitive to truncated CoT but some do not. "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2212.10001"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Wang et al. (2023)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " did similar experiments but with more subtle mistakes related to bridging objects or language templates in the formation of CoT."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-d624ccc98313",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Mistake 2 ("
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Uninformative tokens"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): Uninformative CoT tokens improve performance. This hypothesis is tested by replacing CoT with filler text (e.g. all periods) and this setup shows no accuracy increase and some tasks may suffer performance drop slightly when compared to no CoT."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-1b0edc0b5f7c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Mistake 3 ("
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Human-unreadable encoding"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): Relevant information is encoded in a way that is hard for humans to understand. Paraphrasing CoTs in an non-standard way did not degrade performance across datasets, suggesting accuracy gains do not rely on human-readable reasoning."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-86ddafa5676c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-perturb.png",
+          "alt": "Illustration of different ways of CoT perturbation to assess its faithfulness. (Image source: Lanham et al. 2023)"
+        }
+      },
+      {
+        "id": "paragraph-c8fa31cad550",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Interestingly, Lanham et al. suggests that for multiple choice questions, smaller models may not be capable enough of utilizing CoT well, whereas larger models may have been able to solve the tasks without CoT. This dependency on CoT reasoning, measured by the percent of obtaining the same answer with vs without CoT, does not always increase with model size on multiple choice questions, but does increase with model size on addition tasks, implying that thinking time matters more for complex reasoning tasks."
+          }
+        ]
+      },
+      {
+        "id": "image-0063f4f3c7f3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-ablation.png",
+          "alt": "The dependency on CoT reasoning is measured as the percentage of obtaining same answers with vs without CoT. It matters more for reasoning tasks like addition and larger models benefit more. (Image source: Lanham et al. 2023)"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "why-we-think",
+    "source_slug": "2025-05-01-thinking",
+    "source_profile": "lilian-weng.v3",
+    "source_counts": {
+      "heading": 12,
+      "math": 0,
+      "image": 13,
+      "table": 0,
+      "code": 0
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-wei22.png",
+      "alt": "Chain-of-thought prompting leads to higher success rate of solving math problems. Larger models benefit more from thinking time. (Image source: Wei et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/parallel-vs-sequential.png",
+      "alt": "Illustration of parallel sampling vs sequential revision."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/beam-search-xie23.png",
+      "alt": "Beam search decoding guided by LLM self-evaluation per reasoning step. (Image source: Xie et al. 2023 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-decoding.png",
+      "alt": "Top-$k$ decoding, $k$ refers to the number of candidates at the first sampling step. (Image source: Wang & Zhou, 2024 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/self-correction-welleck23.png",
+      "alt": "Illustration of self-correction learning by matching model outputs for the same problem to form value-improving pairs to train a correction model. (Image source: Welleck et al. 2023)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/SCoRe-kumar24.png",
+      "alt": "Explicit training setup to improve self-correction capabilities by doing two-staged RL training. (Image source: Kumar et al. 2024)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/R1-eval.png",
+      "alt": "DeepSeek-R1 performs comparable to OpenAI o1-preview and o1-mini on several widely used reasoning benchmarks. DeepSeek-V3 is the only non-reasoning model listed. (Image source: DeepSeek-AI, 2025)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/aha-moment.png",
+      "alt": "Examples of the model learning to reflect and correct mistakes. (Image source: (left) DeepSeek-AI, 2025; (right) Zeng et al. 2025)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/pal.png",
+      "alt": "An example of program-aided language model prompting looks like. (Image source: Gao et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/react.png",
+      "alt": "An example of the ReAct prompting method to solve a HotpotQA question, using Wikipedia search API as an external tool to help with reasoning. (Image source: Yao et al. 2023)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-monitor.png",
+      "alt": "The experiment of asking the model to decide if another model tried to hack the unit tests in some way for coding questions given its thought process. We can monitor these reward hacking behavior during training with different types of monitor. The exit(0) coding hack is when the agent exploited a bug that allowed it to exit from the environment early without running all unit tests. The raise SkipTest hack is when the agent raises an exception from functions outside the testing framework in order to skip unit test evaluation. (Image source: Baker et al. 2025)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-perturb.png",
+      "alt": "Illustration of different ways of CoT perturbation to assess its faithfulness. (Image source: Lanham et al. 2023)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/cot-ablation.png",
+      "alt": "The dependency on CoT reasoning is measured as the percentage of obtaining same answers with vs without CoT. It matters more for reasoning tasks like addition and larger models benefit more. (Image source: Lanham et al. 2023)"
+    }
+  ]
+}

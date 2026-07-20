@@ -1,0 +1,4220 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2018-08-12-vae",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2018-08-12-vae/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2018-08-12T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:62c76c839bed96c52d4cb489a6558a79ffe892a56ac4cdef56c0a835611ad0d5",
+    "fetched_at": "2026-07-14T02:05:06.082333+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "From Autoencoder to Beta-VAE",
+    "title_en": "From Autoencoder to Beta-VAE",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-362aa6f9883f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2019-07-18: add a section on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#vq-vae-and-vq-vae-2"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VQ-VAE & VQ-VAE-2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".]"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "text",
+            "text": "[Updated on 2019-07-26: add a section on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#td-vae"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "TD-VAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".]"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e350e4fa06d2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Autocoder is invented to reconstruct high-dimensional data using a neural network model with a narrow bottleneck layer in the middle (oops, this is probably not true for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#vae-variational-autoencoder"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Variational Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and we will investigate it in details in later sections). A nice byproduct is dimension reduction: the bottleneck layer captures a compressed latent encoding. Such a low-dimensional representation can be used as en embedding vector in various applications (i.e. search), help data compression, or reveal the underlying data generative factors."
+          }
+        ]
+      },
+      {
+        "id": "heading-6ff32a12eed9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "table-a86510309766",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Symbol",
+            "Mean"
+          ],
+          "rows": [
+            [
+              "$\\mathcal{D}$",
+              "The dataset, $\\mathcal{D} = \\{ \\mathbf{x}^{(1)}, \\mathbf{x}^{(2)}, \\dots, \\mathbf{x}^{(n)} \\}$, contains $n$ data samples; $\\vert\\mathcal{D}\\vert =n $."
+            ],
+            [
+              "$\\mathbf{x}^{(i)}$",
+              "Each data point is a vector of $d$ dimensions, $\\mathbf{x}^{(i)} = [x^{(i)}_1, x^{(i)}_2, \\dots, x^{(i)}_d]$."
+            ],
+            [
+              "$\\mathbf{x}$",
+              "One data sample from the dataset, $\\mathbf{x} \\in \\mathcal{D}$."
+            ],
+            [
+              "$\\mathbf{x}’$",
+              "The reconstructed version of $\\mathbf{x}$."
+            ],
+            [
+              "$\\tilde{\\mathbf{x}}$",
+              "The corrupted version of $\\mathbf{x}$."
+            ],
+            [
+              "$\\mathbf{z}$",
+              "The compressed code learned in the bottleneck layer."
+            ],
+            [
+              "$a_j^{(l)}$",
+              "The activation function for the $j$-th neuron in the $l$-th hidden layer."
+            ],
+            [
+              "$g_{\\phi}(.)$",
+              "The encoding function parameterized by $\\phi$."
+            ],
+            [
+              "$f_{\\theta}(.)$",
+              "The decoding function parameterized by $\\theta$."
+            ],
+            [
+              "$q_{\\phi}(\\mathbf{z}\\vert\\mathbf{x})$",
+              "Estimated posterior probability function, also known as probabilistic encoder ."
+            ],
+            [
+              "$p_{\\theta}(\\mathbf{x}\\vert\\mathbf{z})$",
+              "Likelihood of generating true data sample given the latent code, also known as probabilistic decoder ."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "heading-62a3533ae601",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Autoencoder"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8c58393f934d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a neural network designed to learn an identity function in an unsupervised way  to reconstruct the original input while compressing the data in the process so as to discover a more efficient and compressed representation. The idea was originated in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Autoencoder"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the 1980s"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and later promoted by the seminal paper by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.459.3788&rep=rep1&type=pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hinton & Salakhutdinov, 2006"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6fded8dd8bca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It consists of two networks:"
+          }
+        ]
+      },
+      {
+        "id": "list-7a74f6d130cb",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-4b19253066f4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Encoder"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " network: It translates the original high-dimension input into the latent low-dimensional code. The input size is larger than the output size."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1439e8f50394",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Decoder"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " network: The decoder network recovers the data from the code, likely with larger and larger output layers."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-be396833e0d1",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/autoencoder-architecture.png",
+          "alt": "Illustration of autoencoder model architecture."
+        }
+      },
+      {
+        "id": "paragraph-98f87862485c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The encoder network essentially accomplishes the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Dimensionality_reduction"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "dimensionality reduction"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", just like how we would use Principal Component Analysis (PCA) or Matrix Factorization (MF) for. In addition, the autoencoder is explicitly optimized for the data reconstruction from the code. A good intermediate representation not only can capture latent variables, but also benefits a full "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ai.googleblog.com/2016/09/image-compression-with-neural-networks.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "decompression"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " process."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-74e054febaf1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model contains an encoder function "
+          },
+          {
+            "type": "inline_math",
+            "text": "g(.)"
+          },
+          {
+            "type": "text",
+            "text": " parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " and a decoder function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(.)"
+          },
+          {
+            "type": "text",
+            "text": " parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". The low-dimensional code learned for input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " in the bottleneck layer is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} = g_\\phi(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " and the reconstructed input is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}’ = f_\\theta(g_\\phi(\\mathbf{x}))"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-62d2976732cf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\theta, \\phi)"
+          },
+          {
+            "type": "text",
+            "text": " are learned together to output a reconstructed data sample same as the original input, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} \\approx f_\\theta(g_\\phi(\\mathbf{x}))"
+          },
+          {
+            "type": "text",
+            "text": ", or in other words, to learn an identity function. There are various metrics to quantify the difference between two vectors, such as cross entropy when the activation function is sigmoid, or as simple as MSE loss:"
+          }
+        ]
+      },
+      {
+        "id": "math-1ee73d6b5b8c",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{AE}(\\theta, \\phi) = \\frac{1}{n}\\sum_{i=1}^n (\\mathbf{x}^{(i)} - f_\\theta(g_\\phi(\\mathbf{x}^{(i)})))^2"
+        }
+      },
+      {
+        "id": "heading-56d753506f7d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Denoising Autoencoder"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-de55f2f20ff0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since the autoencoder learns the identity function, we are facing the risk of “overfitting” when there are more network parameters than the number of data points."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-283d5e652ab2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To avoid overfitting and improve the robustness, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Denoising Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Vincent et al. 2008) proposed a modification to the basic autoencoder. The input is partially corrupted by adding noises to or masking some values of the input vector in a stochastic manner, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{\\mathbf{x}} \\sim \\mathcal{M}_\\mathcal{D}(\\tilde{\\mathbf{x}} \\vert \\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". Then the model is trained to recover the original input (note: not the corrupt one)."
+          }
+        ]
+      },
+      {
+        "id": "math-db32bda27c52",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\tilde{\\mathbf{x}}^{(i)} &\\sim \\mathcal{M}_\\mathcal{D}(\\tilde{\\mathbf{x}}^{(i)} \\vert \\mathbf{x}^{(i)})\\\\\nL_\\text{DAE}(\\theta, \\phi) &= \\frac{1}{n} \\sum_{i=1}^n (\\mathbf{x}^{(i)} - f_\\theta(g_\\phi(\\tilde{\\mathbf{x}}^{(i)})))^2\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-5d5777235291",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{M}_\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": " defines the mapping from the true data samples to the noisy or corrupted ones."
+          }
+        ]
+      },
+      {
+        "id": "image-397c6dca390c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/denoising-autoencoder-architecture.png",
+          "alt": "Illustration of denoising autoencoder model architecture."
+        }
+      },
+      {
+        "id": "paragraph-fe44c1b69312",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This design is motivated by the fact that humans can easily recognize an object or a scene even the view is partially occluded or corrupted. To “repair” the partially destroyed input, the denoising autoencoder has to discover and capture relationship between dimensions of input in order to infer missing pieces."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2026e44833a6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For high dimensional input with high redundancy, like images, the model is likely to depend on evidence gathered from a combination of many input dimensions to recover the denoised version rather than to overfit one dimension. This builds up a good foundation for learning "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "robust"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " latent representation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7732c98a73a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The noise is controlled by a stochastic mapping "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{M}_\\mathcal{D}(\\tilde{\\mathbf{x}} \\vert \\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ", and it is not specific to a particular type of corruption process (i.e. masking noise, Gaussian noise, salt-and-pepper noise, etc.). Naturally the corruption process can be equipped with prior knowledge"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df3e4f1fa6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the experiment of the original DAE paper, the noise is applied in this way: a fixed proportion of input dimensions are selected at random and their values are forced to 0. Sounds a lot like dropout, right? Well, the denoising autoencoder was proposed in 2008, 4 years before the dropout paper ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hinton, et al. 2012"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") ;)"
+          }
+        ]
+      },
+      {
+        "id": "heading-1f2cf6ef7f72",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparse Autoencoder"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a97d1b936a29",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sparse Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " applies a “sparse” constraint on the hidden unit activation to avoid overfitting and improve robustness. It forces the model to only have a small number of hidden units being activated at the same time, or in other words, one hidden neuron should be inactivate most of time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a8bfa9bebce4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recall that common "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://cs231n.github.io/neural-networks-1/#actfun"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "activation functions"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " include sigmoid, tanh, relu, leaky relu, etc. A neuron is activated when the value is close to 1 and inactivate with a value close to 0."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6fb88c3af591",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say there are "
+          },
+          {
+            "type": "inline_math",
+            "text": "s_l"
+          },
+          {
+            "type": "text",
+            "text": " neurons in the "
+          },
+          {
+            "type": "inline_math",
+            "text": "l"
+          },
+          {
+            "type": "text",
+            "text": "-th hidden layer and the activation function for the "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": "-th neuron in this layer is labelled as "
+          },
+          {
+            "type": "inline_math",
+            "text": "a^{(l)}_j(.)"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "j=1, \\dots, s_l"
+          },
+          {
+            "type": "text",
+            "text": ". The fraction of activation of this neuron "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\rho}_j"
+          },
+          {
+            "type": "text",
+            "text": " is expected to be a small number "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho"
+          },
+          {
+            "type": "text",
+            "text": ", known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "sparsity parameter"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; a common config is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho = 0.05"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-043a3422c9e8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{\\rho}_j^{(l)} = \\frac{1}{n} \\sum_{i=1}^n [a_j^{(l)}(\\mathbf{x}^{(i)})] \\approx \\rho"
+        }
+      },
+      {
+        "id": "paragraph-44148bc3fbcd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This constraint is achieved by adding a penalty term into the loss function. The KL-divergence "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}"
+          },
+          {
+            "type": "text",
+            "text": " measures the difference between two Bernoulli distributions, one with mean "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho"
+          },
+          {
+            "type": "text",
+            "text": " and the other with mean "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\rho}_j^{(l)}"
+          },
+          {
+            "type": "text",
+            "text": ". The hyperparameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " controls how strong the penalty we want to apply on the sparsity loss."
+          }
+        ]
+      },
+      {
+        "id": "math-4f0c58c0e8fd",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nL_\\text{SAE}(\\theta) \n&= L(\\theta) + \\beta \\sum_{l=1}^L \\sum_{j=1}^{s_l} D_\\text{KL}(\\rho \\| \\hat{\\rho}_j^{(l)}) \\\\\n&= L(\\theta) + \\beta \\sum_{l=1}^L \\sum_{j=1}^{s_l} \\rho\\log\\frac{\\rho}{\\hat{\\rho}_j^{(l)}} + (1-\\rho)\\log\\frac{1-\\rho}{1-\\hat{\\rho}_j^{(l)}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-923b2dcfc521",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/kl-metric-sparse-autoencoder.png",
+          "alt": "The KL divergence between a Bernoulli distribution with mean $\\rho=0.25$ and a Bernoulli distribution with mean $0 \\leq \\hat{\\rho} \\leq 1$."
+        }
+      },
+      {
+        "id": "paragraph-dae7a457f7d2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": "-Sparse Autoencoder"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-520aef7f4337",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "-Sparse Autoencoder ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1312.5663"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Makhzani and Frey, 2013"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), the sparsity is enforced by only keeping the top k highest activations in the bottleneck layer with linear activation function.\nFirst we run feedforward through the encoder network to get the compressed code: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} = g(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ".\nSort the values  in the code vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": ". Only the k largest values are kept while other neurons are set to 0. This can be done in a ReLU layer with an adjustable threshold too. Now we have a sparsified code: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}’ = \\text{Sparsify}(\\mathbf{z})"
+          },
+          {
+            "type": "text",
+            "text": ".\nCompute the output and the loss from the sparsified code, "
+          },
+          {
+            "type": "inline_math",
+            "text": "L = |\\mathbf{x} - f(\\mathbf{z}’) |_2^2"
+          },
+          {
+            "type": "text",
+            "text": ".\nAnd, the back-propagation only goes through the top k activated hidden units!"
+          }
+        ]
+      },
+      {
+        "id": "image-61cd9d16a59b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/k-sparse-autoencoder.png",
+          "alt": "Filters of the k-sparse autoencoder for different sparsity levels k, learnt from MNIST with 1000 hidden units.. (Image source: Makhzani and Frey, 2013 )"
+        }
+      },
+      {
+        "id": "heading-5831db296a64",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Contractive Autoencoder"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-ef879a0b5ce1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to sparse autoencoder, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Contractive Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.icml-2011.org/papers/455_icmlpaper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rifai, et al, 2011"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") encourages the learned representation to stay in a contractive space for better robustness."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-433d8667e4a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It adds a term in the loss function to penalize the representation being too sensitive to the input,  and thus improve the robustness to small perturbations around the training data points. The sensitivity is measured by the Frobenius norm of the Jacobian matrix of the encoder activations with respect to the input:"
+          }
+        ]
+      },
+      {
+        "id": "math-638b191ed10f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\|J_f(\\mathbf{x})\\|_F^2 = \\sum_{ij} \\Big( \\frac{\\partial h_j(\\mathbf{x})}{\\partial x_i} \\Big)^2"
+        }
+      },
+      {
+        "id": "paragraph-b107517e8743",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "h_j"
+          },
+          {
+            "type": "text",
+            "text": " is one unit output in the compressed code "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} = f(x)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-29ce5f4d9c83",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This penalty term is the sum of squares of all partial derivatives of the learned encoding with respect to input dimensions. The authors claimed that empirically this penalty was found to  carve a representation that corresponds to a lower-dimensional non-linear manifold, while staying more invariant to majority directions orthogonal to the manifold."
+          }
+        ]
+      },
+      {
+        "id": "heading-1752c1388ec6",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "VAE: Variational Autoencoder"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-bbe3339d84a0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The idea of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Variational Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1312.6114"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kingma & Welling, 2014"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), short for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", is actually less similar to all the autoencoder models above, but deeply rooted in the methods of variational bayesian and graphical model."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-61a53268692c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Instead of mapping the input into a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fixed"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " vector, we want to map it into a distribution. Let’s label this distribution as "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ".  The relationship between the data input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " and the latent encoding vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": " can be fully defined by:"
+          }
+        ]
+      },
+      {
+        "id": "list-179fbc345778",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-ba95dc073b80",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Prior "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\theta(\\mathbf{z})"
+              }
+            ]
+          },
+          {
+            "id": "list-item-96a842d938a2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Likelihood "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\theta(\\mathbf{x}\\vert\\mathbf{z})"
+              }
+            ]
+          },
+          {
+            "id": "list-item-177297f19dee",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Posterior "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\theta(\\mathbf{z}\\vert\\mathbf{x})"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6aed1c183744",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Assuming that we know the real parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{*}"
+          },
+          {
+            "type": "text",
+            "text": " for this distribution. In order to generate a sample that looks like a real data point "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^{(i)}"
+          },
+          {
+            "type": "text",
+            "text": ", we follow these steps:"
+          }
+        ]
+      },
+      {
+        "id": "list-8d2528133101",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-607e1faec93d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, sample a "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{z}^{(i)}"
+              },
+              {
+                "type": "text",
+                "text": " from a prior distribution "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_{\\theta^*}(\\mathbf{z})"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-142a795c0ea1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then a value "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}^{(i)}"
+              },
+              {
+                "type": "text",
+                "text": " is generated from a conditional distribution "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_{\\theta^*}(\\mathbf{x} \\vert \\mathbf{z} = \\mathbf{z}^{(i)})"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-290c85aebc99",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The optimal parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{*}"
+          },
+          {
+            "type": "text",
+            "text": " is the one that maximizes the probability of generating real data samples:"
+          }
+        ]
+      },
+      {
+        "id": "math-2b934c4456ac",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta^{*} = \\arg\\max_\\theta \\prod_{i=1}^n p_\\theta(\\mathbf{x}^{(i)})"
+        }
+      },
+      {
+        "id": "paragraph-50ac0d100822",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Commonly we use the log probabilities to convert the product on RHS to a sum:"
+          }
+        ]
+      },
+      {
+        "id": "math-b6ab7a6ad663",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta^{*} = \\arg\\max_\\theta \\sum_{i=1}^n \\log p_\\theta(\\mathbf{x}^{(i)})"
+        }
+      },
+      {
+        "id": "paragraph-73a397b3fc63",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now let’s update the equation to better demonstrate the data generation process so as to involve the encoding vector:"
+          }
+        ]
+      },
+      {
+        "id": "math-066e1263d37e",
+        "type": "math",
+        "attrs": {
+          "latex": "p_\\theta(\\mathbf{x}^{(i)}) = \\int p_\\theta(\\mathbf{x}^{(i)}\\vert\\mathbf{z}) p_\\theta(\\mathbf{z}) d\\mathbf{z}"
+        }
+      },
+      {
+        "id": "paragraph-fd844ad450af",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Unfortunately it is not easy to compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(\\mathbf{x}^{(i)})"
+          },
+          {
+            "type": "text",
+            "text": " in this way, as it is very expensive to check all the possible values of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": " and sum them up. To narrow down the value space to facilitate faster search, we would like to introduce a new approximation function to output what is a likely code given an input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "q_\\phi(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ", parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-f7998abdcb24",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VAE-graphical-model.png",
+          "alt": "The graphical model involved in Variational Autoencoder.  Solid lines denote the generative distribution $p\\_\\theta(.)$ and dashed lines denote the distribution $q\\_\\phi (\\mathbf{z}\\vert\\mathbf{x})$ to approximate the intractable posterior $p\\_\\theta (\\mathbf{z}\\vert\\mathbf{x})$."
+        }
+      },
+      {
+        "id": "paragraph-0bcc1c06fbd0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now the structure looks a lot like an autoencoder:"
+          }
+        ]
+      },
+      {
+        "id": "list-c778709b1751",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7158a2863ad3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The conditional probability "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\theta(\\mathbf{x} \\vert \\mathbf{z})"
+              },
+              {
+                "type": "text",
+                "text": " defines a generative model, similar to the decoder "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\theta(\\mathbf{x} \\vert \\mathbf{z})"
+              },
+              {
+                "type": "text",
+                "text": " introduced above. "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\theta(\\mathbf{x} \\vert \\mathbf{z})"
+              },
+              {
+                "type": "text",
+                "text": " is also known as "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "probabilistic decoder"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-19d4cd3b5499",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The approximation function "
+              },
+              {
+                "type": "inline_math",
+                "text": "q_\\phi(\\mathbf{z} \\vert \\mathbf{x})"
+              },
+              {
+                "type": "text",
+                "text": " is the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "probabilistic encoder"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", playing a similar role as "
+              },
+              {
+                "type": "inline_math",
+                "text": "g_\\phi(\\mathbf{z} \\vert \\mathbf{x})"
+              },
+              {
+                "type": "text",
+                "text": " above."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-8d609e614ac4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Loss Function: ELBO"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-23e18716d3d3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The estimated posterior "
+          },
+          {
+            "type": "inline_math",
+            "text": "q_\\phi(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " should be very close to the real one "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". We can use "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kullback-Leibler divergence"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to quantify the distance between these two distributions. KL divergence "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}(X|Y)"
+          },
+          {
+            "type": "text",
+            "text": " measures how much information is lost if the distribution Y is used to represent X."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-02879c051507",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In our case we want to minimize "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) | p_\\theta(\\mathbf{z}\\vert\\mathbf{x}) )"
+          },
+          {
+            "type": "text",
+            "text": " with respect to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7ef67f715f76",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "But why use "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}(q_\\phi | p_\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " (reversed KL) instead of "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}(p_\\theta | q_\\phi)"
+          },
+          {
+            "type": "text",
+            "text": " (forward KL)? Eric Jang has a great explanation in his "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://blog.evjang.com/2016/08/variational-bayes.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on Bayesian Variational methods. As a quick recap:"
+          }
+        ]
+      },
+      {
+        "id": "image-8128f933831a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/forward_vs_reversed_KL.png",
+          "alt": "Forward and reversed KL divergence have different demands on how to match two distributions. (Image source: blog.evjang.com/2016/08/variational-bayes.html )"
+        }
+      },
+      {
+        "id": "list-b8f0db38900c",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-3aa73c8e537b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Forward KL divergence: "
+              },
+              {
+                "type": "inline_math",
+                "text": "D_\\text{KL}(P|Q) = \\mathbb{E}_{z\\sim P(z)} \\log\\frac{P(z)}{Q(z)}"
+              },
+              {
+                "type": "text",
+                "text": "; we have to ensure that Q(z)>0 wherever P(z)>0. The optimized variational distribution "
+              },
+              {
+                "type": "inline_math",
+                "text": "q(z)"
+              },
+              {
+                "type": "text",
+                "text": " has to cover over the entire "
+              },
+              {
+                "type": "inline_math",
+                "text": "p(z)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0c52ca625278",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reversed KL divergence: "
+              },
+              {
+                "type": "inline_math",
+                "text": "D_\\text{KL}(Q|P) = \\mathbb{E}_{z\\sim Q(z)} \\log\\frac{Q(z)}{P(z)}"
+              },
+              {
+                "type": "text",
+                "text": "; minimizing the reversed KL divergence squeezes the "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q(z)"
+              },
+              {
+                "type": "text",
+                "text": " under "
+              },
+              {
+                "type": "inline_math",
+                "text": "P(z)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3ffeb29a16ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s now expand the equation:"
+          }
+        ]
+      },
+      {
+        "id": "math-4333942fe897",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}\\vert\\mathbf{x}) ) & \\\\\n&=\\int q_\\phi(\\mathbf{z} \\vert \\mathbf{x}) \\log\\frac{q_\\phi(\\mathbf{z} \\vert \\mathbf{x})}{p_\\theta(\\mathbf{z} \\vert \\mathbf{x})} d\\mathbf{z} & \\\\\n&=\\int q_\\phi(\\mathbf{z} \\vert \\mathbf{x}) \\log\\frac{q_\\phi(\\mathbf{z} \\vert \\mathbf{x})p_\\theta(\\mathbf{x})}{p_\\theta(\\mathbf{z}, \\mathbf{x})} d\\mathbf{z} & \\scriptstyle{\\text{; Because }p(z \\vert x) = p(z, x) / p(x)} \\\\\n&=\\int q_\\phi(\\mathbf{z} \\vert \\mathbf{x}) \\big( \\log p_\\theta(\\mathbf{x}) + \\log\\frac{q_\\phi(\\mathbf{z} \\vert \\mathbf{x})}{p_\\theta(\\mathbf{z}, \\mathbf{x})} \\big) d\\mathbf{z} & \\\\\n&=\\log p_\\theta(\\mathbf{x}) + \\int q_\\phi(\\mathbf{z} \\vert \\mathbf{x})\\log\\frac{q_\\phi(\\mathbf{z} \\vert \\mathbf{x})}{p_\\theta(\\mathbf{z}, \\mathbf{x})} d\\mathbf{z} & \\scriptstyle{\\text{; Because }\\int q(z \\vert x) dz = 1}\\\\\n&=\\log p_\\theta(\\mathbf{x}) + \\int q_\\phi(\\mathbf{z} \\vert \\mathbf{x})\\log\\frac{q_\\phi(\\mathbf{z} \\vert \\mathbf{x})}{p_\\theta(\\mathbf{x}\\vert\\mathbf{z})p_\\theta(\\mathbf{z})} d\\mathbf{z} & \\scriptstyle{\\text{; Because }p(z, x) = p(x \\vert z) p(z)} \\\\\n&=\\log p_\\theta(\\mathbf{x}) + \\mathbb{E}_{\\mathbf{z}\\sim q_\\phi(\\mathbf{z} \\vert \\mathbf{x})}[\\log \\frac{q_\\phi(\\mathbf{z} \\vert \\mathbf{x})}{p_\\theta(\\mathbf{z})} - \\log p_\\theta(\\mathbf{x} \\vert \\mathbf{z})] &\\\\\n&=\\log p_\\theta(\\mathbf{x}) + D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z})) - \\mathbb{E}_{\\mathbf{z}\\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})}\\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) &\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7265efc591bc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "So we have:"
+          }
+        ]
+      },
+      {
+        "id": "math-6925d0c3484c",
+        "type": "math",
+        "attrs": {
+          "latex": "D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}\\vert\\mathbf{x}) ) =\\log p_\\theta(\\mathbf{x}) + D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z})) - \\mathbb{E}_{\\mathbf{z}\\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})}\\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z})"
+        }
+      },
+      {
+        "id": "paragraph-48ac3b173b96",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Once rearrange the left and right hand side of the equation,"
+          }
+        ]
+      },
+      {
+        "id": "math-703a92582c23",
+        "type": "math",
+        "attrs": {
+          "latex": "\\log p_\\theta(\\mathbf{x}) - D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}\\vert\\mathbf{x}) ) = \\mathbb{E}_{\\mathbf{z}\\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})}\\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) - D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}))"
+        }
+      },
+      {
+        "id": "paragraph-f58876f5987a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The LHS of the equation is exactly what we want to maximize when learning the true distributions: we want to maximize the (log-)likelihood of generating real data (that is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\log p_\\theta(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ") and also minimize the difference between the real and estimated posterior distributions (the term "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{KL}"
+          },
+          {
+            "type": "text",
+            "text": " works like a regularizer).  Note that "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " is fixed with respect to "
+          },
+          {
+            "type": "inline_math",
+            "text": "q_\\phi"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d79febb61037",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The negation of the above defines our loss function:"
+          }
+        ]
+      },
+      {
+        "id": "math-9577ff33cc9a",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nL_\\text{VAE}(\\theta, \\phi) \n&= -\\log p_\\theta(\\mathbf{x}) + D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}\\vert\\mathbf{x}) )\\\\\n&= - \\mathbb{E}_{\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})} \\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) + D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}) ) \\\\\n\\theta^{*}, \\phi^{*} &= \\arg\\min_{\\theta, \\phi} L_\\text{VAE}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-10a97fe40e09",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In Variational Bayesian methods, this loss function is known as the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "variational lower bound"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", or "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "evidence lower bound"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The “lower bound” part in the name comes from the fact that KL divergence is always non-negative and thus "
+          },
+          {
+            "type": "inline_math",
+            "text": "-L_\\text{VAE}"
+          },
+          {
+            "type": "text",
+            "text": " is the lower bound of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\log p_\\theta (\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-8e49b6f331e3",
+        "type": "math",
+        "attrs": {
+          "latex": "-L_\\text{VAE} = \\log p_\\theta(\\mathbf{x}) - D_\\text{KL}( q_\\phi(\\mathbf{z}\\vert\\mathbf{x}) \\| p_\\theta(\\mathbf{z}\\vert\\mathbf{x}) ) \\leq \\log p_\\theta(\\mathbf{x})"
+        }
+      },
+      {
+        "id": "paragraph-6adeb26d913d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Therefore by minimizing the loss, we are maximizing the lower bound of the probability of generating real data samples."
+          }
+        ]
+      },
+      {
+        "id": "heading-518e83b26e15",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reparameterization Trick"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-3eeee9aa27cd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The expectation term in the loss function invokes generating samples from "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". Sampling is a stochastic process and therefore we cannot backpropagate the gradient. To make it trainable, the reparameterization trick is introduced: It is often possible to express the random variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": " as a deterministic variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} = \\mathcal{T}_\\phi(\\mathbf{x}, \\boldsymbol{\\epsilon})"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{\\epsilon}"
+          },
+          {
+            "type": "text",
+            "text": " is an auxiliary independent random variable, and the transformation function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{T}_\\phi"
+          },
+          {
+            "type": "text",
+            "text": " parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " converts "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{\\epsilon}"
+          },
+          {
+            "type": "text",
+            "text": " to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e1a93a509966",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, a common choice of the form of "
+          },
+          {
+            "type": "inline_math",
+            "text": "q_\\phi(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " is a multivariate Gaussian with a diagonal covariance structure:"
+          }
+        ]
+      },
+      {
+        "id": "math-ecfbd60969b7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{z} &\\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x}^{(i)}) = \\mathcal{N}(\\mathbf{z}; \\boldsymbol{\\mu}^{(i)}, \\boldsymbol{\\sigma}^{2(i)}\\boldsymbol{I}) & \\\\\n\\mathbf{z} &= \\boldsymbol{\\mu} + \\boldsymbol{\\sigma} \\odot \\boldsymbol{\\epsilon} \\text{, where } \\boldsymbol{\\epsilon} \\sim \\mathcal{N}(0, \\boldsymbol{I}) & \\scriptstyle{\\text{; Reparameterization trick.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-5d7b7d9f908d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\odot"
+          },
+          {
+            "type": "text",
+            "text": " refers to element-wise product."
+          }
+        ]
+      },
+      {
+        "id": "image-e4dda4c0d723",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/reparameterization-trick.png",
+          "alt": "Illustration of how the reparameterization trick makes the $\\mathbf{z}$ sampling process trainable.(Image source: Slide 12 in Kingma’s NIPS 2015 workshop talk )"
+        }
+      },
+      {
+        "id": "paragraph-7cf6cfdd7fd0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reparameterization trick works for other types of distributions too, not only Gaussian.\nIn the multivariate Gaussian case, we make the model trainable by learning the mean and variance of the distribution, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mu"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": ", explicitly using the reparameterization trick, while the stochasticity remains in the random variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{\\epsilon} \\sim \\mathcal{N}(0, \\boldsymbol{I})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-0e76d4ee9cee",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/vae-gaussian.png",
+          "alt": "Illustration of variational autoencoder model with the multivariate Gaussian assumption."
+        }
+      },
+      {
+        "id": "heading-cbb16fe1118b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Beta-VAE"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-af0b2149565d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If each variable in the inferred latent representation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": " is only sensitive to one single generative factor and relatively invariant to other factors, we will say this representation is disentangled or factorized. One benefit that often comes with disentangled representation is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "good interpretability"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and easy generalization to a variety of tasks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ecfb572d65fb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, a model trained on photos of human faces might capture the gentle, skin color, hair color, hair length, emotion, whether wearing a pair of glasses and many other relatively independent factors in separate dimensions. Such a disentangled representation is very beneficial to facial image generation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f53068e63900",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "β-VAE ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/forum?id=Sy2fzU9gl"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Higgins et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a modification of Variational Autoencoder with a special emphasis to discover disentangled latent factors. Following the same incentive in VAE, we want to maximize the probability of generating real data, while keeping the distance between the real and estimated posterior distributions small (say, under a small constant "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\delta"
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "math-974a0fb1b713",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n&\\max_{\\phi, \\theta} \\mathbb{E}_{\\mathbf{x}\\sim\\mathcal{D}}[\\mathbb{E}_{\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})} \\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z})]\\\\\n&\\text{subject to } D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x})\\|p_\\theta(\\mathbf{z})) < \\delta\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7816f9ca0e54",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can rewrite it as a Lagrangian with a Lagrangian multiplier "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " under the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.cmu.edu/~ggordon/10725-F12/slides/16-kkt.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "KKT condition"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The above optimization problem with only one inequality constraint is equivalent to maximizing the following equation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{F}(\\theta, \\phi, \\beta)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-d78bd36f2cd9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathcal{F}(\\theta, \\phi, \\beta) &= \\mathbb{E}_{\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})} \\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) - \\beta(D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x})\\|p_\\theta(\\mathbf{z})) - \\delta) & \\\\\n& = \\mathbb{E}_{\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})} \\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) - \\beta D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x})\\|p_\\theta(\\mathbf{z})) + \\beta \\delta & \\\\\n& \\geq \\mathbb{E}_{\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})} \\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) - \\beta D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x})\\|p_\\theta(\\mathbf{z})) & \\scriptstyle{\\text{; Because }\\beta,\\delta\\geq 0}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-248576d2ced8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The loss function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": "-VAE is defined as:"
+          }
+        ]
+      },
+      {
+        "id": "math-cac7e2c7475e",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{BETA}(\\phi, \\beta) = - \\mathbb{E}_{\\mathbf{z} \\sim q_\\phi(\\mathbf{z}\\vert\\mathbf{x})} \\log p_\\theta(\\mathbf{x}\\vert\\mathbf{z}) + \\beta D_\\text{KL}(q_\\phi(\\mathbf{z}\\vert\\mathbf{x})\\|p_\\theta(\\mathbf{z}))"
+        }
+      },
+      {
+        "id": "paragraph-1b0940c3dd06",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where the Lagrangian multiplier "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " is considered as a hyperparameter."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f586a2c0d2eb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since the negation of "
+          },
+          {
+            "type": "inline_math",
+            "text": "L_\\text{BETA}(\\phi, \\beta)"
+          },
+          {
+            "type": "text",
+            "text": " is the lower bound of the Lagrangian "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{F}(\\theta, \\phi, \\beta)"
+          },
+          {
+            "type": "text",
+            "text": ". Minimizing the loss is equivalent to maximizing the Lagrangian and thus works for our initial optimization problem."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3223a1775c22",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta=1"
+          },
+          {
+            "type": "text",
+            "text": ", it is same as VAE. When "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta > 1"
+          },
+          {
+            "type": "text",
+            "text": ", it applies a stronger constraint on the latent bottleneck and limits the representation capacity of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": ". For some conditionally independent generative factors, keeping them disentangled is the most efficient representation. Therefore a higher "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " encourages more efficient latent encoding and further encourages the disentanglement. Meanwhile, a higher "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": " may create a trade-off between reconstruction quality and the extent of disentanglement."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-99c46981dbb9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1804.03599.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Burgess, et al. (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " discussed the distentangling in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": "-VAE in depth with an inspiration by the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "information bottleneck theory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and further proposed a modification to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta"
+          },
+          {
+            "type": "text",
+            "text": "-VAE to better control the encoding representation capacity."
+          }
+        ]
+      },
+      {
+        "id": "heading-cec51d178622",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "VQ-VAE and VQ-VAE-2"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c0a1cc386ad1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VQ-VAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Vector Quantised-Variational AutoEncoder”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/7210-neural-discrete-representation-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "van den Oord, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") model learns a discrete latent variable by the encoder, since discrete representations may be a more natural fit for problems like language, speech, reasoning, etc."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-41b96b08ec8a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Vector quantisation (VQ) is a method to map "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional vectors into a finite set of “code” vectors. The process is very much similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "KNN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " algorithm. The optimal centroid code vector that a sample should be mapped to is the one with minimum euclidean distance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3e4eb1e3343b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{e} \\in \\mathbb{R}^{K \\times D}, i=1, \\dots, K"
+          },
+          {
+            "type": "text",
+            "text": " be the latent embedding space (also known as “codebook”) in VQ-VAE, where "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": " is the number of latent variable categories and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " is the embedding size. An individual embedding vector is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{e}_i \\in \\mathbb{R}^{D}, i=1, \\dots, K"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e470c3891a9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The encoder output "
+          },
+          {
+            "type": "inline_math",
+            "text": "E(\\mathbf{x}) = \\mathbf{z}_e"
+          },
+          {
+            "type": "text",
+            "text": " goes through a nearest-neighbor lookup to match to one of "
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": " embedding vectors and then this matched code vector becomes the input for the decoder "
+          },
+          {
+            "type": "inline_math",
+            "text": "D(.)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-a9b211a2fa09",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{z}_q(\\mathbf{x}) = \\text{Quantize}(E(\\mathbf{x})) = \\mathbf{e}_k \\text{ where } k = \\arg\\min_i \\|E(\\mathbf{x}) - \\mathbf{e}_i \\|_2"
+        }
+      },
+      {
+        "id": "paragraph-51c19610da0f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that the discrete latent variables can have different shapes in differnet applications; for example, 1D for speech, 2D for image and 3D for video."
+          }
+        ]
+      },
+      {
+        "id": "image-6f9616c49961",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VQ-VAE.png",
+          "alt": "The architecture of VQ-VAE (Image source: van den Oord, et al. 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-cd3ab60d9aeb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because argmin() is non-differentiable on a discrete space, the gradients "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\nabla_z L"
+          },
+          {
+            "type": "text",
+            "text": " from decoder input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_q"
+          },
+          {
+            "type": "text",
+            "text": " is copied to the encoder output "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_e"
+          },
+          {
+            "type": "text",
+            "text": ". Other than reconstruction loss, VQ-VAE also optimizes:"
+          }
+        ]
+      },
+      {
+        "id": "list-b689eb5eced4",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-17cd84598e5d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "VQ loss"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The L2 error between the embedding space and the encoder outputs."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1692b4b36426",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Commitment loss"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": A measure to encourage the encoder output to stay close to the embedding space and to prevent it from fluctuating too frequently from one code vector to another."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-697da9ac7360",
+        "type": "math",
+        "attrs": {
+          "latex": "L = \\underbrace{\\|\\mathbf{x} - D(\\mathbf{e}_k)\\|_2^2}_{\\textrm{reconstruction loss}} + \n\\underbrace{\\|\\text{sg}[E(\\mathbf{x})] - \\mathbf{e}_k\\|_2^2}_{\\textrm{VQ loss}} + \n\\underbrace{\\beta \\|E(\\mathbf{x}) - \\text{sg}[\\mathbf{e}_k]\\|_2^2}_{\\textrm{commitment loss}}"
+        }
+      },
+      {
+        "id": "paragraph-1017b3dbdb74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{sg}[.]"
+          },
+          {
+            "type": "text",
+            "text": " is the "
+          },
+          {
+            "type": "inline_code",
+            "text": "stop_gradient"
+          },
+          {
+            "type": "text",
+            "text": " operator."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-835b9df283f6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The embedding vectors in the codebook is updated through EMA (exponential moving average). Given a code vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{e}_i"
+          },
+          {
+            "type": "text",
+            "text": ", say we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "n_i"
+          },
+          {
+            "type": "text",
+            "text": " encoder output vectors, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{\\mathbf{z}_{i,j}\\}_{j=1}^{n_i}"
+          },
+          {
+            "type": "text",
+            "text": ", that are quantized to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{e}_i"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-fcb874a70e1e",
+        "type": "math",
+        "attrs": {
+          "latex": "N_i^{(t)} = \\gamma N_i^{(t-1)} + (1-\\gamma)n_i^{(t)}\\;\\;\\;\n\\mathbf{m}_i^{(t)} = \\gamma \\mathbf{m}_i^{(t-1)} + (1-\\gamma)\\sum_{j=1}^{n_i^{(t)}}\\mathbf{z}_{i,j}^{(t)}\\;\\;\\;\n\\mathbf{e}_i^{(t)} = \\mathbf{m}_i^{(t)} / N_i^{(t)}"
+        }
+      },
+      {
+        "id": "paragraph-0a200f4fde41",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "(t)"
+          },
+          {
+            "type": "text",
+            "text": " refers to batch sequence in time. "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_i"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{m}_i"
+          },
+          {
+            "type": "text",
+            "text": " are accumulated vector count and volume, respectively."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-805356015e10",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "VQ-VAE-2 ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.00446"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ali Razavi, et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a two-level hierarchical VQ-VAE combined with self-attention autoregressive model."
+          }
+        ]
+      },
+      {
+        "id": "list-0b922724d2bb",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-a84c3586d967",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Stage 1 is to "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "train a hierarchical VQ-VAE"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The design of hierarchical latent variables intends to separate local patterns (i.e., texture) from global information (i.e., object shapes). The training of the larger bottom level codebook is conditioned on the smaller top level code too, so that it does not have to learn everything from scratch."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a7ae3c63c620",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Stage 2 is to "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "learn a prior over the latent discrete codebook"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " so that we sample from it and generate images. In this way, the decoder can receive input vectors sampled from a similar distribution as the one in training. A powerful autoregressive model enhanced with multi-headed self-attention layers is used to capture the prior distribution (like "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1712.09763"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "PixelSNAIL; Chen et al 2017"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0fc1d74479ed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Considering that VQ-VAE-2 depends on discrete latent variables configured in a simple hierarchical setting, the quality of its generated images are pretty amazing."
+          }
+        ]
+      },
+      {
+        "id": "image-57bdc3f15738",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VQ-VAE-2.png",
+          "alt": "Architecture of hierarchical VQ-VAE and multi-stage image generation. (Image source: Ali Razavi, et al. 2019 )"
+        }
+      },
+      {
+        "id": "image-8ed2f95f3bf3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VQ-VAE-2-algo.png",
+          "alt": "The VQ-VAE-2 algorithm. (Image source: Ali Razavi, et al. 2019 )"
+        }
+      },
+      {
+        "id": "heading-7c8a446350c3",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "TD-VAE"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d1512ead463f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "TD-VAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Temporal Difference VAE”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1806.03107"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gregor et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") works with sequential data. It relies on three main ideas, described below."
+          }
+        ]
+      },
+      {
+        "id": "image-2d0f62beb622",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/TD-VAE-state-space.png",
+          "alt": "State-space model as a Markov Chain model."
+        }
+      },
+      {
+        "id": "paragraph-ef1d252341eb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "1. State-Space Models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\nIn (latent) state-space models, a sequence of unobserved hidden states "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} = (z_1, \\dots, z_T)"
+          },
+          {
+            "type": "text",
+            "text": " determine the observation states "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} = (x_1, \\dots, x_T)"
+          },
+          {
+            "type": "text",
+            "text": ". Each time step in the Markov chain model in Fig. 13 can be trained in a similar manner as in Fig. 6, where the intractable posterior "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(z \\vert x)"
+          },
+          {
+            "type": "text",
+            "text": " is approximated by a function "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(z \\vert x)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5fcad8f61a75",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "2. Belief State"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\nAn agent should learn to encode all the past states to reason about the future, named as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "belief state"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_t = belief(x_1, \\dots, x_t) = belief(b_{t-1}, x_t)"
+          },
+          {
+            "type": "text",
+            "text": ". Given this, the distribution of future states conditioned on the past can be written as "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(x_{t+1}, \\dots, x_T \\vert x_1, \\dots, x_t) \\approx p(x_{t+1}, \\dots, x_T \\vert b_t)"
+          },
+          {
+            "type": "text",
+            "text": ". The hidden states in a recurrent policy are used as the agent’s belief state in TD-VAE. Thus we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_t = \\text{RNN}(b_{t-1}, x_t)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4337ecc5d1dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "3. Jumpy Prediction"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\nFurther, an agent is expected to imagine distant futures based on all the information gathered so far, suggesting the capability of making jumpy predictions, that is, predicting states several steps further into the future."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-da141e6271ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recall what we have learned from the variance lower bound "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#loss-function-elbo"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "above"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-895b5e04fc28",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\log p(x) \n&\\geq \\log p(x) - D_\\text{KL}(q(z|x)\\|p(z|x)) \\\\\n&= \\mathbb{E}_{z\\sim q} \\log p(x|z) - D_\\text{KL}(q(z|x)\\|p(z)) \\\\\n&= \\mathbb{E}_{z \\sim q} \\log p(x|z) - \\mathbb{E}_{z \\sim q} \\log \\frac{q(z|x)}{p(z)} \\\\\n&= \\mathbb{E}_{z \\sim q}[\\log p(x|z) -\\log q(z|x) + \\log p(z)] \\\\\n&= \\mathbb{E}_{z \\sim q}[\\log p(x, z) -\\log q(z|x)] \\\\\n\\log p(x) \n&\\geq \\mathbb{E}_{z \\sim q}[\\log p(x, z) -\\log q(z|x)]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-c24225cacf5f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now let’s model the distribution of the state "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_t"
+          },
+          {
+            "type": "text",
+            "text": " as a probability function conditioned on all the past states "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_{<t}"
+          },
+          {
+            "type": "text",
+            "text": " and two latent variables, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_t"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_{t-1}"
+          },
+          {
+            "type": "text",
+            "text": ", at current time step and one step back:"
+          }
+        ]
+      },
+      {
+        "id": "math-2228a8f5b163",
+        "type": "math",
+        "attrs": {
+          "latex": "\\log p(x_t|x_{<{t}}) \\geq \\mathbb{E}_{(z_{t-1}, z_t) \\sim q}[\\log p(x_t, z_{t-1}, z_{t}|x_{<{t}}) -\\log q(z_{t-1}, z_t|x_{\\leq t})]"
+        }
+      },
+      {
+        "id": "paragraph-ff2f64aee305",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Continue expanding the equation:"
+          }
+        ]
+      },
+      {
+        "id": "math-f3efa477a81b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\log p(x_t|x_{<{t}}) \\\\\n&\\geq \\mathbb{E}_{(z_{t-1}, z_t) \\sim q}[\\log p(x_t, z_{t-1}, z_{t}|x_{<{t}}) -\\log q(z_{t-1}, z_t|x_{\\leq t})] \\\\\n&\\geq \\mathbb{E}_{(z_{t-1}, z_t) \\sim q}[\\log p(x_t|\\color{red}{z_{t-1}}, z_{t}, \\color{red}{x_{<{t}}}) + \\color{blue}{\\log p(z_{t-1}, z_{t}|x_{<{t}})} -\\log q(z_{t-1}, z_t|x_{\\leq t})] \\\\\n&\\geq \\mathbb{E}_{(z_{t-1}, z_t) \\sim q}[\\log p(x_t|z_{t}) + \\color{blue}{\\log p(z_{t-1}|x_{<{t}})} + \\color{blue}{\\log p(z_{t}|z_{t-1})} - \\color{green}{\\log q(z_{t-1}, z_t|x_{\\leq t})}] \\\\\n&\\geq \\mathbb{E}_{(z_{t-1}, z_t) \\sim q}[\\log p(x_t|z_{t}) + \\log p(z_{t-1}|x_{<{t}}) + \\log p(z_{t}|z_{t-1}) - \\color{green}{\\log q(z_t|x_{\\leq t})} - \\color{green}{\\log q(z_{t-1}|z_t, x_{\\leq t})}]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-c4f7004a6691",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notice two things:"
+          }
+        ]
+      },
+      {
+        "id": "list-9f29671cd2bd",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-bf7f6d89503b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The "
+              },
+              {
+                "type": "text",
+                "text": "red"
+              },
+              {
+                "type": "text",
+                "text": " terms can be ignored according to Markov assumptions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5e4133a1fbe3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The "
+              },
+              {
+                "type": "text",
+                "text": "blue"
+              },
+              {
+                "type": "text",
+                "text": " term is expanded according to Markov assumptions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-20100d6d7655",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The "
+              },
+              {
+                "type": "text",
+                "text": "green"
+              },
+              {
+                "type": "text",
+                "text": " term is expanded to include an one-step prediction back to the past as a smoothing distribution."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-65a653696299",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Precisely, there are four types of distributions to learn:"
+          }
+        ]
+      },
+      {
+        "id": "list-9375341dd2b1",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-8895d324d160",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p_D(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "decoder"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " distribution:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-668f1e800a99",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-985e4b95c059",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p(x_t \\mid z_t)"
+              },
+              {
+                "type": "text",
+                "text": " is the encoder by the common definition;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-8f13de1e6f63",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p(x_t \\mid z_t) \\to p_D(x_t \\mid z_t)"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-4e7440ee727a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-8b1fdeb8f45e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p_T(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "transition"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " distribution:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-97ca19de3712",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-cf40cfddb56b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p(z_t \\mid z_{t-1})"
+              },
+              {
+                "type": "text",
+                "text": " captures the sequential dependency between latent variables;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-0c7124445ebc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p(z_t \\mid z_{t-1}) \\to p_T(z_t \\mid z_{t-1})"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-9643b20b34cc",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-0af32d28d880",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p_B(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "belief"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " distribution:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-8e415c921969",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-363d398b19f7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Both "
+              },
+              {
+                "type": "inline_math",
+                "text": "p(z_{t-1} \\mid x_{<t})"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "q(z_t \\mid x_{\\leq t})"
+              },
+              {
+                "type": "text",
+                "text": " can use the belief states to predict the latent variables;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-12311f52d4bc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p(z_{t-1} \\mid x_{<t}) \\to p_B(z_{t-1} \\mid b_{t-1})"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c8bcda645b58",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "q(z_{t} \\mid x_{\\leq t}) \\to p_B(z_t \\mid b_t)"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-1d3373d61300",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-529ff98f36a3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p_S(.)"
+              },
+              {
+                "type": "text",
+                "text": " is the "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "smoothing"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " distribution:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-64491098309c",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7e416a6a847d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The back-to-past smoothing term "
+              },
+              {
+                "type": "inline_math",
+                "text": "q(z_{t-1} \\mid z_t, x_{\\leq t})"
+              },
+              {
+                "type": "text",
+                "text": " can be rewritten to be dependent of belief states too;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e54072350fe6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "q(z_{t-1} \\mid z_t, x_{\\leq t}) \\to  p_S(z_{t-1} \\mid z_t, b_{t-1}, b_t)"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a89db38e37b7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To incorporate the idea of jumpy prediction, the sequential ELBO has to not only work on "
+          },
+          {
+            "type": "inline_math",
+            "text": "t, t+1"
+          },
+          {
+            "type": "text",
+            "text": ", but also two distant timestamp "
+          },
+          {
+            "type": "inline_math",
+            "text": "t_1 < t_2"
+          },
+          {
+            "type": "text",
+            "text": ". Here is the final TD-VAE objective function to maximize:"
+          }
+        ]
+      },
+      {
+        "id": "math-c099e75d0c9f",
+        "type": "math",
+        "attrs": {
+          "latex": "J_{t_1, t_2} = \\mathbb{E}[\n  \\log p_D(x_{t_2}|z_{t_2}) \n  + \\log p_B(z_{t_1}|b_{t_1}) \n  + \\log p_T(z_{t_2}|z_{t_1}) \n  - \\log p_B(z_{t_2}|b_{t_2}) \n  - \\log p_S(z_{t_1}|z_{t_2}, b_{t_1}, b_{t_2})]"
+        }
+      },
+      {
+        "id": "image-0656592ea4ef",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-08-12-vae/TD-VAE.png",
+          "alt": "A detailed overview of TD-VAE architecture, very nicely done. (Image source: TD-VAE paper )"
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-ec96cf07efb3",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2018VAE,\n  title   = \"From Autoencoder to Beta-VAE\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2018\",\n  url     = \"https://lilianweng.github.io/posts/2018-08-12-vae/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d2736e9b8616",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Geoffrey E. Hinton, and Ruslan R. Salakhutdinov. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pdfs.semanticscholar.org/c50d/ca78e97e335d362d6b991ae0e1448914e9a3.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reducing the dimensionality of data with neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Science 313.5786 (2006): 504-507."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c82ad262fdd1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Pascal Vincent, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.cs.toronto.edu/~larocheh/publications/icml-2008-denoising-autoencoders.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Extracting and composing robust features with denoising autoencoders.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML, 2008."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c3ecf0773ecb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Pascal Vincent, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.jmlr.org/papers/volume11/vincent10a/vincent10a.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Stacked denoising autoencoders: Learning useful representations in a deep network with a local denoising criterion.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Journal of machine learning research 11.Dec (2010): 3371-3408."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-96262b40e8dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Geoffrey E. Hinton, Nitish Srivastava, Alex Krizhevsky, Ilya Sutskever, and Ruslan R. Salakhutdinov. “Improving neural networks by preventing co-adaptation of feature detectors.” arXiv preprint arXiv:1207.0580 (2012)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7753061bf86d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://web.stanford.edu/class/cs294a/sparseAutoencoder.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sparse Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Andrew Ng."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-76f7671752fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Alireza Makhzani, Brendan Frey (2013). "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1312.5663"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“k-sparse autoencoder”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". ICLR 2014."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-953071c1cb39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Salah Rifai, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.icml-2011.org/papers/455_icmlpaper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Contractive auto-encoders: Explicit invariance during feature extraction.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML, 2011."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3c3ac1eccb48",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Diederik P. Kingma, and Max Welling. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1312.6114"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Auto-encoding variational bayes.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2014."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b17ade09b616",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://jaan.io/what-is-variational-autoencoder-vae-tutorial/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Tutorial - What is a variational autoencoder?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on jaan.io"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-29d1e73c67fb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Youtube tutorial: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.youtube.com/watch?v=9zKuYvjFFS8"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Variational Autoencoders"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Arxiv Insights"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3e6c05b1464a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://blog.evjang.com/2016/08/variational-bayes.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Beginner’s Guide to Variational Methods: Mean-Field Approximation”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Eric Jang."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-80121bf41889",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Carl Doersch. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.05908"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Tutorial on variational autoencoders.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1606.05908, 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c9880c8c8fe1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Irina Higgins, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/forum?id=Sy2fzU9gl"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "\""
+              },
+              {
+                "type": "inline_math",
+                "text": "\\beta"
+              },
+              {
+                "type": "text",
+                "text": "-VAE: Learning basic visual concepts with a constrained variational framework.\""
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a05d780df36c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Christopher P. Burgess, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.03599"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Understanding disentangling in beta-VAE.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e49ea78b3226",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Aaron van den Oord, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1711.00937"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Neural Discrete Representation Learning”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8041f306742c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Ali Razavi, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.00446"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Generating Diverse High-Fidelity Images with VQ-VAE-2”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". arXiv preprint arXiv:1906.00446 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ca399294a153",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Xi Chen, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.09763"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“PixelSNAIL: An Improved Autoregressive Generative Model.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1712.09763 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8a13ad447029",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] Karol Gregor, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1806.03107"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Temporal Difference Variational Auto-Encoder.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2019."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "from-autoencoder-to-beta-vae",
+    "source_slug": "2018-08-12-vae",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 12,
+      "math": 24,
+      "image": 13,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/autoencoder-architecture.png",
+      "alt": "Illustration of autoencoder model architecture."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/denoising-autoencoder-architecture.png",
+      "alt": "Illustration of denoising autoencoder model architecture."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/kl-metric-sparse-autoencoder.png",
+      "alt": "The KL divergence between a Bernoulli distribution with mean $\\rho=0.25$ and a Bernoulli distribution with mean $0 \\leq \\hat{\\rho} \\leq 1$."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/k-sparse-autoencoder.png",
+      "alt": "Filters of the k-sparse autoencoder for different sparsity levels k, learnt from MNIST with 1000 hidden units.. (Image source: Makhzani and Frey, 2013 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VAE-graphical-model.png",
+      "alt": "The graphical model involved in Variational Autoencoder.  Solid lines denote the generative distribution $p\\_\\theta(.)$ and dashed lines denote the distribution $q\\_\\phi (\\mathbf{z}\\vert\\mathbf{x})$ to approximate the intractable posterior $p\\_\\theta (\\mathbf{z}\\vert\\mathbf{x})$."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/forward_vs_reversed_KL.png",
+      "alt": "Forward and reversed KL divergence have different demands on how to match two distributions. (Image source: blog.evjang.com/2016/08/variational-bayes.html )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/reparameterization-trick.png",
+      "alt": "Illustration of how the reparameterization trick makes the $\\mathbf{z}$ sampling process trainable.(Image source: Slide 12 in Kingma’s NIPS 2015 workshop talk )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/vae-gaussian.png",
+      "alt": "Illustration of variational autoencoder model with the multivariate Gaussian assumption."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VQ-VAE.png",
+      "alt": "The architecture of VQ-VAE (Image source: van den Oord, et al. 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VQ-VAE-2.png",
+      "alt": "Architecture of hierarchical VQ-VAE and multi-stage image generation. (Image source: Ali Razavi, et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/VQ-VAE-2-algo.png",
+      "alt": "The VQ-VAE-2 algorithm. (Image source: Ali Razavi, et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/TD-VAE-state-space.png",
+      "alt": "State-space model as a Markov Chain model."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-08-12-vae/TD-VAE.png",
+      "alt": "A detailed overview of TD-VAE architecture, very nicely done. (Image source: TD-VAE paper )"
+    }
+  ]
+}

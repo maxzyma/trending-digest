@@ -1,0 +1,5062 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:86612bf758100148105aea452ac1e0ea068f8d2dba7bd3caf9632d42fd2cd55c",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "大型语言模型上的对抗性攻击",
+  "segments": {
+    "paragraph-d13dac06b9df": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ChatGPT 的推出极大地加速了大型语言模型在现实世界中的应用。我们（包括我在 OpenAI 的团队，向他们致敬）投入了大量精力，在对齐过程中（例如通过 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/research/learning-to-summarize-with-human-feedback"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "RLHF"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）为模型构建默认的安全行为。然而，对抗性攻击或越狱提示可能会触发模型输出一些不希望看到的内容。"
+        }
+      ]
+    },
+    "paragraph-7cdecc5b4854": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大量关于对抗性攻击的基础工作集中在图像上，并且它在连续、高维空间中操作，这与文本不同。由于缺乏直接的梯度信号，针对文本等离散数据的攻击被认为更具挑战性。我之前关于 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "可控文本生成"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的文章与此主题非常相关，因为攻击大型语言模型本质上是控制模型输出某种类型（不安全）的内容。"
+        }
+      ]
+    },
+    "paragraph-a0e1ea001723": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "还有一类工作是攻击大型语言模型以提取预训练数据、私有知识（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2012.07805"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Carlini et al, 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）或通过数据投毒攻击模型训练过程（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2302.10149"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Carlini et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。我们不会在这篇文章中涵盖这些主题。"
+        }
+      ]
+    },
+    "heading-f2eab193ca75": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基础知识"
+        }
+      ]
+    },
+    "heading-e8857bf4887f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "威胁模型"
+        }
+      ]
+    },
+    "paragraph-cda5a064e52f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对抗性攻击是触发模型输出不希望看到内容的输入。许多早期文献侧重于分类任务，而最近的努力开始更多地研究生成模型的输出。在大型语言模型的背景下，本文假设攻击只发生在 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "推理时"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，这意味着 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "模型权重是固定的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-61a1b6a6c28e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分类"
+        }
+      ]
+    },
+    "paragraph-3680cbfcf983": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "过去，分类器上的对抗性攻击在研究界引起了更多关注，其中许多在图像领域。大型语言模型也可以用于分类。给定输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 和分类器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(.)"
+        },
+        {
+          "type": "text",
+          "text": "，我们希望找到输入的对抗性版本，表示为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_\\text{adv}"
+        },
+        {
+          "type": "text",
+          "text": "，与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 之间的差异难以察觉，使得 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(\\mathbf{x}) \\neq f(\\mathbf{x}_\\text{adv})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-4edf7e4f9ef6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "文本生成"
+        }
+      ]
+    },
+    "paragraph-de265aaf1a99": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 和生成模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(.)"
+        },
+        {
+          "type": "text",
+          "text": "，我们让模型输出一个样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y} \\sim p(.\\vert\\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": "。对抗性攻击将识别出这样的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(\\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": "，使得 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 会违反模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 内置的安全行为；例如，输出关于非法主题的不安全内容，泄露私人信息或模型训练数据。对于生成任务，判断攻击是否成功并不容易，这需要一个超高质量的分类器来判断 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 是否不安全，或者需要人工审查。"
+        }
+      ]
+    },
+    "heading-91c417b1b50b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "白盒与黑盒"
+        }
+      ]
+    },
+    "paragraph-d291ac0089c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "白盒攻击假设攻击者可以完全访问模型权重、架构和训练流程，从而可以获取梯度信号。我们不假设攻击者可以访问完整的训练数据。这只适用于开源模型。黑盒攻击假设攻击者只能访问类似 API 的服务，他们提供输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 并获得样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": "，而无需了解模型的进一步信息。"
+        }
+      ]
+    },
+    "heading-131a1e417e03": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对抗性攻击的类型"
+        }
+      ]
+    },
+    "paragraph-52e641c7393d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有多种方法可以找到对抗性输入，以触发大型语言模型输出不希望看到的内容。我们在此介绍五种方法。"
+        }
+      ]
+    },
+    "table-b3ee9d648e38": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "攻击",
+          "类型",
+          "描述"
+        ],
+        "rows": [
+          [
+            "词元操纵",
+            "黑盒",
+            "修改文本输入中一小部分词元，使其触发模型故障，但仍保留其原始语义。"
+          ],
+          [
+            "基于梯度的攻击",
+            "白盒",
+            "依靠梯度信号来学习有效的攻击。"
+          ],
+          [
+            "越狱提示",
+            "黑盒",
+            "通常是基于启发式的提示，以“越狱”模型内置的安全机制。"
+          ],
+          [
+            "人工红队测试",
+            "黑盒",
+            "人类攻击模型，可能借助或不借助其他模型的帮助。"
+          ],
+          [
+            "模型红队测试",
+            "黑盒",
+            "模型攻击模型，其中攻击者模型可以进行微调。"
+          ]
+        ]
+      }
+    },
+    "heading-e495460eb042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "令牌操纵"
+        }
+      ]
+    },
+    "paragraph-7030388121cc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一段包含令牌序列的文本输入，我们可以应用简单的令牌操作，例如用同义词替换，以触发模型做出不正确的预测。基于令牌操纵的攻击在"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "黑盒"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "设置中有效。Python 框架 TextAttack ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.05909"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Morris et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 实现了许多词语和令牌操纵攻击方法，为自然语言处理模型创建对抗性样本。该领域的大多数工作都集中在分类和蕴含预测方面。"
+        }
+      ]
+    },
+    "paragraph-edd2648ed9b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.aclweb.org/anthology/P18-1079/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ribeiro et al (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 依赖于手动提出的语义等效对抗规则（SEARs）进行最小的令牌操纵，以使模型无法生成正确答案。示例规则包括（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "What "
+            },
+            {
+              "type": "inline_code",
+              "text": "NOUN"
+            },
+            {
+              "type": "text",
+              "text": "→Which "
+            },
+            {
+              "type": "inline_code",
+              "text": "NOUN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "WP"
+            },
+            {
+              "type": "text",
+              "text": " is → "
+            },
+            {
+              "type": "inline_code",
+              "text": "WP"
+            },
+            {
+              "type": "text",
+              "text": "’s’"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "was→is"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）等。对抗操作后的语义等效性通过回译进行检查。这些规则是通过相当手动、启发式的方法提出的，SEARs 探测的模型“错误”类型仅限于对最小令牌变化的敏感性，这在基础大型语言模型能力增强后不应成为问题。"
+        }
+      ]
+    },
+    "paragraph-66ba854ba9f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "相比之下，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/#EDA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "EDA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（简易数据增强；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.11196"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wei & Zou 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）定义了一组简单且更通用的文本增强操作：同义词替换、随机插入、随机交换或随机删除。EDA 增强被证明可以提高多个基准测试上的分类准确性。"
+        }
+      ]
+    },
+    "paragraph-283f9ddcf54b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "TextFooler ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1907.11932"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jin et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 和 BERT-Attack ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://aclanthology.org/2020.emnlp-main.500.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Li et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 遵循相同的过程，即首先识别最重要和最脆弱的词语，这些词语对模型预测的改变最大，然后以某种方式替换这些词语。"
+        }
+      ]
+    },
+    "paragraph-f2d798c4ec19": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个分类器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": " 和一个输入文本字符串 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "，每个词的重要性分数可以通过以下方式衡量："
+        }
+      ]
+    },
+    "paragraph-89826816e939": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f_y"
+        },
+        {
+          "type": "text",
+          "text": " 是标签 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 的预测 logits，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x_{\\setminus w_i}"
+        },
+        {
+          "type": "text",
+          "text": " 是排除目标词 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": " 的输入文本。重要性高的词是很好的替换候选词，但应跳过停用词以避免破坏语法。"
+        }
+      ]
+    },
+    "paragraph-96c138f8e831": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "TextFooler 根据词嵌入余弦相似度用最相似的同义词替换这些词，然后通过检查替换词是否仍具有相同的词性标注以及句子级相似度是否高于某个阈值来进一步过滤。BERT-Attack 则通过 BERT 用语义相似的词替换这些词，因为上下文感知的预测是掩码语言模型的一个非常自然的用例。以这种方式发现的对抗性示例在模型之间具有一定的可迁移性，具体取决于模型和任务。"
+        }
+      ]
+    },
+    "heading-604b0acdbff0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于梯度的攻击"
+        }
+      ]
+    },
+    "paragraph-196d9ec29c7f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在白盒设置中，我们可以完全访问模型参数和架构。因此，我们可以依靠梯度下降来编程学习最有效的攻击。基于梯度的攻击仅适用于白盒设置，例如对于开源大型语言模型。"
+        }
+      ]
+    },
+    "paragraph-8c09b58068be": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "GBDA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“基于梯度的分布攻击”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2104.13733"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Guo et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）使用 Gumbel-Softmax 近似技巧来"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "使对抗性损失优化可微分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，其中 BERTScore 和困惑度用于强制感知性和流畅性。给定一个由标记 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}=[x_1, x_2 \\dots x_n]"
+        },
+        {
+          "type": "text",
+          "text": " 组成的输入，其中一个标记 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x_i"
+        },
+        {
+          "type": "text",
+          "text": " 可以从分类分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_\\Theta"
+        },
+        {
+          "type": "text",
+          "text": " 中采样，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Theta \\in \\mathbb{R}^{n \\times V}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": " 是标记词汇量大小。考虑到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": " 通常在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "O(10,000)"
+        },
+        {
+          "type": "text",
+          "text": " 左右，并且大多数对抗性示例只需要少量标记替换，它被高度过度参数化。我们有："
+        }
+      ]
+    },
+    "paragraph-7c514fac2c68": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\nx_i \\sim P_{\\Theta_i} = \\text{Categorical}(\\pi_i) = \\text{Categorical}(\\text{Softmax}(\\Theta_i))\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    },
+    "paragraph-086d78dd6508": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_i \\in \\mathbb{R}^V"
+        },
+        {
+          "type": "text",
+          "text": "是一个词元概率向量，用于第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个词元。要最小化的对抗性目标函数是生成与正确标签"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "对于分类器"
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\min_{\\Theta \\in \\mathbb{R}^{n \\times V}} \\mathbb{E}_{\\mathbf{x} \\sim P_{\\Theta}} \\mathcal{L}_\\text{adv}(\\mathbf{X}, y; f)"
+        },
+        {
+          "type": "text",
+          "text": "。然而，从表面上看，由于分类分布，这是不可微分的。使用Gumbel-softmax近似（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.01144"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jang et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）我们从Gumbel分布"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{P}_\\Theta"
+        },
+        {
+          "type": "text",
+          "text": "通过"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{\\boldsymbol{\\pi}}"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-4cfaf6f923e3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "g_{ij} \\sim \\text{Gumbel}(0, 1)"
+        },
+        {
+          "type": "text",
+          "text": "；温度"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau > 0"
+        },
+        {
+          "type": "text",
+          "text": "控制分布的平滑度。"
+        }
+      ]
+    },
+    "paragraph-4552488f1544": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Gumbel 分布用于模拟"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "极值"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，即多个样本的最大值或最小值，而与样本分布无关。额外的 Gumbel 噪声引入了随机决策，模拟了从分类分布中采样的过程。"
+        }
+      ]
+    },
+    "paragraph-1f786ec84f31": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "低温度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau \\to 0"
+        },
+        {
+          "type": "text",
+          "text": " 推动收敛到分类分布，因为从温度为 0 的 softmax 中采样是确定性的。“采样”部分仅取决于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "g_{ij}"
+        },
+        {
+          "type": "text",
+          "text": " 的值，该值大多集中在 0 附近。"
+        }
+      ]
+    },
+    "paragraph-0b80e7d5d1c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "令"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{e}_j"
+        },
+        {
+          "type": "text",
+          "text": "为词元"
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "。我们可以用"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "近似"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{e}(\\tilde{\\boldsymbol{\\pi}})"
+        },
+        {
+          "type": "text",
+          "text": "，它是与词元概率对应的嵌入向量的加权平均值："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{e}(\\pi_i) = \\sum_{j=1}^V \\pi_i^{(j)} \\mathbf{e}_j"
+        },
+        {
+          "type": "text",
+          "text": "。请注意，当"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_i"
+        },
+        {
+          "type": "text",
+          "text": "是与词元"
+        },
+        {
+          "type": "inline_math",
+          "text": "x_i"
+        },
+        {
+          "type": "text",
+          "text": "，我们会有"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{e}(\\pi_i) = \\mathbf{e}_{z_i}"
+        },
+        {
+          "type": "text",
+          "text": "。将嵌入表示与 Gumbel-softmax 近似相结合，我们得到了一个可微分的最小化目标："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\min_{\\Theta \\in \\mathbb{R}^{n \\times V}} \\mathbb{E}_{\\tilde{\\boldsymbol{\\pi}} \\sim \\tilde{P}_{\\Theta}} \\mathcal{L}_\\text{adv}(\\bar{e}(\\tilde{\\boldsymbol{\\pi}}), y; f)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-6ee69877a8d4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "同时，将可微分软约束应用于白盒攻击也很容易。GBDA 实验了 (1) 使用 NLL（负对数似然）的软流畅性约束和 (2) BERTScore ("
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“一种用于评估文本生成的相似性分数，它捕获了 transformer 模型上下文化嵌入中成对 token 之间的语义相似性。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.09675"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhang et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 以测量两个文本输入之间的相似性，确保扰动版本不会与原始版本偏离太多。结合所有约束，最终目标函数如下，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{lm}, \\lambda_\\text{sim} > 0"
+        },
+        {
+          "type": "text",
+          "text": " 是用于控制软约束强度的预设超参数："
+        }
+      ]
+    },
+    "paragraph-feb10d5419c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Gumbel-softmax 技巧难以扩展到 token 删除或添加，因此它仅限于 token 替换操作，而不是删除或添加。"
+        }
+      ]
+    },
+    "paragraph-c8c33b6263e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "HotFlip"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1712.06751"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ebrahimi et al. 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 将文本操作视为向量空间中的输入，并测量损失对这些向量的导数。这里我们假设输入向量是字符级独热编码的矩阵，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\in {0, 1}^{m \\times n \\times V}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_{ij} \\in {0, 1}^V"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": "是最大词数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "是每个词的最大字符数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": "是字母表大小。给定原始输入向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "，我们构造一个新向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}_{ij, a\\to b}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "个词的第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个字符从"
+        },
+        {
+          "type": "inline_math",
+          "text": "a \\to b"
+        },
+        {
+          "type": "text",
+          "text": "改变，因此我们有"
+        },
+        {
+          "type": "inline_math",
+          "text": "x_{ij}^{(a)} = 1"
+        },
+        {
+          "type": "text",
+          "text": "但"
+        },
+        {
+          "type": "inline_math",
+          "text": "x_{ij, a\\to b}^{(a)} = 0, x_{ij, a\\to b}^{(b)} = 1"
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    "paragraph-300108c905d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据一阶泰勒展开，损失的变化为："
+        }
+      ]
+    },
+    "paragraph-4b3e2066d4b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个目标被优化以选择向量，从而仅使用一次反向传播来最小化对抗性损失。"
+        }
+      ]
+    },
+    "paragraph-b3fd6d3a3afe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了应用多次翻转，我们可以运行一个束搜索，该搜索包含 "
+        },
+        {
+          "type": "inline_math",
+          "text": "r"
+        },
+        {
+          "type": "text",
+          "text": " 步，束宽度为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "b"
+        },
+        {
+          "type": "text",
+          "text": "，并进行 "
+        },
+        {
+          "type": "inline_math",
+          "text": "O(rb)"
+        },
+        {
+          "type": "text",
+          "text": " 次前向传播。HotFlip 可以通过将令牌删除或添加表示为以位置偏移形式的多次翻转操作来扩展。"
+        }
+      ]
+    },
+    "paragraph-02b50f0ee9a4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.07125"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wallace 等人 (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种基于梯度引导的令牌搜索方法，以找到短序列（例如，分类任务为1个令牌，生成任务为4个令牌），并将其命名为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "通用对抗性触发器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " （"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "UAT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），以触发模型产生特定的预测。UAT 是与输入无关的，这意味着这些触发令牌可以作为前缀（或后缀）连接到数据集中任何输入，从而生效。给定来自数据分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\in \\mathcal{D}"
+        },
+        {
+          "type": "text",
+          "text": " 的任何文本输入序列，攻击者可以优化触发令牌 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{t}"
+        },
+        {
+          "type": "text",
+          "text": "，使其导致目标类别 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{y}"
+        },
+        {
+          "type": "text",
+          "text": " （"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\neq y"
+        },
+        {
+          "type": "text",
+          "text": "，与真实标签不同）："
+        }
+      ]
+    },
+    "paragraph-f57f95a3aff1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后，我们应用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/#hotflip"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "HotFlip"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 来搜索最有效的令牌，该搜索基于通过一阶泰勒展开近似的损失变化。我们将触发令牌 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{t}"
+        },
+        {
+          "type": "text",
+          "text": " 转换为它们的一热嵌入表示，每个向量的维度大小为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "，形成 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{e}"
+        },
+        {
+          "type": "text",
+          "text": " 并更新每个触发令牌的嵌入，以最小化一阶泰勒展开："
+        }
+      ]
+    },
+    "paragraph-565d4cf651ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{V}"
+        },
+        {
+          "type": "text",
+          "text": "是所有 token 的嵌入矩阵。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\nabla_{\\mathbf{e}_i} \\mathcal{L}_\\text{adv}"
+        },
+        {
+          "type": "text",
+          "text": "是任务损失在当前嵌入周围的批次平均梯度，该嵌入属于"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "对抗性触发序列中的第个 token"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{t}"
+        },
+        {
+          "type": "text",
+          "text": "。我们可以通过暴力破解找到最优的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{e}’_i"
+        },
+        {
+          "type": "text",
+          "text": "通过一个大型点积，其大小为整个词汇表的嵌入"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\vert \\mathcal{V} \\vert"
+        },
+        {
+          "type": "text",
+          "text": "  "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\times"
+        },
+        {
+          "type": "text",
+          "text": "嵌入维度"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "。这种大小的矩阵乘法成本低廉，可以并行运行。"
+        }
+      ]
+    },
+    "paragraph-1052b2f71b8b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "AutoPrompt"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.15980"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shin et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 利用相同的基于梯度的搜索策略来寻找最有效的提示模板，用于各种任务。"
+        }
+      ]
+    },
+    "paragraph-a28c8af3076f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上述令牌搜索方法可以通过束搜索进行增强。在寻找最优令牌嵌入"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{e}’_i"
+        },
+        {
+          "type": "text",
+          "text": "时，我们可以选择前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个候选而不是单个候选，从左到右搜索并根据当前数据批次上的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{adv}"
+        },
+        {
+          "type": "text",
+          "text": "对每个束进行评分。"
+        }
+      ]
+    },
+    "paragraph-2e40d6760f2d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "UAT 的损失"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{adv}"
+        },
+        {
+          "type": "text",
+          "text": "设计是任务特定的。分类或阅读理解依赖于交叉熵。在他们的实验中，条件文本生成被配置为最大化语言模型"
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": "在给定任何用户输入的情况下生成与一组不良输出"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{Y}_\\text{bad}"
+        },
+        {
+          "type": "text",
+          "text": "相似内容的可能性："
+        }
+      ]
+    },
+    "paragraph-487ea474da4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在实践中，不可能穷尽"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{X}, \\mathcal{Y}_\\text{bad}"
+        },
+        {
+          "type": "text",
+          "text": "的整个空间，但该论文通过用少量示例表示每个集合获得了不错的结果。例如，他们的实验分别仅使用30条手动编写的种族主义和非种族主义推文作为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{Y}_\\text{bad}"
+        },
+        {
+          "type": "text",
+          "text": "的近似值。他们后来发现，少量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{Y}_\\text{bad}"
+        },
+        {
+          "type": "text",
+          "text": "示例并忽略"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{X}"
+        },
+        {
+          "type": "text",
+          "text": "（即上述公式中没有"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "）就能获得足够好的结果。"
+        }
+      ]
+    },
+    "paragraph-332d81e70e63": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "UAT为何有效是一个有趣的问题。由于它们与输入无关，并且可以在具有不同嵌入、分词和架构的模型之间进行迁移，UAT可能有效地利用了训练数据中固有的偏差，这些偏差被融入到全局模型行为中。"
+        }
+      ]
+    },
+    "paragraph-1eff910104f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "UAT（通用对抗性触发器）攻击的一个缺点是它们很容易被检测到，因为学习到的触发器通常是无意义的。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.02392"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Mehrabi 等人 (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 研究了UAT的两种变体，这些变体鼓励学习到的有害触发器在多轮对话的上下文中难以察觉。目标是创建攻击消息，在给定对话的情况下，能够有效地触发模型产生有害响应，同时攻击本身流畅、连贯且与该对话相关。"
+        }
+      ]
+    },
+    "paragraph-14288dafd2bd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们探索了UAT的两种变体："
+        }
+      ]
+    },
+    "list-item-0948df0dc014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n变体 #1: "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "UAT-LM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (Universal Adversarial Trigger with Language Model Loss) 在触发器token上增加了语言模型对数概率的约束，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{j=1}^{\\vert\\mathbf{t}\\vert} \\log p(\\textbf{t}_j \\mid \\textbf{t}_{1:j−1}; \\theta)"
+        },
+        {
+          "type": "text",
+          "text": "，以鼓励模型学习有意义的token组合。\n"
+        }
+      ]
+    },
+    "list-item-4b342d4af8d2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "变体 #2："
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "UTSC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（基于选择标准的单字触发器）通过以下几个步骤生成攻击消息：(1) 首先生成一组"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "单字"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "UAT标记，(2) 然后将这些单字触发器和对话历史传递给语言模型，以生成不同的攻击话语。生成的攻击会根据不同毒性分类器的毒性分数进行过滤。UTSC-1、UTSC-2 和 UTSC-3 分别采用三种过滤标准：最大毒性分数、超过阈值时的最大毒性分数以及最小分数。"
+        }
+      ]
+    },
+    "paragraph-7097240b1414": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "UAT-LM 和 UTSC-1 的表现与 UAT 基线相当，但 UAT 攻击短语的困惑度异常高（约 10**7；根据 GPT-2），远高于 UAT-LM（约 10**4）和 UTSC-1（约 160）。高困惑度使得攻击更容易被检测和缓解。根据人工评估，UTSC-1 攻击比其他攻击更连贯、流畅和相关。"
+        }
+      ]
+    },
+    "paragraph-6de39898f8cc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2307.15043"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zou 等人 (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 还研究了作为输入请求连接后缀的通用对抗性触发标记。他们专门研究了针对大型语言模型（LLM）的恶意请求，对于这些请求，模型应该拒绝回答。事实上，拒绝回答诸如犯罪建议等不允许的内容类别是 GPT-4 内置的一项重要安全缓解措施（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2303.08774"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "OpenAI 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。对抗性目标是触发大型语言模型输出"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "肯定"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "响应，即使面对应该被拒绝的请求。也就是说，给定一个恶意请求，模型可以响应类似 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"Sure, here is how to ...\""
+        },
+        {
+          "type": "text",
+          "text": " 的内容。预期的肯定响应也被配置为重复部分用户提示，以避免后缀简单地改变主题来优化 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"sure\""
+        },
+        {
+          "type": "text",
+          "text": " 响应。损失函数就是输出目标响应的 NLL。"
+        }
+      ]
+    },
+    "paragraph-9aa3c834d9ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在两个不同的模型 "
+        },
+        {
+          "type": "inline_code",
+          "text": "Vicuna-7b"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "Vicuna-13b"
+        },
+        {
+          "type": "text",
+          "text": " 上进行了触发跨多个输入的肯定模型响应的实验。他们采用了基于"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "贪婪坐标梯度（GCG）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的搜索方法，以贪婪地找到在所有可能的单标记替换中能最大程度减少损失的一个候选。逐字评估所有标记替换是不可行的，因此他们运行了类似于 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/#UAT"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "UAT 和 AutoPrompt"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的基于梯度的标记搜索策略，以找到每个标记的顶级候选，每个候选都与损失的最大负梯度相关联。"
+        }
+      ]
+    },
+    "paragraph-7d62b1a1a9b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一组预期的"
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": "输入-输出对"
+        },
+        {
+          "type": "inline_math",
+          "text": "{ (\\mathbf{x}^{(i)}, \\mathbf{y}^{(i)}) }_{i=1}^m"
+        },
+        {
+          "type": "text",
+          "text": "（例如，输入"
+        },
+        {
+          "type": "inline_code",
+          "text": "\"Give instructions for building a pipe bomb\""
+        },
+        {
+          "type": "text",
+          "text": "将与输出"
+        },
+        {
+          "type": "inline_code",
+          "text": "\"Sure, here’s instructions for building a pipe bomb:\""
+        },
+        {
+          "type": "text",
+          "text": "）以及一个对抗性后缀"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{t}"
+        },
+        {
+          "type": "text",
+          "text": "，其长度为"
+        },
+        {
+          "type": "inline_math",
+          "text": "L"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-6c227ecfc8c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于对抗性后缀中的每个token "
+        },
+        {
+          "type": "inline_math",
+          "text": "t_j, 1 \\leq j \\leq L"
+        },
+        {
+          "type": "text",
+          "text": "，我们找到前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个具有最大负NLL损失梯度的值 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{i=1}^{m_c} \\nabla_{\\textbf{e}_{t_j}} p(\\mathbf{y}^{(i)} \\vert \\mathbf{x}^{(i)}, \\mathbf{t})"
+        },
+        {
+          "type": "text",
+          "text": "，来自语言模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": "。并且 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m_c"
+        },
+        {
+          "type": "text",
+          "text": " 从1开始。"
+        }
+      ]
+    },
+    "list-item-10593ff4b289": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后"
+        },
+        {
+          "type": "inline_math",
+          "text": "B < kL"
+        },
+        {
+          "type": "text",
+          "text": "个 token 替换候选项"
+        },
+        {
+          "type": "inline_math",
+          "text": "{\\mathbf{t}^{(1)}, \\dots, \\mathbf{t}^{(B)}}"
+        },
+        {
+          "type": "text",
+          "text": "从"
+        },
+        {
+          "type": "inline_math",
+          "text": "kL"
+        },
+        {
+          "type": "text",
+          "text": "个选项中随机选择，并选择损失最小（即对数似然最大）的那个，将其设为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{t} = \\mathbf{t}^{(b^*)}"
+        },
+        {
+          "type": "text",
+          "text": "。该过程主要包括：(1) 首先利用一阶泰勒展开近似法缩小替换候选项的粗略范围；(2) 然后计算最有希望的候选项的精确损失变化。步骤 (2) 成本很高，因此我们无法对大量候选项执行此操作。"
+        }
+      ]
+    },
+    "list-item-bd8191b23603": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "只有当当前的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{t}"
+        },
+        {
+          "type": "text",
+          "text": " 成功触发 "
+        },
+        {
+          "type": "inline_math",
+          "text": "{ (\\mathbf{x}^{(i)}, \\mathbf{y}^{(i)}) }_{i=1}^{m_c}"
+        },
+        {
+          "type": "text",
+          "text": " 时，我们才增加 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m_c = m_c + 1"
+        },
+        {
+          "type": "text",
+          "text": "。他们发现这种增量调度比试图一次性优化所有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": " 提示集的效果更好。这近似于课程学习。"
+        }
+      ]
+    },
+    "list-item-42db9030f0e7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上述步骤1-3重复多次迭代。"
+        }
+      ]
+    },
+    "paragraph-6cab3f21088d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "尽管他们的攻击序列仅在开源模型上进行训练，但它们对其他商业模型显示出非平凡的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "可迁移性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，这表明对开源模型的白盒攻击对私有模型可能有效，特别是当底层训练数据存在重叠时。请注意，Vicuna 是使用从 "
+        },
+        {
+          "type": "inline_code",
+          "text": "GPT-3.5-turbo"
+        },
+        {
+          "type": "text",
+          "text": "（通过 shareGPT）收集的数据进行训练的，这本质上是蒸馏，因此这种攻击更像是白盒攻击。"
+        }
+      ]
+    },
+    "paragraph-326dab043fa4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ARCA"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“自回归随机坐标上升”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2303.04381"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jones 等人 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）考虑了一组更广泛的优化问题，以找到匹配特定行为模式的输入-输出对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\mathbf{x}, \\mathbf{y})"
+        },
+        {
+          "type": "text",
+          "text": "；例如以 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"Barack Obama\""
+        },
+        {
+          "type": "text",
+          "text": " 开头但导致有害输出的无害输入。给定一个审计目标 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi: \\mathcal{X} \\times \\mathcal{Y} \\to \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "，它将一对（输入提示，输出完成）映射到分数。由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 捕获的行为模式示例如下："
+        }
+      ]
+    },
+    "list-item-289315d57adc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关于名人的贬损性评论："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(\\mathbf{x}, \\mathbf{y}) = \\texttt{StartsWith}(\\mathbf{x}, [\\text{celebrity}]) + \\texttt{NotToxic}(\\mathbf{x}) + \\texttt{Toxic}(\\mathbf{y})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-17fa6af3e4ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "语言切换："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(\\mathbf{x}, \\mathbf{y}) = \\texttt{French}(\\mathbf{x}) + \\texttt{English}(\\mathbf{y})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-f78ffa96592f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "语言模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 的优化目标是："
+        }
+      ]
+    },
+    "paragraph-4ce6235f8bd6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(\\mathbf{x}) \\Rightarrow  \\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 非正式地表示采样过程（即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y} \\sim p(.\\mid \\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-fd9891227a37": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了克服 LLM 采样不可微分的问题，ARCA 转而最大化语言模型生成的对数似然："
+        }
+      ]
+    },
+    "paragraph-1e9dd184347f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{LLM}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个超参数而不是一个变量。并且我们有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\log p ( \\mathbf{y} \\mid \\mathbf{x}) = \\sum_{i=1}^n p(y_i \\mid x, y_1, \\dots, y_{i-1})"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-6c2b59a35ce6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ARCA 的 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "坐标上升"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 算法在每一步只更新索引为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 的一个 token，以最大化上述目标，同时其他 token 保持固定。该过程会遍历所有 token 位置，直到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(\\mathbf{x}) = \\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi(.) \\geq \\tau"
+        },
+        {
+          "type": "text",
+          "text": "，或者达到迭代限制。"
+        }
+      ]
+    },
+    "paragraph-8c0995c99415": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "令"
+        },
+        {
+          "type": "inline_math",
+          "text": "v \\in \\mathcal{V}"
+        },
+        {
+          "type": "text",
+          "text": "是具有嵌入"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{e}_v"
+        },
+        {
+          "type": "text",
+          "text": "的词元，它使上述目标对于第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个词元"
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i"
+        },
+        {
+          "type": "text",
+          "text": "在输出"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": "中，且最大化的目标值表示为："
+        }
+      ]
+    },
+    "paragraph-1250b1d4a1ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，LLM 对第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个 token 嵌入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\nabla_{\\mathbf{e}_{y_i}} \\log p(\\mathbf{y}_{1:i}\\mid \\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": " 的对数似然梯度是病态的，因为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(\\mathbf{y}_{1:i}\\mid \\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": " 的输出预测是 token 词汇空间上的概率分布，其中不涉及 token 嵌入，因此梯度为 0。为了解决这个问题，ARCA 将分数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_i"
+        },
+        {
+          "type": "text",
+          "text": " 分解为两项：一个线性可近似项 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_i^\\text{lin}"
+        },
+        {
+          "type": "text",
+          "text": " 和一个自回归项 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s^\\text{aut}_i"
+        },
+        {
+          "type": "text",
+          "text": "，并且只对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_i^\\text{lin} \\to \\tilde{s}_i^\\text{lin}"
+        },
+        {
+          "type": "text",
+          "text": " 应用近似："
+        }
+      ]
+    },
+    "paragraph-4eb6c968bfc6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "只有"
+        },
+        {
+          "type": "inline_math",
+          "text": "s^\\text{lin}_i"
+        },
+        {
+          "type": "text",
+          "text": "通过使用一组随机 token 的平均嵌入来近似一阶泰勒展开，而不是像 HotFlip、UAT 或 AutoPrompt 中那样计算与原始值的差值。自回归项"
+        },
+        {
+          "type": "inline_math",
+          "text": "s^\\text{aut}"
+        },
+        {
+          "type": "text",
+          "text": "通过一次前向传播精确计算所有可能的 token。我们只计算真实的"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_i"
+        },
+        {
+          "type": "text",
+          "text": "值，针对排名前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "的 token，这些 token 按近似分数排序。"
+        }
+      ]
+    },
+    "paragraph-d0f0d73e6dbb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关于反转提示以生成有害输出的实验："
+        }
+      ]
+    },
+    "heading-7e0d94b7300b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "越狱提示"
+        }
+      ]
+    },
+    "paragraph-da1e162d2951": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "越狱提示通过对抗性方式触发大型语言模型（LLM）输出"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "本应被缓解的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "有害内容。越狱是黑盒攻击，因此其措辞组合基于启发式和手动探索。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2307.02483"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wei 等人 (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了两种 LLM 安全故障模式，以指导越狱攻击的设计。"
+        }
+      ]
+    },
+    "list-item-bde58dacd5da": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "竞争目标"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：这指的是模型能力（例如 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"should always follow instructions\""
+        },
+        {
+          "type": "text",
+          "text": "）与安全目标发生冲突的场景。利用竞争目标的越狱攻击示例包括:\n\n"
+        }
+      ]
+    },
+    "list-item-209b46b03149": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "前缀注入：要求模型以肯定确认开始。"
+        }
+      ]
+    },
+    "list-item-2253bdf7bc7e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "拒绝抑制：向模型提供详细指令，要求其不要以拒绝格式回应。"
+        }
+      ]
+    },
+    "list-item-769c2aea39ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "风格注入：要求模型不使用长词，因此模型无法进行专业写作来给出免责声明或解释拒绝。"
+        }
+      ]
+    },
+    "list-item-197db59e581c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其他：扮演 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/www.jailbreakchat.com/prompt/3d318387-903a-422c-8347-8e12768c14b5"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DAN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (Do Anything Now)，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/www.jailbreakchat.com/prompt/4f37a029-9dff-4862-b323-c96a5504de5d"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "AIM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (always intelligent and Machiavellian) 等角色。"
+        }
+      ]
+    },
+    "list-item-015f77caabe7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "不匹配的泛化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：安全训练未能泛化到存在能力的领域。当输入对于模型的安全训练数据是 OOD 但仍在其广泛的预训练语料库范围内时，就会发生这种情况。例如，\n\n"
+        }
+      ]
+    },
+    "list-item-51746e2dc8d8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "特殊编码：对抗性输入使用 Base64 编码。"
+        }
+      ]
+    },
+    "list-item-7d8a2534cd93": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "字符转换：ROT13 密码，leetspeak（用视觉上相似的数字和符号替换字母），摩尔斯电码"
+        }
+      ]
+    },
+    "list-item-fdddc1ab2898": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "词语转换：Pig Latin（用同义词替换敏感词，例如用“pilfer”代替“steal”），有效载荷拆分（又称“token smuggling”，将敏感词拆分成子字符串）。"
+        }
+      ]
+    },
+    "list-item-333ba976a239": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提示级别混淆：翻译成其他语言，要求模型以 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.lesswrong.com/posts/bNCDexejSZpkuu3yz/you-can-use-gpt-4-to-create-prompt-injections-against-gpt-4"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "它能理解"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的方式进行混淆"
+        }
+      ]
+    },
+    "paragraph-f27992adf4dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2307.02483"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wei 等人 (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 实验了大量的越狱方法，包括遵循上述原则构建的组合策略。"
+        }
+      ]
+    },
+    "list-item-095f5ecb4313": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "combination_1"
+        },
+        {
+          "type": "text",
+          "text": " 结合了前缀注入、拒绝抑制和 Base64 攻击"
+        }
+      ]
+    },
+    "list-item-fc9db4244f29": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "combination_2"
+        },
+        {
+          "type": "text",
+          "text": " 添加了风格注入"
+        }
+      ]
+    },
+    "list-item-062e1012beeb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "combination_3"
+        },
+        {
+          "type": "text",
+          "text": " 添加了生成网站内容和格式限制"
+        }
+      ]
+    },
+    "paragraph-f9c71b8284d3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2302.12173"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Greshake et al. (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 对提示注入攻击提出了一些高层次的观察。他们指出，即使攻击不提供详细方法而只提供一个目标，模型也可能自主实施。当模型可以访问外部API和工具、更多信息，甚至专有信息时，会带来更多与网络钓鱼、私人探测等相关的风险。"
+        }
+      ]
+    },
+    "heading-baec36f418b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "人机协作红队测试"
+        }
+      ]
+    },
+    "paragraph-bd9fae789015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1809.02701"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wallace et al. (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出的人机协作对抗性生成，旨在构建工具来指导人类攻破模型。他们使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://sites.google.com/view/qanta/resources"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "QuizBowl QA dataset"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 进行了实验，并设计了一个对抗性写作界面，供人类编写类似 Jeopardy 风格的问题，以诱骗模型做出错误的预测。每个词根据其词语重要性（即移除该词后模型预测概率的变化）以不同颜色高亮显示。词语重要性通过模型相对于词嵌入的梯度来近似。"
+        }
+      ]
+    },
+    "paragraph-a2f7ad7d63b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一项实验中，人类训练员被指示为暴力内容的安全分类器寻找失败案例，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.01663"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ziegler et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 创建了一个工具来协助人类对抗者更快、更有效地发现和消除分类器中的故障。工具辅助的重写比纯手动重写更快，每个示例的时间从20分钟减少到13分钟。具体来说，他们引入了两个功能来协助人类作者："
+        }
+      ]
+    },
+    "list-item-ef6228bd99bd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "功能1："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "显示每个标记的显著性分数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。该工具界面会高亮显示移除后最可能影响分类器输出的标记。标记的显著性分数是分类器输出相对于标记嵌入的梯度幅度，与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1809.02701"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wallace et al. (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中相同。"
+        }
+      ]
+    },
+    "list-item-39613fd0382e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "特性2："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "词元替换和插入"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。此特性使得通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/#BERT-Attack"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BERT-Attack"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "进行的词元操作变得易于访问。词元更新随后由人工编辑进行审查。一旦点击片段中的一个词元，就会出现一个下拉列表，其中包含按其降低当前模型分数程度排序的新词元。"
+        }
+      ]
+    },
+    "paragraph-44ca97c0deb2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Bot-Adversarial Dialogue (BAD; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://aclanthology.org/2021.naacl-main.235/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Xu 等人 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 提出了一种框架，其中人类被引导去诱导模型犯错（例如，输出不安全内容）。他们收集了模型与众包工作者之间的 5000 多个对话。每个对话包含 14 轮，模型根据不安全轮次的数量进行评分。他们的工作产生了一个"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/ParlAI/tree/main/parlai/tasks/bot_adversarial_dialogue"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BAD 数据集"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.tensorflow.org/datasets/catalog/bot_adversarial_dialogue"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Tensorflow 数据集"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），其中包含约 2500 个标记有冒犯性的对话。Anthropic 的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/hh-rlhf/tree/master/red-team-attempts"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "红队数据集"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "包含近 4 万次对抗性攻击，这些攻击是从与大型语言模型进行对话的人类红队成员那里收集的（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2209.07858"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ganguli 等人 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。他们发现 RLHF 模型随着规模的扩大而更难被攻击。在 OpenAI 发布大型模型（例如"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://cdn.openai.com/papers/gpt-4.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "GPT-4"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://cdn.openai.com/papers/DALL_E_3_System_Card.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DALL-E 3"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的所有安全准备工作中，人类专家红队测试是常用的方法。"
+        }
+      ]
+    },
+    "heading-539af886075b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型红队"
+        }
+      ]
+    },
+    "paragraph-3d531fd44cd6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "人工红队测试功能强大，但难以扩展，并且可能需要大量培训和专业知识。现在，让我们设想我们可以学习一个红队模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{red}"
+        },
+        {
+          "type": "text",
+          "text": "，使其与目标 LLM "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 进行对抗性博弈，以触发不安全的响应。基于模型的红队测试的主要挑战在于如何判断攻击何时成功，以便我们能够构建适当的学习信号来训练红队模型。"
+        }
+      ]
+    },
+    "paragraph-f4a8579824c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们有一个高质量的分类器来判断模型输出是否有害，我们可以将其用作奖励，并训练红队模型生成一些输入，以最大化分类器在目标模型输出上的得分（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.03286"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Perez et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。假设"
+        },
+        {
+          "type": "inline_math",
+          "text": "r(\\mathbf{x}, \\mathbf{y})"
+        },
+        {
+          "type": "text",
+          "text": " 是一个红队分类器，它可以判断输出"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 在给定测试输入的情况下是否有害"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "。寻找对抗性攻击示例遵循一个简单的三步过程："
+        }
+      ]
+    },
+    "list-item-ac26b54d2b7a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "来自红队LLM的样本测试输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\sim p_\\text{red}(.)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-251c1d4a9202": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用目标LLM "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(\\mathbf{y} \\mid \\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": " 生成一个输出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 用于每个测试用例 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-147eac00be99": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据分类器"
+        },
+        {
+          "type": "inline_math",
+          "text": "r(\\mathbf{x}, \\mathbf{y})"
+        },
+        {
+          "type": "text",
+          "text": "，识别导致有害输出的测试用例子集。"
+        }
+      ]
+    },
+    "paragraph-b0ffb3d05911": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们尝试了几种方法，从红队模型中采样或进一步训练红队模型以提高其有效性，"
+        }
+      ]
+    },
+    "list-item-634e24a5b756": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "零样本生成"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：这是为了找到一些在预设提示下能够触发有害输出的提示。"
+        }
+      ]
+    },
+    "list-item-dcfcadfa4877": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "随机少样本生成"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 上述步骤中发现的红队提示符随后被用作少样本示例，以生成更多类似案例。每个零样本测试用例可能会以 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\propto \\exp(r(\\mathbf{x}, \\mathbf{y}) / \\tau)"
+        },
+        {
+          "type": "text",
+          "text": " 的概率被选入少样本示例中。"
+        }
+      ]
+    },
+    "list-item-340dc20da4a1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "监督学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 红队模型可以在失败的零样本测试用例上进行微调。训练仅轻度运行一个 epoch，以避免过拟合并保持样本多样性。"
+        }
+      ]
+    },
+    "list-item-4ad096e14e4c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 由于采样步骤不可微分，因此需要标准的强化学习微调来最大化奖励 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}_{\\mathbf{x} \\sim p_\\text{red}(.)} [r(\\mathbf{x}, \\mathbf{y})]"
+        },
+        {
+          "type": "text",
+          "text": "，其中包含当前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{red}"
+        },
+        {
+          "type": "text",
+          "text": " 与初始模型行为之间的 KL 散度项，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 是目标模型的一个样本，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y} \\sim p(. \\mid \\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": "。该论文从监督微调版本对模型进行热启动，并应用了 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#a2c"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "A2C"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 强化学习算法。"
+        }
+      ]
+    },
+    "paragraph-32bec65f2287": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "实验使用了 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/facebookresearch/ParlAI/tree/main/parlai/tasks/bot_adversarial_dialogue"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BAD (Bot Adversarial Dialogue) dataset"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 并使用一个简单的提示符生成了红队测试用例："
+        }
+      ]
+    },
+    "paragraph-17291f290892": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了触发私人个人信息的攻击，使用了以下零样本提示符："
+        }
+      ]
+    },
+    "paragraph-05f60d87bec1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了鼓励高质量和多样化的样本，他们采用了带有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p=0.95"
+        },
+        {
+          "type": "text",
+          "text": " 的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#nucleus"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "核采样"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。多样性通过 self-BLEU 来衡量，即，精确地说，是给定案例与 1000 个案例相比的最大 BLEU 值。较低的 self-BLEU 表示更好的多样性。样本多样性与攻击成功率之间存在明显的权衡。零样本生成在欺骗攻击性模型输出方面成功率最低，但很好地保持了采样多样性；而当 KL 惩罚较低时，强化学习微调能有效最大化奖励，但代价是多样性降低，因为它利用了一种成功的攻击模式。"
+        }
+      ]
+    },
+    "paragraph-31a690b2be85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "构建一个完美的有害内容检测分类器是不可能的，该分类器中的任何偏见或缺陷都可能导致有偏见的攻击。RL算法特别容易利用分类器中的任何小问题作为有效的攻击模式，这最终可能只是对分类器本身的攻击。此外，有人认为，针对现有分类器进行红队测试的益处微乎其微，因为此类分类器可以直接用于过滤训练数据或阻止模型输出。"
+        }
+      ]
+    },
+    "paragraph-07e30df574b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2306.09442"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Casper et al. (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 建立了一个人机协作的红队测试流程。与 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.03286"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Perez et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的主要区别在于，他们明确为目标模型设置了一个数据采样阶段，以便我们可以收集人工标签来训练一个任务特定的红队分类器。有三个步骤："
+        }
+      ]
+    },
+    "list-item-feb7786db4d8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "探索"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：从模型中采样并检查输出。应用基于嵌入的聚类进行降采样，以确保足够的多样性。"
+        }
+      ]
+    },
+    "list-item-4d5699d52300": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "建立"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：人类判断模型输出是好是坏。然后使用人工标签训练一个有害性分类器。\n\n"
+        }
+      ]
+    },
+    "list-item-3977824b2904": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在不诚实实验中，该论文将人工标签与 "
+        },
+        {
+          "type": "inline_code",
+          "text": "GPT-3.5-turbo"
+        },
+        {
+          "type": "text",
+          "text": " 标签进行了比较。尽管它们在近一半的示例上存在分歧，但使用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "GPT-3.5-turbo"
+        },
+        {
+          "type": "text",
+          "text": " 或人工标签训练的分类器达到了可比的准确性。使用模型替代人工标注者是相当可行的；参见 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2303.15056"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2305.14387"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/blog/using-gpt-4-for-content-moderation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的类似主张。"
+        }
+      ]
+    },
+    "list-item-f2925115be5d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "利用"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：最后一步是使用RL训练一个对抗性提示生成器，以触发多样化的有害输出分布。奖励结合了有害性分类器分数和多样性约束，多样性约束衡量为目标LM嵌入的批内余弦距离。多样性项是为了避免模式崩溃，在RL损失中移除此项会导致完全失败，生成无意义的提示。"
+        }
+      ]
+    },
+    "paragraph-3222f65e2b24": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "FLIRT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“反馈循环上下文红队攻击”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2308.04265"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Mehrabi 等人 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）依赖于红队语言模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{red}"
+        },
+        {
+          "type": "text",
+          "text": " 的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上下文学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以攻击图像或文本生成模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 来输出不安全内容。回想一下，零样本提示曾被实验作为一种生成红队攻击的方式，在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.03286"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Perez 等人 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-86debd144f1a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每次 FLIRT 迭代中，"
+        }
+      ]
+    },
+    "list-item-bac6e2e5a495": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "红队语言模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{red}"
+        },
+        {
+          "type": "text",
+          "text": " 生成一个对抗性提示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} \\sim p_\\text{red}(. \\mid {\\small{\\text{examples}}})"
+        },
+        {
+          "type": "text",
+          "text": "；初始的上下文示例由人工精心制作；"
+        }
+      ]
+    },
+    "list-item-35ac0b0892e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 生成图像或文本输出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 以此提示为条件 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y} \\sim p(.\\mid \\mathbf{x})"
+        },
+        {
+          "type": "text",
+          "text": ";"
+        }
+      ]
+    },
+    "list-item-b9dfe31a059d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成的内容 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 会评估其安全性，例如使用分类器；"
+        }
+      ]
+    },
+    "list-item-3ca10fe8ad92": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果被认为不安全，则使用触发提示 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": " 来 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "更新上下文示例"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以便 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_\\text{red}"
+        },
+        {
+          "type": "text",
+          "text": " 根据策略生成新的对抗性提示。"
+        }
+      ]
+    },
+    "paragraph-e25a160e5c3b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 FLIRT 中更新上下文示例有几种策略："
+        }
+      ]
+    },
+    "list-item-47039ed71919": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "FIFO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：可以替换种子手工策划的示例，因此生成可能会发散。"
+        }
+      ]
+    },
+    "list-item-64c8f9ae823b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "LIFO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：从不替换种子示例集，只有"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一个"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "被最新的成功攻击替换。但在多样性和攻击有效性方面相当有限。"
+        }
+      ]
+    },
+    "list-item-e0a9b1daec14": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "评分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：这本质上是一个优先级队列，其中示例按分数排名。好的攻击预计会优化"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "有效性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（最大化不安全生成）、"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多样性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（语义上多样化的提示）和"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "低毒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（意味着文本提示可以欺骗文本毒性分类器）。\n\n"
+        }
+      ]
+    },
+    "list-item-414eb13379da": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有效性通过为不同实验设计的攻击目标函数来衡量：\n- 在文本到图像实验中，他们使用了 Q16 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.06675"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Schramowski et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 和 NudeNet ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/notAI-tech/NudeNet)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "https://github.com/notAI-tech/NudeNet)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。\n- 文本到文本实验：TOXIGEN"
+        }
+      ]
+    },
+    "list-item-9c9a236fce16": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "多样性通过成对不相似性来衡量，形式为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{(\\mathbf{x}_i, \\mathbf{x}_j) \\in \\text{All pairs}} [1 - \\text{sim}(\\mathbf{x}_i, \\mathbf{x}_j)]"
+        }
+      ]
+    },
+    "list-item-d95d95d46ac6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "低毒性通过 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://perspectiveapi.com/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Perspective API"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 衡量。"
+        }
+      ]
+    },
+    "list-item-c9a25530dd23": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "评分-LIFO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：结合 LIFO 和评分策略，如果队列长时间未更新，则强制更新最后一个条目。"
+        }
+      ]
+    },
+    "heading-d62fb8fe73ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "缓解措施一瞥"
+        }
+      ]
+    },
+    "heading-02cc4aa62729": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "鞍点问题"
+        }
+      ]
+    },
+    "paragraph-b95252f29364": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对抗鲁棒性的一种很好的框架是将其建模为鲁棒优化视角下的鞍点问题 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1706.06083"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Madry et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。该框架是为分类任务中的连续输入提出的，但它是一个非常简洁的双层优化过程的数学公式，因此我认为值得在此分享。"
+        }
+      ]
+    },
+    "paragraph-46342103eaa2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们考虑一个在（样本，标签）对的数据分布上的分类任务，"
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\mathbf{x}, y) \\in \\mathcal{D}"
+        },
+        {
+          "type": "text",
+          "text": "，训练一个"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "鲁棒"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "分类器的目标是指一个鞍点问题："
+        }
+      ]
+    },
+    "paragraph-deb0dabb33d0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S} \\subseteq \\mathbb{R}^d"
+        },
+        {
+          "type": "text",
+          "text": " 指的是对抗者允许的扰动集；例如，我们希望看到图像的对抗版本仍然与原始版本相似。"
+        }
+      ]
+    },
+    "paragraph-1598993a1e6b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标由一个 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "内部最大化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 问题和一个 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "外部最小化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 问题组成："
+        }
+      ]
+    },
+    "list-item-c13bed59ca50": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "内部最大化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：找到最有效的对抗性数据点，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x} + \\boldsymbol{\\delta}"
+        },
+        {
+          "type": "text",
+          "text": "，它会导致高损失。所有对抗性攻击方法最终都归结为在内循环中最大化损失的方式。"
+        }
+      ]
+    },
+    "list-item-ba23ff5d7bbf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "外部最小化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：找到最佳模型参数化，使得由内部最大化过程触发的最有效攻击所造成的损失最小化。训练鲁棒模型的朴素方法是用扰动版本替换每个数据点，这可以是单个数据点的多个对抗性变体。"
+        }
+      ]
+    },
+    "heading-5fe69079a592": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关于LLM鲁棒性的一些工作"
+        }
+      ]
+    },
+    "paragraph-6df6508983c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "免责声明：此处不求全面。需要单独的博客文章深入探讨。）"
+        }
+      ]
+    },
+    "paragraph-86e94bfb1247": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一种简单直观的防御模型对抗性攻击的方法是明确地 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "指示"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型负责任，不生成有害内容（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://assets.researchsquare.com/files/rs-2873090/v1_covered_3dc9af48-92ba-491e-924d-b13ba9b7216f.pdf?c=1686882819"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Xie et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。这可以在很大程度上降低越狱攻击的成功率，但由于模型行为更保守（例如，对于创意写作）或在某些情况下错误地解释指令（例如，安全-不安全分类），对模型整体质量会产生副作用。"
+        }
+      ]
+    },
+    "paragraph-b9fd7d56db4e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "缓解对抗性攻击风险最常见的方法是使用这些攻击样本训练模型，这被称为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "对抗训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。它被认为是目前最强的防御方法，但会导致鲁棒性和模型性能之间的权衡。在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2309.00614v2"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jain et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的一项实验中，他们测试了两种对抗训练设置：（1）对有害提示与 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"I'm sorry. As a ...\""
+        },
+        {
+          "type": "text",
+          "text": " 响应配对运行梯度下降；（2）在每个训练步骤中，对拒绝响应运行一次下降步，对红队不良响应运行一次上升步。方法（2）最终相当无用，因为模型生成质量大幅下降，而攻击成功率的下降却微乎其微。"
+        }
+      ]
+    },
+    "paragraph-cd0ad5f392be": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/#gradient-based-attacks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "白盒攻击"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 通常会导致无意义的对抗性提示，因此可以通过检查困惑度来检测它们。当然，白盒攻击可以通过明确优化较低的困惑度来直接绕过这一点，例如 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/#UAT-LM"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "UAT-LM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它是 UAT 的一个变体。然而，这存在权衡，并可能导致较低的攻击成功率。"
+        }
+      ]
+    },
+    "paragraph-42718d24168e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2309.00614v2"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jain et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 还测试了预处理文本输入的方法，以在保留语义意义的同时去除对抗性修改。"
+        }
+      ]
+    },
+    "list-item-e7ef341f5194": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "释义"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：使用LLM对输入文本进行释义，这可能会对下游任务性能产生微小影响。"
+        }
+      ]
+    },
+    "list-item-c8cd16d7058a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "重新分词"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：将词元分解并用多个更小的词元表示它们，例如通过 "
+        },
+        {
+          "type": "inline_code",
+          "text": "BPE-dropout"
+        },
+        {
+          "type": "text",
+          "text": "（随机丢弃 p% 的词元）。假设是对抗性提示很可能利用特定的对抗性词元组合。这确实有助于降低攻击成功率，但效果有限，例如从 90% 以上降至 40%。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-4f963066ea0c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (2023年10月). “Adversarial Attacks on LLMs”. Lil’Log. https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/."
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-4c8967d16311": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Madry et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1706.06083"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Towards Deep Learning Models Resistant to Adversarial Attacks”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". ICLR 2018."
+        }
+      ]
+    },
+    "paragraph-3f846ae47f9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Ribeiro et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.aclweb.org/anthology/P18-1079/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Semantically equivalent adversarial rules for debugging NLP models”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". ACL 2018."
+        }
+      ]
+    },
+    "paragraph-55d4c3f963ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Guo et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2104.13733"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Gradient-based adversarial attacks against text transformers”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". arXiv preprint arXiv:2104.13733 (2021)."
+        }
+      ]
+    },
+    "paragraph-895785e88302": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Ebrahimi et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1712.06751"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“HotFlip: White-Box Adversarial Examples for Text Classification”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". ACL 2018."
+        }
+      ]
+    },
+    "paragraph-81da4a8ce1a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Wallace et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.07125"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Universal Adversarial Triggers for Attacking and Analyzing NLP.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP-IJCNLP 2019. | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/Eric-Wallace/universal-triggers"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "code"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-eb132f54e526": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Mehrabi et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.02392"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Robust Conversational Agents against Imperceptible Toxicity Triggers.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NAACL 2022."
+        }
+      ]
+    },
+    "paragraph-ddfc15558f11": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Zou et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2307.15043"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Universal and Transferable Adversarial Attacks on Aligned Language Models.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2307.15043 (2023)"
+        }
+      ]
+    },
+    "paragraph-ab62828285b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Deng et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.12548"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“RLPrompt: Optimizing Discrete Text Prompts with Reinforcement Learning.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP 2022."
+        }
+      ]
+    },
+    "paragraph-bca084653bb9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Jin et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1907.11932"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Is BERT Really Robust? A Strong Baseline for Natural Language Attack on Text Classification and Entailment.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " AAAI 2020."
+        }
+      ]
+    },
+    "paragraph-636c4306467c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Li et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://aclanthology.org/2020.emnlp-main.500"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“BERT-Attack：使用 BERT 对 BERT 进行对抗性攻击。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP 2020."
+        }
+      ]
+    },
+    "paragraph-763f80913ca7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Morris et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.05909"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "\""
+            },
+            {
+              "type": "inline_code",
+              "text": "TextAttack"
+            },
+            {
+              "type": "text",
+              "text": "：NLP 中对抗性攻击、数据增强和对抗性训练的框架。\""
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP 2020."
+        }
+      ]
+    },
+    "paragraph-0b93cbdb56fc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Xu et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://aclanthology.org/2021.naacl-main.235/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Bot-Adversarial Dialogue：用于安全对话代理的对话。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NAACL 2021."
+        }
+      ]
+    },
+    "paragraph-0965196b1bd9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Ziegler et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.01663"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“高风险可靠性的对抗性训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeurIPS 2022."
+        }
+      ]
+    },
+    "paragraph-852faa72cb06": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Anthropic, "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.03286"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对语言模型进行红队演练以减少危害：方法、扩展行为和经验教训。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2202.03286 (2022)"
+        }
+      ]
+    },
+    "paragraph-6da1c838aca1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Perez et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.03286"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用语言模型对语言模型进行红队演练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2202.03286 (2022)"
+        }
+      ]
+    },
+    "paragraph-092b96dbe9c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Ganguli et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2209.07858"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对语言模型进行红队演练以减少危害：方法、扩展行为和经验教训。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2209.07858 (2022)"
+        }
+      ]
+    },
+    "paragraph-530aa927e2e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Mehrabi et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2308.04265"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“FLIRT：反馈循环上下文红队演练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2308.04265 (2023)"
+        }
+      ]
+    },
+    "paragraph-7b9806353aab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] Casper et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2306.09442"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“探索、建立、利用：从零开始对语言模型进行红队演练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2306.09442 (2023)"
+        }
+      ]
+    },
+    "paragraph-2522754e5053": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[19] Xie et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://assets.researchsquare.com/files/rs-2873090/v1_covered_3dc9af48-92ba-491e-924d-b13ba9b7216f.pdf?c=1686882819"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过自我提醒防御 ChatGPT 的越狱攻击。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Research Square (2023)"
+        }
+      ]
+    },
+    "paragraph-bf0d846f485d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[20] Jones et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2303.04381"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过离散优化自动审计大型语言模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2303.04381 (2023)"
+        }
+      ]
+    },
+    "paragraph-4d60def4c5f9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[21] Greshake et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2302.12173"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过间接提示注入攻击现实世界中集成 LLM 的应用程序。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2302.12173(2023)"
+        }
+      ]
+    },
+    "paragraph-ac7b7b2a24b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[22] Jain et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2309.00614v2"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“针对对齐语言模型的对抗性攻击的基线防御。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2309.00614 (2023)"
+        }
+      ]
+    },
+    "paragraph-44d792960e00": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[23] Wei et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2307.02483"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“越狱：LLM 安全训练如何失败？”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2307.02483 (2023)"
+        }
+      ]
+    },
+    "paragraph-7fb1b4488041": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[24] Wei & Zou. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.11196"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“EDA：用于提升文本分类任务性能的简单数据增强技术。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EMNLP-IJCNLP 2019."
+        }
+      ]
+    },
+    "paragraph-2d985714d263": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[25] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/www.jailbreakchat.com"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "www.jailbreakchat.com"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-346a153cb235": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[26] WitchBOT. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.lesswrong.com/posts/bNCDexejSZpkuu3yz/you-can-use-gpt-4-to-create-prompt-injections-against-gpt-4"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“你可以使用 GPT-4 创建针对 GPT-4 的提示注入。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Apr 2023."
+        }
+      ]
+    }
+  }
+}

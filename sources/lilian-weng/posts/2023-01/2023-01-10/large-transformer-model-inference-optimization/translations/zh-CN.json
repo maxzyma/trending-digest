@@ -1,0 +1,5274 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:22ea5f39e41e5bfe2776ff404428905b688b806bcc802ec33e890bc8d3b558a9",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable+math-tokenizer-v2",
+  "title": "大型Transformer模型推理优化",
+  "segments": {
+    "paragraph-18c90b99b59c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "2023-01-24更新：新增关于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "蒸馏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的小节。"
+        },
+        {
+          "type": "line_break"
+        }
+      ]
+    },
+    "paragraph-a06309552da5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大型Transformer模型如今已成为主流，在各种任务中都取得了最先进（SoTA）的结果。它们功能强大，但训练和使用成本非常高昂。极高的推理成本，无论是在时间还是内存方面，都是大规模采用强大Transformer模型解决实际任务的一大瓶颈。"
+        }
+      ]
+    },
+    "paragraph-f672a924e2c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "为什么大型Transformer模型难以进行推理？"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "除了SoTA模型规模不断增大之外，还有两个主要因素导致了推理挑战（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2211.05102"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pope et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）："
+        }
+      ]
+    },
+    "list-item-eb36db1ba2b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "巨大的内存占用"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。在推理时，模型参数和中间状态都需要存储在内存中。例如，"
+        }
+      ]
+    },
+    "list-item-e411878275d0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "KV缓存应在解码期间存储在内存中；例如，对于批处理大小为512、上下文长度为2048的情况，KV缓存总量为3TB，是模型大小的3倍（！）。"
+        }
+      ]
+    },
+    "list-item-4015e43f4a69": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "注意力机制的推理成本与输入序列长度呈二次方关系。"
+        }
+      ]
+    },
+    "list-item-4f9fcaf05678": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "低并行性。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "推理生成以自回归方式执行，使得解码过程难以并行。"
+        }
+      ]
+    },
+    "paragraph-7b78def244cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在这篇文章中，我们将探讨几种提高Transformer推理效率的方法。其中一些是通用的网络压缩方法，而另一些则特定于Transformer架构。"
+        }
+      ]
+    },
+    "heading-77a709c70d09": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "方法概述"
+        }
+      ]
+    },
+    "paragraph-bbd5e594572c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们通常将以下几点视为模型推理优化的目标："
+        }
+      ]
+    },
+    "list-item-de522975b01d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过使用更少的GPU设备和更少的GPU内存来减少模型的内存占用；"
+        }
+      ]
+    },
+    "list-item-5b39211e3418": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过降低所需的FLOPs数量来减少所需的计算复杂度；"
+        }
+      ]
+    },
+    "list-item-c8a51669d521": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "减少推理延迟，使运行速度更快。"
+        }
+      ]
+    },
+    "paragraph-8b405fa5c35f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有几种方法可以降低推理的内存成本和/或加快推理时间。"
+        }
+      ]
+    },
+    "list-item-9e1511e05971": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "应用各种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "并行"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "技术，将模型扩展到大量GPU上。模型组件和数据的智能并行使得运行具有数万亿参数的模型成为可能。"
+        }
+      ]
+    },
+    "list-item-ad5b223cf19c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内存"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "卸载"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，将暂时未用的数据卸载到CPU，并在稍后需要时再读回。这有助于内存使用，但会导致更高的延迟。"
+        }
+      ]
+    },
+    "list-item-39fd826a622d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能批处理策略；例如，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/bytedance/effective_transformer"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "EffectiveTransformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 将连续序列打包在一起，以消除一个批次内的填充。"
+        }
+      ]
+    },
+    "list-item-d901b877ffc1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "网络"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "压缩"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "技术，例如"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "剪枝、量化、蒸馏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。在参数数量或位宽方面尺寸更小的模型，应该需要更少的内存并运行更快。"
+        }
+      ]
+    },
+    "list-item-5bdcfb10a31f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "针对目标模型架构的改进。许多"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "架构更改"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，特别是针对注意力层的更改，有助于提高 Transformer 的解码速度。"
+        }
+      ]
+    },
+    "paragraph-f50d151b648b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "查看"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "关于大型模型训练的上一篇文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，其中介绍了不同类型的训练并行化和内存节省设计，包括CPU内存卸载。本文重点介绍网络压缩技术和针对Transformer模型的架构特定改进。"
+        }
+      ]
+    },
+    "heading-971829949c2f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "蒸馏"
+        }
+      ]
+    },
+    "paragraph-6dd796d74b7e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "知识蒸馏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "KD"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1503.02531"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Hinton et al. 2015"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.05525"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gou et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一种构建更小、更廉价模型（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“学生模型”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的直接方法，通过将预训练的昂贵模型（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“教师模型”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的技能转移给学生模型来加速推理。除了为了构建适当的学习目标而需要与教师模型具有匹配的输出空间外，对学生模型的架构如何构建没有太多限制。"
+        }
+      ]
+    },
+    "paragraph-e0e298dba0e4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个数据集，学生模型通过蒸馏损失训练来模仿教师模型的输出。通常，神经网络有一个softmax层；例如，大型语言模型（LLM）输出一个关于token的概率分布。让我们将softmax之前的logits层分别表示为教师模型和学生模型的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}_t"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{z}_s"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "蒸馏损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过高温度"
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": "最小化两个softmax输出之间的差异。当已知真实标签"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": "时，我们可以将其与一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "监督"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "学习目标结合起来，该目标使用例如交叉熵来衡量真实标签与学生模型的软logits之间的差异。"
+        }
+      ]
+    },
+    "paragraph-a363269d27f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda"
+        },
+        {
+          "type": "text",
+          "text": "是一个超参数，用于平衡软学习目标和硬学习目标。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{distll}"
+        },
+        {
+          "type": "text",
+          "text": "的常见选择是KL散度/交叉熵。"
+        }
+      ]
+    },
+    "paragraph-675821772594": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个成功的早期尝试是"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DistilBERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.01108"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sanh et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），它能够将BERT的参数减少40%，同时在微调的下游任务上保持BERT 97%的性能，并且运行速度快71%。DistilBERT预训练的损失是软蒸馏损失、监督训练损失（即BERT情况下的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#MLM"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "掩码语言建模损失"
+            }
+          ]
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\text{MLM}"
+        },
+        {
+          "type": "text",
+          "text": "）以及一种特殊的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "余弦嵌入损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的组合，用于对齐教师和学生模型之间的隐藏状态向量。"
+        }
+      ]
+    },
+    "paragraph-1f740f9414cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "蒸馏可以很容易地与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#quantization"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "量化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#pruning"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "剪枝"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#sparsity"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "技术结合，其中教师模型是原始的全精度、密集模型，而学生模型则被量化、剪枝或修剪以具有更高的稀疏度。"
+        }
+      ]
+    },
+    "heading-0d488b592131": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "量化"
+        }
+      ]
+    },
+    "paragraph-890452d0673b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在深度神经网络上应用量化有两种常见方法："
+        }
+      ]
+    },
+    "list-item-b452faa6a5e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "训练后量化 (PTQ)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：模型首先训练至收敛，然后我们将其权重转换为较低精度，无需额外训练。与训练相比，它通常实现成本较低。"
+        }
+      ]
+    },
+    "list-item-f04ecf2b4a13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "量化感知训练 (QAT)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：量化在预训练或进一步微调期间应用。QAT能够获得更好的性能，但需要额外的计算资源和对代表性训练数据的访问。"
+        }
+      ]
+    },
+    "paragraph-d1ef3f8c8749": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们应该注意理论最优量化策略与硬件内核支持之间的差距。由于GPU内核缺乏对某些类型矩阵乘法（例如INT4 x FP16）的支持，并非所有以下方法都能在实际推理中带来加速。"
+        }
+      ]
+    },
+    "heading-87df5b3780d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer 量化的挑战"
+        }
+      ]
+    },
+    "paragraph-d7cea387c353": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "许多关于Transformer模型量化的研究都有相同的观察结果：简单的低精度（例如8位）训练后量化会导致显著的性能下降，这主要是由于激活的高动态范围，以及朴素的激活量化策略未能保持模型容量。"
+        }
+      ]
+    },
+    "paragraph-b726960f6b2e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2109.12948"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Bondarenko et al. (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在一个小型BERT模型中观察到，由于输出张量中存在强离群值，FFN的输入和输出具有非常不同的动态范围。因此，对FFN的残差和进行逐张量量化很可能导致显著误差。"
+        }
+      ]
+    },
+    "paragraph-d30428553302": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着模型规模持续增长到数十亿参数，高幅度的离群特征开始出现在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "所有"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Transformer层中，导致简单的低位量化失败。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2208.07339"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dettmers et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "观察到，对于大于6.7B参数的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.01068"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "OPT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模型存在这种现象。更大的模型具有更多包含极端离群值的层，并且这些离群特征对模型性能有显著影响。少数维度中激活离群值的规模可能比大多数其他值大大约100倍。"
+        }
+      ]
+    },
+    "heading-c9e901528737": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练后量化 (PTQ)"
+        }
+      ]
+    },
+    "heading-c0d5a7c81806": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "混合精度量化"
+        }
+      ]
+    },
+    "paragraph-884cec959a48": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "解决上述量化挑战最直接的方法是为权重和激活实现不同精度的量化。"
+        }
+      ]
+    },
+    "paragraph-01d5934b766c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GOBO（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.03842"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zadeh et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是首批在Transformer（即小型BERT模型）上应用训练后量化的模型之一。它假设每层的模型权重遵循高斯分布，因此通过跟踪每层的均值和标准差来检测离群值。离群特征保持原始形式，而其他值则被分成多个bin，并且只存储相应的权重bin索引和质心值。"
+        }
+      ]
+    },
+    "paragraph-92399377bcb7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于BERT中只有某些激活层（例如FFN后的残差连接）会导致性能大幅下降的观察，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2109.12948"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Bondarenko et al. (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "采用了混合精度量化，对有问题的激活使用16位量化，而对其他激活使用8位量化。"
+        }
+      ]
+    },
+    "paragraph-57aff349cfb1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "LLM.int8()"
+        },
+        {
+          "type": "text",
+          "text": "中的混合精度量化（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2208.07339"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dettmers et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）通过两种混合精度分解实现："
+        }
+      ]
+    },
+    "list-item-80bbba03a20b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于矩阵乘法包含一组行向量和列向量之间的独立内积，我们可以对每个内积施加独立的量化：每行和每列都通过绝对最大值进行缩放，然后量化为INT8。"
+        }
+      ]
+    },
+    "list-item-4441b8185891": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "离群激活特征（例如比其他维度大20倍）保留在FP16中，但它们仅占总权重的一小部分。如何识别离群值是经验性的。"
+        }
+      ]
+    },
+    "heading-51aaed37751f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "细粒度量化"
+        }
+      ]
+    },
+    "paragraph-0c4cb46db163": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "天真地将一层中的整个权重矩阵进行量化（“逐张量”或“逐层”量化）最容易实现，但不会带来良好的量化粒度。"
+        }
+      ]
+    },
+    "paragraph-66c65bcf3190": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Q-BERT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.05840"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shen, Dong & Ye, et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）对微调的BERT模型应用了"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "组式量化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，将MHSA（多头自注意力）中"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "每个头"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对应的单个矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "视为一个组，然后应用基于Hessian的混合精度量化。"
+        }
+      ]
+    },
+    "paragraph-f684397b0f23": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐嵌入组（PEG）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "激活量化的动机是观察到异常值仅出现在"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "（隐藏状态/模型大小）维度中的少数几个维度中（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2109.12948"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Bondarenko et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。逐嵌入量化计算成本相当高。相比之下，PEG 量化将激活张量沿嵌入维度分成几个大小均匀的组，同一组中的元素共享量化参数。为了确保所有异常值都分组在一起，他们应用了一种基于范围的确定性嵌入维度置换，其中维度按其值范围排序。"
+        }
+      ]
+    },
+    "paragraph-887a0ac18316": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "ZeroQuant"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2206.01861"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Yao et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）对权重使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "组式量化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，与 Q-BERT 中相同，并对激活使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐令牌量化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。为了避免昂贵的量化和反量化计算，ZeroQuant 构建了定制的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "核"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以将量化操作与其前一个运算符"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "融合"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-aaeebb66f15f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "量化的二阶信息"
+        }
+      ]
+    },
+    "paragraph-c42e0930d8ba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Q-BERT（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.05840"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shen, Dong & Ye, et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）为其混合精度量化开发了 Hessian 感知量化（HAWQ）。其动机是具有更高 Hessian 谱（即，更大的顶部特征值）的参数对量化更敏感，因此需要更高的精度。这本质上是一种识别异常值的方法。"
+        }
+      ]
+    },
+    "paragraph-2cbd7b17a658": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从另一个角度来看，量化问题是一个优化问题。给定一个权重矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}"
+        },
+        {
+          "type": "text",
+          "text": "和一个输入矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{X}"
+        },
+        {
+          "type": "text",
+          "text": "，我们希望找到一个量化权重矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{\\mathbf{W}}"
+        },
+        {
+          "type": "text",
+          "text": "来最小化均方误差（MSE）："
+        }
+      ]
+    },
+    "paragraph-8419ce089602": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\n\\hat{\\mathbf{W}}^* = {\\arg\\min}_{\\hat{\\mathbf{W}}} | \\mathbf{W}\\mathbf{X} - \\hat{\\mathbf{W}}\\mathbf{X}|\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    },
+    "paragraph-c1fabaa2ce65": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "GPTQ"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2210.17323"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Frantar et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）将权重矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}"
+        },
+        {
+          "type": "text",
+          "text": "视为行向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "{\\mathbf{w}}"
+        },
+        {
+          "type": "text",
+          "text": "的集合，并独立地对每一行应用量化。GPTQ 迭代地量化更多权重，这些权重是贪婪选择的，以最小化量化误差。对选定权重的更新具有闭式公式，利用了 Hessian 矩阵。如果感兴趣，请阅读论文和 OBQ（Optimal Brain Quantization；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2208.11580"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Frantar & Alistarh 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）方法的更多细节。GPTQ 可以将 OPT-175B 中权重的位宽降低到 3 或 4 位，而不会造成太多性能损失，但它只适用于模型权重而非激活。"
+        }
+      ]
+    },
+    "heading-a27abff5a76f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "异常值平滑"
+        }
+      ]
+    },
+    "paragraph-f44f2183428c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "众所周知，在 Transformer 模型中，激活比权重更难量化。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "SmoothQuant"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2211.10438"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Xiao & Lin 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）提出了一种智能解决方案，通过数学等效变换将激活中的异常特征平滑到权重，然后对权重和激活都进行量化（"
+        },
+        {
+          "type": "inline_code",
+          "text": "W8A8"
+        },
+        {
+          "type": "text",
+          "text": "）。因此，SmoothQuant 比混合精度量化具有更好的硬件效率。"
+        }
+      ]
+    },
+    "paragraph-977b47a59602": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "考虑到逐通道平滑因子"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{s}"
+        },
+        {
+          "type": "text",
+          "text": "，SmoothQuant 根据以下方式缩放权重："
+        }
+      ]
+    },
+    "paragraph-94b6c915e72c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\n\\mathbf{Y} = (\\mathbf{X} \\text{diag}(\\mathbf{s})^{-1}) \\cdot (\\text{diag}(\\mathbf{s})\\mathbf{W}) = \\hat{\\mathbf{X}}\\hat{\\mathbf{W}}\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    },
+    "paragraph-863f8b3ba893": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "平滑因子可以轻松地离线融合到前一层的参数中。超参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "控制着我们将量化难度从激活迁移到权重的程度："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{s} = \\max (\\vert \\mathbf{X}_j \\vert)^\\alpha  / \\max( \\vert \\mathbf{W}_j \\vert )^{1-\\alpha}"
+        },
+        {
+          "type": "text",
+          "text": "。该论文发现在实验中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha=0.5"
+        },
+        {
+          "type": "text",
+          "text": "是许多大型语言模型的最佳选择。对于激活中存在更显著异常值的模型，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "可以调整得更大。"
+        }
+      ]
+    },
+    "heading-0da6129ffef2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "量化感知训练 (QAT)"
+        }
+      ]
+    },
+    "paragraph-be59cdb68c4b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "量化感知训练将量化操作融合到预训练或微调过程中。它直接学习低位表示的模型权重，以额外训练时间和计算为代价，带来更好的性能。"
+        }
+      ]
+    },
+    "paragraph-93ead84a9e82": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最直接的方法是在量化后，使用与预训练数据集相同或具有代表性的训练数据集对模型进行"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "微调"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。训练目标可以与预训练的目标相同（例如，在通用语言模型训练中的NLL/MLM），也可以是针对我们关心的下游任务的特定目标（例如，分类的交叉熵）。"
+        }
+      ]
+    },
+    "paragraph-aa5f69fa44e6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一种方法是将全精度模型视为教师模型，将低精度模型视为学生模型，然后使用"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "蒸馏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "损失来优化低精度模型。蒸馏通常不需要使用原始数据集；例如，维基百科数据集是一个不错的选择，甚至随机令牌也能带来可观的性能提升。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐层知识蒸馏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "LKD"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2206.01861"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Yao et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）方法逐层量化网络，并使用其原始的、未量化版本作为教师模型。在给定相同输入的情况下，LKD 最小化层权重乘法与量化层权重乘法之间的 MSE。"
+        }
+      ]
+    },
+    "heading-26aeb1f4e0af": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "剪枝"
+        }
+      ]
+    },
+    "paragraph-8736ddeee07a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "网络剪枝旨在通过修剪不重要的模型权重或连接来减小模型大小，同时保持模型容量。它可能需要或可能不需要重新训练。剪枝可以是"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "非结构化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的或"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "结构化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的。"
+        }
+      ]
+    },
+    "list-item-4fd3645e78c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "非结构化剪枝"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "允许丢弃任何权重或连接，因此它不保留原始网络架构。非结构化剪枝通常与现代硬件配合不佳，并且不会带来实际的推理加速。"
+        }
+      ]
+    },
+    "list-item-c5b5886eed08": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "结构化剪枝"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "旨在保持密集矩阵乘法的形式，其中一些元素为零。它们可能需要遵循某些模式限制才能与硬件内核支持的功能配合使用。在这里，我们专注于结构化剪枝，以在Transformer模型中实现"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "高稀疏性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-69a0664ec324": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "构建剪枝网络的常规工作流程包含三个步骤："
+        }
+      ]
+    },
+    "list-item-999691ed2db5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练一个密集网络直至收敛；"
+        }
+      ]
+    },
+    "list-item-eaec7c36d661": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "剪枝网络以移除不需要的结构；"
+        }
+      ]
+    },
+    "list-item-74df217e55a3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可选地重新训练网络，以使用新权重恢复性能。"
+        }
+      ]
+    },
+    "paragraph-bb49f5b74895": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过网络剪枝在密集模型中发现稀疏结构，同时稀疏网络仍能保持相似性能的想法，其灵感来源于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#the-lottery-ticket-hypothesis"
+          },
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "彩票假说"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "LTH"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）：一个随机初始化、密集的前馈网络包含一个子网络池，其中只有一部分（一个稀疏网络）是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“中奖彩票”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它们在单独训练时可以达到最佳性能。"
+        }
+      ]
+    },
+    "heading-9a4d4f3286cc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如何剪枝？"
+        }
+      ]
+    },
+    "paragraph-06b296eb4860": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "幅度剪枝"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是最简单但相当有效的剪枝方法——修剪绝对值最小的权重。事实上，一些研究（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.09574"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gale et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）发现，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "简单的幅度剪枝方法可以达到与复杂剪枝方法相当或更好的结果"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，例如变分 dropout（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1701.05369"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Molchanov et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）和"
+        },
+        {
+          "type": "inline_math",
+          "text": "l_0"
+        },
+        {
+          "type": "text",
+          "text": "正则化（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1712.01312"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Louizos et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。幅度剪枝易于应用于大型模型，并在广泛的超参数范围内实现相当一致的性能。"
+        }
+      ]
+    },
+    "paragraph-2a257b199770": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.01878"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhu & Gupta (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "发现，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "大型稀疏模型能够比其小型但密集的对应模型实现更好的性能"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。他们提出了"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "渐进幅度剪枝（GMP）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "算法，该算法在训练过程中逐渐增加网络的稀疏性。在每个训练步骤中，绝对值最小的权重被遮蔽为零，以达到所需的稀疏度"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "，并且被遮蔽的权重在反向传播期间不会获得梯度更新。所需的稀疏度"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "随着训练步骤的增加而提高。GMP 的过程对学习率调度很敏感，学习率应高于密集网络训练中使用的学习率，但又不能过高以防止收敛。"
+        }
+      ]
+    },
+    "paragraph-fdf7decfe487": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "迭代剪枝"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2003.02389"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Renda et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）多次迭代步骤 2（剪枝）和步骤 3（重新训练）：在每次迭代中，只剪枝一小部分权重并重新训练模型。该过程重复进行，直到达到所需的稀疏度。"
+        }
+      ]
+    },
+    "heading-c63cd992513f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如何重新训练？"
+        }
+      ]
+    },
+    "paragraph-9f797cfa1c89": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "再训练步骤可以是使用相同的预训练数据或其他特定任务数据集进行的简单微调。"
+        }
+      ]
+    },
+    "paragraph-b729a464e907": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#the-lottery-ticket-hypothesis"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "彩票假设"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出了一种"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重回溯"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "再训练技术：剪枝后，未剪枝的权重在训练早期"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "重新初始化回原始值"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，然后使用相同的学习率调度进行再训练。"
+        }
+      ]
+    },
+    "paragraph-58f3ad387275": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "学习率回溯"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2003.02389"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Renda et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 仅将学习率重置回其早期值，而未剪枝的权重自上次训练阶段结束以来保持不变。他们观察到 (1) 使用权重回溯进行再训练在所有网络和数据集上都优于使用微调进行再训练，并且 (2) 学习率回溯在所有测试场景中都与权重回溯持平或优于权重回溯。"
+        }
+      ]
+    },
+    "heading-303a037be9ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏性"
+        }
+      ]
+    },
+    "paragraph-4d34eb219f1a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏性是一种有效的方法，可以在保持模型推理计算效率的同时扩展模型容量。这里我们考虑两种用于 Transformer 的稀疏性："
+        }
+      ]
+    },
+    "list-item-09d738dbc6ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏化的密集层，包括自注意力层和前馈网络层。"
+        }
+      ]
+    },
+    "list-item-2775acda991a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏模型架构；即通过整合专家混合（MoE）组件。"
+        }
+      ]
+    },
+    "heading-bad2fe3bc9cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过剪枝实现 N:M 稀疏性"
+        }
+      ]
+    },
+    "paragraph-438d662a7f38": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "N:M 稀疏性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是一种结构化稀疏模式，与现代 GPU 硬件优化配合良好，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "在每"
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": "个连续元素中，有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 个是零。例如，Nvidia A100 GPU 的稀疏张量核心支持 2:4 稀疏性以实现更快的推理（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nvidia 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "paragraph-7c17c72371c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了使密集神经网络稀疏化以遵循N:M结构化稀疏模式，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nvidia (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 建议使用三步"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#routine-workflow"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "常规工作流程"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来训练剪枝网络：训练 –> 剪枝以满足2:4稀疏性 –> 再训练。"
+        }
+      ]
+    },
+    "paragraph-a408f763952a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重新排列列可以在剪枝过程中提供更多选项，以保持大参数的量级或满足N:M稀疏性等特殊限制 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pool & Yu 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。只要两个矩阵的配对轴以相同的顺序排列，矩阵乘法的结果就不会改变。例如，"
+        }
+      ]
+    },
+    "paragraph-82d202c3c37f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) 在自注意力模块中，如果对查询嵌入矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q}"
+        },
+        {
+          "type": "text",
+          "text": " 的轴 1 和键嵌入矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{K}^\\top"
+        },
+        {
+          "type": "text",
+          "text": " 的轴 0 应用相同的置换顺序，则矩阵乘法 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{Q}\\mathbf{K}^\\top"
+        },
+        {
+          "type": "text",
+          "text": " 的最终结果将保持不变。"
+        }
+      ]
+    },
+    "paragraph-2f92b7fd5669": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) 在包含两个 MLP 层和一个 ReLU 非线性层的 FFN 层中，我们可以以相同的顺序置换第一个线性权重矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_1"
+        },
+        {
+          "type": "text",
+          "text": " 的轴 1 和第二个线性权重矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{W}_2"
+        },
+        {
+          "type": "text",
+          "text": " 的轴 0。"
+        }
+      ]
+    },
+    "paragraph-5c4af9b4da15": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了强制执行 N:M 结构化稀疏性，我们将一个矩阵的列分成多个 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": " 列的片段（称为“条纹”），我们可以很容易地观察到，每个条纹内列的顺序和条纹的顺序都不会影响 N:M 稀疏性限制。"
+        }
+      ]
+    },
+    "paragraph-3444e436832a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pool & Yu (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种迭代贪婪算法，用于寻找最优置换，以最大化 N:M 稀疏性的权重幅度。所有通道对都被试探性地交换，并且只采用导致幅度增加最大的交换，从而生成新的置换并完成一次迭代。贪婪算法可能只找到局部最小值，因此他们引入了两种技术来逃离局部最小值："
+        }
+      ]
+    },
+    "list-item-4156cad8a054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有界回归：在实践中，两个随机通道被交换，最多交换固定次数。解决方案搜索的深度仅限于一次通道交换，以保持搜索空间广阔而浅显。"
+        }
+      ]
+    },
+    "list-item-bccd2fa4fa7f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "窄而深搜索：选择多个条带并同时优化它们。"
+        }
+      ]
+    },
+    "paragraph-c4e3e9e47a4a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与按照默认通道顺序修剪网络相比，如果在修剪之前对网络进行置换，网络可以获得更好的性能。"
+        }
+      ]
+    },
+    "paragraph-9678ce12426d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了从头开始训练具有 N:M 稀疏性的模型，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2102.04010"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhou & Ma, et al. (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 扩展了 STE（Straight-Through Estimator；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1308.3432"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Bengio et al. 2013"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），该方法通常用于模型量化中的反向传播更新，使其适用于幅度剪枝和稀疏参数更新。"
+        }
+      ]
+    },
+    "paragraph-b3a29a7fe06f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "STE 计算密集参数相对于剪枝网络的梯度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\widetilde{W}"
+        },
+        {
+          "type": "text",
+          "text": ", "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\partial \\mathcal{L}/\\partial \\widetilde{W}"
+        },
+        {
+          "type": "text",
+          "text": "，并将其作为近似值应用于密集网络 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-568724cff00e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\nW_{t+1} \\gets W_t - \\gamma \\frac{\\partial\\mathcal{L}}{\\partial\\widetilde{W}}\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    },
+    "paragraph-67c2528a320b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "扩展版本，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "SR-STE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（稀疏精炼STE），通过以下方式更新密集权重"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-2b8e51ef783e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与 STE 或 SR-STE 不同，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Top-KAST"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2106.03517"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jayakumar et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）方法可以在训练过程中在正向和反向传播中保持恒定的稀疏性，但不需要使用密集参数或密集梯度的正向传播。"
+        }
+      ]
+    },
+    "paragraph-d64a3663569b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一个训练步骤中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "，Top-KAST 的处理过程如下："
+        }
+      ]
+    },
+    "list-item-aebf5fd00bab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏前向传播"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：选择一个参数子集 "
+        },
+        {
+          "type": "inline_math",
+          "text": "A^t \\subset \\Theta"
+        },
+        {
+          "type": "text",
+          "text": "，包含按每个层的幅度计算的前"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "个参数，且仅限于前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "比例的权重。参数化 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha^t"
+        },
+        {
+          "type": "text",
+          "text": " 在时间 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": " 时，如果不在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "A^t"
+        },
+        {
+          "type": "text",
+          "text": "（活动权重）中，则其参数被置零。"
+        }
+      ]
+    },
+    "paragraph-2b1a7fcbbae6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{TopK}(\\theta, x)"
+        },
+        {
+          "type": "text",
+          "text": "选择前"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "比例的权重来自"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "根据大小"
+        }
+      ]
+    },
+    "list-item-77090273c423": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏反向传播"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 然后将梯度应用于更大的参数子集"
+        },
+        {
+          "type": "inline_math",
+          "text": "B \\subset \\Theta"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": "包含"
+        },
+        {
+          "type": "inline_math",
+          "text": "(D+M)"
+        },
+        {
+          "type": "text",
+          "text": "比例的权重和"
+        },
+        {
+          "type": "inline_math",
+          "text": "A \\subset B"
+        },
+        {
+          "type": "text",
+          "text": "。更新更大比例的权重可以更有效地探索不同的剪枝掩码，从而更有可能导致前"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "比例的活跃权重发生置换。"
+        }
+      ]
+    },
+    "paragraph-8411c7f38f77": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练分为两个阶段，集合"
+        },
+        {
+          "type": "inline_math",
+          "text": "B \\setminus A"
+        },
+        {
+          "type": "text",
+          "text": "中的额外坐标控制引入的探索量。探索量预计在训练过程中逐渐减少，掩码最终稳定下来。"
+        }
+      ]
+    },
+    "paragraph-92d0527e32c5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了防止强者愈强的现象，Top-KAST通过L2正则化损失惩罚活跃权重的幅度，以鼓励对新项目进行更多探索。为了在更新过程中稳定掩码，"
+        },
+        {
+          "type": "inline_math",
+          "text": "B \\setminus A"
+        },
+        {
+          "type": "text",
+          "text": "中的参数比"
+        },
+        {
+          "type": "inline_math",
+          "text": "A"
+        },
+        {
+          "type": "text",
+          "text": "受到更重的惩罚，以提高选择门槛。"
+        }
+      ]
+    },
+    "heading-6987bfba8933": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏化Transformer"
+        }
+      ]
+    },
+    "paragraph-31f963bc0338": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Scaling Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2111.12763"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jaszczur et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 稀疏化了 Transformer 架构中的自注意力层和 FFN 层，实现了单样本推理 37 倍的加速。"
+        }
+      ]
+    },
+    "paragraph-d4119389d486": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏 FFN 层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：每个 FFN 层包含 2 个 MLP 和一个 ReLU 激活函数。由于 ReLU 会引入大量零值，他们对激活函数实现了一种固定结构，以强制在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 个元素的一个块中只存在 1 个非零值。稀疏模式是动态的，每个 token 都不同。"
+        }
+      ]
+    },
+    "paragraph-4565f91cd900": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Y_\\text{sparse}"
+        },
+        {
+          "type": "text",
+          "text": " 中的每个激活对应于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W_1"
+        },
+        {
+          "type": "text",
+          "text": " 中的一列和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W_2"
+        },
+        {
+          "type": "text",
+          "text": " 中的一行。控制器被实现为一个低秩瓶颈密集层，"
+        },
+        {
+          "type": "inline_math",
+          "text": "C_1 \\in \\mathbb{R}^{d_\\text{model} \\times d_\\text{lowrank}}, C_2 \\in \\mathbb{R}^{d_\\text{lowrank} \\times d_\\text{ff}}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_\\text{lowrank} = d_\\text{model} / N"
+        },
+        {
+          "type": "text",
+          "text": "。它在推理时使用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\arg\\max"
+        },
+        {
+          "type": "text",
+          "text": " 来选择哪些列应该是非零的，并在训练时使用 Gumbel-softmax 技巧 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.01144"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jang et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。因为我们可以在加载 FFN 权重矩阵之前计算 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{Controller}(x)"
+        },
+        {
+          "type": "text",
+          "text": "，所以我们知道哪些列将被置零，因此选择"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "不加载"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "它们到内存中以加速推理。"
+        }
+      ]
+    },
+    "paragraph-2d9501e59312": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏 QKV（注意力）层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在注意力层中，维度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d_\\text{model}"
+        },
+        {
+          "type": "text",
+          "text": " 被分成 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S"
+        },
+        {
+          "type": "text",
+          "text": " 个模块，每个模块的大小为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M=d_\\text{model} /S"
+        },
+        {
+          "type": "text",
+          "text": "。为了确保每个细分都能访问嵌入的任何部分，Scaling Transformer 引入了一个乘法层（即，一个乘法层将来自多个神经网络层的输入进行逐元素相乘），该层可以表示任意排列，但参数比密集层少。"
+        }
+      ]
+    },
+    "paragraph-c69756dc6655": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定输入向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x \\in \\mathbb{R}^{d_\\text{model}}"
+        },
+        {
+          "type": "text",
+          "text": "，乘法层输出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y \\in \\mathbb{R}^{S \\times M}"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-3e95568fcb2c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "乘法层的输出是一个大小为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\in \\mathbb{R}^{\\text{batch size}\\times \\text{length} \\times S \\times M}"
+        },
+        {
+          "type": "text",
+          "text": " 的张量。然后它由一个二维卷积层处理，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{length}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "S"
+        },
+        {
+          "type": "text",
+          "text": " 被视为图像的高度和宽度。这样的卷积层进一步减少了注意力层的参数数量和计算时间。"
+        }
+      ]
+    },
+    "paragraph-070073982b78": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了更好地处理长序列，Scaling Transformer 进一步配备了来自 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#locality-sensitive-hashing-reformer"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Reformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2001.04451"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Kitaev, et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 的 LSH（局部敏感哈希）注意力机制和 FFN 块循环，从而产生了 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Terraformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-94ce9a631125": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "专家混合模型"
+        }
+      ]
+    },
+    "paragraph-2bdbf557c43f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "专家混合（MoE）模型依赖于一组“专家”网络，每个示例只激活其中一部分网络来获取预测。这个想法起源于 20 世纪 90 年代 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cs.toronto.edu/~hinton/absps/jjnh91.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jacobs et al. 1991"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")，并与集成方法密切相关。有关如何将 MoE 模块整合到 Transformer 中的详细信息，请查阅我"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "之前关于大型模型训练技术的文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "以及 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2209.01667"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Fedus et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 关于 MoE 的综述论文。"
+        }
+      ]
+    },
+    "paragraph-de2a73798eb9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "采用 MoE 架构，在解码时只利用部分参数，因此节省了推理成本。每个专家的容量可以通过超参数容量因子 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": " 进行调整，专家容量定义为："
+        }
+      ]
+    },
+    "paragraph-59e1392a5ade": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中每个 token 选择 top-"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个专家。更大的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": " 会带来更高的专家容量和更好的性能，但计算成本更高。当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C>1"
+        },
+        {
+          "type": "text",
+          "text": " 时，会增加一个松弛容量；否则，当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C<1"
+        },
+        {
+          "type": "text",
+          "text": " 时，路由网络需要忽略一些 token。"
+        }
+      ]
+    },
+    "heading-efa8f52ddcae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "路由策略改进"
+        }
+      ]
+    },
+    "paragraph-7a9721f756e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "MoE 层有一个路由网络，用于为每个输入 token 分配一部分专家。在传统 MoE 模型中，路由策略是根据 token 出现的自然顺序，将每个 token 路由到不同的首选专家。如果一个 token 被路由到已达到容量的专家，该 token 将被标记为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“溢出”并跳过"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-231f16afc51d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "V-MoE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (Vision MoE; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2106.05974"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Riquelme et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 将 MoE 层添加到 ViT (Vision Transformer) 中。它达到了之前最先进的性能，但推理计算量仅需"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "一半"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。V-MoE 可以扩展到 150 亿参数。他们的实验使用了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k=2"
+        },
+        {
+          "type": "text",
+          "text": "、32 个专家和每隔一层放置专家（意味着 MoE 层放置在每隔一个层中）。"
+        }
+      ]
+    },
+    "paragraph-4a4c3f9d3908": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于每个专家容量有限，一些重要且信息丰富的 token 如果在预定义的序列顺序（例如，句子中单词的顺序或图像块的顺序）中出现得太晚，可能不得不被丢弃。为了避免传统路由方案中的这一缺点，V-MoE 采用了 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "BPR（批优先级路由）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，优先将专家分配给具有高优先级分数的 token。BPR 在专家分配之前计算每个 token 的优先级分数（top-"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 路由器分数的最大值或总和），并相应地改变 token 的顺序。这保证了专家容量缓冲区将首先被关键 token 填充。"
+        }
+      ]
+    },
+    "paragraph-d4a914ce8def": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C\\leq 0.5"
+        },
+        {
+          "type": "text",
+          "text": " 时，BPR 比传统路由效果好得多，此时模型开始丢弃大量 token。它使模型即使在相当低的容量下也能与密集网络竞争。"
+        }
+      ]
+    },
+    "paragraph-4ff8019323b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在研究如何解释图像类别与专家关联时，他们观察到早期的 MoE 层更通用，而后续的 MoE 层可能专门用于少数图像类别。"
+        }
+      ]
+    },
+    "paragraph-54f82b9b8c22": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "任务 MoE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (Task-level Mixture-of-Experts; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2110.03742"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Kudugunta et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 在机器翻译中考虑了任务信息，并在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "任务"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "级别而不是单词或 token 级别路由 token。他们以 MNMT（多语言神经机器翻译）为例，根据目标语言或语言对对翻译任务进行分组。"
+        }
+      ]
+    },
+    "paragraph-571fcf4572ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "token 级别路由是动态的，每个 token 的路由决策是独立做出的。因此，在推理时，服务器需要预加载所有专家。相比之下，给定一个固定任务，任务级别路由是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "静态的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，因此一个任务的推理服务器只需要预加载 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个专家（假设是 top-"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 路由）。根据他们的实验，与密集模型基线相比，任务 MoE 可以实现与 token MoE 相似的性能提升，同时峰值吞吐量提高 2.6 倍，解码器大小仅为 1.6%。"
+        }
+      ]
+    },
+    "paragraph-ad63867ba8b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "任务级别 MoE 本质上是根据预定义的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "启发式规则"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对任务分布进行分类，并将这种人类知识融入到路由器中。当不存在此类启发式规则时（例如，考虑一个通用的句子续写任务），如何利用任务 MoE 将不那么直接。"
+        }
+      ]
+    },
+    "paragraph-46b0bd43f68e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "PR-MoE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（金字塔残差MoE；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.05596"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Rajbhandari et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）让每个token通过一个固定的MLP和一个选定的专家。由于观察到MoE在后期层更具优势，PR-MoE在后期层采用了更多的专家。DeepSpeed库实现了一种灵活的多专家、多数据并行机制，以支持在不同层使用不同数量的专家来训练PR-MoE。"
+        }
+      ]
+    },
+    "heading-b5b57c078056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内核改进"
+        }
+      ]
+    },
+    "paragraph-19d5e474fdd1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "专家网络可以托管在不同的设备上。然而，当GPU数量增加时，每个GPU的专家数量会减少，并且专家之间的通信（“All-to-all”）变得更加昂贵。跨多个GPU的专家之间的All-to-all通信依赖于NCCL的P2P API，这在大规模情况下无法饱和高速链路（例如NVLink、HDR InfiniBand）的带宽，因为随着使用更多节点，单个数据块会变小。现有的all-to-all算法在小工作负载的大规模情况下表现不佳。有多种内核改进可以实现更高效的MoE计算，例如使all-to-all通信更便宜/更快。"
+        }
+      ]
+    },
+    "paragraph-958bf367e1f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "DeepSpeed"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "库（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.05596"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Rajbhandari et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）和TUTEL（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2206.03382"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Hwang et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）都实现了一种基于树的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "分层all-to-all"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "算法，该算法先运行节点内all-to-all，然后运行节点间all-to-all。它将通信跳数从"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(G)"
+        },
+        {
+          "type": "text",
+          "text": "减少到"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(G_\\text{node} + G / G_\\text{node})"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": "是GPU节点的总数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "G_\\text{node}"
+        },
+        {
+          "type": "text",
+          "text": "是每个节点的GPU核心数。尽管在这种实现中通信量翻倍，但它在大规模小批量情况下实现了更好的扩展性，因为当批量较小时，瓶颈在于延迟而不是通信带宽。"
+        }
+      ]
+    },
+    "paragraph-7bc1ab6181c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "DynaMoE"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.01848"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Kossmann et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）使用"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "动态重编译"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来使计算资源适应专家之间动态的工作负载。"
+        },
+        {
+          "type": "inline_code",
+          "text": "RECOMPILE"
+        },
+        {
+          "type": "text",
+          "text": "机制从头开始编译计算图，并且只在需要时重新分配资源。它测量分配给每个专家的样本数量，并动态调整其容量因子"
+        },
+        {
+          "type": "inline_math",
+          "text": "C"
+        },
+        {
+          "type": "text",
+          "text": "，以减少运行时的内存和计算需求。基于样本-专家分配在训练早期收敛的观察，在收敛后引入了"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "样本分配缓存"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，然后使用"
+        },
+        {
+          "type": "inline_code",
+          "text": "RECOMPILE"
+        },
+        {
+          "type": "text",
+          "text": "来消除门控网络和专家之间的依赖关系。"
+        }
+      ]
+    },
+    "heading-425a24ab7f0a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "架构优化"
+        }
+      ]
+    },
+    "paragraph-62d88c617d44": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "高效Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的综述论文（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2009.06732"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Tay et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）回顾了一系列新的Transformer架构，这些架构旨在提高"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "计算和内存效率"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。强烈推荐阅读。您也可以查看我的文章"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“The Transformer Family Version 2.0”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，深入了解各种Transformer架构改进，包括使模型运行成本更低的更改。"
+        }
+      ]
+    },
+    "paragraph-4e8b333240b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于自注意力机制具有二次时间复杂度与内存复杂度，这是提高Transformer解码效率的主要瓶颈，所有高效的Transformer模型都对原本稠密的注意力层应用了某种形式的稀疏性。这里只列出高层概述，其中一些源自"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2009.06732"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Tay et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-fad573bc76ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "稀疏注意力模式"
+        }
+      ]
+    },
+    "list-item-67f47192bd06": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "固定模式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过使用预定义、固定的模式来限制注意力矩阵的视野。"
+        }
+      ]
+    },
+    "list-item-675f3bea4076": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将输入序列分块为固定块，例如"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/##strided-context"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "分块注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        }
+      ]
+    },
+    "list-item-700d2dd86d4a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/##fixed-local-context"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Image Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "使用局部注意力；"
+        }
+      ]
+    },
+    "list-item-4ac7aa1448b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/##strided-context"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sparse Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "使用跨步注意力模式。"
+        }
+      ]
+    },
+    "list-item-37970463cb9b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "组合模式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "学习对输入token进行排序/聚类——在保持固定模式效率优势的同时，实现对序列更优化的全局视图。"
+        }
+      ]
+    },
+    "list-item-0809a7fe4b1c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#sparse-attention-matrix-factorization-sparse-transformers"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sparse Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "结合了跨步注意力和局部注意力；"
+        }
+      ]
+    },
+    "list-item-942d002bd465": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个高维输入张量，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1912.12180"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Axial Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "不是对输入的扁平化版本应用注意力，而是沿着输入张量的单个轴应用多个注意力。"
+        }
+      ]
+    },
+    "list-item-24436b4c2c94": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#combination-of-local-and-global-context"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ETC、Longformer和Big Bird"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "结合了局部和全局上下文，以及跨步或随机注意力。"
+        }
+      ]
+    },
+    "list-item-098a17cb251a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "可学习模式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过学习识别最优注意力模式。"
+        }
+      ]
+    },
+    "list-item-a7d9954f314d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#content-based-attention"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Reformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "根据基于哈希的相似性（LSH）将token聚类；"
+        }
+      ]
+    },
+    "list-item-5e0b5f977543": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#content-based-attention"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Routing Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对token运行"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "-均值聚类；"
+        }
+      ]
+    },
+    "list-item-4098663b2b12": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2002.11296"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Sinkhorn Sorting Network"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "学习对输入序列的块进行排序。"
+        }
+      ]
+    },
+    "heading-3bcd09f8cbfa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "循环"
+        }
+      ]
+    },
+    "paragraph-a4fefa2a8c9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "循环机制通过循环连接多个块/段。"
+        }
+      ]
+    },
+    "list-item-bd8d0d9f1a83": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#context-memory"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Transformer-XL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过重用段之间的隐藏状态来利用更长的上下文。"
+        }
+      ]
+    },
+    "list-item-2f167981140f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#make-it-recurrent"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Universal Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "将自注意力与RNN中的循环机制相结合。"
+        }
+      ]
+    },
+    "list-item-aeadc3895128": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#context-memory"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Compressive Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是Transformer-XL的扩展，增加了额外的内存，包含一组用于过去激活的内存槽和用于压缩激活的压缩内存槽。每当模型接受新的输入段时，主内存中最旧的激活会被移动到压缩内存中，并在那里应用压缩函数。"
+        }
+      ]
+    },
+    "heading-ec1e1f218653": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内存节省设计"
+        }
+      ]
+    },
+    "paragraph-44d0675704ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内存节省设计指的是改变架构以使用更少内存。"
+        }
+      ]
+    },
+    "list-item-7a842b27a2d0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#low-rank-attention"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Linformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "将键和值的长度维度投影到较低维度的表示（"
+        },
+        {
+          "type": "inline_math",
+          "text": "N \\to k"
+        },
+        {
+          "type": "text",
+          "text": "），从而将内存复杂度从"
+        },
+        {
+          "type": "inline_math",
+          "text": "N \\times N"
+        },
+        {
+          "type": "text",
+          "text": "降低到"
+        },
+        {
+          "type": "inline_math",
+          "text": "N \\times k"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-f7f0e6d16a90": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.02150"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shazeer (2019)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出了"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多查询注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它在不同的注意力“头”之间共享键和值，大大减少了这些张量的大小和内存成本。"
+        }
+      ]
+    },
+    "list-item-fe64bd3cac3a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#low-rank-attention"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "随机特征注意力和Performer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "使用"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/(https:/lilianweng.github.io/posts/2022-09-08-ntk/#kernel--kernel-methods)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "核方法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来实现自注意力机制更经济的数学形式。"
+        }
+      ]
+    },
+    "heading-f3b5d7061bb2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自适应注意力"
+        }
+      ]
+    },
+    "paragraph-bf08bfd6f5e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "使模型能够学习最佳注意力跨度，或决定何时对不同的输入token进行提前退出。"
+        }
+      ]
+    },
+    "list-item-81a55e66eee6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#adaptive-attention-span"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自适应注意力跨度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过在token和其他键之间使用软掩码，训练模型学习每个token每个头的最佳注意力跨度。"
+        }
+      ]
+    },
+    "list-item-e380b0378850": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#make-it-recurrent"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Universal Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "结合了循环机制，并使用"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ACT（自适应计算时间）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来动态决定循环步数。"
+        }
+      ]
+    },
+    "list-item-81e647322113": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#depth-adaptive-transformer"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "深度自适应Transformer和CALM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "学习何时使用一些置信度度量来对每个token提前退出计算层，以实现良好的性能-效率权衡。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-b198f02fe8ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (2023年1月). Large Transformer Model Inference Optimization. Lil’Log. https://lilianweng.github.io/posts/2023-01-10-inference-optimization/."
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-16d0be226221": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Bondarenko et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2109.12948"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“理解并克服高效Transformer量化的挑战”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2021。"
+        }
+      ]
+    },
+    "paragraph-5a8209e336d4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Dettmers et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2208.07339"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“LLM.int8(): 大规模Transformer的8位矩阵乘法”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2022"
+        }
+      ]
+    },
+    "paragraph-55a7855f85d7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Zadeh et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2005.03842"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Gobo: 量化基于注意力的NLP模型以实现低延迟和高能效推理。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " MICRO 2020"
+        }
+      ]
+    },
+    "paragraph-2005baf956a3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Shen, Dong & Ye, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.05840"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Q-BERT: 基于Hessian的BERT超低精度量化”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " AAAI 2020。"
+        }
+      ]
+    },
+    "paragraph-e2a25dfcb01c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Yao et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2206.01861"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“ZeroQuant: 大规模Transformer高效且经济的训练后量化”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2206.01861 (2022)。"
+        }
+      ]
+    },
+    "paragraph-a47912e68e85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Frantar et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2210.17323"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“GPTQ: 生成式预训练Transformer的精确量化”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2210.17323 (2022)。"
+        }
+      ]
+    },
+    "paragraph-279d88cdf390": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Xiao & Lin "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2211.10438"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“SmoothQuant: 加速稀疏神经网络训练：一种可证明且高效的N:M可转置掩码查找方法。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2211.10438 (2022)。 | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/mit-han-lab/smoothquant"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-06523e1e243b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Pool & Yu. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“N:M稀疏性的通道置换。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2021。 | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/NVIDIA/apex/tree/master/apex/contrib/sparsity"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-646670010ce6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Zhou & Ma, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2102.04010"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“从头开始学习N:M细粒度结构化稀疏神经网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2102.04010 (2021)。"
+        }
+      ]
+    },
+    "paragraph-13493cfc4959": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Jayakumar et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2106.03517"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Top-KAST: Top-K Always Sparse Training.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2020."
+        }
+      ]
+    },
+    "paragraph-cac7ade2db96": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Nvidia. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Nvidia A100 tensor core GPU architecture.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020."
+        }
+      ]
+    },
+    "paragraph-c136872822c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Gale, Elsen & Hooker "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1902.09574"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“The State of Sparsity in Deep Neural Networks.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1902.09574 (2019)."
+        }
+      ]
+    },
+    "paragraph-b3257e69d5e5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Zhu & Gupta. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.01878"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“To Prune, or Not to Prune: Exploring the Efficacy of Pruning for Model Compression.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1710.01878 (2017)."
+        }
+      ]
+    },
+    "paragraph-35ac5a5c2439": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Renda et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2003.02389"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Comparing rewinding and fine-tuning in neural network pruning.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2003.02389 (2020)."
+        }
+      ]
+    },
+    "paragraph-d36668a341a6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Zhou & Ma, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2102.04010"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Learning N:M fine-grained structured sparse neural networks from scratch.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2102.04010 (2021)."
+        }
+      ]
+    },
+    "paragraph-a8e2d290bfc9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Pool & Yu. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Channel Permutations for N:M Sparsity.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2021. | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/NVIDIA/apex/tree/master/apex/contrib/sparsity"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "code"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-d164ea124ae3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Jaszczur et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2111.12763"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Sparse is Enough in Scaling Transformers.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2021."
+        }
+      ]
+    },
+    "paragraph-dbf22bddfe1e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] Mishra et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.03954"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“An Survey of Neural Network Compression.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1710.09282 (2017)."
+        }
+      ]
+    },
+    "paragraph-f72e46d95543": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[19] Fedus et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2209.01667"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“A Review of Sparse Expert Models in Deep Learning.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2209.01667 (2022).."
+        }
+      ]
+    },
+    "paragraph-8b9b639f0041": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[20] Riquelme et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2106.05974"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Scaling vision with sparse mixture of experts.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NeuriPS 2021."
+        }
+      ]
+    },
+    "paragraph-d5dd87cf4eff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[21] Kudugunta et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2110.03742"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Beyond Distillation: Task-level Mixture-of-Experts for Efficient Inference.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2110.03742 (2021)."
+        }
+      ]
+    },
+    "paragraph-c0d8f314d3dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[22] Rajbhandari et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.05596"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“DeepSpeed-MoE: Advancing mixture-of-experts inference and training to power next-generation ai scale.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2201.05596 (2022)."
+        }
+      ]
+    },
+    "paragraph-884199522b9a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[23] Kossmann et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2205.01848"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Optimizing mixture of experts using dynamic recompilations.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "  arXiv preprint arXiv:2205.01848 (2022)."
+        }
+      ]
+    },
+    "paragraph-c557517d57b8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[24] Hwang et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2206.03382"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Tutel: Adaptive mixture-of-experts at scale.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "  arXiv preprint arXiv:2206.03382 (2022). | "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/microsoft/tutel"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "code"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-4f020083a4b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[25] Noam Shazeer. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1911.02150"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Fast Transformer Decoding: One Write-Head is All You Need.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1911.02150 (2019)."
+        }
+      ]
+    },
+    "paragraph-02a1b326e5dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[26] Tay et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2009.06732"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Efficient Transformers: A Survey.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACM Computing Surveys 55.6 (2022): 1-28."
+        }
+      ]
+    },
+    "paragraph-b615d21af5cc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[27] Pope et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2211.05102"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Efficiently Scaling Transformer Inference.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2211.05102 (2022)."
+        }
+      ]
+    },
+    "paragraph-7cbcd754b47d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[28] Frankle & Carbin. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.03635"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2019."
+        }
+      ]
+    },
+    "paragraph-80e198e4dc00": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[29] Elabyad et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.10073"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Depth-Adaptive Transformer”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2020."
+        }
+      ]
+    },
+    "paragraph-80ba0dafee13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[30] Schuster et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2207.07061"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Confident Adaptive Language Modeling”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2207.07061 (2022)."
+        }
+      ]
+    },
+    "paragraph-a2ec4bdbab87": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[31] Gou et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.05525"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“https://arxiv.org/abs/2006.05525”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2006.05525 (2020)."
+        }
+      ]
+    },
+    "paragraph-578386506cb5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[32] Hinton et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1503.02531"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Distilling the Knowledge in a Neural Network”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2014."
+        }
+      ]
+    },
+    "paragraph-15c75b9054b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[33] Sanh et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.01108"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Workshop on Energy Efficient Machine Learning and Cognitive Computing @ NeuriPS 2019."
+        }
+      ]
+    },
+    "paragraph-8359bce9f0dc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\nW_{t+1} \\gets W_t - \\gamma \\frac{\\partial\\mathcal{L}}{\\partial\\widetilde{W}}  + \\lambda_W (\\bar{\\mathcal{E}} \\odot W_t)\n"
+        },
+        {
+          "type": "text",
+          "text": "$\n其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\mathcal{E}}"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\widetilde{W}"
+        },
+        {
+          "type": "text",
+          "text": " 的掩码矩阵，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\odot"
+        },
+        {
+          "type": "text",
+          "text": " 表示逐元素乘法。SR-STE 的提出是为了防止二值掩码发生大幅变化，其做法是（1）限制在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\widetilde{W}_t"
+        },
+        {
+          "type": "text",
+          "text": " 中被剪枝权重的取值，以及（2）促进 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\widetilde{W}_t"
+        },
+        {
+          "type": "text",
+          "text": " 中未被剪枝的权重。"
+        }
+      ]
+    }
+  }
+}

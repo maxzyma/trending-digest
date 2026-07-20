@@ -1,0 +1,3493 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2021-09-25-train-large",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2021-09-25-train-large/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2021-09-24T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:b85b4ce702fc22b7d583615552c81eb93348496cd0b8809dc74520ce3982def3",
+    "fetched_at": "2026-07-14T02:05:31.181248+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "How to Train Really Large Models on Many GPUs?",
+    "title_en": "How to Train Really Large Models on Many GPUs?",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-937b60034201",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2022-03-13: add "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/#ec"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "expert choice routing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".]"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "text",
+            "text": "[Updated on 2022-06-10]: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://gregbrockman.com/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Greg"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and I wrote a shorted and upgraded version of this post, published on OpenAI Blog: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/blog/techniques-for-training-large-neural-networks/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Techniques for Training Large Neural Networks”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-38a14c6f2509",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In recent years, we are seeing better results on many NLP benchmark tasks with larger pre-trained "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "language models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". How to train large and deep neural networks is challenging, as it demands a large amount of GPU memory and a long horizon of training time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fc71f415def2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However an individual GPU worker has limited memory and the sizes of many large models have grown beyond a single GPU. There are several parallelism paradigms to enable model training across multiple GPUs, as well as a variety of model architecture and memory saving designs to help make it possible to train "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "very large"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " neural networks."
+          }
+        ]
+      },
+      {
+        "id": "heading-7202c0b5e864",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training Parallelism"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-43670290804f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The main bottleneck for training very large neural network models is the intense demand for a large amount of GPU memory, way above what can be hosted on an individual GPU machine. Besides the model weights (e.g. tens of billions of floating point numbers), it is usually even more expensive to store intermediate computation outputs such as gradients and optimizer states (e.g. momentums & variations in Adam). Additionally training a large model often pairs with a large training corpus and thus a single process may just take forever."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-30d880a76999",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As a result, parallelism is necessary. Parallelism can happen at different dimensions, including data, model architecture, and tensor operation."
+          }
+        ]
+      },
+      {
+        "id": "heading-29268d566b57",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Data Parallelism"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a219f917a5b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The most naive way for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Data parallelism (DP)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  is to copy the same model weights into multiple workers and assign a fraction of data to each worker to be processed at the same time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-61cf4087df8c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Naive DP cannot work well if the model size is larger than a single GPU node’s memory. Methods like "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "GeePS"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.pdl.cmu.edu/PDL-FTP/CloudComputing/GeePS-cui-eurosys16.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Cui et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") offload temporarily unused parameters back to CPU to work with limited GPU memory when the model is too big to fit into one machine. The data swapping transfer should happen at the backend and not interfere with training computation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3b60aa507142",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At the end of each minibatch, workers need to synchronize gradients or weights to avoid staleness. There are two main synchronization approaches and both have clear pros & cons."
+          }
+        ]
+      },
+      {
+        "id": "list-29c276cfeaa8",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-eb7dd788443d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Bulk synchronous parallels (BSP)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Workers sync data at the end of every minibatch. It prevents model weights staleness and good learning efficiency but each machine has to halt and wait for others to send gradients."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a14dd8c48bfb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Asynchronous  parallel (ASP)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Every GPU worker processes the data asynchronously, no waiting or stalling. However, it can easily lead to stale weights being used and thus lower the statistical learning efficiency. Even though it increases the computation time, it may not speed up training time to convergence."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-47925837a7c9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Somewhere in the middle is to synchronize gradients globally once every "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " iterations ("
+          },
+          {
+            "type": "inline_math",
+            "text": "x > 1"
+          },
+          {
+            "type": "text",
+            "text": "). This feature is called “gradient accumulation” in Distribution Data Parallel ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pytorch.org/tutorials/intermediate/ddp_tutorial.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "DDP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") since Pytorch v1.5 ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.15704"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Li et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Bucketing gradients avoid immediate "
+          },
+          {
+            "type": "inline_code",
+            "text": "AllReduce"
+          },
+          {
+            "type": "text",
+            "text": " operations but instead buckets multiple gradients into one "
+          },
+          {
+            "type": "inline_code",
+            "text": "AllReduce"
+          },
+          {
+            "type": "text",
+            "text": " to improve throughput. Computation and communication scheduling optimization can be made based on the computation graph."
+          }
+        ]
+      },
+      {
+        "id": "image-042c4768e656",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pytorch-ddp.png",
+          "alt": "Pseudo code for Pytorch DDP. (Image source: Li et al. 2021 )"
+        }
+      },
+      {
+        "id": "heading-20a457582f68",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model Parallelism"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-1d4796339a38",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Model parallelism (MP)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " aims to solve the case when the model weights cannot fit into a single node. The computation and model parameters are partitioned across multiple machines. Different from data parallelism where each worker hosts a full copy of the entire model, MP only allocates a fraction of model parameters on one worker and thus both the memory usage and the computation are reduced."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8cc0ccafa634",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since deep neural networks usually contain a stack of vertical layers, it feels straightforward to split a large model by layer, where a small consecutive set of layers are grouped into one partition on one worker. However, a naive implementation for running every data batch through multiple such workers with sequential dependency leads to big bubbles of waiting time and severe under-utilization of computation resources."
+          }
+        ]
+      },
+      {
+        "id": "image-13bc0b40b360",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/naive-data-parallelism.png",
+          "alt": "A naive model parallelism setup where the model is vertically split into 4 partitions. Data is processed by one worker at a time due to sequential dependency, leading to large “bubbles” of idle time. (Image source: Huang et al. 2019 )"
+        }
+      },
+      {
+        "id": "heading-723c9b6b2675",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Pipeline Parallelism"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5f09ec74c1fc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Pipeline parallelism (PP)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " combines model parallelism with data parallelism to reduce inefficient time “bubbles’’. The main idea is to split one minibatch into multiple microbatches and enable each stage worker to process one microbatch simultaneously. Note that every microbatch needs two passes, one forward and one backward. Inter-worker communication only transfers activations (forward) and gradients (backward). How these passes are scheduled and how the gradients are aggregated vary in different approaches. The number of partitions (workers) is also known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "pipeline depth"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-78430af3a407",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "GPipe"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1811.06965"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Huang et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") gradients from multiple microbatches are aggregated and applied synchronously at the end. The synchronous gradient descent guarantees learning consistency and efficiency irrespective of the number of workers. As shown in Fig. 3, bubbles still exist but are much smaller than what’s in Given "
+          },
+          {
+            "type": "inline_math",
+            "text": "m"
+          },
+          {
+            "type": "text",
+            "text": " evenly split microbatches and "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " partitions, assuming both forward and backward per microbatch take one unit of time, the fraction of bubble is:"
+          }
+        ]
+      },
+      {
+        "id": "math-1862ac78d879",
+        "type": "math",
+        "attrs": {
+          "latex": "1 - \\frac{2md}{(2m + 2(d-1))d} = \\frac{d-1}{m+d-1}"
+        }
+      },
+      {
+        "id": "paragraph-c3525170883f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The GPipe paper observed that the bubble overhead is almost negligible if the number of microbatches is more than 4x the number of partitions "
+          },
+          {
+            "type": "inline_math",
+            "text": "m > 4d"
+          },
+          {
+            "type": "text",
+            "text": " (when "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/#activation-recomputation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "activation recomputation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is applied)."
+          }
+        ]
+      },
+      {
+        "id": "image-660aefeb5fe4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/gpipe.png",
+          "alt": "Illustration of pipeline parallelism in GPipe with 4 microbatches and 4 partitions. GPipe aggregates and updates gradients across devices synchronously at the end of every batch. (Image source: Huang et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-8cd76b70b15d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GPipe achieves almost linear speedup in throughput with the number of devices, although it is not always guaranteed if the model parameters are not evenly distributed across workers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ad77d95b5b0a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "PipeDream"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Narayanan et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") schedules each worker to alternatively process the forward and backward passes ("
+          },
+          {
+            "type": "inline_code",
+            "text": "1F1B"
+          },
+          {
+            "type": "text",
+            "text": ").\nPipeDream names each model partition “stage” and each stage worker can have multiple replicas to run data parallelism. In this process, PipeDream uses a deterministic round-robin load balancing strategy to assign work among multiple replicas of stages to ensure that the forward and backward passes for the same minibatch happen on the same replica."
+          }
+        ]
+      },
+      {
+        "id": "image-99c5b3040517",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream.png",
+          "alt": "Illustration of `1F1B` microbatch scheduling in PipeDream. (Image source: Harlap et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-444ae4bfe0dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since PipeDream does not have an end-of-batch global gradient sync across all the workers, an native implementation of 1F1B can easily lead to the forward and backward passes of one microbatch using different versions of model weights, thus lowering the learning efficiency. PipeDream proposed a few designs to tackle this issue:"
+          }
+        ]
+      },
+      {
+        "id": "list-3344e111debc",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-63f0d96690cd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Weight stashing"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Each worker keeps track of several model versions and makes sure that the same version of weights are used in the forward and backward passes given one data batch."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7000967356b6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Vertical sync"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Optional): The version of model weights flows between stage workers together with activations and gradients. Then the computation adopts the corresponding stashed version propagated from the previous worker. This process keeps version consistency across workers. Note that it is asynchronous, different from GPipe."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-045f64b9685f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At the beginning of a training run, PipeDream first profiles the computation memory cost and time of each layer in the model and then optimizes a solution for partitioning layers into stages, which is a dynamic programming problem."
+          }
+        ]
+      },
+      {
+        "id": "image-bad319d69c67",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream-results.png",
+          "alt": "Results for VGG16 on ILSVRC12. (Top) Accuracy vs time. The integer marks the number of stage workers. ASP =  Asynchronous  parallel & BSP = Bulk synchronous parallels. (Bottom) Training time speedup for different parallelism configurations. Straight pipeline refers to pipeline parallelism without data parallelism. (Image source: Harlap et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-66252aa2359b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two variations of PipeDream were later proposed to reduce the memory footprint by stashed model versions ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.09503"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Narayanan et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-535e55f590f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "PipeDream-flush"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " adds a globally synchronized pipeline flush periodically, just like GPipe. In this way, it greatly reduces the memory footprint (i.e. only maintain a single version of model weights) by sacrificing a little throughput."
+          }
+        ]
+      },
+      {
+        "id": "image-a4ba715bf5b8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream-flush.png",
+          "alt": "Illustration of pipeline scheduling in PipeDream-flush. (Image source: ( Narayanan et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-0e9512378de0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "PipeDream-2BW"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " maintains only two versions of model weights, where “2BW” is short for “double-buffered weights”. It generates a new model version every "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " microbatches and "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " should be larger than the pipeline depth "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "k > d"
+          },
+          {
+            "type": "text",
+            "text": ". A newly updated model version cannot fully replace the old version immediately since some leftover backward passes still depend on the old version. In total only two versions need to be saved so the memory cost is much reduced."
+          }
+        ]
+      },
+      {
+        "id": "image-ca506165ccfe",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream-2bw.png",
+          "alt": "Illustration of pipeline scheduling in PipeDream-2BW. (Image source: ( Narayanan et al. 2021 )"
+        }
+      },
+      {
+        "id": "heading-e80af23b11b0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Tensor Parallelism"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-3045e0f783d0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both model and pipeline parallelisms split a model vertically. OTOH we can horizontally partition the computation for one tensor operation across multiple devices, named "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Tensor parallelism (TP)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cc41191015c2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s take the transformer as an example given its popularity. The transformer model mainly consists of layers of MLP and self-attention blocks. "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Megatron-LM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.08053"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shoeybi et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") adopts a simple way to parallelize intra-layer computation for MLP and self-attention."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c1dd0f23e6c1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A MLP layer in a transformer contains a GEMM (General matrix multiply) followed by an non-linear GeLU transfer. Let’s split weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "A"
+          },
+          {
+            "type": "text",
+            "text": " by column:"
+          }
+        ]
+      },
+      {
+        "id": "math-f25510a495e7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\text{Split }A &= [A_1, A_2] \\\\\nY &=\\text{GeLU}(XA) \\\\\n[Y_1, Y_2] &= [\\text{GeLU}(XA_1), \\text{GeLU}(XA_2)]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-b385f9bba632",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The attention block runs GEMM with query ("
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": "), key ("
+          },
+          {
+            "type": "inline_math",
+            "text": "K"
+          },
+          {
+            "type": "text",
+            "text": "), and value weights ("
+          },
+          {
+            "type": "inline_math",
+            "text": "V"
+          },
+          {
+            "type": "text",
+            "text": ") according to the above partitioning in parallel and then combines them with another GEMM to produce the attention head results."
+          }
+        ]
+      },
+      {
+        "id": "math-e9da60a4659e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{Attention}(X, Q, K, V) = \\text{softmax}(\\frac{(XQ) (XK)^\\top}{\\sqrt{d_k}}) XV"
+        }
+      },
+      {
+        "id": "image-2e316485e4e3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/Megatron-LM.png",
+          "alt": "Illustration of tensor parallelism for key transformer components proposed in Megatron-LM. (Image source: Shoeybi et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-ce85548e3b57",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.04473"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Narayanan et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " combined pipeline, tensor and data parallelism with a new pipeline scheduling strategy and named their approach "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "PTD-P"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Instead of only positioning a continuous set of layers (“model chunk”) on a device, each worker can be assigned with multiple chunks of smaller continuous subsets of layers (e.g. device 1 has layers 1, 2, 9, 10; device 2 has layers 3, 4, 11, 12; each has two model chunks). The number of microbatches in one batch should be exactly divided by the number of workers ("
+          },
+          {
+            "type": "inline_math",
+            "text": "m % d = 0"
+          },
+          {
+            "type": "text",
+            "text": "). If there are "
+          },
+          {
+            "type": "inline_math",
+            "text": "v"
+          },
+          {
+            "type": "text",
+            "text": " model chunks per worker, the pipeline bubble time can be reduced by a multiplier of "
+          },
+          {
+            "type": "inline_math",
+            "text": "v"
+          },
+          {
+            "type": "text",
+            "text": " compared to a GPipe scheduling."
+          }
+        ]
+      },
+      {
+        "id": "image-74b3a93a8556",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/PTD-P-interleaved.png",
+          "alt": "(Top) Default `1F1B` pipeline schedule as in PipeDream-flush. (Bottom) Interleaved 1F1B pipeline schedule. First model chunks are in dark colors and second chunks are in light colors. (Image source: Narayanan et al. 202) )"
+        }
+      },
+      {
+        "id": "heading-0a731e1aa954",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mixture-of-Experts (MoE)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-aba7a5a7c6d7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Mixture-of-Experts (MoE)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " approach attracts a lot of attention recently as researchers (mainly from Google) try to push the limit of model size. The core of the idea is "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Ensemble_learning"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ensembling learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Combination of multiple weak learners gives you a strong learner!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9f43dfe9b60d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Within one deep neural network, ensembling can be implemented with a gating mechanism connecting multiple experts ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1701.06538"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shazeer et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The gating mechanism controls which subset of the network (e.g. which experts) should be activated to produce outputs. The paper named it “sparsely gated mixture-of-experts” (MoE) layer."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a122759745ee",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Precisely one MoE layer contains"
+          }
+        ]
+      },
+      {
+        "id": "list-b0a896289069",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-81695a399ba6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "n"
+              },
+              {
+                "type": "text",
+                "text": " feed-forward networks as experts "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\{E_i\\}^n_{i=1}"
+              }
+            ]
+          },
+          {
+            "id": "list-item-2cdd9ed03287",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A trainable gating network "
+              },
+              {
+                "type": "inline_math",
+                "text": "G"
+              },
+              {
+                "type": "text",
+                "text": " to learn a probability distribution over "
+              },
+              {
+                "type": "inline_math",
+                "text": "n"
+              },
+              {
+                "type": "text",
+                "text": " experts so as to route the traffic to a few selected experts."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49e9e0ebbe85",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Depending on the gating outputs, not every expert has to be evaluated. When the number of experts is too large, we can consider using a two-level hierarchical MoE."
+          }
+        ]
+      },
+      {
+        "id": "image-51cdcfa24456",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/moe.png",
+          "alt": "Illustration of a mixture-of-experts (MoE) layer. Only 2 out of $n$ experts are selected and activated by the gating network. (Image source: Shazeer et al., 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-605ba020960d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A simple choice of "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " is to multiply the input with a trainable weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_g"
+          },
+          {
+            "type": "text",
+            "text": " and then do softmax: "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_\\sigma (x) = \\text{softmax}(x W_g)"
+          },
+          {
+            "type": "text",
+            "text": ". However, this produces a dense control vector for gating and does not help save computation resources because we don’t need to evaluate an expert only when "
+          },
+          {
+            "type": "inline_math",
+            "text": "G^{(i)}(x)=0"
+          },
+          {
+            "type": "text",
+            "text": ". Thus the MoE layer only keeps the top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " values. It also adds tunable Gaussian noise into "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " to improve load balancing. This mechanism is called "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "noisy top-k gating"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-aea64fbfacb7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned} \nG(x) &= \\text{softmax}( \\text{topk}(H(x), k)) \\\\\nH^{(i)}(x) &= (xW_g)^{(i)} + \\epsilon \\cdot \\text{softplus}((xW_\\text{noise})^{(i)} ); \\quad \\epsilon \\sim \\mathcal{N}(0, \\mathbf{1}) \\\\\n\\text{topk}^{(i)}(v, k) &= \\begin{cases} v^{(i)} & \\text{if }v^{(i)}\\text{ is in the top }k\\text{ elements of }v \\\\ -\\infty & \\text{otherwise} \n\\end{cases} \n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-8d20c022c2b1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where the superscript "
+          },
+          {
+            "type": "inline_math",
+            "text": "v^{(i)}"
+          },
+          {
+            "type": "text",
+            "text": " denotes the i-th dimension of the vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "v"
+          },
+          {
+            "type": "text",
+            "text": ". The function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{topk}(., k)"
+          },
+          {
+            "type": "text",
+            "text": " selected the top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " dimensions with highest values by setting other dimensions to "
+          },
+          {
+            "type": "inline_math",
+            "text": "-\\infty"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9a419a2c461d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To avoid the self-reinforcing effect that the gating network may favor a few strong experts all the time, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1701.06538"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shazeer et al. (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a soft constraint via an additional importance loss to encourage all the experts to have the same weights. It is equivalent to the square of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Coefficient_of_variation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "coefficient of variation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of batchwise average value per expert."
+          }
+        ]
+      },
+      {
+        "id": "math-7d96baaa87b6",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{aux} = w_\\text{aux} \\cdot \\text{CV}(\\sum_{x \\in X} G(x))^2"
+        }
+      },
+      {
+        "id": "paragraph-548aa7401547",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": " \\text{CV}"
+          },
+          {
+            "type": "text",
+            "text": " is the coefficient of variation and the loss weight "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_\\text{aux}"
+          },
+          {
+            "type": "text",
+            "text": " is a hyperparameter to tune."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0bbfdcbf76a9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because every expert network only gets a fraction of training samples (“The shrinking batch problem”), we should try to use a batch size as large as possible in MoE. However, it is restricted by GPU memory. Data parallelism and model parallelism can be applied to improve the throughput."
+          }
+        ]
+      },
+      {
+        "id": "image-9a520bcd56a5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/moe-experiments.png",
+          "alt": "Test perplexity on 1-Billion-Word language modeling benchmark. (Left) The model capacity increases from left to right, containing 4, 32, 256, 256, 1024 and 4096 experts. (Right) Performance of the 4 billion parameters MoE model, the largest one in the left figure, under different computation budgets. (Image source: Shazeer et al., 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-6a9deeff40e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "GShard"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.16668"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lepikhin et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") scales the MoE transformer model up to 600 billion parameters with sharding. The MoE transformer replaces every other feed forward layer with a MoE layer. The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "sharded MoE transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " only has the MoE layers sharded across multiple machines, while other layers are simply duplicated."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0899f1696b7f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are several improved designs for the gating function "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " in GShard:"
+          }
+        ]
+      },
+      {
+        "id": "list-70e5b13e6462",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-60e58c26ee5c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Expert capacity"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The amount of tokens going through one expert should not go above a threshold, named “expert capacity”. If a token is routed to experts that have reached their capacity, the token would be marked “overflowed” and the gating output is changed to a zero vector."
+              }
+            ]
+          },
+          {
+            "id": "list-item-888d79a50a68",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Local group dispatching"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Tokens are evenly partitioned into multiple local groups and the expert capacity is enforced on the group level."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d976e60d5690",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Auxiliary loss"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The motivation is similar to the original MoE aux loss. They add an auxiliary loss to minimize the mean square of the fraction of data routed to each expert."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f980262f78eb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Random routing"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The 2nd-best expert is selected with a probability proportional to its weight; otherwise, GShard follows a random routing, so as to add some randomness."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-6dd9abcb5817",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/gshard-algo.png",
+          "alt": "Pseudo code of the group-level top-2 gating mechanism with auxiliary loss in GShard. (Image source: Lepikhin et al., 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-df208715e533",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Switch Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2101.03961"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Fedus et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") scales the model size up to trillions of parameters (!!) by replacing the dense feed forward layer with a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "sparse switch FFN layer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in which each input is only routed to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "one"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " expert network. The auxiliary loss for load balancing is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{loss}_\\text{aux} = w_\\text{aux} \\sum_{i=1}^n f_i p_i"
+          },
+          {
+            "type": "text",
+            "text": " given "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " experts, where "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_i"
+          },
+          {
+            "type": "text",
+            "text": " is the fraction of tokens routed to the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th expert and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_i"
+          },
+          {
+            "type": "text",
+            "text": " is the routing probability for expert "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " predicted by the gating network."
+          }
+        ]
+      },
+      {
+        "id": "image-5115cd828c99",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/switch-transformer.png",
+          "alt": "Switch transformer. The sparse switch FFN layer is in the blue boxes. (Image source: Fedus et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-f53afb6972be",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To improve training stability, switch transformer incorporates the following designs:"
+          }
+        ]
+      },
+      {
+        "id": "list-88007d5d0adc",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-93beed17a181",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Selective precision"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". They showed that selectively casting only a local part of the model to FP32 precision improves stability, while avoiding the expensive communication cost of FP32 tensors. The FP32 precision is only used within the body of the router function and the results are recast to FP16."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2eaa47eeccf3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Smaller initialization"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". The initialization of weight matrices is sampled from a truncated normal distribution with mean "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mu=0"
+              },
+              {
+                "type": "text",
+                "text": " and stdev "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\sigma = \\sqrt{s/n}"
+              },
+              {
+                "type": "text",
+                "text": ". They also recommended reducing the transformer initialization scale parameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "s=1"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "s=0.1"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-006d69a6ecc8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Use higher expert dropout"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Fine-tuning often works with a small dataset. To avoid overfitting, the dropout rate within each expert is increased by a significant amount. Interestingly they found that increasing dropout across all layers lead to poor performance. In the paper, they used a dropout rate 0.1 at non-expert layers but 0.4 within expert FF layers."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-709dbcc84afa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The switch transformer paper summarized different data and model parallelism strategies for training large models with a nice illustration:"
+          }
+        ]
+      },
+      {
+        "id": "image-bfccd5fcf2dc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/switch-transformer-parallelism.png",
+          "alt": "An illustration of various parallelism strategies on how (Top) model weights and (Bottom) data are split over multiple GPU cores. In the top row, each color denotes a unique weight matrix. In the bottom row, different colors indicate different sets of tokens.  (Image source: Fedus et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-987ece64f6e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both GShard top-2 and Switch Transformer top-1 depend on "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "token choice"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", where each token picks the best one or two experts to route through. They both adopt an auxiliary loss to encourage more balanced load allocation but it does not guarantee the best performance. Furthermore, the expert capacity limit may lead to wasted tokens as they would be discarded if an expert reaches its capacity limit."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-babb53cec040",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Export Choice (EC)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2202.09368"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhou et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") routing instead enables each expert to select the top-"
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " tokens. In this way, each expert naturally guarantees a fixed capacity and each token may be routed to multiple experts. EC can achieve perfect load balancing and is shown to improve training convergence by 2x."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-103a76e6a911",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given "
+          },
+          {
+            "type": "inline_math",
+            "text": "e"
+          },
+          {
+            "type": "text",
+            "text": " experts and an input matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "X \\in \\mathbb{R}^{n \\times d}"
+          },
+          {
+            "type": "text",
+            "text": ", the token-to-expert affinity scores are computed by:\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\nS = \\text{softmax}(X \\cdot W_g), \\text{where } W_g \\in \\mathbb{R}^{d \\times e}, S \\in \\mathbb{R}^{n \\times e}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cd009595119a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A token-to-expert assignment is represented by three matrices, "
+          },
+          {
+            "type": "inline_math",
+            "text": "I, G \\in \\mathbb{R}^{e\\times k}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "P \\in \\mathbb{R}^{e \\times k \\times n}"
+          },
+          {
+            "type": "text",
+            "text": ". "
+          },
+          {
+            "type": "inline_math",
+            "text": "I[i,j]"
+          },
+          {
+            "type": "text",
+            "text": " annotates which token is the "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": "-th selection by the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th expert. The gating matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " stores the routing weights of selected tokens. "
+          },
+          {
+            "type": "inline_math",
+            "text": "P"
+          },
+          {
+            "type": "text",
+            "text": " is the one-hot version of "
+          },
+          {
+            "type": "inline_math",
+            "text": "I"
+          },
+          {
+            "type": "text",
+            "text": ", used to produce the input matrix ("
+          },
+          {
+            "type": "inline_math",
+            "text": "P \\cdot X \\in \\mathbb{R}^{e \\times k \\times d}"
+          },
+          {
+            "type": "text",
+            "text": ") for the gated FFN layer.\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\nG, I = \\text{top-k}(S^\\top, k)\\quad P = \\text{one-hot}(I)\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7809fe6de216",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One regularization that export choice routing explored is to limit the maximum number of experts per token."
+          }
+        ]
+      },
+      {
+        "id": "math-424f543a9097",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\max_A \\langle S^\\top, A\\rangle + \\lambda H(A) \\\\\n\\text{s.t.} & \n\\forall i: \\sum_{j'} A[i, j'] = k,\\quad\n\\forall j: \\sum_{i'} A[i', j] \\leq b,\\quad\n\\forall i,j: 0 \\leq A[i,j] \\leq 1\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-50a51933b4e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where each entry "
+          },
+          {
+            "type": "inline_math",
+            "text": "A[i,j]"
+          },
+          {
+            "type": "text",
+            "text": " in "
+          },
+          {
+            "type": "inline_math",
+            "text": "A \\in \\mathbb{R}^{e \\times n}"
+          },
+          {
+            "type": "text",
+            "text": " marks whether the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-the expert selects the "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": "-th token. Solving this is non-trivial. The paper used "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://projecteuclid.org/journals/annals-of-probability/volume-13/issue-3/An-Iterative-Procedure-for-Obtaining-I-Projections-onto-the-Intersection/10.1214/aop/1176992918.full"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dykstra’s algorithm"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " that runs a sequence of multiple iterative computation steps. Capped expert choice results in a slight decrease in the fine-tuning performance in the experiments."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c579d486f7db",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " is determined by "
+          },
+          {
+            "type": "inline_math",
+            "text": "k=nc/e"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " is the total number of tokens in one batch and "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " is a capacity factor indicating the average number of experts used by one token. The paper used "
+          },
+          {
+            "type": "inline_math",
+            "text": "c=2"
+          },
+          {
+            "type": "text",
+            "text": " in most experiments, but EC with "
+          },
+          {
+            "type": "inline_math",
+            "text": "c=1"
+          },
+          {
+            "type": "text",
+            "text": " still outperforms the top-1 token choice gating. Interestingly, "
+          },
+          {
+            "type": "inline_math",
+            "text": "c=0.5"
+          },
+          {
+            "type": "text",
+            "text": " only marginally hurts the training performance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2828451f9765",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One big drawback of EC is that it does not work when the batch size is too small, neither for auto-regressive text generation, because it needs to know the future tokens to do the top-"
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " selection."
+          }
+        ]
+      },
+      {
+        "id": "heading-5d0eaee3299d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Other Memory Saving Designs"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-01235c712c11",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CPU Offloading"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e6109380e0fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When the GPU memory is full, one option is to offload temporarily unused data to CPU and read them back when needed later ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1602.08124"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rhu et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The idea of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "CPU offloading"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is straightforward but is less popular in recent years due to the slowdown it brings into the training time."
+          }
+        ]
+      },
+      {
+        "id": "heading-20e4252a6204",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Activation Recomputation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-390fb67b28ed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Activation recomputation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (also known as “activation checkpointing” or “gradient checkpointing”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arvix.org/abs/1604.06174"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chen et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a smart yet simple idea to reduce memory footprint at the cost of computation time. It reduces the memory cost of training a "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell"
+          },
+          {
+            "type": "text",
+            "text": " layer deep neural net to "
+          },
+          {
+            "type": "inline_math",
+            "text": "O(\\sqrt{\\ell})"
+          },
+          {
+            "type": "text",
+            "text": ", which only additionally consumes an extra forward pass computation per batch."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-09be36e13cd8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say, we evenly divide an "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell"
+          },
+          {
+            "type": "text",
+            "text": "-layer network into "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " partitions. Only activations at partition boundaries are saved and communicated between workers. Intermediate activations at intra-partition layers are still needed for computing gradients so they are recomputed during backward passes. With activation recomputation, the memory cost for training "
+          },
+          {
+            "type": "inline_math",
+            "text": "M(\\ell)"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-0103c04c6f3d",
+        "type": "math",
+        "attrs": {
+          "latex": "M(\\ell) \n=\\max_{i=1,\\dots,k} \\underbrace{\\text{cost-of-one-partition}(i)}_\\text{cost of back-propagation on the i-th partition} + \\underbrace{O(d)}_\\text{store intermediate outputs} \n= O(\\frac{\\ell}{d}) + O(d)"
+        }
+      },
+      {
+        "id": "paragraph-269ccb51e7f0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The minimum cost is "
+          },
+          {
+            "type": "inline_math",
+            "text": "O(\\sqrt{\\ell})"
+          },
+          {
+            "type": "text",
+            "text": " at "
+          },
+          {
+            "type": "inline_math",
+            "text": "d=\\sqrt{\\ell}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-705a3e68fd56",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Activation recompuation trick can give sublinear memory cost with respect to the model size."
+          }
+        ]
+      },
+      {
+        "id": "image-2d934cebfaf2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/activation-checkpointing.png",
+          "alt": "The memory cost of different memory saving algorithms. Sharing : Memory used by intermediate results is recycled when no longer needed. Inplace : Save the output directly into memory of an input value. (Image source: Chen et al. 2016 )"
+        }
+      },
+      {
+        "id": "heading-e0a98d0fb98c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mixed Precision Training"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0207eb22ca5c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.03740"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Narang & Micikevicius et al. (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " introduced a method to train models using half-precision floating point (FP16) numbers without losing model accuracy."
+          }
+        ]
+      },
+      {
+        "id": "image-1cf4588b7213",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/mixed-precision-training.png",
+          "alt": "The procedure of mixed precision training at one layer. (Image source: Narang & Micikevicius, et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-7b19f45a980d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Three techniques to avoid losing critical information at half-precision:"
+          }
+        ]
+      },
+      {
+        "id": "list-145c6aac44c1",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-09eb237be0a1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Full-precision master copy of weights"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Maintain a full precision (FP32) copy of model weights that accumulates gradients. The numbers are rounded up to half-precision for forward & backward passes. The motivation is that each gradient update (i.e. gradient times the learning rate) might be too small to be fully contained within the FP16 range (i.e. "
+              },
+              {
+                "type": "inline_math",
+                "text": "2^{-24}"
+              },
+              {
+                "type": "text",
+                "text": " becomes zero in FP16)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2877120b9c80",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Loss scaling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Scale up the loss to better handle gradients with small magnitudes (See Fig. 16). Scaling up the gradients helps shift them to occupy a larger section towards the right section (containing larger values) of the representable range, preserving values that are otherwise lost."
+              }
+            ]
+          },
+          {
+            "id": "list-item-01bc3ffa8be4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Arithmetic precision"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". For common network arithmetic (e.g. vector dot-product, reduction by summing up vector elements), we can accumulate the partial results in FP32 and then save the final output as FP16 before saving into memory. Point-wise operations can be executed in either FP16 or FP32."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-ff22ebe2d040",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/gradient-histogram.png",
+          "alt": "The histogram of gradients in full precision. The left part up to $2^{-24}$ will be zero-ed off once the model switches to FP16. (Image source: Narang & Micikevicius, et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-6ccdb76199c4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In their experiments, loss scaling is not needed for some networks (e.g. image classification, Faster R-CNN), but necessary for others (e.g. Multibox SSD, big LSTM language model)."
+          }
+        ]
+      },
+      {
+        "id": "heading-c4dc629d7185",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Compression"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-1e879d7436ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Intermediate results often consume a lot of memory, although they are only needed in one forward pass and one backward pass. There is a noticeable temporal gap between these two uses. Thus "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.microsoft.com/en-us/research/uploads/prod/2018/04/fiddle-gist-isca18.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jain et al. (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a data encoding strategy to compress the intermediate results after the first use in the first pass and then decode it back for back-propagation later."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6c8b11d0e10e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Their system "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Gist"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " incorporates two encoding schemes:\n"
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Layer-specific lossless encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; focus on ReLU-Pool (“Binarize”) and ReLU-Conv (“Sparse storage and dense computation”) patterns.\n"
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Aggressive lossy encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; use delayed precision reduction (DPR). They observed that the first immediate use of feature maps should be kept at high precision but the second use can tolerate lower precision."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-da729efb3a4b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The experiments showed that Gist can reduce the memory cost by 2x across 5 SOTA image classification DNNs, with an average of 1.8x with only 4% performance overhead."
+          }
+        ]
+      },
+      {
+        "id": "heading-35760bb8ca52",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Memory Efficient Optimizer"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5221378ab86f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Optimizers are eager for memory consumption. Take the popular Adam optimizer as an example, it internally needs to maintain momentums and variances, both at the same scale as gradients and model parameters. All out of a sudden, we need to save 4x the memory of model weights."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1486d64d3061",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Several optimizers have been proposed to reduce the memory footprint.\nFor example, instead of storing the full momentums and variations as in Adam, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Adafactor"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.04235"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shazeer et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") only tracks the per-row and per-column sums of the moving averages and then estimates the second moments based on these sums. "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "SM3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.11150"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Anil et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") describes a different adaptive optimization method, leading to largely reduced memory as well."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-79ac3dfbf262",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "ZeRO"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Zero Redundancy Optimizer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.02054"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rajbhandari et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") optimizes the memory used for training large models based on the observation about two major memory consumption of large model training:"
+          }
+        ]
+      },
+      {
+        "id": "list-2ed2a67a0c9e",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-5ea222b52601",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The majority is occupied by "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "model states"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", including optimizer states (e.g. Adam momentums and variances), gradients and parameters. Mixed-precision training demands a lot of memory since the optimizer needs to keep a copy of FP32 parameters and other optimizer states, besides the FP16 version."
+              }
+            ]
+          },
+          {
+            "id": "list-item-52222c290b69",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The remaining is consumed by activations, temporary buffers and unusable fragmented memory (named "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "residual states"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " in the paper)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6d56e749dbfb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ZeRO combines two approaches, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "ZeRO-DP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "ZeRO-R"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".\nZeRO-DP is an enhanced data parallelism to avoid simple redundancy over model states. It partitions optimizer state, gradients and parameters across multiple data parallel processes via a dynamic communication schedule to minimize the communication volume.\nZeRO-R optimizes the memory consumption of residual states, using partitioned activation recomputation, constant buffer size and on-the-fly memory defragmentation."
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-414746f61656",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-c1da2b22c489",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Sep 2021). How to train really large models on many GPUs? Lil’Log. https://lilianweng.github.io/posts/2021-09-25-train-large/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-c975e7a9f303",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2021large,\n  title   = \"How to Train Really Large Models on Many GPUs?\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2021\",\n  month   = \"Sep\",\n  url     = \"https://lilianweng.github.io/posts/2021-09-25-train-large/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c86fd85ac338",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Li et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.15704"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“PyTorch Distributed: Experiences on Accelerating Data Parallel Training”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " VLDB 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-40d6ebd115e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Cui et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.pdl.cmu.edu/PDL-FTP/CloudComputing/GeePS-cui-eurosys16.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“GeePS: Scalable deep learning on distributed GPUs with a GPU-specialized parameter server”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " EuroSys 2016"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3b0160960a13",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Shoeybi et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.08053"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1909.08053 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-801300da7278",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Narayanan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.04473"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Efficient Large-Scale Language Model Training on GPU Clusters Using Megatron-LM.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2104.04473 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-94a853992ec5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Huang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1811.06965"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1811.06965 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-010368d8485c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Narayanan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“PipeDream: Generalized Pipeline Parallelism for DNN Training.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " SOSP 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-90fc672a1bd9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Narayanan et al.  "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.09503"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Memory-Efficient Pipeline-Parallel DNN Training.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-170bff248a5a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Shazeer et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1701.06538"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The Sparsely-Gated Mixture-of-Experts Layer Noam.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1701.06538 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3082449712c1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Lepikhin et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.16668"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“GShard: Scaling Giant Models with Conditional Computation and Automatic Sharding.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2006.16668 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ee52726da907",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Fedus et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2101.03961"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2101.03961 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-83a4797ed7f1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Narang & Micikevicius, et al.  "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.03740"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Mixed precision training.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9eaa8bb5248f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Chen et al. 2016 "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1604.06174"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Training Deep Nets with Sublinear Memory Cost.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1604.06174 (2016)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9ce5097eb920",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Jain et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.microsoft.com/en-us/research/uploads/prod/2018/04/fiddle-gist-isca18.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Gist: Efficient data encoding for deep neural network training.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ISCA 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-edf4db06d045",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Shazeer & Stern. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.04235"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Adafactor: Adaptive learning rates with sublinear memory cost.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1804.04235 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-59d6425c5b55",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Anil et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.11150"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Memory-Efficient Adaptive Optimization.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1901.11150 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-52e3b0a2e044",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Rajbhandari et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.02054"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“ZeRO: Memory Optimization Towards Training A Trillion Parameter Models Samyam.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1910.02054 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-29c4f230eda2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Zhou et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2202.09368"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Mixture-of-Experts with Expert Choice Routing”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2202.09368 (2022)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "how-to-train-really-large-models-on-many-gpus",
+    "source_slug": "2021-09-25-train-large",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 14,
+      "math": 7,
+      "image": 17,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pytorch-ddp.png",
+      "alt": "Pseudo code for Pytorch DDP. (Image source: Li et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/naive-data-parallelism.png",
+      "alt": "A naive model parallelism setup where the model is vertically split into 4 partitions. Data is processed by one worker at a time due to sequential dependency, leading to large “bubbles” of idle time. (Image source: Huang et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/gpipe.png",
+      "alt": "Illustration of pipeline parallelism in GPipe with 4 microbatches and 4 partitions. GPipe aggregates and updates gradients across devices synchronously at the end of every batch. (Image source: Huang et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream.png",
+      "alt": "Illustration of `1F1B` microbatch scheduling in PipeDream. (Image source: Harlap et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream-results.png",
+      "alt": "Results for VGG16 on ILSVRC12. (Top) Accuracy vs time. The integer marks the number of stage workers. ASP =  Asynchronous  parallel & BSP = Bulk synchronous parallels. (Bottom) Training time speedup for different parallelism configurations. Straight pipeline refers to pipeline parallelism without data parallelism. (Image source: Harlap et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream-flush.png",
+      "alt": "Illustration of pipeline scheduling in PipeDream-flush. (Image source: ( Narayanan et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/pipedream-2bw.png",
+      "alt": "Illustration of pipeline scheduling in PipeDream-2BW. (Image source: ( Narayanan et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/Megatron-LM.png",
+      "alt": "Illustration of tensor parallelism for key transformer components proposed in Megatron-LM. (Image source: Shoeybi et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/PTD-P-interleaved.png",
+      "alt": "(Top) Default `1F1B` pipeline schedule as in PipeDream-flush. (Bottom) Interleaved 1F1B pipeline schedule. First model chunks are in dark colors and second chunks are in light colors. (Image source: Narayanan et al. 202) )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/moe.png",
+      "alt": "Illustration of a mixture-of-experts (MoE) layer. Only 2 out of $n$ experts are selected and activated by the gating network. (Image source: Shazeer et al., 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/moe-experiments.png",
+      "alt": "Test perplexity on 1-Billion-Word language modeling benchmark. (Left) The model capacity increases from left to right, containing 4, 32, 256, 256, 1024 and 4096 experts. (Right) Performance of the 4 billion parameters MoE model, the largest one in the left figure, under different computation budgets. (Image source: Shazeer et al., 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/gshard-algo.png",
+      "alt": "Pseudo code of the group-level top-2 gating mechanism with auxiliary loss in GShard. (Image source: Lepikhin et al., 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/switch-transformer.png",
+      "alt": "Switch transformer. The sparse switch FFN layer is in the blue boxes. (Image source: Fedus et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/switch-transformer-parallelism.png",
+      "alt": "An illustration of various parallelism strategies on how (Top) model weights and (Bottom) data are split over multiple GPU cores. In the top row, each color denotes a unique weight matrix. In the bottom row, different colors indicate different sets of tokens.  (Image source: Fedus et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/activation-checkpointing.png",
+      "alt": "The memory cost of different memory saving algorithms. Sharing : Memory used by intermediate results is recycled when no longer needed. Inplace : Save the output directly into memory of an input value. (Image source: Chen et al. 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/mixed-precision-training.png",
+      "alt": "The procedure of mixed precision training at one layer. (Image source: Narang & Micikevicius, et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/gradient-histogram.png",
+      "alt": "The histogram of gradients in full precision. The left part up to $2^{-24}$ will be zero-ed off once the model switches to FP16. (Image source: Narang & Micikevicius, et al. 2018 )"
+    }
+  ]
+}

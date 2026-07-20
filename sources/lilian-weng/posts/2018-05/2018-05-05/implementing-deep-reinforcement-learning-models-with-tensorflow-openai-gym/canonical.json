@@ -1,0 +1,1970 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2018-05-05-drl-implementation",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2018-05-05T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:e96b3e6c4c6253bfb77e68f123a139d773728bb0c7c986353788480502a7fa95",
+    "fetched_at": "2026-07-14T02:05:03.581340+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Implementing Deep Reinforcement Learning Models with Tensorflow + OpenAI Gym",
+    "title_en": "Implementing Deep Reinforcement Learning Models with Tensorflow + OpenAI Gym",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-1f29ba90aaeb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The full implementation is available in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/deep-reinforcement-learning-gym"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "lilianweng/deep-reinforcement-learning-gym"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5a7c0f19eda0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the previous two posts, I have introduced the algorithms of many deep reinforcement learning models. Now it is the time to get our hands dirty and practice how to implement the models in the wild. The implementation is gonna be built in Tensorflow and OpenAI "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/gym"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "gym"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " environment. The full version of the code in this tutorial is available in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/deep-reinforcement-learning-gym"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "[lilian/deep-reinforcement-learning-gym]"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-b893e29af1d0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Environment Setup"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "list-065e2b38e193",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-bb6580ce5b45",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Make sure you have "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://docs.brew.sh/Installation"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Homebrew"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " installed:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-6798dfcac906",
+        "type": "code",
+        "attrs": {
+          "code": "/usr/bin/ruby -e \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)\"",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "list-30e20044af84",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-c78581ed3b09",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "I would suggest starting a virtualenv for your development. It makes life so much easier when you have multiple projects with conflicting requirements; i.e. one works in Python 2.7 while the other is only compatible with Python 3.5+."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-ecb94d7a2100",
+        "type": "code",
+        "attrs": {
+          "code": "# Install python virtualenv\nbrew install pyenv-virtualenv\n# Create a virtual environment of any name you like with Python 3.6.4 support\npyenv virtualenv 3.6.4 workspace\n# Activate the virtualenv named \"workspace\"\npyenv activate workspace",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "paragraph-6d4bace23134",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "[*] For every new installation below, please make sure you are in the virtualenv."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-d1eca855d047",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-a6d103d5fa94",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Install OpenAI gym according to the "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/openai/gym#installation"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "instruction"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". For a minimal installation, run:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-91a2fa4967aa",
+        "type": "code",
+        "attrs": {
+          "code": "git clone https://github.com/openai/gym.git \ncd gym \npip install -e .",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "paragraph-551432bf9b1d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If you are interested in playing with Atari games or other advanced packages, please continue to get a couple of system packages installed."
+          }
+        ]
+      },
+      {
+        "id": "code-f71a46ca65d8",
+        "type": "code",
+        "attrs": {
+          "code": "brew install cmake boost boost-python sdl2 swig wget",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "paragraph-7085296a9950",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For Atari, go to the gym directory and pip install it. This "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://alvinwan.com/installing-arcade-learning-environment-with-python3-on-macosx/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is pretty helpful if you have troubles with ALE (arcade learning environment) installation."
+          }
+        ]
+      },
+      {
+        "id": "code-de26d2e1c730",
+        "type": "code",
+        "attrs": {
+          "code": "pip install -e '.[atari]'",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "list-b7f5648b0734",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-807e0c8ac917",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Finally clone the “playground” code and install the requirements."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-e9b633f53a31",
+        "type": "code",
+        "attrs": {
+          "code": "git clone git@github.com:lilianweng/deep-reinforcement-learning-gym.git\ncd deep-reinforcement-learning-gym\npip install -e .  # install the \"playground\" project.\npip install -r requirements.txt  # install required packages.",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "heading-ad844fd410ff",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Gym Environment"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-85f54d9ac327",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://gym.openai.com/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "OpenAI Gym"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " toolkit provides a set of physical simulation environments, games, and robot simulators that we can play with and design reinforcement learning agents for. An environment object can be initialized by "
+          },
+          {
+            "type": "inline_code",
+            "text": "gym.make(\"{environment name}\""
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "code-b04e8b6795cb",
+        "type": "code",
+        "attrs": {
+          "code": "import gym\nenv = gym.make(\"MsPacman-v0\")",
+          "language": "python"
+        }
+      },
+      {
+        "id": "image-5e8a207f722d",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/pacman-original.gif",
+          "alt": "(Image source: tf.gather() docs )"
+        }
+      },
+      {
+        "id": "paragraph-d909d32f73da",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The formats of action and observation of an environment are defined by "
+          },
+          {
+            "type": "inline_code",
+            "text": "env.action_space"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_code",
+            "text": "env.observation_space"
+          },
+          {
+            "type": "text",
+            "text": ", respectively."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49d16750d64d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Types of gym "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://gym.openai.com/docs/#spaces"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "spaces"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "list-986eb36c412f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-af4146733453",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_code",
+                "text": "gym.spaces.Discrete(n)"
+              },
+              {
+                "type": "text",
+                "text": ": discrete values from 0 to n-1."
+              }
+            ]
+          },
+          {
+            "id": "list-item-64e414a84624",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_code",
+                "text": "gym.spaces.Box"
+              },
+              {
+                "type": "text",
+                "text": ": a multi-dimensional vector of numeric values, the upper and lower bounds of each dimension are defined by "
+              },
+              {
+                "type": "inline_code",
+                "text": "Box.low"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_code",
+                "text": "Box.high"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9b9811a77aa7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We interact with the env through two major api calls:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cd69c47f0755",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "inline_code",
+                "text": "ob = env.reset()"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-de6cebac39de",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-6ea712f2530f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Resets the env to the original setting."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6d3c3b4a5c14",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Returns the initial observation."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-55ab8ce4eb93",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "inline_code",
+                "text": "ob_next, reward, done, info = env.step(action)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-ed3fd80ef060",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-da57baf42b85",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Applies one action in the env which should be compatible with "
+              },
+              {
+                "type": "inline_code",
+                "text": "env.action_space"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d8e8e43ddc8b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Gets back the new observation "
+              },
+              {
+                "type": "inline_code",
+                "text": "ob_next"
+              },
+              {
+                "type": "text",
+                "text": " (env.observation_space), a reward (float), a "
+              },
+              {
+                "type": "inline_code",
+                "text": "done"
+              },
+              {
+                "type": "text",
+                "text": " flag (bool), and other meta information (dict). If "
+              },
+              {
+                "type": "inline_code",
+                "text": "done=True"
+              },
+              {
+                "type": "text",
+                "text": ", the episode is complete and we should reset the env to restart. Read more "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://gym.openai.com/docs/#observations"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "here"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-0122df4d48a1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Naive Q-Learning"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-4df9b488c56e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#q-learning-off-policy-td-control"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Q-learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Watkins & Dayan, 1992) learns the action value (“Q-value”) and update it according to the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#bellman-equations"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bellman equation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The key point is while estimating what is the next action, it does not follow the current policy but rather adopt the best Q value (the part in red) independently."
+          }
+        ]
+      },
+      {
+        "id": "math-83eebc003e25",
+        "type": "math",
+        "attrs": {
+          "latex": "Q(s, a) \\leftarrow (1 - \\alpha) Q(s, a) + \\alpha (r + \\gamma \\color{red}{\\max_{a' \\in \\mathcal{A}} Q(s', a')})"
+        }
+      },
+      {
+        "id": "paragraph-3a591d9cee2c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In a naive implementation, the Q value for all (s, a) pairs can be simply tracked in a dict. No complicated machine learning model is involved yet."
+          }
+        ]
+      },
+      {
+        "id": "code-84ee1b3457a6",
+        "type": "code",
+        "attrs": {
+          "code": "from collections import defaultdict\nQ = defaultdict(float)\ngamma = 0.99  # Discounting factor\nalpha = 0.5  # soft update param\n\nenv = gym.make(\"CartPole-v0\")\nactions = range(env.action_space)\n\ndef update_Q(s, r, a, s_next, done):\n    max_q_next = max([Q[s_next, a] for a in actions]) \n    # Do not include the next state's value if currently at the terminal state.\n    Q[s, a] += alpha * (r + gamma * max_q_next * (1.0 - done) - Q[s, a])",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-85f3368e3dbc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Most gym environments have a multi-dimensional continuous observation space ("
+          },
+          {
+            "type": "inline_code",
+            "text": "gym.spaces.Box"
+          },
+          {
+            "type": "text",
+            "text": "). To make sure our Q dictionary will not explode by trying to memorize an infinite number of keys, we apply a wrapper to discretize the observation. The concept of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/gym/tree/master/gym/wrappers"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "wrappers"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is very powerful, with which we are capable to customize observation, action, step function, etc. of an env. No matter how many wrappers are applied, "
+          },
+          {
+            "type": "inline_code",
+            "text": "env.unwrapped"
+          },
+          {
+            "type": "text",
+            "text": " always gives back the internal original environment object."
+          }
+        ]
+      },
+      {
+        "id": "code-68c40732e0b5",
+        "type": "code",
+        "attrs": {
+          "code": "import gym\n\nclass DiscretizedObservationWrapper(gym.ObservationWrapper):\n    \"\"\"This wrapper converts a Box observation into a single integer.\n    \"\"\"\n    def __init__(self, env, n_bins=10, low=None, high=None):\n        super().__init__(env)\n        assert isinstance(env.observation_space, Box)\n\n        low = self.observation_space.low if low is None else low\n        high = self.observation_space.high if high is None else high\n\n        self.n_bins = n_bins\n        self.val_bins = [np.linspace(l, h, n_bins + 1) for l, h in\n                         zip(low.flatten(), high.flatten())]\n        self.observation_space = Discrete(n_bins ** low.flatten().shape[0])\n\n    def _convert_to_one_number(self, digits):\n        return sum([d * ((self.n_bins + 1) ** i) for i, d in enumerate(digits)])\n\n    def observation(self, observation):\n        digits = [np.digitize([x], bins)[0]\n                  for x, bins in zip(observation.flatten(), self.val_bins)]\n        return self._convert_to_one_number(digits)\n\n\nenv = DiscretizedObservationWrapper(\n    env, \n    n_bins=8, \n    low=[-2.4, -2.0, -0.42, -3.5], \n    high=[2.4, 2.0, 0.42, 3.5]\n)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-79a83f1dad47",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s plug in the interaction with a gym env and update the Q function every time a new transition is generated. When picking the action, we use ε-greedy to force exploration."
+          }
+        ]
+      },
+      {
+        "id": "code-1659ed152d88",
+        "type": "code",
+        "attrs": {
+          "code": "import gym\nimport numpy as np\nn_steps = 100000\nepsilon = 0.1  # 10% chances to apply a random action\n\ndef act(ob):\n    if np.random.random() < epsilon:\n        # action_space.sample() is a convenient function to get a random action\n        # that is compatible with this given action space.\n        return env.action_space.sample()\n\n    # Pick the action with highest q value.\n    qvals = {a: q[state, a] for a in actions}\n    max_q = max(qvals.values())\n    # In case multiple actions have the same maximum q value.\n    actions_with_max_q = [a for a, q in qvals.items() if q == max_q]\n    return np.random.choice(actions_with_max_q)\n\nob = env.reset()\nrewards = []\nreward = 0.0\n\nfor step in range(n_steps):\n    a = act(ob)\n    ob_next, r, done, _ = env.step(a)\n    update_Q(ob, r, a, ob_next, done)\n    reward += r\n    if done:\n        rewards.append(reward)\n        reward = 0.0\n        ob = env.reset()\n    else:\n        ob = ob_next",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-1f3e7bb27340",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Often we start with a high "
+          },
+          {
+            "type": "inline_code",
+            "text": "epsilon"
+          },
+          {
+            "type": "text",
+            "text": " and gradually decrease it during the training, known as “epsilon annealing”. The full code of "
+          },
+          {
+            "type": "inline_code",
+            "text": "QLearningPolicy"
+          },
+          {
+            "type": "text",
+            "text": " is available "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/deep-reinforcement-learning-gym/blob/master/playground/policies/qlearning.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-0551d64de8e8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep Q-Network"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-cbe4772f15cf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#deep-q-network"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Deep Q-network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a seminal piece of work to make the training of Q-learning more stable and more data-efficient, when the Q value is approximated with a nonlinear function. Two key ingredients are experience replay and a separately updated target network."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7cfda813ff6f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The main loss function looks like the following,"
+          }
+        ]
+      },
+      {
+        "id": "math-11e58f099164",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& Y(s, a, r, s') = r + \\gamma \\max_{a'} Q_{\\theta^{-}}(s', a') \\\\\n& \\mathcal{L}(\\theta) = \\mathbb{E}_{(s, a, r, s') \\sim U(D)} \\Big[ \\big( Y(s, a, r, s') - Q_\\theta(s, a) \\big)^2 \\Big]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-a8e98047db5c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Q network can be a multi-layer dense neural network, a convolutional network, or a recurrent network, depending on the problem. In the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/deep-reinforcement-learning-gym/blob/master/playground/policies/dqn.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "full implementation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of the DQN policy, it is determined by the "
+          },
+          {
+            "type": "inline_code",
+            "text": "model_type"
+          },
+          {
+            "type": "text",
+            "text": " parameter, one of (“dense”, “conv”, “lstm”)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-96d026c5121a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the following example,  I’m using a 2-layer densely connected neural network to learn Q values for the cart pole balancing problem."
+          }
+        ]
+      },
+      {
+        "id": "code-197160ddd842",
+        "type": "code",
+        "attrs": {
+          "code": "import gym\nenv = gym.make('CartPole-v1')\n# The observation space is `Box(4,)`, a 4-element vector.\nobservation_size = env.observation_space.shape[0]",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-1d2340e64c67",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We have a helper function for creating the networks below:"
+          }
+        ]
+      },
+      {
+        "id": "code-085dec40b263",
+        "type": "code",
+        "attrs": {
+          "code": "import tensorflow as tf\ndef dense_nn(inputs, layers_sizes, scope_name):\n    \"\"\"Creates a densely connected multi-layer neural network.\n    inputs: the input tensor\n    layers_sizes (list<int>): defines the number of units in each layer. The output \n        layer has the size layers_sizes[-1].\n    \"\"\"\n    with tf.variable_scope(scope_name):\n        for i, size in enumerate(layers_sizes):\n            inputs = tf.layers.dense(\n                inputs,\n                size,\n                # Add relu activation only for internal layers.\n                activation=tf.nn.relu if i < len(layers_sizes) - 1 else None,\n                kernel_initializer=tf.contrib.layers.xavier_initializer(),\n                name=scope_name + '_l' + str(i)\n            )\n    return inputs",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-05b1efab64b4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Q-network and the target network are updated with a batch of transitions (state, action, reward, state_next, done_flag). The input tensors are:"
+          }
+        ]
+      },
+      {
+        "id": "code-f2c8ca7bba12",
+        "type": "code",
+        "attrs": {
+          "code": "batch_size = 32  # A tunable hyperparameter.\n\nstates = tf.placeholder(tf.float32, shape=(batch_size, observation_size), name='state')\nstates_next = tf.placeholder(tf.float32, shape=(batch_size, observation_size), name='state_next')\nactions = tf.placeholder(tf.int32, shape=(batch_size,), name='action')\nrewards = tf.placeholder(tf.float32, shape=(batch_size,), name='reward')\ndone_flags = tf.placeholder(tf.float32, shape=(batch_size,), name='done')",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-b2b359b4ab14",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We have two networks of the same structure. Both have the same network architectures with the state observation as the inputs and Q values over all the actions as the outputs."
+          }
+        ]
+      },
+      {
+        "id": "code-6c9317fce922",
+        "type": "code",
+        "attrs": {
+          "code": "q = dense(states, [32, 32, 2], name='Q_primary')\nq_target = dense(states_next, [32, 32, 2], name='Q_target')",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-db452f1ed4ab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The target network “Q_target” takes the "
+          },
+          {
+            "type": "inline_code",
+            "text": "states_next"
+          },
+          {
+            "type": "text",
+            "text": " tensor as the input, because we use its prediction to select the optimal next state in the Bellman equation."
+          }
+        ]
+      },
+      {
+        "id": "code-a09d2949a40d",
+        "type": "code",
+        "attrs": {
+          "code": "# The prediction by the primary Q network for the actual actions.\naction_one_hot = tf.one_hot(actions, act_size, 1.0, 0.0, name='action_one_hot')\npred = tf.reduce_sum(q * action_one_hot, reduction_indices=-1, name='q_acted')\n\n# The optimization target defined by the Bellman equation and the target network.\nmax_q_next_by_target = tf.reduce_max(q_target, axis=-1)\ny = rewards + (1. - done_flags) * gamma * max_q_next_by_target\n\n# The loss measures the mean squared error between prediction and target.\nloss = tf.reduce_mean(tf.square(pred - tf.stop_gradient(y)), name=\"loss_mse_train\")\noptimizer = tf.train.AdamOptimizer(0.001).minimize(loss, name=\"adam_optim\")",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-3bac431b7c3b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/stop_gradient"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.stop_gradient()"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on the target y, because the target network should stay fixed during the loss-minimizing gradient update."
+          }
+        ]
+      },
+      {
+        "id": "image-dad89444ad56",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/dqn-tensorboard-graph.png",
+          "alt": "(Image source: tf.gather() docs )"
+        }
+      },
+      {
+        "id": "paragraph-d605e537bd09",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The target network is updated by copying the primary Q network parameters over every "
+          },
+          {
+            "type": "inline_code",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " number of steps (“hard update”) or polyak averaging towards the primary network (“soft update”)"
+          }
+        ]
+      },
+      {
+        "id": "code-35d906b8ec8f",
+        "type": "code",
+        "attrs": {
+          "code": "# Get all the variables in the Q primary network.\nq_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=\"Q_primary\")\n# Get all the variables in the Q target network.\nq_target_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=\"Q_target\")\nassert len(q_vars) == len(q_target_vars)\n\ndef update_target_q_net_hard():\n    # Hard update\n    sess.run([v_t.assign(v) for v_t, v in zip(q_target_vars, q_vars)])\n\ndef update_target_q_net_soft(tau=0.05):\n    # Soft update: polyak averaging.\n    sess.run([v_t.assign(v_t * (1. - tau) + v * tau) for v_t, v in zip(q_target_vars, q_vars)])",
+          "language": "python"
+        }
+      },
+      {
+        "id": "heading-6ce65d07692c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Double Q-Learning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4cd86bc0ada2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we look into the standard form of the Q value target, "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y(s, a) = r + \\gamma \\max_{a’ \\in \\mathcal{A}} Q_\\theta (s’, a’)"
+          },
+          {
+            "type": "text",
+            "text": ", it is easy to notice that we use "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " to select the best next action at state s’ and then apply the action value predicted by the same "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". This two-step reinforcing procedure could potentially lead to overestimation of an (already) overestimated value, further leading to training instability. The solution proposed by double Q-learning ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/3964-double-q-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hasselt, 2010"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is to decouple the action selection and action value estimation by using two Q networks, "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_1"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_2"
+          },
+          {
+            "type": "text",
+            "text": ": when "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_1"
+          },
+          {
+            "type": "text",
+            "text": " is being updated, "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_2"
+          },
+          {
+            "type": "text",
+            "text": " decides the best next action, and vice versa."
+          }
+        ]
+      },
+      {
+        "id": "math-1414137f5fa4",
+        "type": "math",
+        "attrs": {
+          "latex": "Y_1(s, a, r, s') = r + \\gamma Q_1 (s', \\arg\\max_{a' \\in \\mathcal{A}}Q_2(s', a'))\\\\\nY_2(s, a, r, s') = r + \\gamma Q_2 (s', \\arg\\max_{a' \\in \\mathcal{A}}Q_1(s', a'))"
+        }
+      },
+      {
+        "id": "paragraph-f5cc0622abc9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To incorporate double Q-learning into DQN, the minimum modification ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1509.06461.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hasselt, Guez, & Silver, 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is to use the primary Q network to select the action while the action value is estimated by the target network:"
+          }
+        ]
+      },
+      {
+        "id": "math-284ed2be898d",
+        "type": "math",
+        "attrs": {
+          "latex": "Y(s, a, r, s') = r + \\gamma Q_{\\theta^{-}}(s', \\arg\\max_{a' \\in \\mathcal{A}} Q_\\theta(s', a'))"
+        }
+      },
+      {
+        "id": "paragraph-46517a6fbac4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the code, we add a new tensor for getting the action selected by the primary Q network as the input and a tensor operation for selecting this action."
+          }
+        ]
+      },
+      {
+        "id": "code-411d75912b69",
+        "type": "code",
+        "attrs": {
+          "code": "actions_next = tf.placeholder(tf.int32, shape=(None,), name='action_next')\nactions_selected_by_q = tf.argmax(q, axis=-1, name='action_selected')",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-222e604c7184",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The prediction target y in the loss function becomes:"
+          }
+        ]
+      },
+      {
+        "id": "code-f8e188a6d999",
+        "type": "code",
+        "attrs": {
+          "code": "actions_next_flatten = actions_next + tf.range(0, batch_size) * q_target.shape[1]\nmax_q_next_target = tf.gather(tf.reshape(q_target, [-1]), actions_next_flatten)\ny = rewards + (1. - done_flags) * gamma * max_q_next_by_target",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-390713b2195f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here I used "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/gather"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.gather()"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to select the action values of interests."
+          }
+        ]
+      },
+      {
+        "id": "image-83debb27f7e7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/tf_gather.png",
+          "alt": "(Image source: tf.gather() docs )"
+        }
+      },
+      {
+        "id": "paragraph-83a1b72d7225",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During the episode rollout, we compute the "
+          },
+          {
+            "type": "inline_code",
+            "text": "actions_next"
+          },
+          {
+            "type": "text",
+            "text": " by feeding the next states’ data into the "
+          },
+          {
+            "type": "inline_code",
+            "text": "actions_selected_by_q"
+          },
+          {
+            "type": "text",
+            "text": " operation."
+          }
+        ]
+      },
+      {
+        "id": "code-61c22f666831",
+        "type": "code",
+        "attrs": {
+          "code": "# batch_data is a dict with keys, ‘s', ‘a', ‘r', ‘s_next' and ‘done', containing a batch of transitions.\nactions_next = sess.run(actions_selected_by_q, {states: batch_data['s_next']})",
+          "language": "python"
+        }
+      },
+      {
+        "id": "heading-d2e7507f55c6",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Dueling Q-Network"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4d4a3051996e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The dueling Q-network ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1511.06581.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is equipped with an enhanced network architecture: the output layer branches out into two heads, one for predicting state value, V, and the other for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-function"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "advantage"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", A. The Q-value is then reconstructed, "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q(s, a) = V(s) + A(s, a)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-eb925ab5bc4f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nA(s, a) &= Q(s, a) - V(s)\\\\\nV(s) &= \\sum_a Q(s, a) \\pi(a \\vert s) = \\sum_a (V(s) + A(s, a)) \\pi(a \\vert s) = V(s) + \\sum_a A(s, a)\\pi(a \\vert s)\\\\\n\\text{Thus, }& \\sum_a A(s, a)\\pi(a \\vert s) = 0\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-25b0293ec606",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To make sure the estimated advantage values sum up to zero, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sum_a A(s, a)\\pi(a \\vert s) = 0"
+          },
+          {
+            "type": "text",
+            "text": ", we deduct the mean value from the prediction."
+          }
+        ]
+      },
+      {
+        "id": "math-e6b462632f0f",
+        "type": "math",
+        "attrs": {
+          "latex": "Q(s, a) = V(s) + (A(s, a) - \\frac{1}{|\\mathcal{A}|} \\sum_a A(s, a))"
+        }
+      },
+      {
+        "id": "paragraph-8a7112ef6d47",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The code change is straightforward:"
+          }
+        ]
+      },
+      {
+        "id": "code-6e1d4c6afa37",
+        "type": "code",
+        "attrs": {
+          "code": "q_hidden = dense_nn(states, [32], name='Q_primary_hidden')\nadv = dense_nn(q_hidden, [32, env.action_space.n], name='Q_primary_adv')\nv = dense_nn(q_hidden, [32, 1], name='Q_primary_v')\n\n# Average dueling\nq = v + (adv - tf.reduce_mean(adv, reduction_indices=1, keepdims=True))",
+          "language": "python"
+        }
+      },
+      {
+        "id": "image-2445d2f0339b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/dueling-q-network.png",
+          "alt": "(Image source: Wang et al., 2016 )"
+        }
+      },
+      {
+        "id": "paragraph-a86741895ad1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/deep-reinforcement-learning-gym/blob/master/playground/policies/dqn.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for the complete flow."
+          }
+        ]
+      },
+      {
+        "id": "heading-60f73880d24f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Monte-Carlo Policy Gradient"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-bc3f50132a66",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I reviewed a number of popular policy gradient methods in my "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "last post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Monte-Carlo policy gradient, also known as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#reinforce"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "REINFORCE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", is a classic on-policy method that learns the policy model explicitly. It uses the return estimated from a full on-policy trajectory and updates the policy parameters with policy gradient."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-67e6e8090384",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The returns are computed during rollouts and then fed into the Tensorflow graph as inputs."
+          }
+        ]
+      },
+      {
+        "id": "code-df31ac9b4175",
+        "type": "code",
+        "attrs": {
+          "code": "# Inputs\nstates = tf.placeholder(tf.float32, shape=(None, obs_size), name='state')\nactions = tf.placeholder(tf.int32, shape=(None,), name='action')\nreturns = tf.placeholder(tf.float32, shape=(None,), name='return')",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-cf66eddb12e7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The policy network is contructed. We update the policy parameters by minimizing the loss function, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L} = - (G_t - V(s)) \\log \\pi(a \\vert s)"
+          },
+          {
+            "type": "text",
+            "text": ".\n"
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/nn/sparse_softmax_cross_entropy_with_logits"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.nn.sparse_softmax_cross_entropy_with_logits()"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " asks for the raw logits as inputs, rather then the probabilities after softmax, and that’s why we do not have a softmax layer on top of the policy network."
+          }
+        ]
+      },
+      {
+        "id": "code-f8de3179e0b4",
+        "type": "code",
+        "attrs": {
+          "code": "# Policy network\npi = dense_nn(states, [32, 32, env.action_space.n], name='pi_network')\nsampled_actions = tf.squeeze(tf.multinomial(pi, 1))  # For sampling actions according to probabilities.\n\nwith tf.variable_scope('pi_optimize'):\n    loss_pi = tf.reduce_mean(\n        returns * tf.nn.sparse_softmax_cross_entropy_with_logits(\n            logits=pi, labels=actions), name='loss_pi')\n    optim_pi = tf.train.AdamOptimizer(0.001).minimize(loss_pi, name='adam_optim_pi')",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-bb88e82237e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During the episode rollout, the return is calculated as follows:"
+          }
+        ]
+      },
+      {
+        "id": "code-e2e060ed8a40",
+        "type": "code",
+        "attrs": {
+          "code": "# env = gym.make(...)\n# gamma = 0.99\n# sess = tf.Session(...)\n\ndef act(ob):\n    return sess.run(sampled_actions, {states: [ob]})\n\nfor _ in range(n_episodes):\n    ob = env.reset()\n    done = False\n\n    obs = []\n    actions = []\n    rewards = []\n    returns = []\n\n    while not done:\n        a = act(ob)\n        new_ob, r, done, info = env.step(a)\n\n        obs.append(ob)\n        actions.append(a)\n        rewards.append(r)\n        ob = new_ob\n\n    # Estimate returns backwards.\n    return_so_far = 0.0\n    for r in rewards[::-1]:\n        return_so_far = gamma * return_so_far + r\n        returns.append(return_so_far)\n\n    returns = returns[::-1]\n\n    # Update the policy network with the data from one episode.\n    sess.run([optim_pi], feed_dict={\n        states: np.array(obs),\n        actions: np.array(actions),\n        returns: np.array(returns),\n    })",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-54712f905a35",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The full implementation of REINFORCE is "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/deep-reinforcement-learning-gym/blob/master/playground/policies/reinforce.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-e581f013760f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Actor-Critic"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b917c622341b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#actor-critic"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "actor-critic"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " algorithm learns two models at the same time, the actor for learning the best policy and the critic for estimating the state value."
+          }
+        ]
+      },
+      {
+        "id": "list-f84c102380d8",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-09ec70ee9a90",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize the actor network, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi(a \\vert s)"
+              },
+              {
+                "type": "text",
+                "text": " and the critic, "
+              },
+              {
+                "type": "inline_math",
+                "text": "V(s)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-1c26971bc443",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Collect a new transition (s, a, r, s’): Sample the action "
+              },
+              {
+                "type": "inline_math",
+                "text": "a \\sim \\pi(a \\vert s)"
+              },
+              {
+                "type": "text",
+                "text": " for the current state s, and get the reward r and the next state s'."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6c59e4e4975d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Compute the TD target during episode rollout, "
+              },
+              {
+                "type": "inline_math",
+                "text": "G_t = r + \\gamma V(s’)"
+              },
+              {
+                "type": "text",
+                "text": " and TD error, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\delta_t = r + \\gamma V(s’) - V(s)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4cf03aa36171",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Update the critic network by minimizing the critic loss: "
+              },
+              {
+                "type": "inline_math",
+                "text": "L_c = (V(s) - G_t)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a71100a05753",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Update the actor network by minimizing the actor loss: "
+              },
+              {
+                "type": "inline_math",
+                "text": "L_a = - \\delta_t \\log \\pi(a \\vert s)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9d1e02fcec97",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Set s’ = s and repeat step 2.-5."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-408ceb0600e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Overall the implementation looks pretty similar to REINFORCE with an extra critic network. The full implementation is here."
+          }
+        ]
+      },
+      {
+        "id": "code-cc08fba25f53",
+        "type": "code",
+        "attrs": {
+          "code": "# Inputs\nstates = tf.placeholder(tf.float32, shape=(None, observation_size), name='state')\nactions = tf.placeholder(tf.int32, shape=(None,), name='action')\ntd_targets = tf.placeholder(tf.float32, shape=(None,), name='td_target')\n\n# Actor: action probabilities\nactor = dense_nn(states, [32, 32, env.action_space.n], name='actor')\n\n# Critic: action value (Q-value)\ncritic = dense_nn(states, [32, 32, 1], name='critic')\n\naction_ohe = tf.one_hot(actions, act_size, 1.0, 0.0, name='action_one_hot')\npred_value = tf.reduce_sum(critic * action_ohe, reduction_indices=-1, name='q_acted')\ntd_errors = td_targets - tf.reshape(pred_value, [-1])\n\nwith tf.variable_scope('critic_train'):\n    loss_c = tf.reduce_mean(tf.square(td_errors))\n    optim_c = tf.train.AdamOptimizer(0.01).minimize(loss_c)\n\nwith tf.variable_scope('actor_train'):\n    loss_a = tf.reduce_mean(\n        tf.stop_gradient(td_errors) * tf.nn.sparse_softmax_cross_entropy_with_logits(\n            logits=actor, labels=actions),\n        name='loss_actor')\n    optim_a = tf.train.AdamOptimizer(0.01).minimize(loss_a)\n\ntrain_ops = [optim_c, optim_a]",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-f39a360b0858",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The tensorboard graph is always helpful:"
+          }
+        ]
+      },
+      {
+        "id": "image-6148b11fede7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/actor-critic-tensorboard-graph.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-4bd1e0d4058c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Tensorflow API Docs"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6f41d6dcfafc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Christopher JCH Watkins, and Peter Dayan. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://link.springer.com/content/pdf/10.1007/BF00992698.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Q-learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Machine learning 8.3-4 (1992): 279-292."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1ea386521920",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Hado Van Hasselt, Arthur Guez, and David Silver. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1509.06461.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Deep Reinforcement Learning with Double Q-Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AAAI. Vol. 16. 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-747f0f257506",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Hado van Hasselt. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/3964-double-q-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Double Q-learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS, 23:2613–2621, 2010."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e4a6dc658234",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Ziyu Wang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1511.06581.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dueling network architectures for deep reinforcement learning."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML. 2016."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "implementing-deep-reinforcement-learning-models-with-tensorflow-openai-gym",
+    "source_slug": "2018-05-05-drl-implementation",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 9,
+      "math": 6,
+      "image": 5,
+      "table": 0,
+      "code": 24
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/pacman-original.gif",
+      "alt": "(Image source: tf.gather() docs )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/dqn-tensorboard-graph.png",
+      "alt": "(Image source: tf.gather() docs )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/tf_gather.png",
+      "alt": "(Image source: tf.gather() docs )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/dueling-q-network.png",
+      "alt": "(Image source: Wang et al., 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-05-05-drl-implementation/actor-critic-tensorboard-graph.png",
+      "alt": ""
+    }
+  ]
+}

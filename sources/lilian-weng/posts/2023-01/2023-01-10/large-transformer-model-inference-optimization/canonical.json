@@ -1,0 +1,6105 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2023-01-10-inference-optimization",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2023-01-10T10:00:00-07:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:22ea5f39e41e5bfe2776ff404428905b688b806bcc802ec33e890bc8d3b558a9",
+    "fetched_at": "2026-07-14T02:05:39.605379+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Large Transformer Model Inference Optimization",
+    "title_en": "Large Transformer Model Inference Optimization",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-18c90b99b59c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2023-01-24: add a small section on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Distillation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".]"
+          },
+          {
+            "type": "line_break"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a06309552da5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Large transformer models are mainstream nowadays, creating SoTA results for a variety of tasks. They are powerful but very expensive to train and use. The extremely high inference cost, in both time and memory, is a big bottleneck for adopting a powerful transformer for solving real-world tasks at scale."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f672a924e2c2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Why is it hard to run inference for large transformer models?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Besides the increasing size of SoTA models, there are two main factors contributing to the inference challenge ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.05102"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pope et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "list-1e686297863e",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-eb36db1ba2b2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Large memory footprint"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Both model parameters and intermediate states are needed in memory at inference time. For example,\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-d7ef5348f4ee",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-e411878275d0",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The KV cache should be stored in memory during decoding time; E.g. For a batch size of 512 and context length of 2048, the KV cache totals 3TB, that is 3x the model size (!)."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-4015e43f4a69",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Inference cost from the attention mechanism scales quadratically with input sequence length."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-4f9fcaf05678",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Low parallelizability."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Inference generation is executed in an autoregressive fashion, making the decoding process hard to parallel."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7b78def244cf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this post, we will look into several approaches for making transformer inference more efficient. Some are general network compression methods, while others are specific to transformer architecture."
+          }
+        ]
+      },
+      {
+        "id": "heading-77a709c70d09",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Methods Overview"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-bbd5e594572c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We in general consider the following as goals for model inference optimization:"
+          }
+        ]
+      },
+      {
+        "id": "list-8539e75a256a",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-de522975b01d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reduce the memory footprint of the model by using fewer GPU devices and less GPU memory;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-5b39211e3418",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reduce the desired computation complexity by lowering the number of FLOPs needed;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c8a51669d521",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reduce the inference latency and make things run faster."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8b405fa5c35f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Several methods can be used to make inference cheaper in memory or/and faster in time."
+          }
+        ]
+      },
+      {
+        "id": "list-aa91202c4c20",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-9e1511e05971",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Apply various "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "parallelism"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to scale up the model across a large number of GPUs. Smart parallelism of model components and data makes it possible to run a model of trillions of parameters."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ad5b223cf19c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Memory "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "offloading"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to offload temporarily unused data to the CPU and read them back when needed later. This helps with memory usage but causes higher latency."
+              }
+            ]
+          },
+          {
+            "id": "list-item-39fd826a622d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Smart batching strategy; E.g. "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/bytedance/effective_transformer"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "EffectiveTransformer"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " packs consecutive sequences together to remove padding within one batch."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d901b877ffc1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Network "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "compression"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " techniques, such as "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "pruning, quantization, distillation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". A model of smaller size, in terms of parameter count or bitwidth, should demand less memory and run faster."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5bdcfb10a31f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Improvement specific to a target model architecture. Many "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "architectural changes"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", especially those for attention layers, help with transformer decoding speed."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f50d151b648b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the previous post on large model training"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on different types of training parallelism and memory saving designs including CPU memory offloading. This post focuses on network compression techniques and architecture-specific improvement for transformer models."
+          }
+        ]
+      },
+      {
+        "id": "heading-971829949c2f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Distillation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-6dd796d74b7e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Knowledge Distillation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "KD"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1503.02531"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hinton et al. 2015"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.05525"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gou et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a straightforward way to build a smaller, cheaper model ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“student model”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") to speed up inference by transferring skills from a pre-trained expensive model ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“teacher model”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") into the student. There is no much restriction on how the student architecture should be constructed, except for a matched output space with the teacher in order to construct a proper learning objective."
+          }
+        ]
+      },
+      {
+        "id": "image-ffe663d2c5df",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/distillation.png",
+          "alt": "The generic framework of teacher-student knowledge distillation training. (Image source: Gou et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-e0e298dba0e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a dataset, a student model is trained to mimic outputs of a teacher via distillation loss. Usually a neural network has a softmax layer; For example, a LLM outputs a probability distribution over tokens. Let’s denote the logits layer right before softmax as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_t"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_s"
+          },
+          {
+            "type": "text",
+            "text": " for teacher and student models, respectively. The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "distillation loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " minimizes the difference between two softmax outputs with a high temperature "
+          },
+          {
+            "type": "inline_math",
+            "text": "T"
+          },
+          {
+            "type": "text",
+            "text": ". When ground truth labels "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{y}"
+          },
+          {
+            "type": "text",
+            "text": " are known, we can combine it with a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "supervised"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " learning objective between ground truth and the student’s soft logits using e.g. cross-entropy."
+          }
+        ]
+      },
+      {
+        "id": "math-7e7f3ec99b16",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{KD} = \\mathcal{L}_\\text{distll}(\\text{softmax}(\\mathbf{z}_t, T), \\text{softmax}(\\mathbf{z}_s, T)) + \\lambda\\mathcal{L}_\\text{CE}(\\mathbf{y}, \\mathbf{z}_s)"
+        }
+      },
+      {
+        "id": "paragraph-a363269d27f0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda"
+          },
+          {
+            "type": "text",
+            "text": " is a hyperparameter to balance between soft and hard learning objectives. A common choice for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_\\text{distll}"
+          },
+          {
+            "type": "text",
+            "text": " is KL divergence / cross entropy."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-675821772594",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A successful early trial is "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DistilBERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.01108"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sanh et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") that is able to reduce the parameters of a BERT by 40% while maintaining 97% performance of BERT on fine-tuned downstream tasks and running 71% faster. The loss of pre-training DistilBERT is a combination of soft distillation loss, supervised training loss (i.e. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#MLM"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Masked language modeling loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_\\text{MLM}"
+          },
+          {
+            "type": "text",
+            "text": " in the case of BERT) and a special "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "cosine embedding loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to align the hidden state vectors between teacher and student."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1f740f9414cf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Distillation can be easily combined with "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#quantization"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "quantization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#pruning"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "pruning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#sparsity"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "sparsification"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " techniques, where the teacher model is the original full-precision, dense model and the student is quantized, pruned, or trimmed to have higher sparsity level."
+          }
+        ]
+      },
+      {
+        "id": "heading-0d488b592131",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Quantization"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-890452d0673b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are two common approaches for applying quantization on a deep neural network:"
+          }
+        ]
+      },
+      {
+        "id": "list-0661a7c3b682",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-b452faa6a5e8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Post-Training Quantization (PTQ)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": A model is first trained to convergence and then we convert its weights to lower precision without more training. It is usually quite cheap to implement, in comparison to training."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f04ecf2b4a13",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Quantization-Aware Training (QAT)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Quantization is applied during pre-training or further fine-tuning. QAT is able to attain better performance but requires extra computation resources and access to representative training data."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d1ef3f8c8749",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We should be aware of the gap between theoretical optimal quantization strategy and the hardware kernel support. Due to the lack of GPU kernel support for certain types of matrix multiplication (e.g. INT4 x FP16), not all the methods below result in speedup for the actual inference."
+          }
+        ]
+      },
+      {
+        "id": "heading-87df5b3780d5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Challenges for Transformer Quantization"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d7cea387c353",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Many studies on Transformer model quantization have the same observation: A simple low-precision (e.g. 8-bit) post-training quantization leads to significant performance drop mainly due to the high dynamic ranges of activation and a naive activation quantization strategy fails to maintain the capacity."
+          }
+        ]
+      },
+      {
+        "id": "image-98b5b9b1932f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/quantization-experiment-table.png",
+          "alt": "Only quantizing model weights to 8-bit while keeping activation at full precision (`W8A32`) achieves much better results when activations are quantized to 8-bit irrespective of whether weights are in lower precision (`W8A8` and `W32A8`). (Image source: Bondarenko et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-b726960f6b2e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.12948"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bondarenko et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " observed in a small BERT model that FFN’s input and output have very different dynamic ranges due to strong outliers in the output tensor. Therefore per-tensor quantization for the FFN’s residual sum is likely to cause a notable error."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d30428553302",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As the model size continues to grow to billions of parameters, outlier features of high magnitude start to emerge in "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "all"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " transformer layers, causing failure of simple low-bit quantization. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2208.07339"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dettmers et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " observed such a phenomenon for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.01068"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "OPT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " models larger than 6.7B parameters. Larger models have more layers with extreme outliers and these outlier features have a significant impact on the model performance. The scale of activation outliers in a few dimensions can be ~100× larger than most of the other values."
+          }
+        ]
+      },
+      {
+        "id": "image-0011988d5989",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/OPT-models-outlier.png",
+          "alt": "The mean zero-shot accuracy over a set of language tasks (WinoGrande, HellaSwag, PIQA, LAMBADA) of OPT models of increasing sizes. (Image source: Dettmers et al. 2022 )"
+        }
+      },
+      {
+        "id": "heading-c9e901528737",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Post-training quantization (PTQ)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "heading-c0d5a7c81806",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mixed-precision quantization"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-884cec959a48",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The most straightforward approach for resolving the above quantization challenge is to implement quantization at different precision for weights vs activation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-01d5934b766c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GOBO ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.03842"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zadeh et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is one of the first models to apply post-training quantization on transformers (i.e. a small BERT model). It assumes that model weights of each layer follow a Gaussian distribution and therefore detects outliers by tracking mean and standard deviation per layer. Outlier features remain in original form, while other values are split into multiple bins and only corresponding bin indices of weights and the centroid values are stored."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-92399377bcb7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Based on the observation that only certain activation layers (e.g. residual connections after FFN) in BERT cause big performance drop, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.12948"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bondarenko et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " adopted mixed-precision quantization by using 16-bit quantization on problematic activations but 8-bit on others."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-57aff349cfb1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mixed-precision quantization in "
+          },
+          {
+            "type": "inline_code",
+            "text": "LLM.int8()"
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2208.07339"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dettmers et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is implemented via two mixed-precision decompositions:"
+          }
+        ]
+      },
+      {
+        "id": "list-3ba567de1de6",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-80bbba03a20b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Because matrix multiplication contains a set of independent inner products between row and column vectors, we can impose independent quantization per inner product: Each row and column are scaled by the absolution maximum values and then quantized to INT8."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4441b8185891",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Outlier activation features (e.g. 20x larger than other dimensions) remain in FP16 but they represent only a tiny fraction of total weights. How to identify outliers is empirical."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-7d03ef02834e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/LLM-int8.png",
+          "alt": "Two mixed-precision decompositions of `LLM.int8()`. (Image source: Dettmers et al. 2022 )"
+        }
+      },
+      {
+        "id": "heading-51aaed37751f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Quantization at fine-grained granularity"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "image-4aa6aef304af",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/quantization-granularity.png",
+          "alt": "Comparison of quantization at different granularity. $d$ is the model size / hidden state dimension and $h$ is the number of heads in one MHSA (multi-head self-attention) component."
+        }
+      },
+      {
+        "id": "paragraph-0c4cb46db163",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Naively quantizing the entire weight matrix in one layer (“per-tensor” or “per-layer” quantization) is easiest to implement but does not lead to good granularity of quantization."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-66c65bcf3190",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Q-BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.05840"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shen, Dong & Ye, et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") applied "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "group-wise quantization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to a fine-tuned BERT model, treating an individual matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " with respect to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "each head"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in MHSA (multi-head self-attention) as one group and then applies Hessian based mixed precision quantization."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f684397b0f23",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Per-embedding group (PEG)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " activation quantization was motivated by the observation that outlier values only appear in a few out of "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " (hidden state / model size) dimensions ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.12948"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bondarenko et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Per-embedding is pretty computationally expensive. In comparison, PEG quantization splits the activation tensor into several evenly sized groups along the embedding dimension where elements in the same group share quantization parameters. To ensure all outliers are grouped together, they apply a deterministic range-based permutation of embedding dimensions, where dimensions are sorted by their value ranges."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-887a0ac18316",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "ZeroQuant"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2206.01861"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yao et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") uses "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "group-wise quantization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for weights, same as in Q-BERT, and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "token-wise quantization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for activation. To avoid expensive quantization and de-quantization computation, ZeroQuant built customized "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "kernel"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fuse"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " quantization operation with its previous operator."
+          }
+        ]
+      },
+      {
+        "id": "heading-aaeebb66f15f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Second order information for quantization"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-c42e0930d8ba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Q-BERT ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.05840"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shen, Dong & Ye, et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") developed Hessian AWare Quantization (HAWQ) for its mixed-precision quantization. The motivation is that parameters with higher Hessian spectrum (i.e., larger top eigenvalues) are more sensitive to quantization and thus require higher precision. It is essentially a way to identify outliers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2cbd7b17a658",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In another viewpoint, the problem of quantization is an optimization problem. Given a weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}"
+          },
+          {
+            "type": "text",
+            "text": " and an input matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{X}"
+          },
+          {
+            "type": "text",
+            "text": " , we want to find a quantized weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\mathbf{W}}"
+          },
+          {
+            "type": "text",
+            "text": " to minimize the MSE:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8419ce089602",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\hat{\\mathbf{W}}^* = {\\arg\\min}_{\\hat{\\mathbf{W}}} | \\mathbf{W}\\mathbf{X} - \\hat{\\mathbf{W}}\\mathbf{X}|\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c1fabaa2ce65",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "GPTQ"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.17323"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Frantar et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") treats the weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}"
+          },
+          {
+            "type": "text",
+            "text": " as a collection of row vectors "
+          },
+          {
+            "type": "inline_math",
+            "text": "{\\mathbf{w}}"
+          },
+          {
+            "type": "text",
+            "text": " and applies quantization to each row independently. GPTQ iteratively quantizes more weights that are selected greedily to minimize the quantization error. The update on selected weights has a closed-form formula, utilizing Hessian matrices. Read more details in the paper and the OBQ (Optimal Brain Quantization; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2208.11580"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Frantar & Alistarh 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") method if interested. GPTQ can reduce the bitwidth of weights in OPT-175B down to 3 or 4 bits without much performance loss, but it only applies to model weights not activation."
+          }
+        ]
+      },
+      {
+        "id": "heading-a27abff5a76f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Outlier smoothing"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-f44f2183428c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is known that activations are harder to quantize than weights in transformer models. "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "SmoothQuant"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.10438"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Xiao & Lin 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") proposed a smart solution to smooth outlier features from activations to weights via mathematically equivalent transformation and then enable quantization on both weights and activations ("
+          },
+          {
+            "type": "inline_code",
+            "text": "W8A8"
+          },
+          {
+            "type": "text",
+            "text": "). Because of this, SmoothQuant has better hardware efficiency than mixed-precision quantization."
+          }
+        ]
+      },
+      {
+        "id": "image-c31a949c1e83",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/SmoothQuant.png",
+          "alt": "SmoothQuant migrates the scale variance from activations to weights offline to reduce the difficulty of activation quantization. Both the resulting new weight and activation matrices are easy to quantize. (Image source: Xiao & Lin 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-977b47a59602",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Considering a per-channel smooth factor "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{s}"
+          },
+          {
+            "type": "text",
+            "text": ", SmoothQuant scales the weights according to:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-94b6c915e72c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\mathbf{Y} = (\\mathbf{X} \\text{diag}(\\mathbf{s})^{-1}) \\cdot (\\text{diag}(\\mathbf{s})\\mathbf{W}) = \\hat{\\mathbf{X}}\\hat{\\mathbf{W}}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-863f8b3ba893",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The smoothing factor can be easily fused into previous layers’ parameters offline. A hyperparameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " controls how much we migrate the quantization difficulty from activations to weights: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{s} = \\max (\\vert \\mathbf{X}_j \\vert)^\\alpha  / \\max( \\vert \\mathbf{W}_j \\vert )^{1-\\alpha}"
+          },
+          {
+            "type": "text",
+            "text": ". The paper found that "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha=0.5"
+          },
+          {
+            "type": "text",
+            "text": " is a sweet spot for many LLMs in the experiments. For models with more significant outliers in activation, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " can be adjusted to be larger."
+          }
+        ]
+      },
+      {
+        "id": "heading-0da6129ffef2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Quantization-aware training (QAT)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-be59cdb68c4b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Quantization-aware training fuses the quantization operation into the pre-training or fine-tuning process. It learns model weights in low-bit representation directly and leads to better performance at the cost of additional training time and computation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-93ead84a9e82",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The most straightforward approach is to "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "fine-tune"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " the model after quantization on a training dataset that is the same as or representative of the pre-training dataset. The training objective can be the same as the one for pre-training (e.g. NLL/MLM in general language model training) or specific to a downstream task that we care about (e.g. Cross entropy for classification)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aa5f69fa44e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another approach is to consider the full-precision model as the teacher and the lower-precision model as the student, and then optimize the low-precision model with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "distillation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " loss. Distillation usually doesn’t need to use the original dataset; E.g. Wikipedia dataset is a good choice and even random tokens can give decent performance gain. The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Layer-by-layer Knowledge Distillation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "LKD"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2206.01861"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yao et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") method quantizes the network layer by layer and uses its original, unquantized version as the teacher model. Given the same inputs, LKD minimizes the MSE between the multiplication with layer weights and the multiplication of quantized layer weights."
+          }
+        ]
+      },
+      {
+        "id": "heading-26aeb1f4e0af",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Pruning"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8736ddeee07a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Network pruning is to reduce the model size by trimming unimportant model weights or connections while the model capacity remains. It may or may not require re-training. Pruning can be "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "unstructured"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "structured"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "list-1aa4c360cea8",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-4fd3645e78c7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Unstructured pruning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is allowed to drop any weight or connection, so it does not retain the original network architecture. Unstructured pruning often does not work well with modern hardware and doesn’t lead to actual inference speedup."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c5b5886eed08",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Structured pruning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " aims to maintain the dense matrix multiplication form where some elements are zeros. They may need to follow certain pattern restrictions to work with what hardware kernel supports. Here we focus on structured pruning to achieve "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "high sparsity"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " in transformer models."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-69a0664ec324",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A routine workflow to construct a pruned network has three steps:"
+          }
+        ]
+      },
+      {
+        "id": "list-96234c71f308",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-999691ed2db5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Train a dense network until convergence;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-eaec7c36d661",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Prune the network to remove unwanted structure;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-74df217e55a3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Optionally retrain the network to recover the performance with new weights."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bb49f5b74895",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The idea of discovering a sparse structure within a dense model via network pruning while the sparse network can still maintain similar performance is motivated by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#the-lottery-ticket-hypothesis"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Lottery Ticket Hypothesis"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "LTH"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "): A randomly initialized, dense, feed-forward network contains a pool of subnetworks and among them only a subset (a sparse network) are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“winning tickets”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " which can achieve the optimal performance when trained in isolation."
+          }
+        ]
+      },
+      {
+        "id": "heading-9a4d4f3286cc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How to prune?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-06b296eb4860",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Magnitude pruning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is simplest yet quite effective pruning method - weights with smallest absolute values are trimmed. In fact, some studies ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.09574"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gale et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") found that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "simple magnitude pruning approaches can achieve comparable or better results than complicated pruning methods"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", such as variational dropout ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1701.05369"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Molchanov et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and "
+          },
+          {
+            "type": "inline_math",
+            "text": "l_0"
+          },
+          {
+            "type": "text",
+            "text": " regularization ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.01312"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Louizos et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Magnitude pruning is simple to apply to large models and achieves reasonably consistent performance across a wide range of hyperparameters."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2a257b199770",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.01878"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhu & Gupta (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " found that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "large sparse models were able to achieve better performance than their small but dense counterparts"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". They proposed "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Gradual Magnitude Pruning (GMP)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " algorithm that increases the sparsity of a network gradually over the course of training. At each training step, weights with smallest absolute values are masked to be zeros to achieve a desired sparsity level "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " and masked weights do not get gradient update during back-propagation. The desired sparsity level "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " goes up with more training steps. The process of GMP is sensitive to the learning rate schedule, which should be higher than what’s used in dense network training, but not too high to prevent convergence."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fdf7decfe487",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Iterative pruning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2003.02389"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Renda et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") iterates step 2 (prune) & step 3 (retrain) multiple times: Only a small fraction of weights are pruned and the model is retrained in each iteration. The process repeats until a desired sparsity level is reached."
+          }
+        ]
+      },
+      {
+        "id": "heading-c63cd992513f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How to retrain?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-9f797cfa1c89",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The retraining step can be simple fine-tuning using the same pre-training data or other task-specific datasets."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b729a464e907",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#the-lottery-ticket-hypothesis"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lottery Ticket Hypothesis"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "weight rewinding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " retraining technique: After pruning, the unpruned weights are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "reinitialized back to original values"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " earlier in the training and then retrain with the same learning rate schedule."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-58f3ad387275",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Learning rate rewinding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2003.02389"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Renda et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") only resets the learning rate back to its early value, while the unpruned weights stay unchanged since the end of the last train stage. They observed that (1) retraining with weight rewinding outperforms retraining with fine-tuning across networks and datasets and (2) learning rate rewinding matches or outperforms weight rewinding in all tested scenarios."
+          }
+        ]
+      },
+      {
+        "id": "heading-303a037be9ab",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparsity"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-4d34eb219f1a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparsity is an effective way to scale up model capacity while keeping model inference computationally efficient. Here we consider two types of sparsity for transformers:"
+          }
+        ]
+      },
+      {
+        "id": "list-9396f2082535",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-09d738dbc6ce",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sparsified dense layers, including both self-attention and FFN layers."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2775acda991a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sparse model architecture; i.e. via incorporating the Mixture-of-Experts (MoE) component."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-bad2fe3bc9cf",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "N:M Sparsity via Pruning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-438d662a7f38",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "N:M sparsity"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a structured sparsity pattern that works well with modern GPU hardware optimization, in which "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " out of every "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " consecutive elements are zeros. For example, the sparse tensor core of Nvidia A100 GPU has support for 2:4 sparsity for faster inference ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nvidia 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "image-52c9ee70f7ba",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/2-to-4-sparsity.png",
+          "alt": "A matrix of 2:4 structured sparsity and its compressed representation. (Image source: Nvidia blog )"
+        }
+      },
+      {
+        "id": "paragraph-7c17c72371c8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To sparsify a dense neural network to follow a N:M structured sparsity pattern, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nvidia (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " suggested using the three-step "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#routine-workflow"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "routine workflow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for training a pruned network: train –> prune to satisfy 2:4 sparsity –> retrain."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a408f763952a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Permuting columns can provide more options in the pruning process to maintain parameters of large magnitude or to satisfy a special restriction like N:M sparsity ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pool & Yu 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). As long as paired axes of two matrices are permuted in the same order, the results of matrix multiplication would not change. For example,"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-82d202c3c37f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) Within the self-attention module, if the same permutation order is applied on the axis 1 of query embedding matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{Q}"
+          },
+          {
+            "type": "text",
+            "text": " and the axis 0 of key embedding matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{K}^\\top"
+          },
+          {
+            "type": "text",
+            "text": ", the final result of matrix multiplication of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{Q}\\mathbf{K}^\\top"
+          },
+          {
+            "type": "text",
+            "text": " would stay the same."
+          }
+        ]
+      },
+      {
+        "id": "image-6e1d342b126f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/permutation-QK.png",
+          "alt": "Illustration of same permutation on $\\mathbf{Q}$ (axis 1) and $\\mathbf{K}^\\top$ (axis 0) to keep the results of a self-attention module unchanged."
+        }
+      },
+      {
+        "id": "paragraph-2f92b7fd5669",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) Within the FFN layer that contains two MLP layers and one ReLU non-linear layer, we can permute the first linear weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_1"
+          },
+          {
+            "type": "text",
+            "text": " along the axis 1 and the second linear weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_2"
+          },
+          {
+            "type": "text",
+            "text": " along the axis 0 in the same order."
+          }
+        ]
+      },
+      {
+        "id": "image-716ec4a67aaa",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/permutation-FFN.png",
+          "alt": "Illustration of the same permutation on $\\mathbf{W}_1$ (axis 1) and $\\mathbf{W}_2$ (axis 0) to keep the FFN layer's output unchanged. For simplicity, the bias terms are skipped but the same permutation should be applied on them too."
+        }
+      },
+      {
+        "id": "paragraph-5c4af9b4da15",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To enforce N:M structured sparsity, let’s split the columns of one matrix into multiple slides of "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " columns (named “stripe”) and we can easily observe that both the order of columns within each stripe and the order of stripes have no effect on the N:M sparsity restriction."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3444e436832a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pool & Yu (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed an iterative greedy algorithm to find optimal permutation that maximizes the weight magnitude for N:M sparsity. All pairs of channels are speculatively swapped and only the swap that leads to the greatest increase in magnitude is adopted, generating a new permutation and concluding a single iteration. Greedy algorithm may only find local minima, so they introduced two techniques to escape local minima:"
+          }
+        ]
+      },
+      {
+        "id": "list-307ed115d31e",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-4156cad8a054",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Bounded regressions: In practice two random channels are swapped, up to a fixed number of times. The solution search is limited to a depth of only one channel swap to keep the search space broad and shallow."
+              }
+            ]
+          },
+          {
+            "id": "list-item-bccd2fa4fa7f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Narrow, deep search: Choose multiple stripes and optimize them at the same time."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-2ba2d8e14fa4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/N-to-M-sparsity-permutation-algo.png",
+          "alt": "Algorithm of finding the best permutation for N:M sparsity greedily and iteratively. (Image source: Pool & Yu 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-c4e3e9e47a4a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The network can achieve better performance if it was permuted before pruning, compared to pruning the network in its default channel order."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9678ce12426d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To train a model with N:M sparsity from scratch, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.04010"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhou & Ma, et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " extended STE (Straight-Through Estimator; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1308.3432"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Bengio et al. 2013"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), which is commonly used for back-propagation update in model quantization, to work for magnitude pruning and sparse parameter update."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b3a29a7fe06f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "STE computes the gradients of dense parameters wrt the pruned network "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\widetilde{W}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\partial \\mathcal{L}/\\partial \\widetilde{W}"
+          },
+          {
+            "type": "text",
+            "text": ", and applies that to the dense network "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " as an approximation:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-568724cff00e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\nW_{t+1} \\gets W_t - \\gamma \\frac{\\partial\\mathcal{L}}{\\partial\\widetilde{W}}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-67c2528a320b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The extended version, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "SR-STE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Sparse-refined STE), updates the dense weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " by:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8359bce9f0dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\nW_{t+1} \\gets W_t - \\gamma \\frac{\\partial\\mathcal{L}}{\\partial\\widetilde{W}}  + \\lambda_W (\\bar{\\mathcal{E}} \\odot W_t)\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "text",
+            "text": "\nwhere "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\bar{\\mathcal{E}}"
+          },
+          {
+            "type": "text",
+            "text": " is the mask matrix for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\widetilde{W}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\odot"
+          },
+          {
+            "type": "text",
+            "text": " is element-wise multiplication. SR-STE is proposed to prevent large change in the binary mask by (1) restricting the values of weights pruned in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\widetilde{W}_t"
+          },
+          {
+            "type": "text",
+            "text": ", and (2) promoting the non-pruned weights in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\widetilde{W}_t"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-d476deef17aa",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/SR-STE.png",
+          "alt": "Comparison of STE and SR-STE. $\\odot$ is element-wise product; $\\otimes$ is matrix multiplication. (Image source: Zhou & Ma, et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-2b8e51ef783e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Different from STE or SR-STE, the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Top-KAST"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.03517"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jayakumar et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") method can preserve constant sparsity throughout training in both the forward and backward-passes but does not require forward passes with dense parameters or dense gradients."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d64a3663569b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At one training step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": ", Top-KAST processes as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-37af4f897a3b",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-aebf5fd00bab",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Sparse forward pass"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Select a subset of parameters "
+              },
+              {
+                "type": "inline_math",
+                "text": "A^t \\subset \\Theta"
+              },
+              {
+                "type": "text",
+                "text": ", containing top-"
+              },
+              {
+                "type": "inline_math",
+                "text": "K"
+              },
+              {
+                "type": "text",
+                "text": " parameters by magnitude by each layer, restricted to top "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": "-proportion of weights. The parameterization "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\alpha^t"
+              },
+              {
+                "type": "text",
+                "text": " at time "
+              },
+              {
+                "type": "inline_math",
+                "text": "t"
+              },
+              {
+                "type": "text",
+                "text": " has parameters zeroed out if it is not in "
+              },
+              {
+                "type": "inline_math",
+                "text": "A^t"
+              },
+              {
+                "type": "text",
+                "text": " (active weights)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-639085a9c44b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\alpha^t_i = \\begin{cases}\n\\theta^t_i & \\text{ if } i \\in A^t = \\{i \\mid \\theta^t_i \\in \\text{TopK}(\\theta^t, D) \\}\\\\ \n0 & \\text{ otherwise}\n\\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-2b1a7fcbbae6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{TopK}(\\theta, x)"
+          },
+          {
+            "type": "text",
+            "text": " selected top "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " proportion of weights from "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " based on magnitude."
+          }
+        ]
+      },
+      {
+        "id": "list-b8929ae3ad55",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-77090273c423",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Sparse backward pass"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Then apply gradients to a larger parameter subset "
+              },
+              {
+                "type": "inline_math",
+                "text": "B \\subset \\Theta"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "B"
+              },
+              {
+                "type": "text",
+                "text": " contains "
+              },
+              {
+                "type": "inline_math",
+                "text": "(D+M)"
+              },
+              {
+                "type": "text",
+                "text": "-proportion of weights and "
+              },
+              {
+                "type": "inline_math",
+                "text": "A \\subset B"
+              },
+              {
+                "type": "text",
+                "text": ". Updating a larger proportion of weights enables more effective exploration of different pruning masks, making it more likely to cause permutations in the top "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": "-proportion active weights."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-776aaa58160e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\Delta_{\\theta^t_i} = \\begin{cases}\n-\\eta \\nabla_{\\alpha_t} \\mathcal{L}(y, x, \\alpha^t)_i & \\text{ if } i\\in  B^t = \\{i \\mid \\theta^t_i \\in \\text{TopK}(\\theta^t, D+M) \\} \\\\\n0 & \\text{ otherwise }\n\\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-8411c7f38f77",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training is split into two stages and the additional coordinates in the set "
+          },
+          {
+            "type": "inline_math",
+            "text": "B \\setminus A"
+          },
+          {
+            "type": "text",
+            "text": " controls how much exploration is brought in. The amount of exploration is expected to diminish gradually through the training process and the mask eventually stabilizes."
+          }
+        ]
+      },
+      {
+        "id": "image-b9a0bd5733b5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/Top-KAST-stabilize.png",
+          "alt": "The pruning mask of Top-KAST stabilizes in time. (Image source: Jayakumar et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-92d0527e32c5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To prevent rich-get-richer phenomenon, Top-KAST penalizes the magnitude of active weights via a L2 regularization loss to encourage more exploration of new items. Parameters in "
+          },
+          {
+            "type": "inline_math",
+            "text": "B \\setminus A"
+          },
+          {
+            "type": "text",
+            "text": " are penalized more than "
+          },
+          {
+            "type": "inline_math",
+            "text": "A"
+          },
+          {
+            "type": "text",
+            "text": " for a higher selection bar during updates to stabilize the mask."
+          }
+        ]
+      },
+      {
+        "id": "math-56dc18973ef4",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{penalty}(\\alpha^t_i) = \\begin{cases}\n\\vert \\theta^t_i\\vert  & \\text{ if } i \\in A^t \\\\ \n\\vert \\theta^t_i\\vert / D  & \\text{ if } i \\in B^t \\setminus A^t \\\\ \n0 & \\text{ otherwise}\n\\end{cases}"
+        }
+      },
+      {
+        "id": "heading-6987bfba8933",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparsified Transformer"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-31f963bc0338",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Scaling Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2111.12763"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jaszczur et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") sparsifies both self-attention and FFN layers in transformer architecture, achieving 37x speedup for single-example inference."
+          }
+        ]
+      },
+      {
+        "id": "image-fe4a91183221",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/scaling-transformer-speedup-table.png",
+          "alt": "The speed of decoding a single token (unbatched inference) by a transformer model when sparsification is applied on different layers. (Image source: Jaszczur et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-d4119389d486",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sparse FFN layer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": Each FFN layer contains 2 MLP and one ReLU in-between. Because ReLU will introduce a lot of zeros, they implement a fixed structure on activations to enforce only 1 non-zero value in one block of "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " elements. The sparsity pattern is dynamic, different for each token."
+          }
+        ]
+      },
+      {
+        "id": "math-c08d9ce0f8cc",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nY_\\text{sparse} &= \\max(0, xW_1 + b_1) \\odot \\text{Controller}(x) \\\\\n\\text{SparseFFN}(x) &= Y_\\text{sparse} W_2 + b_2 \\\\\n\\text{Controller}(x) &= \\arg\\max(\\text{Reshape}(x C_1 C_2, (-1, N)))\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-4565f91cd900",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where each activation in "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y_\\text{sparse}"
+          },
+          {
+            "type": "text",
+            "text": " corresponds to one column in "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_1"
+          },
+          {
+            "type": "text",
+            "text": " and one row in "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_2"
+          },
+          {
+            "type": "text",
+            "text": ". The controller is implemented as a low-rank bottleneck dense layer, "
+          },
+          {
+            "type": "inline_math",
+            "text": "C_1 \\in \\mathbb{R}^{d_\\text{model} \\times d_\\text{lowrank}}, C_2 \\in \\mathbb{R}^{d_\\text{lowrank} \\times d_\\text{ff}}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\text{lowrank} = d_\\text{model} / N"
+          },
+          {
+            "type": "text",
+            "text": ". It uses "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\arg\\max"
+          },
+          {
+            "type": "text",
+            "text": " for inference to select which columns should be non-zero and Gumbel-softmax trick ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.01144"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jang et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") during training. Because we can compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{Controller}(x)"
+          },
+          {
+            "type": "text",
+            "text": " before loading FFN weight matrices, we know which columns will be zeroed out and thus choose "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "not to load"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " them into memory for inference speedup."
+          }
+        ]
+      },
+      {
+        "id": "image-d9c4e11730c5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/sparse-FFN.png",
+          "alt": "(a) Sparse FFN layer; columns in red are not loaded in memory for faster inference. (b) Sparse FFN controller for 1:4 sparsity. (Image source: Jaszczur et al. 2021 ) *Lilian's side note*: Fig (a) in the illustration from the paper is actually $Y_\\text{sparse} = \\max\\big(0, (xW_1 + b_1) \\odot \\text{Controller}(x)\\big)$, but it doesn't change the results."
+        }
+      },
+      {
+        "id": "paragraph-2d9501e59312",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sparse QKV (attention) layer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": In the attention layer, the dimensionality "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\text{model}"
+          },
+          {
+            "type": "text",
+            "text": " is divided into "
+          },
+          {
+            "type": "inline_math",
+            "text": "S"
+          },
+          {
+            "type": "text",
+            "text": " modules, each of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "M=d_\\text{model} /S"
+          },
+          {
+            "type": "text",
+            "text": ". To make sure each subdivision can access any part of the embedding, Scaling Transformer introduces a multiplicative layer (i.e., a multiplication layer multiplies inputs from multiple neural network layers element-wise) which can represent arbitrary permutation but contains fewer parameters than a dense layer."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c69756dc6655",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given an input vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\in \\mathbb{R}^{d_\\text{model}}"
+          },
+          {
+            "type": "text",
+            "text": ", the multiplicative layer outputs "
+          },
+          {
+            "type": "inline_math",
+            "text": "y \\in \\mathbb{R}^{S \\times M}"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-3fa736a9dba4",
+        "type": "math",
+        "attrs": {
+          "latex": "y_{s,m} = \\sum_i x_i D_{i,s} E_{i,m}\n\\quad\\text{where }D \\in \\mathbb{R}^{d_\\text{model} \\times S}, D \\in \\mathbb{R}^{d_\\text{model} \\times M}"
+        }
+      },
+      {
+        "id": "paragraph-3e95568fcb2c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The output of the multiplicative layer is a tensor of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\in \\mathbb{R}^{\\text{batch size}\\times \\text{length} \\times S \\times M}"
+          },
+          {
+            "type": "text",
+            "text": ". It then gets processed by a two-dimensional convolutional layer, where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{length}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "S"
+          },
+          {
+            "type": "text",
+            "text": " are treated as the height and width of an image. Such a convolution layer further reduces the parameter count and computation time of attention layer."
+          }
+        ]
+      },
+      {
+        "id": "image-77a3f49bf376",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/sparse-QKV.png",
+          "alt": "(a) A multiplicative layer is introduced to enable partitions to access any part of an embedding. (b) Combination of multiplicative dense layer and 2-D convolutional layer reduces the number of parameters and computation time of the attention layer. (Image source: Jaszczur et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-070073982b78",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To better work with long sequences, Scaling Transformer is further equipped with LSH (locality-sensitive hashing) attention from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#locality-sensitive-hashing-reformer"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Reformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2001.04451"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kitaev, et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and FFN block recurrence, resulting in "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Terraformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-94ce9a631125",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mixture-of-Experts"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-2bdbf557c43f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mixture-of-experts (MoE) models depend on a collection of “expert” networks and each example only activates a subset of networks to get predictions. The idea originated back to the 1990s ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.toronto.edu/~hinton/absps/jjnh91.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jacobs et al. 1991"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and is strongly related to ensemble methods. For details on how to incorporate MoE module into transformer, please check my "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "previous post on large model training techniques"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and a survey paper on MoE by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2209.01667"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Fedus et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-de2a73798eb9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With MoE architecture, only partial parameters are utilized at decoding time and therefore it saves inference cost. The capacity of each expert can be adjusted with a hyperparameter, capacity factor "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": ", and the expert capacity is defined as:"
+          }
+        ]
+      },
+      {
+        "id": "math-832dd854f7f7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{Expert capacity} = \\text{round}(C \\cdot k \\cdot \\frac{\\text{total # tokens in one batch}}{\\text{# experts}})"
+        }
+      },
+      {
+        "id": "paragraph-59e1392a5ade",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where top-"
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " experts are selected per token. Larger "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " leads to higher expert capacity and improved performance but more expensive computationally. When "
+          },
+          {
+            "type": "inline_math",
+            "text": "C>1"
+          },
+          {
+            "type": "text",
+            "text": ", a slack capacity is added; otherwise, when "
+          },
+          {
+            "type": "inline_math",
+            "text": "C<1"
+          },
+          {
+            "type": "text",
+            "text": ", the routing network needs to ignore some tokens."
+          }
+        ]
+      },
+      {
+        "id": "heading-efa8f52ddcae",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Routing Strategy Improvement"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-7a9721f756e9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MoE layer has a routing network to assign a subset of experts for each input token. The routing strategy in vanilla MoE models is to route each token toward preferred experts differently as they come up in the natural order. If a token is routed to experts that have reached their capacity, the token would be marked "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“overflowed” and skipped"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-231f16afc51d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "V-MoE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Vision MoE; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.05974"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Riquelme et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") adds MoE layers into ViT (Vision Transformer). It matches the performance of previous SoTA but only requires "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "half"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of inference compute. V-MoE can be scaled up to 15B parameters. Their experiments used "
+          },
+          {
+            "type": "inline_math",
+            "text": "k=2"
+          },
+          {
+            "type": "text",
+            "text": ", 32 experts and every-2 expert placement (meaning that MoEs are placed in every other layer)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4a4c3f9d3908",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since each expert has a limited capacity, some important and informative tokens may have to be discarded if they come up too late in the predefined sequence order (e.g. the order of words in a sentence, or the order of image patches). To avoid such a drawback in the vanilla routing scheme, V-MoE adopts "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "BPR (Batch Priority Routing)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to assign experts to tokens with a high priority score first. BPR computes a priority score (max or sum of top-"
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " router scores) per token before expert assignment and alters the order of tokens accordingly. This guarantees that the expert capacity buffer would be fulfilled with key tokens first."
+          }
+        ]
+      },
+      {
+        "id": "image-a9f73e75c351",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/BPR.png",
+          "alt": "How image patches are discarded according to priority scores when $C < 1$. (Image source: Riquelme et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-d4a914ce8def",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "BPR works much better than vanilla routing when "
+          },
+          {
+            "type": "inline_math",
+            "text": "C\\leq 0.5"
+          },
+          {
+            "type": "text",
+            "text": ", where the model starts dropping a significant amount of tokens. It capacitates the model to be competitive with the dense network even at quite low capacities."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4ff8019323b4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When looking into how to interpret image class-expert association, they observed that early MoE layers are more general, while later MoE layers could be specialized for a few image classes."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-54f82b9b8c22",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Task MoE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Task-level Mixture-of-Experts; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.03742"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kudugunta et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ) takes the task information into consideration and routes tokens at the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "task"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " level instead of the word or token level for machine translation. They used MNMT (multilingual neural machine translation) as an example and group translation tasks based on the target language or language pairs."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-571fcf4572ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Token level routing is dynamic and the routing decision for each token is made disjointly. Hence, at inference time, the server needs to preload all the experts. In comparison, task level routing is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "static"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " given a fixed task, so the inference server for one task only needs to preload "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " experts (assuming top-"
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " routing). According to their experiments, Task MoE can achieve similar performance gain as token MoE compared to dense model baseline with 2.6x higher peak throughput and 1.6% of the decoder size."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ad63867ba8b6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Task level MoE is essentially to categorize a distribution of tasks according to predefined  "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "heuristics"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and incorporate such human knowledge into the router. When such heuristics do not exist (e.g. consider a general sentence continuation task), it would not be straightforward how to utilize Task MoE."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-46b0bd43f68e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "PR-MoE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Pyramid residual MoE; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.05596"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rajbhandari et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") has each token pass one fixed MLP and one chosen expert. Due to the observation that MoE at later layers is more beneficial, PR-MoE adopts more exports at later layers. DeepSpeed library implements a flexible multi-expert, multi-data parallelism to enable training PR-MoE with different numbers of experts across layers."
+          }
+        ]
+      },
+      {
+        "id": "image-3bc14df1d373",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/PR-MoE.png",
+          "alt": "Illustration of PR-MoE architecture in comparison with a standard MoE. (Image source: Rajbhandari et al. 2022 )"
+        }
+      },
+      {
+        "id": "heading-b5b57c078056",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Kernel Improvement"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-19d5e474fdd1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Expert networks can be hosted on different devices. However, when the number of GPUs increases, the number of experts per GPU decreases and the communication between experts (“All-to-all”) grows to be more expensive. All-to-all communication between experts across a number of GPUs relies on P2P APIs of NCCL, which cannot saturate the bandwidth of high-speed links (e.g. NVLink, HDR InfiniBand) at a large scale, as individual chunk gets smaller with more nodes used. The existing all-to-all algorithm performs poorly at large scale with a small workload. There are a variety of kernel improvements to enable more efficient MoE computation, such as making all-to-all communication cheaper/faster."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-958bf367e1f2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "DeepSpeed"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " library ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.05596"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rajbhandari et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and TUTEL ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2206.03382"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hwang et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") implemented a tree-based "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "hierarchical all-to-all"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " algorithm, which runs an intra-node all-to-all followed by an inter-node all-to-all. It reduces the communication hops from "
+          },
+          {
+            "type": "inline_math",
+            "text": "O(G)"
+          },
+          {
+            "type": "text",
+            "text": " to "
+          },
+          {
+            "type": "inline_math",
+            "text": "O(G_\\text{node} + G / G_\\text{node})"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " is the total number of GPU nodes and "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_\\text{node}"
+          },
+          {
+            "type": "text",
+            "text": " is the number of GPU cores per node. Although the communication volume is doubled in such implementation, it enables better scaling with small batches at large scale as the bottleneck is on latency instead of communication bandwidth when the batch size is small."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7bc1ab6181c8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "DynaMoE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.01848"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kossmann et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") uses "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "dynamic recompilation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to adapt the computational resources to dynamic workloads among experts. The "
+          },
+          {
+            "type": "inline_code",
+            "text": "RECOMPILE"
+          },
+          {
+            "type": "text",
+            "text": " mechanism compiles the computation graph from scratch and only reallocates resources when needed. It measures how many samples are assigned to each expert and adjusts their capacity factors "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " dynamically, in order to reduce the memory and computation requirements at run time. Based on the observation that sample-expert assignments converge early in training, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "sample assignment caching"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is introduced after convergence and then "
+          },
+          {
+            "type": "inline_code",
+            "text": "RECOMPILE"
+          },
+          {
+            "type": "text",
+            "text": " is used to eliminate the dependency between the gating network and experts."
+          }
+        ]
+      },
+      {
+        "id": "heading-425a24ab7f0a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Architectural Optimization"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-62d88c617d44",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The survey paper on "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Efficient Transformers"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.06732"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Tay et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") reviewed a collection of new transformer architectures with improvement for better "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "computational and memory efficiency"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Strongly recommend a read. You can also check out my post "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The Transformer Family Version 2.0”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for introduction to a diverse set of transformer archiecture improvements in depth, including changes to make the model cheaper to run."
+          }
+        ]
+      },
+      {
+        "id": "image-ad214734b964",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/efficient-transformer.png",
+          "alt": "Categorization of efficient transformer models. (Image source: Tay et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-4e8b333240b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since the self-attention mechanism has quadratic time and memory complexity and that is the main bottleneck for better transformer decoding efficiency, all the efficient transformer models have applied some form of sparsity to the otherwise dense attention layer. Here only lists a high-level overview, several derived from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.06732"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Tay et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-fad573bc76ff",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparse Attention Patterns"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-046811ff3eed",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-67f47192bd06",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fixed Patterns"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " limit the field of view for the attention matrix, using predefined, fixed patterns."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-0e27351e188e",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-675f3bea4076",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Chunk input sequences into fixed blocks, such as "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/##strided-context"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Blockwise Attention"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": ";"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-700d2dd86d4a",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/##fixed-local-context"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Image Transformer"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " uses local attention;"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-4ac7aa1448b6",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/##strided-context"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Sparse Transformer"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " uses strided attention patterns."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-37970463cb9b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Combined Patterns"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " learn to sort/cluster the input tokens - enabling a more optimal global view of the sequence while maintaining the efficiency benefits of fixed patterns."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-32d5123fe0fc",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-0809a7fe4b1c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#sparse-attention-matrix-factorization-sparse-transformers"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Sparse Transformer"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " combines strided and local attention;"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-942d002bd465",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Given a high dimensional input tensor, instead of applying attention to the flattened version of the input, "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/1912.12180"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Axial Transformer"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " applies multiple attentions, each along a single axis of the input tensor."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-24436b4c2c94",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#combination-of-local-and-global-context"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "ETC, Longformer and Big Bird"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " combines local and global context, as well as strided or random attention."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-098a17cb251a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Learnable Patterns"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " identify the optimal attention pattern via learning."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-b057876b0f07",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-a7d9954f314d",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#content-based-attention"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Reformer"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " clusters tokens into clusters based on hash-based similarity (LSH);"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-5e0b5f977543",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#content-based-attention"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Routing Transformer"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " runs "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "k"
+                      },
+                      {
+                        "type": "text",
+                        "text": "-means clustering on tokens;"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-4098663b2b12",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/2002.11296"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Sinkhorn Sorting Network"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " learns to sort blocks of input sequence."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-3bcd09f8cbfa",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recurrence"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a4fefa2a8c9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recurrence mechanism connects multiple blocks/segments via recurrence."
+          }
+        ]
+      },
+      {
+        "id": "list-d843841e5ed2",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-bd8d0d9f1a83",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#context-memory"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Transformer-XL"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " makes use of longer context by reusing hidden states between segments."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2f167981140f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#make-it-recurrent"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Universal Transformer"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " combines self-attention with the recurrent mechanism in RNN."
+              }
+            ]
+          },
+          {
+            "id": "list-item-aeadc3895128",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#context-memory"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Compressive Transformer"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is an extension of Transformer-XL with additional memory, containing a set of memory slots for past activiations and compressive memory slots for compressed activations. Whenever the model accepts a new input segment, the oldest activations in the primary memory are moved to the compressed memory where a compression function is applied."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-ec1e1f218653",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Memory Saving Designs"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-44d0675704ed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Memory saving designs refer to changes of the architecture to use less memory."
+          }
+        ]
+      },
+      {
+        "id": "list-b7d8920aadb4",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7a842b27a2d0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#low-rank-attention"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Linformer"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " projects the length dimension of keys and values to a lower-dimensional representation ("
+              },
+              {
+                "type": "inline_math",
+                "text": "N \\to k"
+              },
+              {
+                "type": "text",
+                "text": ") and thus the memory complexity is reduced from "
+              },
+              {
+                "type": "inline_math",
+                "text": "N \\times N"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "N \\times k"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f7f0e6d16a90",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1911.02150"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Shazeer (2019)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " proposed "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "multi-query attention"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " which has the keys and values shared across different attention “heads”, greatly reducing the size of these tensors and the memory cost."
+              }
+            ]
+          },
+          {
+            "id": "list-item-fe64bd3cac3a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#low-rank-attention"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Random feature attention and Performer"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " use "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/(https:/lilianweng.github.io/posts/2022-09-08-ntk/#kernel--kernel-methods)"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "kernel methods"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to achieve a cheaper mathematical format of the self-attention mechanism."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-f3b5d7061bb2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adaptive Attention"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-bf08bfd6f5e2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Adaptive attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " enables the model to learn the optimal attention span or decide on when to do early exiting for different input tokens."
+          }
+        ]
+      },
+      {
+        "id": "list-bf1810bf3e37",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-81a55e66eee6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#adaptive-attention-span"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Adaptive Attention Span"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " trains the model to learn the optimal attention span per token per head via a soft mask between the token and other keys."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e380b0378850",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#make-it-recurrent"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Universal Transformer"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " incorporates recurrent mechanism and uses "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ACT (Adaptive computation time)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to dynamically decide the number of recurrent steps."
+              }
+            ]
+          },
+          {
+            "id": "list-item-81e647322113",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/#depth-adaptive-transformer"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Depth-Adaptive Transformer and CALM"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " learns when to early exit the computation layers per token using some confidence measures to achieve good performance-efficiency tradeoffs."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-c653167da1ea",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-b198f02fe8ee",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Jan 2023). Large Transformer Model Inference Optimization. Lil’Log. https://lilianweng.github.io/posts/2023-01-10-inference-optimization/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-9978af2d3d0b",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2023inference,\n  title   = \"Large Transformer Model Inference Optimization\",\n  author  = \"Weng, Lilian\",\n  journal = \"Lil'Log\",\n  year    = \"2023\",\n  month   = \"Jan\",\n  url     = \"https://lilianweng.github.io/posts/2023-01-10-inference-optimization/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-16d0be226221",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Bondarenko et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.12948"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Understanding and overcoming the challenges of efficient transformer quantization”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5a8209e336d4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Dettmers et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2208.07339"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2022"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-55a7855f85d7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Zadeh et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.03842"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Gobo: Quantizing attention-based NLP models for low latency and energy efficient inference.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " MICRO 2020"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2005baf956a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Shen, Dong & Ye, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.05840"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Q-BERT: Hessian based ultra low precision quantization of BERT”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AAAI 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e2a25dfcb01c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Yao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2206.01861"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“ZeroQuant: Efficient and affordable post-training quantization for large-scale transformers”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2206.01861 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a47912e68e85",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Frantar et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.17323"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“GPTQ: Accurate Quantization for Generative Pre-trained Transformers”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2210.17323 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-279d88cdf390",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Xiao & Lin "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.10438"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“SmoothQuant: Accelerated sparse neural training: A provable and efficient method to find N:M transposable masks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2211.10438 (2022). | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/mit-han-lab/smoothquant"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-06523e1e243b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Pool & Yu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Channel Permutations for N:M Sparsity.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2021. | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/NVIDIA/apex/tree/master/apex/contrib/sparsity"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-646670010ce6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Zhou & Ma, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.04010"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning N:M fine-grained structured sparse neural networks from scratch.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2102.04010 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-13493cfc4959",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Jayakumar et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.03517"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Top-KAST: Top-K Always Sparse Training.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cac7ade2db96",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Nvidia. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://images.nvidia.com/aem-dam/en-zz/Solutions/data-center/nvidia-ampere-architecture-whitepaper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Nvidia A100 tensor core GPU architecture.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c136872822c8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Gale, Elsen & Hooker "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.09574"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The State of Sparsity in Deep Neural Networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1902.09574 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b3257e69d5e5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Zhu & Gupta. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.01878"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“To Prune, or Not to Prune: Exploring the Efficacy of Pruning for Model Compression.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1710.01878 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-35ac5a5c2439",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Renda et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2003.02389"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Comparing rewinding and fine-tuning in neural network pruning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2003.02389 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d36668a341a6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Zhou & Ma, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.04010"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning N:M fine-grained structured sparse neural networks from scratch.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2102.04010 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a8e2d290bfc9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Pool & Yu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://proceedings.neurips.cc/paper/2021/hash/6e8404c3b93a9527c8db241a1846599a-Abstract.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Channel Permutations for N:M Sparsity.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2021. | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/NVIDIA/apex/tree/master/apex/contrib/sparsity"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d164ea124ae3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Jaszczur et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2111.12763"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Sparse is Enough in Scaling Transformers.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dbf22bddfe1e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] Mishra et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.03954"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“An Survey of Neural Network Compression.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1710.09282 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f72e46d95543",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[19] Fedus et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2209.01667"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Review of Sparse Expert Models in Deep Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2209.01667 (2022).."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8b9b639f0041",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[20] Riquelme et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.05974"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Scaling vision with sparse mixture of experts.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d5dd87cf4eff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[21] Kudugunta et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.03742"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Beyond Distillation: Task-level Mixture-of-Experts for Efficient Inference.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2110.03742 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c0d8f314d3dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[22] Rajbhandari et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.05596"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“DeepSpeed-MoE: Advancing mixture-of-experts inference and training to power next-generation ai scale.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2201.05596 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-884199522b9a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[23] Kossmann et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.01848"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Optimizing mixture of experts using dynamic recompilations.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  arXiv preprint arXiv:2205.01848 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c557517d57b8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[24] Hwang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2206.03382"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Tutel: Adaptive mixture-of-experts at scale.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  arXiv preprint arXiv:2206.03382 (2022). | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/microsoft/tutel"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4f020083a4b6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[25] Noam Shazeer. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1911.02150"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Fast Transformer Decoding: One Write-Head is All You Need.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1911.02150 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-02a1b326e5dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[26] Tay et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.06732"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Efficient Transformers: A Survey.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACM Computing Surveys 55.6 (2022): 1-28."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b615d21af5cc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[27] Pope et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.05102"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Efficiently Scaling Transformer Inference.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2211.05102 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7cbcd754b47d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[28] Frankle & Carbin. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.03635"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-80e198e4dc00",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[29] Elabyad et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.10073"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Depth-Adaptive Transformer”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-80ba0dafee13",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[30] Schuster et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2207.07061"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Confident Adaptive Language Modeling”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2207.07061 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a2ec4bdbab87",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[31] Gou et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.05525"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“https://arxiv.org/abs/2006.05525”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2006.05525 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-578386506cb5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[32] Hinton et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1503.02531"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Distilling the Knowledge in a Neural Network”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2014."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-15c75b9054b0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[33] Sanh et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.01108"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Workshop on Energy Efficient Machine Learning and Cognitive Computing @ NeuriPS 2019."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "large-transformer-model-inference-optimization",
+    "source_slug": "2023-01-10-inference-optimization",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 26,
+      "math": 7,
+      "image": 18,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/distillation.png",
+      "alt": "The generic framework of teacher-student knowledge distillation training. (Image source: Gou et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/quantization-experiment-table.png",
+      "alt": "Only quantizing model weights to 8-bit while keeping activation at full precision (`W8A32`) achieves much better results when activations are quantized to 8-bit irrespective of whether weights are in lower precision (`W8A8` and `W32A8`). (Image source: Bondarenko et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/OPT-models-outlier.png",
+      "alt": "The mean zero-shot accuracy over a set of language tasks (WinoGrande, HellaSwag, PIQA, LAMBADA) of OPT models of increasing sizes. (Image source: Dettmers et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/LLM-int8.png",
+      "alt": "Two mixed-precision decompositions of `LLM.int8()`. (Image source: Dettmers et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/quantization-granularity.png",
+      "alt": "Comparison of quantization at different granularity. $d$ is the model size / hidden state dimension and $h$ is the number of heads in one MHSA (multi-head self-attention) component."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/SmoothQuant.png",
+      "alt": "SmoothQuant migrates the scale variance from activations to weights offline to reduce the difficulty of activation quantization. Both the resulting new weight and activation matrices are easy to quantize. (Image source: Xiao & Lin 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/2-to-4-sparsity.png",
+      "alt": "A matrix of 2:4 structured sparsity and its compressed representation. (Image source: Nvidia blog )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/permutation-QK.png",
+      "alt": "Illustration of same permutation on $\\mathbf{Q}$ (axis 1) and $\\mathbf{K}^\\top$ (axis 0) to keep the results of a self-attention module unchanged."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/permutation-FFN.png",
+      "alt": "Illustration of the same permutation on $\\mathbf{W}_1$ (axis 1) and $\\mathbf{W}_2$ (axis 0) to keep the FFN layer's output unchanged. For simplicity, the bias terms are skipped but the same permutation should be applied on them too."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/N-to-M-sparsity-permutation-algo.png",
+      "alt": "Algorithm of finding the best permutation for N:M sparsity greedily and iteratively. (Image source: Pool & Yu 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/SR-STE.png",
+      "alt": "Comparison of STE and SR-STE. $\\odot$ is element-wise product; $\\otimes$ is matrix multiplication. (Image source: Zhou & Ma, et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/Top-KAST-stabilize.png",
+      "alt": "The pruning mask of Top-KAST stabilizes in time. (Image source: Jayakumar et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/scaling-transformer-speedup-table.png",
+      "alt": "The speed of decoding a single token (unbatched inference) by a transformer model when sparsification is applied on different layers. (Image source: Jaszczur et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/sparse-FFN.png",
+      "alt": "(a) Sparse FFN layer; columns in red are not loaded in memory for faster inference. (b) Sparse FFN controller for 1:4 sparsity. (Image source: Jaszczur et al. 2021 ) *Lilian's side note*: Fig (a) in the illustration from the paper is actually $Y_\\text{sparse} = \\max\\big(0, (xW_1 + b_1) \\odot \\text{Controller}(x)\\big)$, but it doesn't change the results."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/sparse-QKV.png",
+      "alt": "(a) A multiplicative layer is introduced to enable partitions to access any part of an embedding. (b) Combination of multiplicative dense layer and 2-D convolutional layer reduces the number of parameters and computation time of the attention layer. (Image source: Jaszczur et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/BPR.png",
+      "alt": "How image patches are discarded according to priority scores when $C < 1$. (Image source: Riquelme et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/PR-MoE.png",
+      "alt": "Illustration of PR-MoE architecture in comparison with a standard MoE. (Image source: Rajbhandari et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-01-10-inference-optimization/efficient-transformer.png",
+      "alt": "Categorization of efficient transformer models. (Image source: Tay et al. 2020 )"
+    }
+  ]
+}

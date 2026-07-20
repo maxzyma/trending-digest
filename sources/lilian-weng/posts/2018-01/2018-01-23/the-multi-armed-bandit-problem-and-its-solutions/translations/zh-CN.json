@@ -1,0 +1,1437 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:d9f986c2bf8e15da2cd1ace783d92a59709d8ce7818a6c632d454c4b61530e09",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "多臂老虎机问题及其解决方案",
+  "segments": {
+    "paragraph-c08705ca84d2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这些算法是针对伯努利赌博机在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://github.com/lilianweng/multi-armed-bandit"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "lilianweng/multi-armed-bandit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中实现的。"
+        }
+      ]
+    },
+    "heading-2b43e1c234d3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "利用与探索"
+        }
+      ]
+    },
+    "paragraph-ded8fd342205": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "探索与利用的困境存在于我们生活的许多方面。比如说，你最喜欢的餐厅就在街角。如果你每天都去那里，你会对你将得到的东西充满信心，但会错过发现一个更好选择的机会。如果你一直尝试新地方，你很可能会时不时吃到不愉快的食物。同样，在线顾问试图在已知最吸引人的广告和可能更成功的新广告之间取得平衡。"
+        }
+      ]
+    },
+    "paragraph-288f30592352": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果我们已经了解了关于环境的所有信息，我们甚至可以通过模拟暴力破解来找到最佳策略，更不用说许多其他智能方法了。困境来自于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "不完整"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的信息：我们需要收集足够的信息来做出最佳的整体决策，同时控制风险。通过利用，我们利用我们所知的最佳选项。通过探索，我们承担一些风险来收集关于未知选项的信息。最佳的长期策略可能涉及短期牺牲。例如，一次探索尝试可能完全失败，但这会警告我们未来不要过于频繁地采取该行动。"
+        }
+      ]
+    },
+    "heading-f023849e1254": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "什么是多臂老虎机？"
+        }
+      ]
+    },
+    "paragraph-1012092969ba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Multi-armed_bandit"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "多臂老虎机"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "问题是一个经典问题，它很好地展示了探索与利用的困境。想象一下你身处赌场，面对多台老虎机，每台老虎机都配置了一个未知的概率，表示你一次玩能获得奖励的可能性。问题是："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "实现最高长期奖励的最佳策略是什么？"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-af58e7fd6e8d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在这篇文章中，我们将只讨论试验次数无限的情况。对有限试验次数的限制引入了一种新型的探索问题。例如，如果试验次数少于老虎机数量，我们甚至无法尝试每台机器来估计奖励概率（！），因此我们必须根据有限的知识和资源（即时间）来巧妙行事。"
+        }
+      ]
+    },
+    "paragraph-c5a6e4499673": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一种天真的方法是，你继续玩一台机器很多很多轮，以便最终根据"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Law_of_large_numbers"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "大数定律"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "估计“真实”的奖励概率。然而，这相当浪费，并且肯定不能保证最佳的长期奖励。"
+        }
+      ]
+    },
+    "heading-bdc906408fe5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定义"
+        }
+      ]
+    },
+    "paragraph-53a095c09f93": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "现在我们给它一个科学定义。"
+        }
+      ]
+    },
+    "paragraph-ab0a598df012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个伯努利多臂老虎机可以描述为一个元组"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\langle \\mathcal{A}, \\mathcal{R} \\rangle"
+        },
+        {
+          "type": "text",
+          "text": "，其中："
+        }
+      ]
+    },
+    "list-item-1319618cd329": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": " 台具有奖励概率的机器，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{ \\theta_1, \\dots, \\theta_K \\}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-d15cef298aef": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每个时间步 t，我们对一台老虎机采取行动 a 并获得奖励 r。"
+        }
+      ]
+    },
+    "list-item-5dc97a1bb86b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}"
+        },
+        {
+          "type": "text",
+          "text": " 是一组行动，每个行动都指与一台老虎机的交互。行动 a 的值是预期奖励，"
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a) = \\mathbb{E} [r \\vert a] = \\theta"
+        },
+        {
+          "type": "text",
+          "text": "。如果行动 "
+        },
+        {
+          "type": "inline_math",
+          "text": "a_t"
+        },
+        {
+          "type": "text",
+          "text": " 在时间步 t 作用于第 i 台机器，那么 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a_t) = \\theta_i"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-626582ad2ee8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{R}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个奖励函数。在伯努利赌博机的情况下，我们以一种 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "随机的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 方式观察到奖励 r。在时间步 t，"
+        },
+        {
+          "type": "inline_math",
+          "text": "r_t = \\mathcal{R}(a_t)"
+        },
+        {
+          "type": "text",
+          "text": " 可能以概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a_t)"
+        },
+        {
+          "type": "text",
+          "text": " 返回奖励 1，否则返回 0。"
+        }
+      ]
+    },
+    "paragraph-f67cad90dfeb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Markov_decision_process"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "马尔可夫决策过程"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的简化版本，因为没有状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-8e13b919f4a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标是最大化累积奖励 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{t=1}^T r_t"
+        },
+        {
+          "type": "text",
+          "text": ".如果我们知道具有最佳奖励的最优行动，那么目标与最小化潜在的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Regret_(decision_theory)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "遗憾"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 或因未选择最优行动而造成的损失相同。"
+        }
+      ]
+    },
+    "paragraph-b715d513b7a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最优奖励概率"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta^{*}"
+        },
+        {
+          "type": "text",
+          "text": "的最优行动"
+        },
+        {
+          "type": "inline_math",
+          "text": "a^{*}"
+        },
+        {
+          "type": "text",
+          "text": "是："
+        }
+      ]
+    },
+    "paragraph-8e8fb4256534": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们的损失函数是截至时间步 T 未选择最优行动可能产生的总遗憾："
+        }
+      ]
+    },
+    "heading-73c5b33f2843": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "赌博机策略"
+        }
+      ]
+    },
+    "paragraph-defa5487ef86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据我们进行探索的方式，有几种方法可以解决多臂赌博机问题。"
+        }
+      ]
+    },
+    "list-item-2aaf0ca1c07f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "不探索：最幼稚且糟糕的方法。"
+        }
+      ]
+    },
+    "list-item-ac1c7526b380": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机探索"
+        }
+      ]
+    },
+    "list-item-d5ce181e45c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能探索，偏向不确定性"
+        }
+      ]
+    },
+    "heading-ec52f4446da6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ε-贪婪算法"
+        }
+      ]
+    },
+    "paragraph-5dbd8f89ed46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ε-贪婪算法在大多数时间采取最佳行动，但偶尔会进行随机探索。行动价值根据过去的经验进行估计，方法是平均我们迄今为止（直到当前时间步 t）观察到的与目标行动 a 相关的奖励："
+        }
+      ]
+    },
+    "paragraph-39ad76de23ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个二元指示函数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "N_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 是行动 a 迄今为止被选择的次数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "N_t(a) = \\sum_{\\tau=1}^t \\mathbb{1}[a_\\tau = a]"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-663962727ed9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据 ε-贪婪算法，我们以小概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\epsilon"
+        },
+        {
+          "type": "text",
+          "text": " 采取随机行动，但在其他情况下（这应该是大多数时间，概率为 1-"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\epsilon"
+        },
+        {
+          "type": "text",
+          "text": "），我们选择迄今为止学到的最佳行动："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{a}^{*}_t = \\arg\\max_{a \\in \\mathcal{A}} \\hat{Q}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-f5439c720587": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在此处查看我的玩具实现 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/multi-armed-bandit/blob/master/solvers.py#L45"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "here"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-2471e942850a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "置信上限"
+        }
+      ]
+    },
+    "paragraph-95f68b304d30": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机探索为我们提供了尝试我们不甚了解的选项的机会。然而，由于随机性，我们可能会探索一个过去已确认的糟糕行动（运气不佳！）。为了避免这种低效探索，一种方法是随时间减少参数 ε，另一种方法是对具有 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "高不确定性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的选项保持乐观，从而偏好那些我们尚未有可靠价值估计的行动。换句话说，我们倾向于探索那些具有强大潜力以获得最优价值的行动。"
+        }
+      ]
+    },
+    "paragraph-2274ea23e90d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "置信上限（UCB）算法通过奖励值的置信上限 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{U}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 来衡量这种潜力，使得真实值以高概率低于界限 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a) \\leq \\hat{Q}_t(a) + \\hat{U}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": "。置信上限 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{U}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 的函数；更多的试验次数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 应该会给我们一个更小的界限 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{U}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-0212f393ee11": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 UCB 算法中，我们总是选择最贪婪的行动来最大化置信上限："
+        }
+      ]
+    },
+    "paragraph-03dc7ede3059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "现在，问题是 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "如何估计置信上限"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-e2c6c47d0619": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "霍夫丁不等式"
+        }
+      ]
+    },
+    "paragraph-546afcdb6f9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果我们不想对分布的形状施加任何先验知识，我们可以借助 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://cs229.stanford.edu/extra-notes/hoeffding.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“霍夫丁不等式”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "——一个适用于任何有界分布的定理。"
+        }
+      ]
+    },
+    "paragraph-d63f42bc28ef": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设 "
+        },
+        {
+          "type": "inline_math",
+          "text": "X_1, \\dots, X_t"
+        },
+        {
+          "type": "text",
+          "text": " 是独立同分布 (i.i.d.) 的随机变量，它们都由区间 [0, 1] 界定。样本均值为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\overline{X}_t = \\frac{1}{t}\\sum_{\\tau=1}^t X_\\tau"
+        },
+        {
+          "type": "text",
+          "text": "。那么对于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "u > 0"
+        },
+        {
+          "type": "text",
+          "text": "，我们有："
+        }
+      ]
+    },
+    "paragraph-3bbf621c5431": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个目标行动 "
+        },
+        {
+          "type": "inline_math",
+          "text": "a"
+        },
+        {
+          "type": "text",
+          "text": "，让我们考虑："
+        }
+      ]
+    },
+    "list-item-77237f19f0d2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "r_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 作为随机变量，"
+        }
+      ]
+    },
+    "list-item-e5b2373df506": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a)"
+        },
+        {
+          "type": "text",
+          "text": " 作为真实均值，"
+        }
+      ]
+    },
+    "list-item-beee00e0441a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{Q}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 作为样本均值，"
+        }
+      ]
+    },
+    "list-item-b81e6178bb54": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "并将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "u"
+        },
+        {
+          "type": "text",
+          "text": " 作为置信上限，"
+        },
+        {
+          "type": "inline_math",
+          "text": "u = U_t(a)"
+        }
+      ]
+    },
+    "paragraph-0b7050a414fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "那么我们有，"
+        }
+      ]
+    },
+    "paragraph-181de776140f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们希望选择一个界限，使得真实均值有很大机会低于样本均值 + 置信上限。因此 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e^{-2t U_t(a)^2}"
+        },
+        {
+          "type": "text",
+          "text": " 应该是一个小概率。假设我们接受一个微小的阈值 p："
+        }
+      ]
+    },
+    "heading-32d418190418": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "UCB1"
+        }
+      ]
+    },
+    "paragraph-dd7c985ea956": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一种启发式方法是随时间减少阈值 p，因为我们希望在观察到更多奖励时进行更可靠的界限估计。设置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p=t^{-4}"
+        },
+        {
+          "type": "text",
+          "text": "，我们得到 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "UCB1"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 算法："
+        }
+      ]
+    },
+    "heading-61926d45c505": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "贝叶斯 UCB"
+        }
+      ]
+    },
+    "paragraph-f4fed944e8b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 UCB 或 UCB1 算法中，我们不对奖励分布做任何先验假设，因此我们必须依赖霍夫丁不等式进行非常泛化的估计。如果我们能够预先知道分布，我们将能够做出更好的界限估计。"
+        }
+      ]
+    },
+    "paragraph-6c5c56ff3639": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，如果我们期望每个老虎机的平均奖励呈高斯分布，如图 2 所示，我们可以通过将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{U}_t(a)"
+        },
+        {
+          "type": "text",
+          "text": " 设置为标准差的两倍来将上限设置为 95% 置信区间。"
+        }
+      ]
+    },
+    "paragraph-e0c0c82e66f8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "查看我用 Beta 先验在 θ 上实现的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/multi-armed-bandit/blob/master/solvers.py#L76"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "UCB1"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/multi-armed-bandit/blob/master/solvers.py#L99"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "贝叶斯 UCB"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的玩具实现。"
+        }
+      ]
+    },
+    "heading-635f6b4eb693": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "汤普森采样"
+        }
+      ]
+    },
+    "paragraph-4c7567c73901": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "汤普森采样思想简单，但在解决多臂老虎机问题上效果显著。"
+        }
+      ]
+    },
+    "paragraph-1bcc253c2053": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每个时间步，我们希望根据动作 a 是 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "最优"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的概率来选择动作 a："
+        }
+      ]
+    },
+    "paragraph-6b2fcfca3f7d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi(a ; \\vert ; h_t)"
+        },
+        {
+          "type": "text",
+          "text": " 是在给定历史 "
+        },
+        {
+          "type": "inline_math",
+          "text": "h_t"
+        },
+        {
+          "type": "text",
+          "text": " 的情况下采取动作 a 的概率。"
+        }
+      ]
+    },
+    "paragraph-4691948a38fc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于伯努利多臂赌博机，很自然地假设"
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a)"
+        },
+        {
+          "type": "text",
+          "text": "遵循"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Beta_distribution"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Beta"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "分布，因为"
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(a)"
+        },
+        {
+          "type": "text",
+          "text": "本质上是"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Bernoulli_distribution"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "伯努利"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "分布中的成功概率θ。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{Beta}(\\alpha, \\beta)"
+        },
+        {
+          "type": "text",
+          "text": "的值在区间[0, 1]内；α和β分别对应于我们"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "成功"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "未能"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "获得奖励的次数。"
+        }
+      ]
+    },
+    "paragraph-0757925c92ec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，让我们根据对每个行动的一些先验知识或信念来初始化Beta参数α和β。例如，"
+        }
+      ]
+    },
+    "list-item-d081fe8800c5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "α = 1且β = 1；我们预期奖励概率为50%，但我们对此不是很确定。"
+        }
+      ]
+    },
+    "list-item-b7ae5393579f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "α = 1000 且 β = 9000; 我们强烈认为奖励概率为 10%。"
+        }
+      ]
+    },
+    "paragraph-c8e208cde103": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每个时间 t，我们抽取一个预期奖励，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{Q}(a)"
+        },
+        {
+          "type": "text",
+          "text": "，从先验分布中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{Beta}(\\alpha_i, \\beta_i)"
+        },
+        {
+          "type": "text",
+          "text": "针对每个动作。从样本中选择最佳动作："
+        },
+        {
+          "type": "inline_math",
+          "text": "a^{TS}_t = \\arg\\max_{a \\in \\mathcal{A}} \\tilde{Q}(a)"
+        },
+        {
+          "type": "text",
+          "text": "。观察到真实奖励后，我们可以相应地更新 Beta 分布，这本质上是进行贝叶斯推断，以已知先验和采样数据似然来计算后验。"
+        }
+      ]
+    },
+    "paragraph-639df07745e0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Thompson 采样实现了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Probability_matching"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "概率匹配"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的思想。由于其奖励估计"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{Q}"
+        },
+        {
+          "type": "text",
+          "text": "是从后验分布中采样的，因此这些概率中的每一个都等同于在观察到的历史条件下，相应动作是最优的概率。"
+        }
+      ]
+    },
+    "paragraph-ef5589041759": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，对于许多实际和复杂的问题，使用贝叶斯推断估计具有观测真实奖励的后验分布在计算上是难以处理的。如果我们能够使用吉布斯采样、拉普拉斯近似和自举法等方法近似后验分布，汤普森采样仍然可以奏效。这篇"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1707.02038.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "教程"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提供了一个全面的回顾；如果你想了解更多关于汤普森采样，强烈推荐它。"
+        }
+      ]
+    },
+    "heading-c0d5f9888d96": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "案例研究"
+        }
+      ]
+    },
+    "paragraph-4e1c5ed34249": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/multi-armed-bandit"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "lilianweng/multi-armed-bandit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中实现了上述算法。一个"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/multi-armed-bandit/blob/master/bandits.py#L13"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BernoulliBandit"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对象可以通过随机或预定义的奖励概率列表来构建。这些强盗算法被实现为"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/multi-armed-bandit/blob/master/solvers.py#L9"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Solver"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的子类，将一个 Bandit 对象作为目标问题。累积遗憾随时间被跟踪。"
+        }
+      ]
+    },
+    "heading-a718189f99fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总结"
+        }
+      ]
+    },
+    "paragraph-393335491e6f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们需要探索，因为信息是有价值的。就探索策略而言，我们可以完全不进行探索，只关注短期回报。或者我们偶尔随机探索。或者更进一步，我们进行探索，并且对探索哪些选项很挑剔——具有更高不确定性的行动更受青睐，因为它们可以提供更高的信息增益。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-b70e70445c3f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] CS229 补充讲义："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://cs229.stanford.edu/extra-notes/hoeffding.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "霍夫丁不等式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-90d31d9f9a16": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] David Silver 强化学习课程 - 第 9 讲："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://youtu.be/sGuiWX07sKw"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "探索与利用"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-92026c50f533": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Olivier Chapelle 和 Lihong Li. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/4321-an-empirical-evaluation-of-thompson-sampling.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“汤普森抽样的实证评估。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS. 2011。"
+        }
+      ]
+    },
+    "paragraph-e2039417593e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Russo, Daniel, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1707.02038.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“汤普森抽样教程。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv:1707.02038 (2017)。"
+        }
+      ]
+    }
+  }
+}

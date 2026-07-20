@@ -1,0 +1,3451 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:6afd468a26e8458d6f12b387ebfbe936eb8cedf4e722248c15740a11d047d685",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "从 GAN 到 WGAN",
+  "segments": {
+    "paragraph-07eaa9baec84": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2018-09-30 更新：感谢 Yoonju，本文已翻译成 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/yjucho1/articles/blob/master/fromGANtoWGAN/readme.md"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "韩语"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "！]"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "[2019-04-18 更新：本文也可在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1904.08994"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "arXiv"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 上查阅。]"
+        }
+      ]
+    },
+    "paragraph-8a91e0881150": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1406.2661.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "生成对抗网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（GAN）在许多生成任务中都取得了显著成果，能够复制图像、人类语言和音乐等现实世界中的丰富内容。它受到博弈论的启发：两个模型，一个生成器和一个判别器，在相互竞争的同时也使彼此变得更强大。然而，训练 GAN 模型相当具有挑战性，因为人们面临着训练不稳定或无法收敛等问题。"
+        }
+      ]
+    },
+    "paragraph-7722a4fee3c3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在此，我将解释生成对抗网络框架背后的数学原理，为什么它难以训练，并最终介绍一个旨在解决训练困难的 GAN 修改版本。"
+        }
+      ]
+    },
+    "heading-94b04eb83f3c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Kullback–Leibler 散度和 Jensen–Shannon 散度"
+        }
+      ]
+    },
+    "paragraph-eb2d469baf95": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们开始仔细研究 GAN 之前，让我们首先回顾两个用于量化两个概率分布之间相似性的指标。"
+        }
+      ]
+    },
+    "paragraph-c7b72a9e1baf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "KL（Kullback–Leibler）散度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "衡量一个概率分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 与第二个预期概率分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q"
+        },
+        {
+          "type": "text",
+          "text": " 的差异程度。"
+        }
+      ]
+    },
+    "paragraph-1b8363272f2d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "D_{KL}"
+        },
+        {
+          "type": "text",
+          "text": " 在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(x)"
+        },
+        {
+          "type": "text",
+          "text": " == "
+        },
+        {
+          "type": "inline_math",
+          "text": "q(x)"
+        },
+        {
+          "type": "text",
+          "text": " 处处相等时，达到最小零值。"
+        }
+      ]
+    },
+    "paragraph-2d24bc3b3c39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据公式可以看出，KL 散度是不对称的。在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(x)"
+        },
+        {
+          "type": "text",
+          "text": " 接近零，而 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q(x)"
+        },
+        {
+          "type": "text",
+          "text": " 显著非零的情况下，"
+        },
+        {
+          "type": "inline_math",
+          "text": "q"
+        },
+        {
+          "type": "text",
+          "text": " 的影响会被忽略。当我们只想衡量两个同等重要分布之间的相似性时，这可能会导致错误的结果。"
+        }
+      ]
+    },
+    "paragraph-4586f9da2b1b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jensen–Shannon 散度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是衡量两个概率分布之间相似性的另一个指标，其值受限于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "[0, 1]"
+        },
+        {
+          "type": "text",
+          "text": "。JS 散度是对称的（太棒了！）并且更平滑。如果你对 KL 散度和 JS 散度之间的比较感兴趣，请查阅这篇 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.quora.com/Why-isnt-the-Jensen-Shannon-divergence-used-more-often-than-the-Kullback-Leibler-since-JS-is-symmetric-thus-possibly-a-better-indicator-of-distance"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Quora 帖子"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-df7a9507a934": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一些人认为（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1511.05101.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Huszar, 2015"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）GAN 取得巨大成功的一个原因是将传统最大似然方法中不对称的 KL 散度损失函数切换为对称的 JS 散度。我们将在下一节中详细讨论这一点。"
+        }
+      ]
+    },
+    "heading-622d31641e14": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成对抗网络 (GAN)"
+        }
+      ]
+    },
+    "paragraph-80215999fc9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GAN 由两个模型组成："
+        }
+      ]
+    },
+    "list-item-43a7fdacca87": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个判别器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": " 估计给定样本来自真实数据集的概率。它充当判别器，并被优化以区分假样本和真实样本。"
+        }
+      ]
+    },
+    "list-item-b87b3bae5c78": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个生成器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 在给定噪声变量输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 带来潜在的输出多样性）的情况下，输出合成样本。它被训练来捕获真实数据分布，以便其生成的样本尽可能真实，换句话说，能够欺骗判别器给出高概率。"
+        }
+      ]
+    },
+    "paragraph-9c05e756a75c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这两个模型在训练过程中相互竞争：生成器 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 努力欺骗判别器，而判别器模型 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": " 努力不被欺骗。这两个模型之间有趣的零和博弈促使它们都改进各自的功能。"
+        }
+      ]
+    },
+    "paragraph-6ce0fc1d9569": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定，"
+        }
+      ]
+    },
+    "table-c5a74d8d9766": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "符号",
+          "含义",
+          "备注"
+        ],
+        "rows": [
+          [
+            "$p_{z}$",
+            "噪声输入 $z$ 的数据分布",
+            "通常是均匀分布。"
+          ],
+          [
+            "$p_{g}$",
+            "生成器在数据 $x$ 上的分布",
+            ""
+          ],
+          [
+            "$p_{r}$",
+            "真实样本 $x$ 上的数据分布",
+            ""
+          ]
+        ]
+      }
+    },
+    "paragraph-7238f3a37217": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一方面，我们希望确保判别器"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "对真实数据的决策是准确的，通过最大化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}_{x \\sim p_{r}(x)} [\\log D(x)]"
+        },
+        {
+          "type": "text",
+          "text": "。同时，给定一个伪造样本"
+        },
+        {
+          "type": "inline_math",
+          "text": "G(z), z \\sim p_z(z)"
+        },
+        {
+          "type": "text",
+          "text": "，判别器应输出一个概率，"
+        },
+        {
+          "type": "inline_math",
+          "text": "D(G(z))"
+        },
+        {
+          "type": "text",
+          "text": "，接近零，通过最大化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}_{z \\sim p_{z}(z)} [\\log (1 - D(G(z)))]"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-5edb5e14498a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一方面，生成器被训练来增加"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "为假样本生成高概率的可能性，从而最小化"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}_{z \\sim p_{z}(z)} [\\log (1 - D(G(z)))]"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-86afbf385fe5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当将这两个方面结合起来时，"
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": "正在玩一场"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "最小最大博弈"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，我们应该优化以下损失函数："
+        }
+      ]
+    },
+    "paragraph-3c4284435875": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "("
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}_{x \\sim p_{r}(x)} [\\log D(x)]"
+        },
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": "的梯度下降更新过程中没有影响。)"
+        }
+      ]
+    },
+    "heading-431dcf4e306b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "D 的最优值是多少？"
+        }
+      ]
+    },
+    "paragraph-df571df2fc69": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "现在我们有了一个定义良好的损失函数。让我们首先检查 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": " 的最佳值是多少。"
+        }
+      ]
+    },
+    "paragraph-5fc31fd72da2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于我们感兴趣的是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(x)"
+        },
+        {
+          "type": "text",
+          "text": " 的最佳值是多少才能最大化 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L(G, D)"
+        },
+        {
+          "type": "text",
+          "text": "，我们将其标记为"
+        }
+      ]
+    },
+    "paragraph-e516af7882f5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后积分内部（我们可以安全地忽略积分，因为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 是在所有可能的值上采样的）是："
+        }
+      ]
+    },
+    "paragraph-005162145e66": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，设置 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{d f(\\tilde{x})}{d \\tilde{x}} = 0"
+        },
+        {
+          "type": "text",
+          "text": "，我们得到判别器的最佳值："
+        },
+        {
+          "type": "inline_math",
+          "text": "D^*(x) = \\tilde{x}^* = \\frac{A}{A + B} = \\frac{p_{r}(x)}{p_{r}(x) + p_g(x)} \\in [0, 1]"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-4fe470cdcc30": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一旦生成器训练到最优，"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 会非常接近 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_{r}"
+        },
+        {
+          "type": "text",
+          "text": "。当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g = p_{r}"
+        },
+        {
+          "type": "text",
+          "text": " 时，"
+        },
+        {
+          "type": "inline_math",
+          "text": "D^*(x)"
+        },
+        {
+          "type": "text",
+          "text": " 变为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "1/2"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-d0911f1ece33": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "什么是全局最优？"
+        }
+      ]
+    },
+    "paragraph-81ee78b7f7b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": " 都处于最优值时，我们得到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g = p_{r}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D^*(x) = 1/2"
+        },
+        {
+          "type": "text",
+          "text": "，损失函数变为："
+        }
+      ]
+    },
+    "heading-7474ce2b2d1c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失函数代表什么？"
+        }
+      ]
+    },
+    "paragraph-283e7c4eccbc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-08-20-gan/#kullbackleibler-and-jensenshannon-divergence"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上一节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中列出的公式，"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_{r}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 之间的 JS 散度可以计算为："
+        }
+      ]
+    },
+    "paragraph-b69b716bf24b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，"
+        }
+      ]
+    },
+    "paragraph-2fd1b82d0c30": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本质上，当判别器最优时，GAN 的损失函数通过 JS 散度量化了生成数据分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 和真实样本分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_{r}"
+        },
+        {
+          "type": "text",
+          "text": " 之间的相似性。最佳的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G^*"
+        },
+        {
+          "type": "text",
+          "text": " 能够复制真实数据分布，从而导致最小的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L(G^*, D^*) = -2\\log2"
+        },
+        {
+          "type": "text",
+          "text": "，这与上述方程一致。"
+        }
+      ]
+    },
+    "paragraph-a8d7e740c11a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "GAN 的其他变体"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：GAN 在不同上下文或为不同任务设计时有许多变体。例如，对于半监督学习，一个想法是更新判别器以输出真实类别标签，"
+        },
+        {
+          "type": "inline_math",
+          "text": "1, \\dots, K-1"
+        },
+        {
+          "type": "text",
+          "text": "，以及一个伪造类别标签"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "。生成器模型旨在欺骗判别器，使其输出一个小于"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "的分类标签。"
+        }
+      ]
+    },
+    "paragraph-f595ca91a6db": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Tensorflow 实现"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/carpedm20/DCGAN-tensorflow"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "carpedm20/DCGAN-tensorflow"
+            }
+          ]
+        }
+      ]
+    },
+    "heading-6f6ac763310e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GAN 中的问题"
+        }
+      ]
+    },
+    "paragraph-cd1ea79559c4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "尽管GAN在真实图像生成方面取得了巨大成功，但其训练并不容易；该过程以缓慢和不稳定而闻名。"
+        }
+      ]
+    },
+    "heading-3e4028207eb7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "难以达到纳什均衡"
+        }
+      ]
+    },
+    "paragraph-47f10b78df2c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Salimans et al. (2016)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 讨论了GAN基于梯度下降的训练过程存在的问题。两个模型同时进行训练，以找到一个两人非合作博弈的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Nash_equilibrium"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "纳什均衡"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。然而，每个模型独立更新其成本，而不考虑博弈中的另一个参与者。同时更新两个模型的梯度不能保证收敛。"
+        }
+      ]
+    },
+    "paragraph-633af8507420": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们看一个简单的例子，以便更好地理解为什么在非合作博弈中很难找到纳什均衡。假设一个参与者控制 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 以最小化 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f_1(x) = xy"
+        },
+        {
+          "type": "text",
+          "text": "，而同时另一个参与者不断更新 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 以最小化 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f_2(y) = -xy"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-b75d694c1b4c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{\\partial f_1}{\\partial x} = y"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{\\partial f_2}{\\partial y} = -x"
+        },
+        {
+          "type": "text",
+          "text": "，我们在一个迭代中同时更新"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "使用"
+        },
+        {
+          "type": "inline_math",
+          "text": "x-\\eta \\cdot y"
+        },
+        {
+          "type": "text",
+          "text": "，并更新"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "使用"
+        },
+        {
+          "type": "inline_math",
+          "text": "y+ \\eta \\cdot x"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": "是学习率。一旦"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "符号不同，后续的每一次梯度更新都会导致巨大的振荡，并且不稳定会随着时间恶化，如所示。"
+        }
+      ]
+    },
+    "heading-dd24116c28ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "低维支持"
+        }
+      ]
+    },
+    "table-dd18351dcee5": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "术语",
+          "解释"
+        ],
+        "rows": [
+          [
+            "流形",
+            "在每个点附近局部类似于欧几里得空间的拓扑空间。准确地说，当这个欧几里得空间是 $n$ 维时，该流形被称为 $n$ 维流形。"
+          ],
+          [
+            "支持",
+            "实值函数 $f$ 是域的子集，包含那些不映射到零的元素。"
+          ]
+        ]
+      }
+    },
+    "paragraph-3332ca45abaa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1701.04862.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Arjovsky and Bottou (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 讨论了 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Support_(mathematics)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "支持"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 位于低维 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Manifold"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "流形"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的问题，以及它如何在一个非常理论化的论文 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1701.04862.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Towards principled methods for training generative adversarial networks”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中彻底地导致 GAN 训练的不稳定性。"
+        }
+      ]
+    },
+    "paragraph-ea3b3d085c97": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "许多真实世界数据集的维度，如 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 所表示的，似乎只是 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "人为地高"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。它们被发现集中在一个较低维度的流形中。这实际上是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://scikit-learn.org/stable/modules/manifold.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "流形学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的基本假设。考虑到真实世界的图像，一旦主题或包含的对象确定，图像就会有很多限制需要遵循，例如，一只狗应该有两只耳朵和一条尾巴，一座摩天大楼应该有一个笔直高大的身体等等。这些限制使得图像无法拥有高维度的自由形式。"
+        }
+      ]
+    },
+    "paragraph-6e9b3dcf278c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 也位于低维流形中。每当生成器被要求根据一个小的维度（例如100）的噪声变量输入 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": " 生成一个大得多的图像（例如64x64）时，这4096个像素的颜色分布就已经由这个小的100维随机数向量定义了，并且很难填满整个高维空间。"
+        }
+      ]
+    },
+    "paragraph-88291925b83b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 都位于低维流形中，它们几乎肯定是不相交的（参见图4）。当它们具有不相交的支持集时，我们总是能够找到一个完美的判别器，100%正确地分离真实样本和伪造样本。如果您对证明感兴趣，请查阅这篇 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1701.04862.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-4a59e05ebb45": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "梯度消失"
+        }
+      ]
+    },
+    "paragraph-4341d7cdc807": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当判别器完美时，我们能保证得到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(x) = 1, \\forall x \\in p_r"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D(x) = 0, \\forall x \\in p_g"
+        },
+        {
+          "type": "text",
+          "text": "。因此，损失函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L"
+        },
+        {
+          "type": "text",
+          "text": " 降至零，我们在学习迭代过程中最终没有梯度来更新损失。图 5 展示了一个实验，当判别器表现更好时，梯度会快速消失。"
+        }
+      ]
+    },
+    "paragraph-f77841354ca7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，训练 GAN 面临一个 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "困境"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-f1cd8238b3de": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果判别器表现不佳，生成器就没有准确的反馈，损失函数也无法代表真实情况。"
+        }
+      ]
+    },
+    "list-item-614f15d98081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果判别器表现出色，损失函数的梯度会降至接近零，学习过程会变得极其缓慢甚至停滞。"
+        }
+      ]
+    },
+    "paragraph-abbcb60de71f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个困境显然会使 GAN 的训练变得非常困难。"
+        }
+      ]
+    },
+    "heading-32e6e05ea1de": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模式崩溃"
+        }
+      ]
+    },
+    "paragraph-78ef309ff0e3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在训练过程中，生成器可能会崩溃到总是产生相同输出的状态。这是 GAN 的一个常见故障，通常被称为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "模式崩溃"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。尽管生成器可能能够欺骗相应的判别器，但它未能学会表示复杂的真实世界数据分布，并陷入一个多样性极低的小空间中。"
+        }
+      ]
+    },
+    "heading-d8bbe23549c6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "缺乏合适的评估指标"
+        }
+      ]
+    },
+    "paragraph-3bcb7c52d92b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成对抗网络天生不具备一个好的目标函数来告知我们训练进度。如果没有一个好的评估指标，就像在黑暗中工作。没有好的迹象来判断何时停止；没有好的指标来比较多个模型的性能。"
+        }
+      ]
+    },
+    "heading-9691d1702c73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "改进的 GAN 训练"
+        }
+      ]
+    },
+    "paragraph-c3b1a38c7c8e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下建议旨在帮助稳定和改进 GAN 的训练。"
+        }
+      ]
+    },
+    "paragraph-37dc60dfa4fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "前五种方法是实现 GAN 训练更快收敛的实用技术，在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Improve Techniques for Training GANs”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中提出。后两种方法在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1701.04862.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Towards principled methods for training generative adversarial networks”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中提出，旨在解决不相交分布的问题。"
+        }
+      ]
+    },
+    "paragraph-9287ccb9f3de": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "特征匹配"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-1b579f257f82": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "特征匹配建议优化判别器，以检查生成器的输出是否与真实样本的预期统计数据匹配。在这种情况下，新的损失函数定义为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "| \\mathbb{E}_{x \\sim p_r} f(x) - \\mathbb{E}_{z \\sim p_z(z)}f(G(z)) |_2^2 "
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x)"
+        },
+        {
+          "type": "text",
+          "text": " 可以是特征统计数据的任何计算，例如均值或中位数。"
+        }
+      ]
+    },
+    "paragraph-2ce0d5cd8e2f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "小批量判别"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-224b2116af9a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过小批量判别，判别器能够理解一个批次中训练数据点之间的关系，而不是独立处理每个点。"
+        }
+      ]
+    },
+    "paragraph-52722303b132": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一个小批量中，我们近似计算每对样本之间的接近度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c(x_i, x_j)"
+        },
+        {
+          "type": "text",
+          "text": "，并通过将一个数据点与同一批次中其他样本的接近度求和来获得该数据点的总体摘要 "
+        },
+        {
+          "type": "inline_math",
+          "text": "o(x_i) = \\sum_{j} c(x_i, x_j)"
+        },
+        {
+          "type": "text",
+          "text": "。然后将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "o(x_i)"
+        },
+        {
+          "type": "text",
+          "text": " 明确地添加到模型的输入中。"
+        }
+      ]
+    },
+    "paragraph-4e474a9560da": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(3) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "历史平均"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-06ed8f350308": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于这两个模型，将 "
+        },
+        {
+          "type": "inline_math",
+          "text": " | \\Theta - \\frac{1}{t} \\sum_{i=1}^t \\Theta_i |^2 "
+        },
+        {
+          "type": "text",
+          "text": " 添加到损失函数中，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Theta"
+        },
+        {
+          "type": "text",
+          "text": " 是模型参数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Theta_i"
+        },
+        {
+          "type": "text",
+          "text": " 是参数在过去的训练时间 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 的配置方式。当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Theta"
+        },
+        {
+          "type": "text",
+          "text": " 随时间变化过于剧烈时，这个附加项会惩罚训练速度。"
+        }
+      ]
+    },
+    "paragraph-f19a6c55fa33": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(4) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "单边标签平滑"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-38db4cd33e1d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在向判别器输入时，不提供 1 和 0 的标签，而是使用 0.9 和 0.1 等软化值。这被证明可以降低网络的脆弱性。"
+        }
+      ]
+    },
+    "paragraph-90892df3e590": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(5) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "虚拟批量归一化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (VBN)"
+        }
+      ]
+    },
+    "paragraph-d535b35b2b99": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个数据样本都基于一个固定的数据批次（"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“参考批次”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）进行归一化，而不是在其小批量内进行。参考批次在开始时选择一次，并在整个训练过程中保持不变。"
+        }
+      ]
+    },
+    "paragraph-8ab19570a1bf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Theano 实现"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/openai/improved-gan"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "openai/improved-gan"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-c4c89dde7e17": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(6) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "添加噪声"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-675925583a7b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-08-20-gan/#low-dimensional-supports"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上一节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的讨论，我们现在知道 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 在高维空间中是不相交的，这导致了梯度消失问题。为了人为地“展开”分布并增加两个概率分布重叠的机会，一个解决方案是在判别器的输入中添加连续噪声 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-d06e663bc197": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(7) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用更好的分布相似性度量"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-808fb4fd1bfb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "原始 GAN 的损失函数衡量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 分布之间的 JS 散度。当两个分布不相交时，此度量无法提供有意义的值。"
+        }
+      ]
+    },
+    "paragraph-9818f542b8b2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提出了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Wasserstein_metric"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wasserstein 度量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来替代 JS 散度，因为它具有更平滑的值空间。更多内容请参见下一节。"
+        }
+      ]
+    },
+    "heading-3a1c00b7fb53": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Wasserstein GAN (WGAN)"
+        }
+      ]
+    },
+    "heading-1924ee30f6e0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "什么是 Wasserstein 距离？"
+        }
+      ]
+    },
+    "paragraph-aef5c45ad6ae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Wasserstein_metric"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wasserstein 距离"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是衡量两个概率分布之间距离的一种度量。它也被称为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "推土机距离"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，简称 EM 距离，因为非正式地，它可以解释为将一堆泥土从一个概率分布的形状移动并转换为另一个分布形状所需的最小能量成本。成本量化为：移动的泥土量 x 移动距离。"
+        }
+      ]
+    },
+    "paragraph-bfa899be70d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们首先看一个概率域是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "离散"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的简单情况。例如，假设我们有两个分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": "，每个分布有四堆泥土，并且总共有十铲泥土。每堆泥土中的铲数分配如下："
+        }
+      ]
+    },
+    "paragraph-3e3e8d913988": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了使 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": " 看起来像 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": "，如图 7 所示，我们："
+        }
+      ]
+    },
+    "list-item-28905038ec1d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先将 2 铲泥土从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_1"
+        },
+        {
+          "type": "text",
+          "text": " 移动到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_2"
+        },
+        {
+          "type": "text",
+          "text": " => "
+        },
+        {
+          "type": "inline_math",
+          "text": "(P_1, Q_1)"
+        },
+        {
+          "type": "text",
+          "text": " 匹配。"
+        }
+      ]
+    },
+    "list-item-b18e54a91eff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后将 2 铲泥土从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_2"
+        },
+        {
+          "type": "text",
+          "text": " 移动到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_3"
+        },
+        {
+          "type": "text",
+          "text": " => "
+        },
+        {
+          "type": "inline_math",
+          "text": "(P_2, Q_2)"
+        },
+        {
+          "type": "text",
+          "text": " 匹配。"
+        }
+      ]
+    },
+    "list-item-f78658f65e86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后将 1 铲泥土从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q_3"
+        },
+        {
+          "type": "text",
+          "text": " 移动到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q_4"
+        },
+        {
+          "type": "text",
+          "text": " => "
+        },
+        {
+          "type": "inline_math",
+          "text": "(P_3, Q_3)"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(P_4, Q_4)"
+        },
+        {
+          "type": "text",
+          "text": " 匹配。"
+        }
+      ]
+    },
+    "paragraph-dfa8611df9e1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果我们把使 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_i"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q_i"
+        },
+        {
+          "type": "text",
+          "text": " 匹配的成本标记为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\delta_i"
+        },
+        {
+          "type": "text",
+          "text": "，那么我们将得到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\delta_{i+1} = \\delta_i + P_i - Q_i"
+        },
+        {
+          "type": "text",
+          "text": "，在示例中："
+        }
+      ]
+    },
+    "paragraph-3f19414f0cde": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，地球移动距离是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W = \\sum \\vert \\delta_i \\vert = 5"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-f465f6d00b7a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在处理连续概率域时，距离公式变为："
+        }
+      ]
+    },
+    "paragraph-09cafc11b905": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在上述公式中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Pi(p_r, p_g)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 之间所有可能的联合概率分布的集合。一个联合分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\gamma \\in \\Pi(p_r, p_g)"
+        },
+        {
+          "type": "text",
+          "text": " 描述了一个泥土运输方案，与上面的离散示例相同，但在连续概率空间中。精确地说，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\gamma(x, y)"
+        },
+        {
+          "type": "text",
+          "text": " 表示应将百分之多少的泥土从点 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 运输到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "，以使 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 遵循与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 相同的概率分布。这就是为什么 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 上的边际分布加起来等于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{x} \\gamma(x, y) = p_g(y)"
+        },
+        {
+          "type": "text",
+          "text": " (一旦我们完成将计划数量的泥土从每个可能的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 移动到目标 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "，我们最终会得到与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 根据 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 所拥有的完全相同的东西。) 反之亦然 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sum_{y} \\gamma(x, y) = p_r(x)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-a1f426174da2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 视为起点，将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": " 视为终点时，移动的泥土总量是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\gamma(x, y)"
+        },
+        {
+          "type": "text",
+          "text": "，移动距离是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "| x-y |"
+        },
+        {
+          "type": "text",
+          "text": "，因此成本是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\gamma(x, y) \\cdot | x-y |"
+        },
+        {
+          "type": "text",
+          "text": "。所有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(x,y)"
+        },
+        {
+          "type": "text",
+          "text": " 对的平均预期成本可以很容易地计算为："
+        }
+      ]
+    },
+    "paragraph-df221ad8f4e0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，我们将所有泥土移动解决方案成本中的最小值作为EM距离。在Wasserstein距离的定义中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\inf"
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Infimum_and_supremum"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "下确界"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，也称为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最大下界"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 表示我们只对最小成本感兴趣。"
+        }
+      ]
+    },
+    "heading-24e2c5c3fe39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为什么Wasserstein比JS或KL散度更好？"
+        }
+      ]
+    },
+    "paragraph-ef351ed8f8c3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "即使当两个分布位于没有重叠的低维流形中时，Wasserstein距离仍然可以提供它们之间距离的有意义且平滑的表示。"
+        }
+      ]
+    },
+    "paragraph-aee2aa5673b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "WGAN论文通过一个简单的例子阐述了这个想法。"
+        }
+      ]
+    },
+    "paragraph-18dd1154dc13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们有两个概率分布，"
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-47121cec73aa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta \\neq 0"
+        },
+        {
+          "type": "text",
+          "text": " 时："
+        }
+      ]
+    },
+    "paragraph-4d2fd5027df6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "但是当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta = 0"
+        },
+        {
+          "type": "text",
+          "text": " 时，两个分布完全重叠："
+        }
+      ]
+    },
+    "paragraph-0abfd12e8293": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "D_{KL}"
+        },
+        {
+          "type": "text",
+          "text": " 在两个分布不相交时给出无穷大。"
+        },
+        {
+          "type": "inline_math",
+          "text": "D_{JS}"
+        },
+        {
+          "type": "text",
+          "text": " 的值有突然的跳跃，在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta = 0"
+        },
+        {
+          "type": "text",
+          "text": " 处不可微分。只有Wasserstein度量提供了一个平滑的度量，这对于使用梯度下降的稳定学习过程非常有帮助。"
+        }
+      ]
+    },
+    "heading-d5719565852e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用Wasserstein距离作为GAN损失函数"
+        }
+      ]
+    },
+    "paragraph-b27445a8a771": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Pi(p_r, p_g)"
+        },
+        {
+          "type": "text",
+          "text": " 中穷举所有可能的联合分布来计算 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\inf_{\\gamma \\sim \\Pi(p_r, p_g)}"
+        },
+        {
+          "type": "text",
+          "text": " 是难以处理的。因此，作者基于Kantorovich-Rubinstein对偶性提出了一种巧妙的公式转换，变为："
+        }
+      ]
+    },
+    "paragraph-b9198bebdc0a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sup"
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Infimum_and_supremum"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上确界"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 与 "
+        },
+        {
+          "type": "inline_math",
+          "text": "inf"
+        },
+        {
+          "type": "text",
+          "text": " (下确界) 相反；我们想要测量最小上界，或者更简单地说，最大值。"
+        }
+      ]
+    },
+    "paragraph-a8376162b823": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Lipschitz连续性？"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-f77b093718a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "新形式的Wasserstein度量中的函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": " 被要求满足 "
+        },
+        {
+          "type": "inline_math",
+          "text": "| f |_L \\leq K"
+        },
+        {
+          "type": "text",
+          "text": "，这意味着它应该是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Lipschitz_continuity"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "K-Lipschitz连续的"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-29f94b6849c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个实值函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f: \\mathbb{R} \\rightarrow \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": " 被称为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "-Lipschitz连续的，如果存在一个实常数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K \\geq 0"
+        },
+        {
+          "type": "text",
+          "text": "，使得对于所有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x_1, x_2 \\in \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        }
+      ]
+    },
+    "paragraph-b701c1bca7e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\n\\lvert f(x_1) - f(x_2) \\rvert \\leq K \\lvert x_1 - x_2 \\rvert\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    },
+    "paragraph-932162a154ba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这里 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": " 被称为函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(.)"
+        },
+        {
+          "type": "text",
+          "text": " 的Lipschitz常数。处处连续可微的函数是Lipschitz连续的，因为导数（估计为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{\\lvert f(x_1) - f(x_2) \\rvert}{\\lvert x_1 - x_2 \\rvert}"
+        },
+        {
+          "type": "text",
+          "text": "）有界。然而，Lipschitz连续函数可能并非处处可微，例如 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(x) = \\lvert x \\rvert"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-941e60e3e963": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "解释Wasserstein距离公式如何进行转换本身就值得写一篇长文，所以这里我跳过细节。如果你对如何使用线性规划计算Wasserstein度量，或者如何根据Kantorovich-Rubinstein对偶性将Wasserstein度量转换为其对偶形式感兴趣，请阅读这篇 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://vincentherrmann.github.io/blog/wasserstein/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "很棒的文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-9866477eb0bb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设这个函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": " 来自一个K-Lipschitz连续函数族 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{ f_w \\}_{w \\in W}"
+        },
+        {
+          "type": "text",
+          "text": "，由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": " 参数化。在修改后的Wasserstein-GAN中，“判别器”模型用于学习 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": " 以找到一个好的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f_w"
+        },
+        {
+          "type": "text",
+          "text": "，并且损失函数被配置为测量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_r"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_g"
+        },
+        {
+          "type": "text",
+          "text": " 之间的Wasserstein距离。"
+        }
+      ]
+    },
+    "paragraph-7ba03ee5d680": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，“判别器”不再是直接区分假样本和真实样本的批评者。相反，它被训练来学习一个 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "-Lipschitz 连续函数，以帮助计算 Wasserstein 距离。随着训练中损失函数的减小，Wasserstein 距离变得更小，生成器模型的输出也越来越接近真实数据分布。"
+        }
+      ]
+    },
+    "paragraph-dd9c0b120245": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个大问题是在训练过程中保持"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "-Lipschitz 连续性"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_w"
+        },
+        {
+          "type": "text",
+          "text": "，以使一切正常运行。该论文提出了一种简单但非常实用的技巧：在每次梯度更新后，将权重"
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "限制在一个小范围内，例如"
+        },
+        {
+          "type": "inline_math",
+          "text": "[-0.01, 0.01]"
+        },
+        {
+          "type": "text",
+          "text": "，从而形成一个紧凑的参数空间"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "，因此"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_w"
+        },
+        {
+          "type": "text",
+          "text": "获得其下限和上限以保持 Lipschitz 连续性。"
+        }
+      ]
+    },
+    "paragraph-3ba880a3a4a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与原始 GAN 算法相比，WGAN 进行了以下更改："
+        }
+      ]
+    },
+    "list-item-5312b089d664": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在评论家函数上的每次梯度更新之后，将权重限制在一个小的固定范围内，"
+        },
+        {
+          "type": "inline_math",
+          "text": "[-c, c]"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-4d4af58de3f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用从 Wasserstein 距离导出的新损失函数，不再有对数。 “判别器”模型不再充当直接的评论家，而是作为估计真实数据分布和生成数据分布之间 Wasserstein 度量的辅助工具。"
+        }
+      ]
+    },
+    "list-item-5371065ac73b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据经验，作者推荐在评论家上使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "RMSProp"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 优化器，而不是基于动量的优化器，例如 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1412.6980v8"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Adam"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，后者可能导致模型训练不稳定。 我还没有看到关于这一点的明确理论解释。"
+        }
+      ]
+    },
+    "paragraph-c912352ce35a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "遗憾的是，Wasserstein GAN 并非完美无缺。即使原始 WGAN 论文的作者也提到"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“权重裁剪显然是强制执行 Lipschitz 约束的一种糟糕方式”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（哎呀！）。WGAN 仍然存在训练不稳定、权重裁剪后收敛缓慢（当裁剪窗口过大时）以及梯度消失（当裁剪窗口过小时）的问题。"
+        }
+      ]
+    },
+    "paragraph-4151ea8cf5bd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一些改进，确切地说是用"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "梯度惩罚"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "取代权重裁剪，已在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1704.00028.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gulrajani et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中讨论过。我将在未来的文章中讨论这一点。"
+        }
+      ]
+    },
+    "heading-2024f333da53": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例：创建新的宝可梦！"
+        }
+      ]
+    },
+    "paragraph-ffe019e59f7f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "出于乐趣，我尝试了 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/carpedm20/DCGAN-tensorflow"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "carpedm20/DCGAN-tensorflow"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 在一个小型数据集上，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/PokeAPI/sprites/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pokemon sprites"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。该数据集只有大约900张宝可梦图片，其中包括同一宝可梦物种的不同形态。"
+        }
+      ]
+    },
+    "paragraph-8a23f205285a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们看看模型能够创造出什么类型的新宝可梦。不幸的是，由于训练数据量很小，新宝可梦只有粗略的形状，没有细节。随着训练周期的增加，形状和颜色确实看起来更好了！万岁！"
+        }
+      ]
+    },
+    "paragraph-e2ef9b5bd8e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果您对"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/carpedm20/DCGAN-tensorflow"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "carpedm20/DCGAN-tensorflow"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的带注释版本以及如何修改它来训练WGAN和带有梯度惩罚的WGAN感兴趣，请查看"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/lilianweng/unified-gan-tensorflow"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "lilianweng/unified-gan-tensorflow"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-cccbf1e56aac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-68f3f4869b85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Goodfellow, Ian, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1406.2661.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“生成对抗网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS, 2014."
+        }
+      ]
+    },
+    "paragraph-a90fc3455717": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Tim Salimans, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“改进的GAN训练技术。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2016."
+        }
+      ]
+    },
+    "paragraph-bd4e428781d4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Martin Arjovsky and Léon Bottou. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1701.04862.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“迈向训练生成对抗网络的原则性方法。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1701.04862 (2017)."
+        }
+      ]
+    },
+    "paragraph-c06accd24b2b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Martin Arjovsky, Soumith Chintala, and Léon Bottou. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1701.07875.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Wasserstein GAN。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1701.07875 (2017)."
+        }
+      ]
+    },
+    "paragraph-8b03dfccb263": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Ishaan Gulrajani, Faruk Ahmed, Martin Arjovsky, Vincent Dumoulin, Aaron Courville. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1704.00028.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "改进的Wasserstein GAN训练。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1704.00028 (2017)."
+        }
+      ]
+    },
+    "paragraph-8616538571c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://robotics.stanford.edu/~scohen/research/emdg/emdg.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "在变换下计算地球移动距离"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-a797362319bd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://vincentherrmann.github.io/blog/wasserstein/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wasserstein GAN与Kantorovich-Rubinstein对偶性"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-fdcdcb4101d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://zhuanlan.zhihu.com/p/25071913"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "zhuanlan.zhihu.com/p/25071913"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-8963c48efa6a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Ferenc Huszár. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1511.05101.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“如何（不）训练你的生成模型：计划采样、似然、对抗？”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1511.05101 (2015)."
+        }
+      ]
+    }
+  }
+}

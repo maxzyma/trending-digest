@@ -1,0 +1,2385 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:f812e5aaec273f2c28aa4252602117cb463010d121001af07509d8dafc21c2d6",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable+math-tokenizer-v2",
+  "title": "学习词嵌入",
+  "segments": {
+    "paragraph-a75a78e20472": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "人类词汇以自由文本形式存在。为了让机器学习模型理解和处理自然语言，我们需要将自由文本词语转换为数值。最简单的转换方法之一是进行独热编码，其中每个不同的词代表结果向量的一个维度，二进制值表示该词是否存在（1）或不存在（0）。"
+        }
+      ]
+    },
+    "paragraph-0160f77dd28d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，当处理整个词汇表时，独热编码在计算上是不切实际的，因为这种表示需要数十万个维度。词嵌入将词语和短语表示为（非二进制）数值向量，维度更低，因此更密集。一个好的词嵌入的直观假设是它们可以近似词语之间的相似性（即，“cat”和“kitten”是相似的词，因此它们在降维向量空间中应该接近）或揭示隐藏的语义关系（即，“cat”和“kitten”之间的关系类似于“dog”和“puppy”之间的关系）。上下文信息对于学习词义和关系非常有用，因为相似的词语经常出现在相似的上下文中。"
+        }
+      ]
+    },
+    "paragraph-c41667b0513f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "学习词嵌入主要有两种方法，它们都依赖于上下文知识。"
+        }
+      ]
+    },
+    "list-item-67ebb02e338b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "基于计数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：第一种是无监督的，基于全局词共现矩阵的矩阵分解。原始的共现计数效果不佳，因此我们希望在此基础上做一些巧妙的处理。"
+        }
+      ]
+    },
+    "list-item-82919597d8dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "基于上下文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：第二种方法是监督式的。给定一个局部上下文，我们希望设计一个模型来预测目标词，同时，该模型学习高效的词嵌入表示。"
+        }
+      ]
+    },
+    "heading-6d9c56db8091": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于计数的向量空间模型"
+        }
+      ]
+    },
+    "paragraph-6c06d8eb17ce": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于计数的向量空间模型严重依赖词频和共现矩阵，其假设是相同上下文中的词语共享相似或相关的语义。这些模型将邻近词语之间的共现等基于计数的统计数据映射到小而密集的词向量。PCA、主题模型和神经概率语言模型都是此类别的良好示例。"
+        }
+      ]
+    },
+    "paragraph-2d91f6df866c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与基于计数的方法不同，基于上下文的方法构建预测模型，直接旨在根据给定邻居词来预测一个词。密集的词向量是模型参数的一部分。每个词的最佳向量表示在模型训练过程中学习。"
+        }
+      ]
+    },
+    "heading-2650e3fa25bf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于上下文：Skip-Gram 模型"
+        }
+      ]
+    },
+    "paragraph-7d843d24c57a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设你有一个固定大小的滑动窗口沿着句子移动：中间的词是“目标词”，滑动窗口内其左右两侧的词是上下文词。Skip-gram 模型（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1301.3781.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Mikolov et al., 2013"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）经过训练，用于预测给定目标词的上下文词的概率。"
+        }
+      ]
+    },
+    "paragraph-f7564373c3ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下示例展示了通过一个沿句子滑动的5词窗口生成的多个目标词和上下文词对作为训练样本。"
+        }
+      ]
+    },
+    "paragraph-e9f44917d9c5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "“判决者应挥剑。”——奈德·史塔克"
+        }
+      ]
+    },
+    "table-94123f25cafa": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "滑动窗口（大小 = 5）",
+          "目标词",
+          "上下文"
+        ],
+        "rows": [
+          [
+            "[这个男人，他]",
+            "这个",
+            "男人，他"
+          ],
+          [
+            "[这个男人，他通过]",
+            "男人",
+            "这个，他，通过"
+          ],
+          [
+            "[这个男人，他通过这个]",
+            "他",
+            "这个，男人，通过，这个"
+          ],
+          [
+            "[判决之人]",
+            "判决",
+            "人，谁，这，判决"
+          ],
+          [
+            "…",
+            "…",
+            "…"
+          ],
+          [
+            "[判决应挥舞利剑]",
+            "挥舞",
+            "判决，应，这，利剑"
+          ],
+          [
+            "[应挥舞利剑]",
+            "这",
+            "应，挥舞，利剑"
+          ],
+          [
+            "[挥舞利剑]",
+            "利剑",
+            "挥舞，这"
+          ],
+          [
+            "{:.info}",
+            "",
+            ""
+          ]
+        ]
+      }
+    },
+    "paragraph-43b3d52b3113": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个上下文-目标对都被视为数据中的一个新观察。例如，在上述情况下，目标词“swing”会产生四个训练样本：（“swing”，“sentence”）、（“swing”，“should”）、（“swing”，“the”）和（“swing”，“sword”）。"
+        }
+      ]
+    },
+    "paragraph-9c131e9d65e4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定词汇表大小"
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": "，我们将学习大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "的词嵌入向量。该模型学习一次使用一个目标词（输入）来预测一个上下文词（输出）。"
+        }
+      ]
+    },
+    "paragraph-ed88d90e77de": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据图1，"
+        }
+      ]
+    },
+    "list-item-b8019609b176": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "输入词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "和输出词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_j"
+        },
+        {
+          "type": "text",
+          "text": "被独热编码成二进制向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": "大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-6e3008c75b01": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，二元向量的乘法"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{x}"
+        },
+        {
+          "type": "text",
+          "text": "与词嵌入矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "V \\times N"
+        },
+        {
+          "type": "text",
+          "text": "得到输入词的嵌入向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "即矩阵的第i行"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-139837516516": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个新发现的维度为"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "的嵌入向量构成了隐藏层。"
+        }
+      ]
+    },
+    "list-item-b19774af7d6e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "隐藏层与词语上下文矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W’"
+        },
+        {
+          "type": "text",
+          "text": " 的乘法，其大小为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N \\times V"
+        },
+        {
+          "type": "text",
+          "text": "，生成输出的独热编码向量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-41a94dc99605": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "输出上下文矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W’"
+        },
+        {
+          "type": "text",
+          "text": " 将词语的含义编码为上下文，与嵌入矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": " 不同。注意：尽管名称如此，"
+        },
+        {
+          "type": "inline_math",
+          "text": "W’"
+        },
+        {
+          "type": "text",
+          "text": " 独立于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "，它不是转置、逆矩阵或任何其他关系。"
+        }
+      ]
+    },
+    "heading-fce80db87d42": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于上下文：连续词袋模型（CBOW）"
+        }
+      ]
+    },
+    "paragraph-212bc330fe5b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "连续词袋模型（CBOW）是另一种用于学习词向量的类似模型。它根据源上下文词（例如，“sentence should the sword”）预测目标词（例如，“swing”）。"
+        }
+      ]
+    },
+    "paragraph-f18e03aa46f4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因为存在多个上下文词，我们对其相应的词向量进行平均，这些词向量是通过输入向量与矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": " 相乘构建的。由于平均阶段会平滑掉大量的分布信息，因此有些人认为 CBOW 模型更适合小型数据集。"
+        }
+      ]
+    },
+    "heading-860c1d38c9e5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失函数"
+        }
+      ]
+    },
+    "paragraph-7d5bb4178378": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "skip-gram 模型和 CBOW 模型都应该通过最小化精心设计的损失/目标函数来训练。我们可以采用多种损失函数来训练这些语言模型。在下面的讨论中，我们将以 skip-gram 模型为例来描述损失是如何计算的。"
+        }
+      ]
+    },
+    "heading-be3c21d5e25d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "全 Softmax"
+        }
+      ]
+    },
+    "paragraph-56869dd9ebea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "skip-gram 模型通过矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "定义了每个词的嵌入向量，并通过输出矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "W’"
+        },
+        {
+          "type": "text",
+          "text": "定义了上下文向量。给定一个输入词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_I"
+        },
+        {
+          "type": "text",
+          "text": "，我们将"
+        },
+        {
+          "type": "inline_math",
+          "text": "W"
+        },
+        {
+          "type": "text",
+          "text": "的对应行标记为向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_{w_I}"
+        },
+        {
+          "type": "text",
+          "text": "（嵌入向量），并将其在"
+        },
+        {
+          "type": "inline_math",
+          "text": "W’"
+        },
+        {
+          "type": "text",
+          "text": "中的对应列标记为"
+        },
+        {
+          "type": "inline_math",
+          "text": "v’_{w_I}"
+        },
+        {
+          "type": "text",
+          "text": "（上下文向量）。最终输出层应用 softmax 来计算预测输出词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_O"
+        },
+        {
+          "type": "text",
+          "text": "的概率，给定"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_I"
+        },
+        {
+          "type": "text",
+          "text": "，因此："
+        }
+      ]
+    },
+    "paragraph-145a3501888e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这在呈现时是准确的。然而，当"
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": "非常大时，通过遍历每个样本的所有词来计算分母在计算上是不切实际的。对更高效条件概率估计的需求催生了诸如"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "分层 Softmax"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "之类的新方法。"
+        }
+      ]
+    },
+    "heading-86dcf244fe5f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分层 Softmax"
+        }
+      ]
+    },
+    "paragraph-4f73edcd870a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Morin 和 Bengio ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "2005"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 提出了分层 Softmax，以借助二叉树结构加快求和计算。分层 Softmax 将语言模型的输出 Softmax 层编码成树状层次结构，其中每个叶子节点代表一个词，每个内部节点代表其子节点的相对概率。"
+        }
+      ]
+    },
+    "paragraph-519a8c1ff9c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "有一个从根节点到其对应叶节点的唯一路径。选择该词的概率等同于从根节点沿着树分支向下遍历该路径的概率。由于我们知道"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_n"
+        },
+        {
+          "type": "text",
+          "text": "的内部节点"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "，得到该词的概率可以通过在每个内部节点处选择向左或向右的乘积来计算。"
+        }
+      ]
+    },
+    "paragraph-5bc2e8aeeac7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据图 3，一个节点的概率是（"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": " 是 sigmoid 函数）："
+        }
+      ]
+    },
+    "paragraph-d805fec7d8ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "得到上下文词的最终概率"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_O"
+        },
+        {
+          "type": "text",
+          "text": "给定输入词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_I"
+        },
+        {
+          "type": "text",
+          "text": "为："
+        }
+      ]
+    },
+    "paragraph-6e3d706dc7bf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L(w_O)"
+        },
+        {
+          "type": "text",
+          "text": " 是通向词语 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_O"
+        },
+        {
+          "type": "text",
+          "text": " 的路径深度，而 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{I}_{\\text{turn}}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个特殊的指示函数，如果 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n(w_O, k+1)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n(w_O, k)"
+        },
+        {
+          "type": "text",
+          "text": " 的左子节点则返回 1，否则返回 -1。内部节点的嵌入在模型训练期间学习。树结构在训练时有助于将分母估计的复杂度从 O(V)（词汇量）大幅降低到 O(log V)（树的深度）。然而，在预测时，我们仍然需要计算每个词的概率并选择最佳的，因为我们事先不知道要到达哪个叶子节点。"
+        }
+      ]
+    },
+    "paragraph-778d7d5d4001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个好的树结构对模型性能至关重要。一些实用的原则包括：像霍夫曼树那样按频率对词语进行分组以实现简单的加速；将相似的词语分组到相同或相近的分支中（即使用预定义的词簇，WordNet）。"
+        }
+      ]
+    },
+    "heading-72a571309be1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "交叉熵"
+        }
+      ]
+    },
+    "paragraph-c2021f80ee66": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一种方法完全脱离了 softmax 框架。相反，损失函数衡量的是预测概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 与真实二元标签 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}"
+        },
+        {
+          "type": "text",
+          "text": " 之间的交叉熵。"
+        }
+      ]
+    },
+    "paragraph-6a234324e779": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，我们回顾一下，两个分布之间的交叉熵"
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "q"
+        },
+        {
+          "type": "text",
+          "text": "被衡量为"
+        },
+        {
+          "type": "inline_math",
+          "text": " H(p, q) = -\\sum_x p(x) \\log q(x) "
+        },
+        {
+          "type": "text",
+          "text": "。在我们的例子中，真实标签"
+        },
+        {
+          "type": "inline_math",
+          "text": "y_i"
+        },
+        {
+          "type": "text",
+          "text": "仅当"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "是输出词时为1；"
+        },
+        {
+          "type": "inline_math",
+          "text": "y_j"
+        },
+        {
+          "type": "text",
+          "text": "否则为0。损失函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L}_\\theta"
+        },
+        {
+          "type": "text",
+          "text": "的模型，其参数配置为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "旨在最小化预测与真实值之间的交叉熵，因为较低的交叉熵表明两个分布之间具有高度相似性。"
+        }
+      ]
+    },
+    "paragraph-37dae0636d1e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "回想一下，"
+        }
+      ]
+    },
+    "paragraph-3b88212aebba": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，"
+        }
+      ]
+    },
+    "paragraph-218a4b4410e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了开始使用带有 SGD 的反向传播训练模型，我们需要计算损失函数的梯度。为简单起见，我们将其标记为"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_{IO} = {v’_{w_O}}^{\\top}{v_{w_I}}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-a86955953fb9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(\\tilde{w})"
+        },
+        {
+          "type": "text",
+          "text": " 是噪声样本的分布。"
+        }
+      ]
+    },
+    "paragraph-119e3d4813f6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据上述公式，正确的输出词根据第一项获得正向强化（"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\nabla_\\theta z_{IO}"
+        },
+        {
+          "type": "text",
+          "text": " 越大，我们得到的损失越小），而其他词则根据第二项产生负面影响。"
+        }
+      ]
+    },
+    "paragraph-37b541065e67": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如何使用一组噪声词样本而不是遍历整个词汇表来估计 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{E}_{w_i \\sim Q(\\tilde{w})} \\nabla_\\theta {v’_{w_i}}^{\\top}{v_{w_I}}"
+        },
+        {
+          "type": "text",
+          "text": "，是使用基于交叉熵的采样方法的关键。"
+        }
+      ]
+    },
+    "heading-cd30b3cd7382": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "噪声对比估计 (NCE)"
+        }
+      ]
+    },
+    "paragraph-871d90eb59ca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "噪声对比估计 (NCE) 指标旨在利用逻辑回归分类器将目标词与噪声样本区分开来 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://proceedings.mlr.press/v9/gutmann10a/gutmann10a.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gutmann and Hyvärinen, 2010"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "paragraph-2d8464757ad0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 足够大时，根据 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Law_of_large_numbers"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "大数定律"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，"
+        }
+      ]
+    },
+    "paragraph-37e403905c4a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了计算概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(d=1 \\vert w, w_I)"
+        },
+        {
+          "type": "text",
+          "text": "，我们可以从联合概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(d, w \\vert w_I)"
+        },
+        {
+          "type": "text",
+          "text": " 开始。在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w, \\tilde{w}_1, \\tilde{w}_2, \\dots, \\tilde{w}_N"
+        },
+        {
+          "type": "text",
+          "text": " 中，我们有 1/(N+1) 的机会选择真实词 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "，它从条件概率 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(w \\vert w_I)"
+        },
+        {
+          "type": "text",
+          "text": " 中采样；同时，我们有 N/(N+1) 的机会选择一个噪声词，每个噪声词都从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "q(\\tilde{w}) \\sim Q"
+        },
+        {
+          "type": "text",
+          "text": " 中采样。因此，"
+        }
+      ]
+    },
+    "paragraph-cd2c383c65e6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后我们可以计算出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(d=1 \\vert w, w_I)"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(d=0 \\vert w, w_I)"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-c157e033d338": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最终，NCE 二分类器的损失函数变为："
+        }
+      ]
+    },
+    "paragraph-8a97ee594cda": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，"
+        },
+        {
+          "type": "inline_math",
+          "text": "p(w \\vert w_I)"
+        },
+        {
+          "type": "text",
+          "text": " 仍然涉及在分母中对整个词汇表求和。我们将分母标记为输入词的配分函数，即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Z(w_I)"
+        },
+        {
+          "type": "text",
+          "text": "。一个常见的假设是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Z(w) \\approx 1"
+        },
+        {
+          "type": "text",
+          "text": "，因为我们期望 softmax 输出层是归一化的（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cs.toronto.edu/~amnih/papers/ncelm.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Minh and Teh, 2012"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。然后损失函数简化为："
+        }
+      ]
+    },
+    "paragraph-4c19cba251cb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "噪声分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": " 是一个可调参数，我们希望以以下方式设计它："
+        }
+      ]
+    },
+    "list-item-c2e421aa1cac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "直观上它应该与真实数据分布非常相似；并且"
+        }
+      ]
+    },
+    "list-item-fd70f21c7611": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它应该易于采样。"
+        }
+      ]
+    },
+    "paragraph-58838a0e87f3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，tensorflow 中 NCE 损失的采样实现（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/candidate_sampling_ops.py#L83"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "log_uniform_candidate_sampler"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）假设此类噪声样本遵循对数均匀分布，也称为 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Zipf%27s_law"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "齐夫定律"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。给定词的对数概率预计与其排名成反比，而高频词被赋予较低的排名。在这种情况下，"
+        },
+        {
+          "type": "inline_math",
+          "text": "q(\\tilde{w}) = \\frac{1}{ \\log V}(\\log (r_{\\tilde{w}} + 1) - \\log r_{\\tilde{w}})"
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "r_{\\tilde{w}} \\in [1, V]"
+        },
+        {
+          "type": "text",
+          "text": " 是按频率降序排列的词的排名。"
+        }
+      ]
+    },
+    "heading-f1ad7f93247b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "负采样 (NEG)"
+        }
+      ]
+    },
+    "paragraph-d4912989837d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Mikolov 等人（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "2013"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）提出的负采样 (NEG) 是 NCE 损失的一种简化变体。它尤其以训练 Google 的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://code.google.com/archive/p/word2vec/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "word2vec"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 项目而闻名。与 NCE 损失试图近似最大化 softmax 输出的对数概率不同，负采样进行了进一步简化，因为它专注于学习高质量的词嵌入，而不是对自然语言中的词分布进行建模。"
+        }
+      ]
+    },
+    "paragraph-6890cfc1197a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NEG 使用 sigmoid 函数近似二元分类器的输出，如下所示："
+        }
+      ]
+    },
+    "paragraph-c9aa69a12d9c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最终的 NCE 损失函数如下所示："
+        }
+      ]
+    },
+    "heading-e963bf94cce2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "学习词嵌入的其他技巧"
+        }
+      ]
+    },
+    "paragraph-52117745b0ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Mikolov 等人 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "2013"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 提出了一些有益的实践，这些实践可以带来良好的词嵌入学习结果。"
+        }
+      ]
+    },
+    "list-item-66af981761d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "软滑动窗口"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". 在滑动窗口内配对词语时，我们可以给距离较远的词语分配较小的权重。一种启发式方法是——给定一个定义的最大窗口大小参数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_{\\text{max}}"
+        },
+        {
+          "type": "text",
+          "text": "，实际窗口大小在每个训练样本中在 1 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_{\\text{max}}"
+        },
+        {
+          "type": "text",
+          "text": " 之间随机采样。因此，每个上下文词语被观察到的概率是 1/(它与目标词语的距离)，而相邻词语总是被观察到的。"
+        }
+      ]
+    },
+    "list-item-54aac62ce926": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "频繁词下采样"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。极其频繁的词可能过于通用，无法区分上下文（例如，想想停用词）。另一方面，稀有词更有可能携带独特的信息。为了平衡频繁词和稀有词，Mikolov 等人提出丢弃词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "概率为"
+        },
+        {
+          "type": "inline_math",
+          "text": "1-\\sqrt{t/f(w)}"
+        },
+        {
+          "type": "text",
+          "text": "在采样过程中。其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "f(w)"
+        },
+        {
+          "type": "text",
+          "text": "是词频，"
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "是一个可调阈值。"
+        }
+      ]
+    },
+    "list-item-23fcc07e6af9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "首先学习短语"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。短语通常作为一个概念单元存在，而不是单个词的简单组合。例如，即使我们知道“new”和“york”的含义，我们也无法真正判断“New York”是一个城市名称。在训练词嵌入模型之前，首先学习这些短语并将其视为词单元，可以提高结果质量。一种简单的数据驱动方法基于一元词和二元词计数："
+        },
+        {
+          "type": "inline_math",
+          "text": "s_{\\text{phrase}} = \\frac{C(w_i w_j) - \\delta}{ C(w_i)C(w_j)}"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "C(.)"
+        },
+        {
+          "type": "text",
+          "text": "是一元词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "或二元词"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i w_j"
+        },
+        {
+          "type": "text",
+          "text": "的简单计数，而"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\delta"
+        },
+        {
+          "type": "text",
+          "text": "是一个折扣阈值，用于防止出现超低频词和短语。更高的分数表明成为短语的可能性更大。为了形成超过两个词的短语，我们可以通过降低分数截止值多次扫描词汇表。"
+        }
+      ]
+    },
+    "heading-f3f496374dd5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GloVe：全局向量"
+        }
+      ]
+    },
+    "paragraph-e1c13396fa58": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Pennington 等人 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.aclweb.org/anthology/D14-1162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "2014"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 提出的全局向量（GloVe）模型旨在将基于计数的矩阵分解和基于上下文的skip-gram模型结合起来。"
+        }
+      ]
+    },
+    "paragraph-5d9ccd396ac4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们都知道计数和共现可以揭示词语的含义。为了与词嵌入语境中的"
+        },
+        {
+          "type": "inline_math",
+          "text": "p(w_O \\vert w_I)"
+        },
+        {
+          "type": "text",
+          "text": "区分开来，我们希望将共现概率定义为："
+        }
+      ]
+    },
+    "paragraph-28ba64eb9a92": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "C(w_i, w_k)"
+        },
+        {
+          "type": "text",
+          "text": " 计算词语"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_k"
+        },
+        {
+          "type": "text",
+          "text": "之间的共现。"
+        }
+      ]
+    },
+    "paragraph-c58811710400": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们有两个词，"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "=“ice”和"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_j"
+        },
+        {
+          "type": "text",
+          "text": "=“steam”。第三个词"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{w}_k"
+        },
+        {
+          "type": "text",
+          "text": "=“solid”与“ice”相关但与“steam”无关，因此我们期望"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_{\\text{co}}(\\tilde{w}_k \\vert w_i)"
+        },
+        {
+          "type": "text",
+          "text": "远大于"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_{\\text{co}}(\\tilde{w}_k \\vert w_j)"
+        },
+        {
+          "type": "text",
+          "text": "，从而"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}"
+        },
+        {
+          "type": "text",
+          "text": "会非常大。如果第三个词"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{w}_k"
+        },
+        {
+          "type": "text",
+          "text": " = “water”与两者都相关，或者"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{w}_k"
+        },
+        {
+          "type": "text",
+          "text": " = “fashion”与两者都无关，那么"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}"
+        },
+        {
+          "type": "text",
+          "text": "预计会接近一。"
+        }
+      ]
+    },
+    "paragraph-397e72e352c5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这里的直觉是，词义是通过共现概率的比率而不是概率本身来捕获的。全局向量模型将两个词与第三个上下文词之间的关系建模为："
+        }
+      ]
+    },
+    "paragraph-3142e228f3b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，由于目标是学习有意义的词向量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": " 被设计为两个词之间线性差异 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i - w_j"
+        },
+        {
+          "type": "text",
+          "text": " 的函数："
+        }
+      ]
+    },
+    "paragraph-c3386df3907e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "考虑到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": " 在目标词和上下文词之间是对称的，最终的解决方案是将 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": " 建模为一个 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "指数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 函数。有关这些方程的更多详细信息，请阅读原始论文 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.aclweb.org/anthology/D14-1162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pennington et al., 2014"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "paragraph-689204cefdec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，"
+        }
+      ]
+    },
+    "paragraph-c679bd091a9e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于第二项"
+        },
+        {
+          "type": "inline_math",
+          "text": "-\\log C(w_i)"
+        },
+        {
+          "type": "text",
+          "text": "独立于"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "，我们可以添加偏置项"
+        },
+        {
+          "type": "inline_math",
+          "text": "b_i"
+        },
+        {
+          "type": "text",
+          "text": "，用于"
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": "以捕获"
+        },
+        {
+          "type": "inline_math",
+          "text": "-\\log C(w_i)"
+        },
+        {
+          "type": "text",
+          "text": "。为了保持对称形式，我们还添加了一个偏置"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{b}_k"
+        },
+        {
+          "type": "text",
+          "text": "，用于"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{w}_k"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-d9f9ad50429d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GloVe 模型的损失函数旨在通过最小化平方误差之和来保留上述公式："
+        }
+      ]
+    },
+    "paragraph-27d2e8ed5900": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "加权方案 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f(c)"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_i"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_j"
+        },
+        {
+          "type": "text",
+          "text": " 共现的函数，它是一个可调整的模型配置。当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c \\to 0"
+        },
+        {
+          "type": "text",
+          "text": " 时，它应该接近零；随着共现程度的提高，它应该是非递减的，因为更高的共现应该有更大的影响；当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 变得非常大时，它应该饱和。本文提出了以下加权函数。"
+        }
+      ]
+    },
+    "heading-e9557699a571": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例：《权力的游戏》上的 word2vec"
+        }
+      ]
+    },
+    "paragraph-0e0bb4f052dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "回顾了以上所有理论知识后，让我们尝试一个从小说的“权力的游戏语料库”中提取词嵌入的小实验。使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://radimrehurek.com/gensim/models/word2vec.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "gensim"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，这个过程非常简单。"
+        }
+      ]
+    },
+    "paragraph-166f42ee9ef1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤 1：提取词语"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-5e06ae97470a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤 2：输入 word2vec 模型"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-f478f81e4c62": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "步骤 3：检查结果"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-f44d4862df1a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在《权力的游戏》词嵌入空间中，与“king”和“queen”最相似的词是："
+        }
+      ]
+    },
+    "table-46b162e6d521": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "model.most_similar('king', topn=10)（词语，与“king”的相似度）",
+          "model.most_similar('queen', topn=10)（词语，与“queen”的相似度）"
+        ],
+        "rows": [
+          [
+            "(‘kings’, 0.897245)",
+            "(‘cersei’, 0.942618)"
+          ],
+          [
+            "(‘baratheon’, 0.809675)",
+            "(‘joffrey’, 0.933756)"
+          ],
+          [
+            "(‘son’, 0.763614)",
+            "(‘margaery’, 0.931099)"
+          ],
+          [
+            "(‘robert’, 0.708522)",
+            "(‘sister’, 0.928902)"
+          ],
+          [
+            "(’lords’, 0.698684)",
+            "(‘prince’, 0.927364)"
+          ],
+          [
+            "(‘joffrey’, 0.696455)",
+            "(‘uncle’, 0.922507)"
+          ],
+          [
+            "(‘prince’, 0.695699)",
+            "(‘varys’, 0.918421)"
+          ],
+          [
+            "(‘brother’, 0.685239)",
+            "(’ned’, 0.917492)"
+          ],
+          [
+            "(‘aerys’, 0.684527)",
+            "(‘melisandre’, 0.915403)"
+          ],
+          [
+            "(‘stannis’, 0.682932)",
+            "(‘robb’, 0.915272)"
+          ]
+        ]
+      }
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用来源："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-b5145694c574": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Tensorflow 教程 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.tensorflow.org/tutorials/word2vec"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "词向量表示"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-062f85edbe07": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Chris McCormick 的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://mccormickml.com/2016/04/19/word2vec-tutorial-the-skip-gram-model/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Word2Vec 教程 - Skip-Gram 模型”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-adfd0e677304": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Sebastian Ruder 的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://ruder.io/word-embeddings-softmax/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“关于词嵌入 - 第 2 部分：Softmax 近似”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-beccbb4b3aff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] 戎欣。 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1411.2738.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "word2vec 参数学习解释"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-537c180f4ee7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Mikolov, Tomas, Kai Chen, Greg Corrado 和 Jeffrey Dean。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1301.3781.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“向量空间中词表示的有效估计。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1301.3781 (2013)。"
+        }
+      ]
+    },
+    "paragraph-8ca982e69ca2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Frederic Morin 和 Yoshua Bengio。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“分层概率神经网络语言模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Aistats. Vol. 5. 2005。"
+        }
+      ]
+    },
+    "paragraph-90652bf6b6b9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Michael Gutmann 和 Aapo Hyvärinen。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://proceedings.mlr.press/v9/gutmann10a/gutmann10a.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“噪声对比估计：一种非归一化统计模型的新估计原理。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 国际人工智能与统计学会议论文集。2010。"
+        }
+      ]
+    },
+    "paragraph-75c0aa8a8a51": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg Corrado 和 Jeffrey Dean。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“词和短语的分布式表示及其组合性。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 神经信息处理系统进展。2013。"
+        }
+      ]
+    },
+    "paragraph-6b35951a1642": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Tomas Mikolov, Kai Chen, Greg Corrado 和 Jeffrey Dean。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1301.3781.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“向量空间中词表示的有效估计。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1301.3781 (2013)。"
+        }
+      ]
+    },
+    "paragraph-615f2cd0e735": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Marco Baroni, Georgiana Dinu 和 Germán Kruszewski。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://anthology.aclweb.org/P/P14/P14-1023.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“不要计数，要预测！上下文计数与上下文预测语义向量的系统比较。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL (1). 2014。"
+        }
+      ]
+    },
+    "paragraph-32b3da5990c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Jeffrey Pennington, Richard Socher 和 Christopher Manning。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.aclweb.org/anthology/D14-1162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Glove：词表示的全局向量。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 经验自然语言处理方法会议论文集 (EMNLP)。2014。"
+        }
+      ]
+    },
+    "paragraph-0120c485e662": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定一个输入词 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_I"
+        },
+        {
+          "type": "text",
+          "text": "，正确的输出词记作 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "。与此同时，我们从噪声采样分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 中采样 "
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": " 个其他词，记作 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tilde{w}_1, \\tilde{w}_2, \\dots, \\tilde{w}_N \\sim Q"
+        },
+        {
+          "type": "text",
+          "text": "。我们把二元分类器的判定标记为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "，且 $d$$ 只能取二元值。"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4776 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2019-09-05-evolution-strategies",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2019-09-05T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:1f5305fd9b61ff91e8ad5160c40ef2d5da116eeffbb01256a4ca0a7d3866f22f",
+    "fetched_at": "2026-07-14T02:05:16.431584+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Evolution Strategies",
+    "title_en": "Evolution Strategies",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-73d982c78fbd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Stochastic gradient descent is a universal choice for optimizing deep learning models. However, it is not the only option. With black-box optimization algorithms, you can evaluate a target function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x): \\mathbb{R}^n \\to \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": ", even when you don’t know the precise analytic form of "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " and thus cannot compute gradients or the Hessian matrix. Examples of black-box optimization methods include "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Simulated_annealing"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Simulated Annealing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Hill_climbing"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hill Climbing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nelder-Mead method"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-66793b14ef39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolution Strategies (ES)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is one type of black-box optimization algorithms, born in the family of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolutionary Algorithms (EA)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". In this post, I would dive into a couple of classic ES methods and introduce a few applications of how ES can play a role in deep reinforcement learning."
+          }
+        ]
+      },
+      {
+        "id": "heading-76dd743f5b8f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What are Evolution Strategies?"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b6ab1c3af2d9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evolution strategies (ES) belong to the big family of evolutionary algorithms. The optimization targets of ES are vectors of real numbers, "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\in \\mathbb{R}^n"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4af7ab327925",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evolutionary algorithms refer to a division of population-based optimization algorithms inspired by "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "natural selection"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Natural selection believes that individuals with traits beneficial to their survival can live through generations and pass down the good characteristics to the next generation. Evolution happens by the selection process gradually and the population grows better adapted to the environment."
+          }
+        ]
+      },
+      {
+        "id": "image-b2135a54138b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/EA-illustration.png",
+          "alt": "How natural selection works. (Image source: Khan Academy: Darwin, evolution, & natural selection )"
+        }
+      },
+      {
+        "id": "paragraph-97dfa914c9fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evolutionary algorithms can be summarized in the following "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/13-Optimization/06-blackBoxOpt.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "format"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " as a general optimization solution:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aa9cfb5773ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say we want to optimize a function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " and we are not able to compute gradients directly. But we still can evaluate "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " given any "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " and the result is deterministic. Our belief in the probability distribution over "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " as a good solution to "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " optimization is "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(x)"
+          },
+          {
+            "type": "text",
+            "text": ", parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". The goal is to find an optimal configuration of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "blockquote-ce2c0a9014e0",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-decc6b2de9ce",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Here given a fixed format of distribution (i.e. Gaussian), the parameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta"
+              },
+              {
+                "type": "text",
+                "text": " carries  the knowledge about the best solutions and is being iteratively updated across generations."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-30145cc3b928",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Starting with an initial value of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", we can continuously update "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " by looping three steps as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-bc1876432b8a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-bc1ca14f505e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Generate a population of samples "
+              },
+              {
+                "type": "inline_math",
+                "text": "D = \\{(x_i, f(x_i)\\}"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "x_i \\sim p_\\theta(x)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-41c2cc7e6086",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Evaluate the “fitness” of samples in "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-da013d068002",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Select the best subset of individuals and use them to update "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta"
+              },
+              {
+                "type": "text",
+                "text": ", generally based on fitness or rank."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-254d8b9e9ada",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Genetic Algorithms (GA)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", another popular subcategory of EA, "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " is a sequence of binary codes, "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\in \\{0, 1\\}^n"
+          },
+          {
+            "type": "text",
+            "text": ". While in ES, "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " is just a vector of real numbers, "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\in \\mathbb{R}^n"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-03851f0be5a0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Simple Gaussian Evolution Strategies"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-3301f02e7296",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://blog.otoro.net/2017/10/29/visual-evolution-strategies/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "This"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is the most basic and canonical version of evolution strategies. It models "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(x)"
+          },
+          {
+            "type": "text",
+            "text": " as a "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional isotropic Gaussian distribution, in which "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " only tracks the mean "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mu"
+          },
+          {
+            "type": "text",
+            "text": " and standard deviation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-0fa11c77960f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta = (\\mu, \\sigma),\\;p_\\theta(x) \\sim \\mathcal{N}(\\mathbf{\\mu}, \\sigma^2 I) = \\mu + \\sigma \\mathcal{N}(0, I)"
+        }
+      },
+      {
+        "id": "paragraph-0434c311fc01",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The process of Simple-Gaussian-ES, given "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\in \\mathcal{R}^n"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "list-0d9c145f6768",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-36dc626c52ed",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta = \\theta^{(0)}"
+              },
+              {
+                "type": "text",
+                "text": " and the generation counter "
+              },
+              {
+                "type": "inline_math",
+                "text": "t=0"
+              }
+            ]
+          },
+          {
+            "id": "list-item-28ea6c2cc106",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Generate the offspring population of size "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\Lambda"
+              },
+              {
+                "type": "text",
+                "text": " by sampling from the Gaussian distribution:"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "inline_math",
+                "text": "D^{(t+1)}=\\{ x^{(t+1)}_i \\mid x^{(t+1)}_i = \\mu^{(t)} + \\sigma^{(t)} y^{(t+1)}_i \\text{ where } y^{(t+1)}_i \\sim \\mathcal{N}(x \\vert 0, \\mathbf{I}),;i = 1, \\dots, \\Lambda\\}"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a6af9926854b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Select a top subset of "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\lambda"
+              },
+              {
+                "type": "text",
+                "text": " samples with optimal "
+              },
+              {
+                "type": "inline_math",
+                "text": "f(x_i)"
+              },
+              {
+                "type": "text",
+                "text": " and this subset is called "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "elite"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " set. Without loss of generality, we may consider the first "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " samples in "
+              },
+              {
+                "type": "inline_math",
+                "text": "D^{(t+1)}"
+              },
+              {
+                "type": "text",
+                "text": " to belong to the elite group — Let’s label them as"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-fe6126b5f092",
+        "type": "math",
+        "attrs": {
+          "latex": "D^{(t+1)}\\_\\text{elite} = \\\\{x^{(t+1)}\\_i \\mid x^{(t+1)}\\_i \\in D^{(t+1)}, i=1,\\dots, \\lambda, \\lambda\\leq \\Lambda\\\\}"
+        }
+      },
+      {
+        "id": "list-a06f763d1596",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-c378c7b94ba3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then we estimate the new mean and std for the next generation using the elite set:"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "line_break"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-3c735916c8ea",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n  \\mu^{(t+1)} &= \\text{avg}(D^{(t+1)}_\\text{elite}) = \\frac{1}{\\lambda}\\sum_{i=1}^\\lambda x_i^{(t+1)} \\\\\n  {\\sigma^{(t+1)}}^2 &= \\text{var}(D^{(t+1)}_\\text{elite}) = \\frac{1}{\\lambda}\\sum_{i=1}^\\lambda (x_i^{(t+1)} -\\mu^{(t)})^2\n  \\end{aligned}"
+        }
+      },
+      {
+        "id": "list-1a762bfafc23",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-fc93b67b3ece",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Repeat steps (2)-(4) until the result is good enough ✌️"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-bede55f2a21a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Covariance Matrix Adaptation Evolution Strategies (CMA-ES)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-501e030ec2ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The standard deviation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " accounts for the level of exploration: the larger "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " the bigger search space we can sample our offspring population. In "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#simple-gaussian-evolution-strategies"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "vanilla ES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma^{(t+1)}"
+          },
+          {
+            "type": "text",
+            "text": " is highly correlated with "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma^{(t)}"
+          },
+          {
+            "type": "text",
+            "text": ", so the algorithm is not able to rapidly adjust the exploration space when needed (i.e. when the confidence level changes)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-54b96089898b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/CMA-ES"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "CMA-ES"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", short for "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“Covariance Matrix Adaptation Evolution Strategy”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", fixes the problem by tracking pairwise dependencies between the samples in the distribution with a covariance matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": ". The new distribution parameter becomes:"
+          }
+        ]
+      },
+      {
+        "id": "math-6a90d1fc4ef6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta = (\\mu, \\sigma, C),\\; p_\\theta(x) \\sim \\mathcal{N}(\\mu, \\sigma^2 C) \\sim \\mu + \\sigma \\mathcal{N}(0, C)"
+        }
+      },
+      {
+        "id": "paragraph-fee46fdf1869",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " controls for the overall scale of the distribution,  often known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "step size"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-70ba00115697",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before we dig into how the parameters are updated in CMA-ES, it is better to review how the covariance matrix works in the multivariate Gaussian distribution first. As a real symmetric matrix, the covariance matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " has the following nice features (See "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://s3.amazonaws.com/mitsloan-php/wp-faculty/sites/30/2016/12/15032137/Symmetric-Matrices-and-Eigendecomposition.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "proof"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " & "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://control.ucsd.edu/mauricio/courses/mae280a/lecture11.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "proof"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "list-866f754d135b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a04402338484",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "It is always diagonalizable."
+              }
+            ]
+          },
+          {
+            "id": "list-item-639f9ae58d0a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Always positive semi-definite."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a81225be4f7b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "All of its eigenvalues are real non-negative numbers."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d736e3e89f12",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "All of its eigenvectors are orthogonal."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d3e6ac647e8d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "There is an orthonormal basis of "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbb{R}^n"
+              },
+              {
+                "type": "text",
+                "text": " consisting of its eigenvectors."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-835c27070003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let the matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " have an "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "orthonormal"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " basis of eigenvectors "
+          },
+          {
+            "type": "inline_math",
+            "text": "B = [b_1, \\dots, b_n]"
+          },
+          {
+            "type": "text",
+            "text": ", with corresponding eigenvalues "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda_1^2, \\dots, \\lambda_n^2"
+          },
+          {
+            "type": "text",
+            "text": ". Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "D=\\text{diag}(\\lambda_1, \\dots, \\lambda_n)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-896bd1cfae94",
+        "type": "math",
+        "attrs": {
+          "latex": "C = B^\\top D^2 B\n= \\begin{bmatrix} \n\\mid & \\mid &  & \\mid \\\\\nb_1 & b_2 & \\dots & b_n\\\\\n\\mid & \\mid &  & \\mid \\\\\n\\end{bmatrix}\n\\begin{bmatrix}\n\\lambda_1^2 & 0 & \\dots & 0 \\\\\n0 & \\lambda_2^2 & \\dots & 0 \\\\\n\\vdots & \\dots & \\ddots & \\vdots \\\\\n0 & \\dots & 0 & \\lambda_n^2\n\\end{bmatrix}\n\\begin{bmatrix} \n- & b_1 & - \\\\\n- & b_2 & - \\\\\n  & \\dots & \\\\\n- & b_n & - \\\\\n\\end{bmatrix}"
+        }
+      },
+      {
+        "id": "paragraph-58a2e5dc17fb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The square root of "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-5213f2af1192",
+        "type": "math",
+        "attrs": {
+          "latex": "C^{\\frac{1}{2}} = B^\\top D B"
+        }
+      },
+      {
+        "id": "table-496e23eea7c9",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Symbol",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "$x_i^{(t)} \\in \\mathbb{R}^n$",
+              "the $i$-th samples at the generation (t)"
+            ],
+            [
+              "$y_i^{(t)} \\in \\mathbb{R}^n$",
+              "$x_i^{(t)} = \\mu^{(t-1)} + \\sigma^{(t-1)} y_i^{(t)} $"
+            ],
+            [
+              "$\\mu^{(t)}$",
+              "mean of the generation (t)"
+            ],
+            [
+              "$\\sigma^{(t)}$",
+              "step size"
+            ],
+            [
+              "$C^{(t)}$",
+              "covariance matrix"
+            ],
+            [
+              "$B^{(t)}$",
+              "a matrix of $C$’s eigenvectors as row vectors"
+            ],
+            [
+              "$D^{(t)}$",
+              "a diagonal matrix with $C$’s eigenvalues on the diagnose."
+            ],
+            [
+              "$p_\\sigma^{(t)}$",
+              "evaluation path for $\\sigma$ at the generation (t)"
+            ],
+            [
+              "$p_c^{(t)}$",
+              "evaluation path for $C$ at the generation (t)"
+            ],
+            [
+              "$\\alpha_\\mu$",
+              "learning rate for $\\mu$’s update"
+            ],
+            [
+              "$\\alpha_\\sigma$",
+              "learning rate for $p_\\sigma$"
+            ],
+            [
+              "$d_\\sigma$",
+              "damping factor for $\\sigma$’s update"
+            ],
+            [
+              "$\\alpha_{cp}$",
+              "learning rate for $p_c$"
+            ],
+            [
+              "$\\alpha_{c\\lambda}$",
+              "learning rate for $C$’s rank-min(λ, n) update"
+            ],
+            [
+              "$\\alpha_{c1}$",
+              "learning rate for $C$’s rank-1 update"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "heading-2579c10d9434",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Updating the Mean"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "math-571c1b8acb1e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mu^{(t+1)} = \\mu^{(t)} + \\alpha_\\mu \\frac{1}{\\lambda}\\sum_{i=1}^\\lambda (x_i^{(t+1)} - \\mu^{(t)})"
+        }
+      },
+      {
+        "id": "paragraph-8502ff269319",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CMA-ES has a learning rate "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_\\mu \\leq 1"
+          },
+          {
+            "type": "text",
+            "text": " to control how fast the mean "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mu"
+          },
+          {
+            "type": "text",
+            "text": " should be updated.  Usually it is set to 1 and thus the equation becomes the same as in vanilla ES, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mu^{(t+1)} = \\frac{1}{\\lambda}\\sum_{i=1}^\\lambda (x_i^{(t+1)}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-c462fd3f8ec9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Controlling the Step Size"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-bdc8638a0671",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The sampling process can be decoupled from the mean and standard deviation:"
+          }
+        ]
+      },
+      {
+        "id": "math-a901a226252f",
+        "type": "math",
+        "attrs": {
+          "latex": "x^{(t+1)}_i = \\mu^{(t)} + \\sigma^{(t)} y^{(t+1)}_i \\text{, where } y^{(t+1)}_i = \\frac{x_i^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\sim \\mathcal{N}(0, C)"
+        }
+      },
+      {
+        "id": "paragraph-d026444cf177",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " controls the overall scale of the distribution. It is separated from the covariance matrix so that we can change steps faster than the full covariance. A larger step size leads to faster parameter update. In order to evaluate whether the current step size is proper, CMA-ES constructs an "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "evolution path"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " by summing up a consecutive sequence of moving steps, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{1}{\\lambda}\\sum_{i}^\\lambda y_i^{(j)}, j=1, \\dots, t"
+          },
+          {
+            "type": "text",
+            "text": ". By comparing this path length with its expected length under random selection (meaning single steps are uncorrelated), we are able to adjust "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " accordingly (See Fig. 2)."
+          }
+        ]
+      },
+      {
+        "id": "image-f43a67bf9bf9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-step-size-path.png",
+          "alt": "Three scenarios of how single steps are correlated in different ways and their impacts on step size update. (Image source: additional annotations on Fig 5 in CMA-ES tutorial paper)"
+        }
+      },
+      {
+        "id": "paragraph-5d5315f3c88a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each time the evolution path is updated with the average of moving step "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i"
+          },
+          {
+            "type": "text",
+            "text": " in the same generation."
+          }
+        ]
+      },
+      {
+        "id": "math-86064be7b63e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n&\\frac{1}{\\lambda}\\sum_{i=1}^\\lambda y_i^{(t+1)} \n= \\frac{1}{\\lambda} \\frac{\\sum_{i=1}^\\lambda x_i^{(t+1)} - \\lambda \\mu^{(t)}}{\\sigma^{(t)}}\n= \\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\\\\n&\\frac{1}{\\lambda}\\sum_{i=1}^\\lambda y_i^{(t+1)} \n\\sim \\frac{1}{\\lambda}\\mathcal{N}(0, \\lambda C^{(t)}) \n\\sim \\frac{1}{\\sqrt{\\lambda}}{C^{(t)}}^{\\frac{1}{2}}\\mathcal{N}(0, I) \\\\\n&\\text{Thus } \\sqrt{\\lambda}\\;{C^{(t)}}^{-\\frac{1}{2}} \\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\sim \\mathcal{N}(0, I)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "blockquote-fc962e8ce3ba",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-017961d6d130",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "By multiplying with "
+              },
+              {
+                "type": "inline_math",
+                "text": "C^{-\\frac{1}{2}}"
+              },
+              {
+                "type": "text",
+                "text": ", the evolution path is transformed to be independent of its direction. The term "
+              },
+              {
+                "type": "inline_math",
+                "text": "{C^{(t)}}^{-\\frac{1}{2}} = {B^{(t)}}^\\top {D^{(t)}}^{-\\frac{1}{2}} {B^{(t)}}"
+              },
+              {
+                "type": "text",
+                "text": " transformation works as follows:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "list-e75157e07073",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-feafb4c549b7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "{B^{(t)}}"
+              },
+              {
+                "type": "text",
+                "text": " contains row vectors of "
+              },
+              {
+                "type": "inline_math",
+                "text": "C"
+              },
+              {
+                "type": "text",
+                "text": "’s eigenvectors. It projects the original space onto the perpendicular principal axes."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8f6959c43732",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then "
+              },
+              {
+                "type": "inline_math",
+                "text": "{D^{(t)}}^{-\\frac{1}{2}} = \\text{diag}(\\frac{1}{\\lambda_1}, \\dots, \\frac{1}{\\lambda_n})"
+              },
+              {
+                "type": "text",
+                "text": " scales the length of principal axes to be equal."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9a8d74bf3a9d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "{B^{(t)}}^\\top"
+              },
+              {
+                "type": "text",
+                "text": " transforms the space back to the original coordinate system."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-237cd3c6149a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In order to assign higher weights to recent generations, we use polyak averaging to update the evolution path with learning rate "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_\\sigma"
+          },
+          {
+            "type": "text",
+            "text": ". Meanwhile, the weights are balanced so that "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " is "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Conjugate_prior"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "conjugate"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sim \\mathcal{N}(0, I)"
+          },
+          {
+            "type": "text",
+            "text": " both before and after one update."
+          }
+        ]
+      },
+      {
+        "id": "math-f9fe325b536d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\np_\\sigma^{(t+1)} \n& = (1 - \\alpha_\\sigma) p_\\sigma^{(t)} + \\sqrt{1 - (1 - \\alpha_\\sigma)^2}\\;\\sqrt{\\lambda}\\; {C^{(t)}}^{-\\frac{1}{2}} \\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\\\\n& = (1 - \\alpha_\\sigma) p_\\sigma^{(t)} + \\sqrt{c_\\sigma (2 - \\alpha_\\sigma)\\lambda}\\;{C^{(t)}}^{-\\frac{1}{2}} \\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-0bd466862c9a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The expected length of "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " under random selection is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}|\\mathcal{N}(0,I)|"
+          },
+          {
+            "type": "text",
+            "text": ", that is the expectation of the L2-norm of a "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{N}(0,I)"
+          },
+          {
+            "type": "text",
+            "text": " random variable. Following the idea in Fig. 2, we adjust the step size according to the ratio of "
+          },
+          {
+            "type": "inline_math",
+            "text": "|p_\\sigma^{(t+1)}| / \\mathbb{E}|\\mathcal{N}(0,I)|"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-8c678651a092",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\ln\\sigma^{(t+1)} &= \\ln\\sigma^{(t)} + \\frac{\\alpha_\\sigma}{d_\\sigma} \\Big(\\frac{\\|p_\\sigma^{(t+1)}\\|}{\\mathbb{E}\\|\\mathcal{N}(0,I)\\|} - 1\\Big) \\\\\n\\sigma^{(t+1)} &= \\sigma^{(t)} \\exp\\Big(\\frac{\\alpha_\\sigma}{d_\\sigma} \\Big(\\frac{\\|p_\\sigma^{(t+1)}\\|}{\\mathbb{E}\\|\\mathcal{N}(0,I)\\|} - 1\\Big)\\Big)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-55b071b5227d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\sigma \\approx 1"
+          },
+          {
+            "type": "text",
+            "text": " is a damping parameter, scaling how fast "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ln\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " should be changed."
+          }
+        ]
+      },
+      {
+        "id": "heading-3a0f8ddea41e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adapting the Covariance Matrix"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-210b4c4da044",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For the covariance matrix, it can be estimated from scratch using "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i"
+          },
+          {
+            "type": "text",
+            "text": " of elite samples (recall that "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i \\sim \\mathcal{N}(0, C)"
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "math-1a2f683b24a0",
+        "type": "math",
+        "attrs": {
+          "latex": "C_\\lambda^{(t+1)} \n= \\frac{1}{\\lambda}\\sum_{i=1}^\\lambda y^{(t+1)}_i {y^{(t+1)}_i}^\\top\n= \\frac{1}{\\lambda {\\sigma^{(t)}}^2} \\sum_{i=1}^\\lambda (x_i^{(t+1)} - \\mu^{(t)})(x_i^{(t+1)} - \\mu^{(t)})^\\top"
+        }
+      },
+      {
+        "id": "paragraph-6c976aa07429",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The above estimation is only reliable when the selected population is large enough. However, we do want to run "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fast"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " iteration with a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "small"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " population of samples in each generation. That’s why CMA-ES invented a more reliable but also more complicated way to update "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": ". It involves two independent routes,"
+          }
+        ]
+      },
+      {
+        "id": "list-b31694efeadf",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-666dbbe0a060",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rank-min(λ, n) update"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": uses the history of "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\{C_\\lambda\\}"
+              },
+              {
+                "type": "text",
+                "text": ", each estimated from scratch in one generation."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d8f95cbcb849",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rank-one update"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": estimates the moving steps "
+              },
+              {
+                "type": "inline_math",
+                "text": "y_i"
+              },
+              {
+                "type": "text",
+                "text": " and the sign information from the history."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1b603f180392",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The first route considers the estimation of "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " from the entire history of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{C_\\lambda\\}"
+          },
+          {
+            "type": "text",
+            "text": ". For example, if we have experienced a large number of generations, "
+          },
+          {
+            "type": "inline_math",
+            "text": "C^{(t+1)} \\approx \\text{avg}(C_\\lambda^{(i)}; i=1,\\dots,t)"
+          },
+          {
+            "type": "text",
+            "text": " would be a good estimator. Similar to "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\sigma"
+          },
+          {
+            "type": "text",
+            "text": ", we also use polyak averaging with a learning rate to incorporate the history:"
+          }
+        ]
+      },
+      {
+        "id": "math-811c30b49ff3",
+        "type": "math",
+        "attrs": {
+          "latex": "C^{(t+1)} \n= (1 - \\alpha_{c\\lambda}) C^{(t)} + \\alpha_{c\\lambda} C_\\lambda^{(t+1)}\n= (1 - \\alpha_{c\\lambda}) C^{(t)} + \\alpha_{c\\lambda} \\frac{1}{\\lambda} \\sum_{i=1}^\\lambda y^{(t+1)}_i {y^{(t+1)}_i}^\\top"
+        }
+      },
+      {
+        "id": "paragraph-b119d5cca44b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A common choice for the learning rate is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_{c\\lambda} \\approx \\min(1, \\lambda/n^2)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f33e25aa085b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The second route tries to solve the issue that "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i{y_i}^\\top = (-y_i)(-y_i)^\\top"
+          },
+          {
+            "type": "text",
+            "text": " loses the sign information. Similar to how we adjust the step size "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": ", an evolution path "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_c"
+          },
+          {
+            "type": "text",
+            "text": " is used to track the sign information and it is constructed in a way that "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_c"
+          },
+          {
+            "type": "text",
+            "text": " is conjugate, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sim \\mathcal{N}(0, C)"
+          },
+          {
+            "type": "text",
+            "text": " both before and after a new generation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1a48e7207032",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We may consider "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_c"
+          },
+          {
+            "type": "text",
+            "text": " as another way to compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{avg}_i(y_i)"
+          },
+          {
+            "type": "text",
+            "text": " (notice that both "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sim \\mathcal{N}(0, C)"
+          },
+          {
+            "type": "text",
+            "text": ") while the entire history is used and the sign information is maintained. Note that we’ve known "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sqrt{k}\\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\sim \\mathcal{N}(0, C)"
+          },
+          {
+            "type": "text",
+            "text": " in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#controlling-the-step-size"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "last section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-1700ad609fcb",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\np_c^{(t+1)} \n&= (1-\\alpha_{cp}) p_c^{(t)} + \\sqrt{1 - (1-\\alpha_{cp})^2}\\;\\sqrt{\\lambda}\\;\\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}} \\\\\n&= (1-\\alpha_{cp}) p_c^{(t)} + \\sqrt{\\alpha_{cp}(2 - \\alpha_{cp})\\lambda}\\;\\frac{\\mu^{(t+1)} - \\mu^{(t)}}{\\sigma^{(t)}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-1f04ba26ec9d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then the covariance matrix is updated according to "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_c"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-5cf68516a38f",
+        "type": "math",
+        "attrs": {
+          "latex": "C^{(t+1)} = (1-\\alpha_{c1}) C^{(t)} + \\alpha_{c1}\\;p_c^{(t+1)} {p_c^{(t+1)}}^\\top"
+        }
+      },
+      {
+        "id": "paragraph-1d5a88af443e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "rank-one update"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " approach is claimed to generate a significant improvement over the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "rank-min(λ, n)-update"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " when "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " is small, because the signs of moving steps and correlations between consecutive steps are all utilized and passed down through generations."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-18351dbc53ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Eventually we combine two approaches together,"
+          }
+        ]
+      },
+      {
+        "id": "math-ac2b28f85aaa",
+        "type": "math",
+        "attrs": {
+          "latex": "C^{(t+1)} \n= (1 - \\alpha_{c\\lambda} - \\alpha_{c1}) C^{(t)}\n+ \\alpha_{c1}\\;\\underbrace{p_c^{(t+1)} {p_c^{(t+1)}}^\\top}_\\textrm{rank-one update}\n+ \\alpha_{c\\lambda} \\underbrace{\\frac{1}{\\lambda} \\sum_{i=1}^\\lambda y^{(t+1)}_i {y^{(t+1)}_i}^\\top}_\\textrm{rank-min(lambda, n) update}"
+        }
+      },
+      {
+        "id": "image-00b78041a715",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-algorithm.png",
+          "alt": "Illustration of how CMA-ES works on a 2D optimization problem (the lighter color the better). Black dots are samples in one generation. The samples are more spread out initially but when the model has higher confidence in finding a good solution in the late stage, the samples become very concentrated over the global optimum. (Image source: Wikipedia CMA-ES )"
+        }
+      },
+      {
+        "id": "paragraph-d5bd3b5d216c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In all my examples above, each elite sample is considered to contribute an equal amount of weights, "
+          },
+          {
+            "type": "inline_math",
+            "text": "1/\\lambda"
+          },
+          {
+            "type": "text",
+            "text": ". The process can be easily extended to the case where selected samples are assigned with different weights, "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_1, \\dots, w_\\lambda"
+          },
+          {
+            "type": "text",
+            "text": ", according to their performances. See more detail in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1604.00772"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tutorial"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-e388d20c7952",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-illustration.png",
+          "alt": "Illustration of how CMA-ES works on a 2D optimization problem (the lighter color the better). Black dots are samples in one generation. The samples are more spread out initially but when the model has higher confidence in finding a good solution in the late stage, the samples become very concentrated over the global optimum. (Image source: Wikipedia CMA-ES )"
+        }
+      },
+      {
+        "id": "heading-82d4903c488a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Natural Evolution Strategies"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d2fecb939f2f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Natural Evolution Strategies ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1106.4487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wierstra, et al, 2008"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") optimizes in a search distribution of parameters and moves the distribution in the direction of high fitness indicated by the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "natural gradient"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-b6f2cc65756f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Natural Gradients"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-1004728b5441",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given an objective function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{J}(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", let’s say our goal is to find the optimal "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " to maximize the objective function value. A "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "plain gradient"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " finds the steepest direction within a small Euclidean distance from the current "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": "; the distance restriction is applied on the parameter space. In other words, we compute the plain gradient with respect to a small change of the absolute value of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". The optimal step is:"
+          }
+        ]
+      },
+      {
+        "id": "math-779af06a914c",
+        "type": "math",
+        "attrs": {
+          "latex": "d^{*} = \\operatorname*{argmax}_{\\|d\\| = \\epsilon} \\mathcal{J}(\\theta + d)\\text{, where }\\epsilon \\to 0"
+        }
+      },
+      {
+        "id": "paragraph-4ab4131410bc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Differently, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "natural gradient"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " works with a probability "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1301.3584v7"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "distribution"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://wiseodd.github.io/techblog/2018/03/14/natural-gradient/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "space"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(x)"
+          },
+          {
+            "type": "text",
+            "text": " (referred to as “search distribution” in NES "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1106.4487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). It looks for the steepest direction within a small step in the distribution space where the distance is measured by KL divergence. With this constraint we ensure that each update is moving along the distributional manifold with constant speed, without being slowed down by its curvature."
+          }
+        ]
+      },
+      {
+        "id": "math-4f01e2a3d4ff",
+        "type": "math",
+        "attrs": {
+          "latex": "d^{*}_\\text{N} = \\operatorname*{argmax}_{\\text{KL}[p_\\theta \\| p_{\\theta+d}] = \\epsilon} \\mathcal{J}(\\theta + d)"
+        }
+      },
+      {
+        "id": "heading-452e672dd319",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Estimation using Fisher Information Matrix"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d065c32b744c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "But, how to compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{KL}[p_\\theta | p_{\\theta+\\Delta\\theta}]"
+          },
+          {
+            "type": "text",
+            "text": " precisely? By running Taylor expansion of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\log p_{\\theta + d}"
+          },
+          {
+            "type": "text",
+            "text": " at "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", we get:"
+          }
+        ]
+      },
+      {
+        "id": "math-4a6dab692eaa",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\text{KL}[p_\\theta \\| p_{\\theta+d}] \\\\\n&= \\mathbb{E}_{x \\sim p_\\theta} [\\log p_\\theta(x) - \\log p_{\\theta+d}(x)] & \\\\\n&\\approx \\mathbb{E}_{x \\sim p_\\theta} [ \\log p_\\theta(x) -( \\log p_{\\theta}(x) + \\nabla_\\theta \\log p_{\\theta}(x) d + \\frac{1}{2}d^\\top \\nabla^2_\\theta \\log p_{\\theta}(x) d)] & \\scriptstyle{\\text{; Taylor expand }\\log p_{\\theta+d}} \\\\\n&\\approx - \\mathbb{E}_x [\\nabla_\\theta \\log p_{\\theta}(x)] d - \\frac{1}{2}d^\\top \\mathbb{E}_x [\\nabla^2_\\theta \\log p_{\\theta}(x)] d & \n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-65a8116dbbe7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where"
+          }
+        ]
+      },
+      {
+        "id": "math-6bee652965a8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbb{E}_x [\\nabla_\\theta \\log p_{\\theta}] d \n&= \\int_{x\\sim p_\\theta} p_\\theta(x) \\nabla_\\theta \\log p_\\theta(x) & \\\\\n&= \\int_{x\\sim p_\\theta} p_\\theta(x) \\frac{1}{p_\\theta(x)} \\nabla_\\theta p_\\theta(x) & \\\\\n&= \\nabla_\\theta \\Big( \\int_{x} p_\\theta(x) \\Big) & \\scriptstyle{\\textrm{; note that }p_\\theta(x)\\textrm{ is probability distribution.}} \\\\\n&= \\nabla_\\theta (1) = 0\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-bfdf1f72314f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally we have,"
+          }
+        ]
+      },
+      {
+        "id": "math-1798ea83f91a",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{KL}[p_\\theta \\| p_{\\theta+d}] = - \\frac{1}{2}d^\\top \\mathbf{F}_\\theta d \n\\text{, where }\\mathbf{F}_\\theta = \\mathbb{E}_x [(\\nabla_\\theta \\log p_{\\theta}) (\\nabla_\\theta \\log p_{\\theta})^\\top]"
+        }
+      },
+      {
+        "id": "paragraph-a54b9d9878c1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{F}_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " is called the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "http://mathworld.wolfram.com/FisherInformationMatrix.html"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fisher Information Matrix"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://wiseodd.github.io/techblog/2018/03/11/fisher-information/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "it is"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " the covariance matrix of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\nabla_\\theta \\log p_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " since "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}[\\nabla_\\theta \\log p_\\theta] = 0"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-276709b8eb01",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The solution to the following optimization problem:"
+          }
+        ]
+      },
+      {
+        "id": "math-a6ed8127d524",
+        "type": "math",
+        "attrs": {
+          "latex": "\\max \\mathcal{J}(\\theta + d) \\approx \\max \\big( \\mathcal{J}(\\theta) + {\\nabla_\\theta\\mathcal{J}(\\theta)}^\\top d \\big)\\;\\text{ s.t. }\\text{KL}[p_\\theta \\| p_{\\theta+d}] - \\epsilon = 0"
+        }
+      },
+      {
+        "id": "paragraph-da7b73c28ac1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "can be found using a Lagrangian multiplier,"
+          }
+        ]
+      },
+      {
+        "id": "math-b1cb7b448265",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathcal{L}(\\theta, d, \\beta) &= \\mathcal{J}(\\theta) + \\nabla_\\theta\\mathcal{J}(\\theta)^\\top d - \\beta (\\frac{1}{2}d^\\top \\mathbf{F}_\\theta d + \\epsilon) = 0 \\text{ s.t. } \\beta > 0 \\\\\n\\nabla_d \\mathcal{L}(\\theta, d, \\beta) &= \\nabla_\\theta\\mathcal{J}(\\theta) - \\beta\\mathbf{F}_\\theta d = 0 \\\\\n\\text{Thus } d_\\text{N}^* &= \\nabla_\\theta^\\text{N} \\mathcal{J}(\\theta) = \\mathbf{F}_\\theta^{-1} \\nabla_\\theta\\mathcal{J}(\\theta) \n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-9b59014e2464",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\text{N}^*"
+          },
+          {
+            "type": "text",
+            "text": " only extracts the direction of the optimal moving step on "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", ignoring the scalar "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta^{-1}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-20ad471f783c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-coordinates.png",
+          "alt": "The natural gradient samples (black solid arrows) in the right are the plain gradient samples (black solid arrows)  in the left multiplied by the inverse of their covariance. In this way, a gradient direction with high uncertainty (indicated by high covariance with other samples) are penalized with a small weight. The aggregated natural gradient (red dash arrow) is therefore more trustworthy than the natural gradient (green solid arrow). (Image source: additional annotations on Fig 2 in NES paper)"
+        }
+      },
+      {
+        "id": "heading-bc256a372939",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "NES Algorithm"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-797f78311f3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The fitness associated with one sample is labeled as "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " and the search distribution over "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " is parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". NES is expected to optimize the parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " to achieve maximum expected fitness:"
+          }
+        ]
+      },
+      {
+        "id": "math-65e9523d39bf",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{J}(\\theta) = \\mathbb{E}_{x\\sim p_\\theta(x)} [f(x)] = \\int_x f(x) p_\\theta(x) dx"
+        }
+      },
+      {
+        "id": "paragraph-e4e421621492",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Using the same log-likelihood "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://blog.shakirm.com/2015/11/machine-learning-trick-of-the-day-5-log-derivative-trick/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "trick"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#reinforce"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "REINFORCE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-a02d86e34e8a",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\nabla_\\theta\\mathcal{J}(\\theta) \n&= \\nabla_\\theta \\int_x f(x) p_\\theta(x) dx \\\\\n&= \\int_x f(x) \\frac{p_\\theta(x)}{p_\\theta(x)}\\nabla_\\theta p_\\theta(x) dx \\\\\n& = \\int_x f(x) p_\\theta(x) \\nabla_\\theta \\log p_\\theta(x) dx \\\\\n& = \\mathbb{E}_{x \\sim p_\\theta} [f(x) \\nabla_\\theta \\log p_\\theta(x)]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-9265ada77945",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/NES-algorithm.png",
+          "alt": "The algorithm for training a RL policy using evolution strategies. (Image source: ES-for-RL paper)"
+        }
+      },
+      {
+        "id": "paragraph-e11097bdea41",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Besides natural gradients, NES adopts a couple of important heuristics to make the algorithm performance more robust."
+          }
+        ]
+      },
+      {
+        "id": "list-bc7ad804e1ca",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-6458fe1c34d1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "NES applies "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "rank-based fitness shaping"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", that is to use the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "rank"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " under monotonically increasing fitness values instead of using "
+              },
+              {
+                "type": "inline_math",
+                "text": "f(x)"
+              },
+              {
+                "type": "text",
+                "text": " directly. Or it can be a function of the rank (“utility function”), which is considered as a free parameter of NES."
+              }
+            ]
+          },
+          {
+            "id": "list-item-05e1701d51a9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "NES adopts "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "adaptation sampling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to adjust hyperparameters at run time. When changing "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta \\to \\theta’"
+              },
+              {
+                "type": "text",
+                "text": ", samples drawn from "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\theta"
+              },
+              {
+                "type": "text",
+                "text": " are compared with samples from "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_{\\theta’}"
+              },
+              {
+                "type": "text",
+                "text": " using [Mann-Whitney U-test(https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test)]; if there shows a positive or negative sign, the target hyperparameter decreases or increases by a multiplication constant. Note the score of a sample "
+              },
+              {
+                "type": "inline_math",
+                "text": "x’_i \\sim p_{\\theta’}(x)"
+              },
+              {
+                "type": "text",
+                "text": " has importance sampling weights applied "
+              },
+              {
+                "type": "inline_math",
+                "text": "w_i’ = p_\\theta(x) / p_{\\theta’}(x)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-84cbbd234e80",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Applications: ES in Deep Reinforcement Learning"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-01d4160ff8f5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "OpenAI ES for RL"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0cba4209d72b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The concept of using evolutionary algorithms in reinforcement learning can be traced back "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1106.0221"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "long ago"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", but only constrained to tabular RL due to computational limitations."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-348301c0d303",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Inspired by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#natural-evolution-strategies"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "NES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", researchers at OpenAI ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03864"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Salimans, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") proposed to use NES as a gradient-free black-box optimizer to find optimal policy parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " that maximizes the return function "
+          },
+          {
+            "type": "inline_math",
+            "text": "F(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": ". The key is to add Gaussian noise "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": " on the model parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and then use the log-likelihood trick to write it as the gradient of the Gaussian pdf. Eventually only the noise term is left as a weighting scalar for measured performance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-65019dba49b0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say the current parameter value is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\theta}"
+          },
+          {
+            "type": "text",
+            "text": " (the added hat is to distinguish the value from the random variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": "). The search distribution of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " is designed to be an isotropic multivariate Gaussian with a mean "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\theta}"
+          },
+          {
+            "type": "text",
+            "text": " and a fixed covariance matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma^2 I"
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-f528fb2637e7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta \\sim \\mathcal{N}(\\hat{\\theta}, \\sigma^2 I) \\text{ equivalent to } \\theta = \\hat{\\theta} + \\sigma\\epsilon, \\epsilon \\sim \\mathcal{N}(0, I)"
+        }
+      },
+      {
+        "id": "paragraph-f06e1178cec2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The gradient for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " update is:"
+          }
+        ]
+      },
+      {
+        "id": "math-fc5f171e6921",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\nabla_\\theta \\mathbb{E}_{\\theta\\sim\\mathcal{N}(\\hat{\\theta}, \\sigma^2 I)} F(\\theta) \\\\\n&= \\nabla_\\theta \\mathbb{E}_{\\epsilon\\sim\\mathcal{N}(0, I)} F(\\hat{\\theta} + \\sigma\\epsilon) \\\\\n&= \\nabla_\\theta \\int_{\\epsilon} p(\\epsilon) F(\\hat{\\theta} + \\sigma\\epsilon) d\\epsilon & \\scriptstyle{\\text{; Gaussian }p(\\epsilon)=(2\\pi)^{-\\frac{n}{2}} \\exp(-\\frac{1}{2}\\epsilon^\\top\\epsilon)} \\\\\n&= \\int_{\\epsilon} p(\\epsilon) \\nabla_\\epsilon \\log p(\\epsilon) \\nabla_\\theta \\epsilon\\;F(\\hat{\\theta} + \\sigma\\epsilon) d\\epsilon & \\scriptstyle{\\text{; log-likelihood trick}}\\\\\n&= \\mathbb{E}_{\\epsilon\\sim\\mathcal{N}(0, I)} [ \\nabla_\\epsilon \\big(-\\frac{1}{2}\\epsilon^\\top\\epsilon\\big) \\nabla_\\theta \\big(\\frac{\\theta - \\hat{\\theta}}{\\sigma}\\big) F(\\hat{\\theta} + \\sigma\\epsilon) ] & \\\\\n&= \\mathbb{E}_{\\epsilon\\sim\\mathcal{N}(0, I)} [ (-\\epsilon) (\\frac{1}{\\sigma}) F(\\hat{\\theta} + \\sigma\\epsilon) ] & \\\\\n&= \\frac{1}{\\sigma}\\mathbb{E}_{\\epsilon\\sim\\mathcal{N}(0, I)} [ \\epsilon F(\\hat{\\theta} + \\sigma\\epsilon) ] & \\scriptstyle{\\text{; negative sign can be absorbed.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-55d63a5b5008",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In one generation, we can sample many "
+          },
+          {
+            "type": "inline_math",
+            "text": "epsilon_i, i=1,\\dots,n"
+          },
+          {
+            "type": "text",
+            "text": " and evaluate the fitness "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "in parallel"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". One beautiful design is that no large model parameter needs to be shared. By only communicating the random seeds between workers, it is enough for the master node to do parameter update. This approach is later extended to adaptively learn a loss function; see my previous post on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#meta-learning-the-loss-function"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolved Policy Gradient"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-e7c84f50b9fc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/OpenAI-ES-algorithm.png",
+          "alt": "The algorithm for training a RL policy using evolution strategies. (Image source: ES-for-RL paper)"
+        }
+      },
+      {
+        "id": "paragraph-724f09870039",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To make the performance more robust, OpenAI ES adopts virtual batch normalization (BN with mini-batch used for calculating statistics fixed), mirror sampling (sampling a pair of "
+          },
+          {
+            "type": "inline_math",
+            "text": "(-\\epsilon, \\epsilon)"
+          },
+          {
+            "type": "text",
+            "text": " for evaluation), and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#fitness-shaping"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "fitness shaping"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-04ab51b19022",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Exploration with ES"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-9d9efaf99685",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Exploration ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "vs exploitation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is an important topic in RL. The optimization direction in the ES algorithm "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/TBA"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "above"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is only extracted from the cumulative return "
+          },
+          {
+            "type": "inline_math",
+            "text": "F(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": ". Without explicit exploration, the agent might get trapped in a local optimum."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2a12b45e0482",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Novelty-Search ES ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NS-ES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.06560"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Conti et al, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") encourages exploration by updating the parameter in the direction to maximize the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "novelty"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " score. The novelty score depends on a domain-specific behavior characterization function "
+          },
+          {
+            "type": "inline_math",
+            "text": "b(\\pi_\\theta)"
+          },
+          {
+            "type": "text",
+            "text": ". The choice of "
+          },
+          {
+            "type": "inline_math",
+            "text": "b(\\pi_\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " is specific to the task and seems to be a bit arbitrary; for example, in the Humanoid locomotion task in the paper, "
+          },
+          {
+            "type": "inline_math",
+            "text": "b(\\pi_\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " is the final "
+          },
+          {
+            "type": "inline_math",
+            "text": "(x,y)"
+          },
+          {
+            "type": "text",
+            "text": " location of the agent."
+          }
+        ]
+      },
+      {
+        "id": "list-3c64b2b891dc",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f83cff691657",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Every policy’s "
+              },
+              {
+                "type": "inline_math",
+                "text": "b(\\pi_\\theta)"
+              },
+              {
+                "type": "text",
+                "text": " is pushed to an archive set "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{A}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b64670e47dfe",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Novelty of a policy "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi_\\theta"
+              },
+              {
+                "type": "text",
+                "text": " is measured as the k-nearest neighbor score between "
+              },
+              {
+                "type": "inline_math",
+                "text": "b(\\pi_\\theta)"
+              },
+              {
+                "type": "text",
+                "text": " and all other entries in "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{A}"
+              },
+              {
+                "type": "text",
+                "text": ".\n(The use case of the archive set sounds quite similar to "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#episodic-control"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "episodic memory"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ".)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-b6dd433b14d6",
+        "type": "math",
+        "attrs": {
+          "latex": "N(\\theta, \\mathcal{A}) = \\frac{1}{\\lambda} \\sum_{i=1}^\\lambda \\| b(\\pi_\\theta), b^\\text{knn}_i \\|_2\n\\text{, where }b^\\text{knn}_i \\in \\text{kNN}(b(\\pi_\\theta), \\mathcal{A})"
+        }
+      },
+      {
+        "id": "paragraph-d372bf18ca89",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The ES optimization step relies on the novelty score instead of fitness:"
+          }
+        ]
+      },
+      {
+        "id": "math-4adf7ce25faf",
+        "type": "math",
+        "attrs": {
+          "latex": "\\nabla_\\theta \\mathbb{E}_{\\theta\\sim\\mathcal{N}(\\hat{\\theta}, \\sigma^2 I)} N(\\theta, \\mathcal{A})\n= \\frac{1}{\\sigma}\\mathbb{E}_{\\epsilon\\sim\\mathcal{N}(0, I)} [ \\epsilon N(\\hat{\\theta} + \\sigma\\epsilon, \\mathcal{A}) ]"
+        }
+      },
+      {
+        "id": "paragraph-4723beade7f9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "NS-ES maintains a group of "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " independently trained agents (“meta-population”), "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{M} = \\{\\theta_1, \\dots, \\theta_M \\}"
+          },
+          {
+            "type": "text",
+            "text": " and picks one to advance proportional to the novelty score. Eventually we select the best policy. This process is equivalent to ensembling; also see the same idea in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#svpg"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "SVPG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-5101386c7399",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nm &\\leftarrow \\text{pick } i=1,\\dots,M\\text{ according to probability}\\frac{N(\\theta_i, \\mathcal{A})}{\\sum_{j=1}^M N(\\theta_j, \\mathcal{A})} \\\\\n\\theta_m^{(t+1)} &\\leftarrow \\theta_m^{(t)} + \\alpha \\frac{1}{\\sigma}\\sum_{i=1}^N \\epsilon_i N(\\theta^{(t)}_m + \\epsilon_i, \\mathcal{A}) \\text{ where }\\epsilon_i \\sim \\mathcal{N}(0, I)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-485de49884cf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " is the number of Gaussian perturbation noise vectors and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " is the learning rate."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fc45b8e56b73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "NS-ES completely discards the reward function and only optimizes for novelty to avoid deceptive local optima. To incorporate the fitness back into the formula, another two variations are proposed."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6d59acd5ad46",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NSR-ES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-d267e336fdbf",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta_m^{(t+1)} \\leftarrow \\theta_m^{(t)} + \\alpha \\frac{1}{\\sigma}\\sum_{i=1}^N \\epsilon_i \\frac{N(\\theta^{(t)}_m + \\epsilon_i, \\mathcal{A}) + F(\\theta^{(t)}_m + \\epsilon_i)}{2}"
+        }
+      },
+      {
+        "id": "paragraph-189bca2fe559",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NSRAdapt-ES (NSRA-ES)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": the adaptive weighting parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "w = 1.0"
+          },
+          {
+            "type": "text",
+            "text": " initially. We start decreasing "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": " if performance stays flat for a number of generations. Then when the performance starts to increase, we stop decreasing "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": " but increase it instead. In this way, fitness is preferred when the performance stops growing but novelty is preferred otherwise."
+          }
+        ]
+      },
+      {
+        "id": "math-fff5513e19e8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta_m^{(t+1)} \\leftarrow \\theta_m^{(t)} + \\alpha \\frac{1}{\\sigma}\\sum_{i=1}^N \\epsilon_i \\big((1-w) N(\\theta^{(t)}_m + \\epsilon_i, \\mathcal{A}) + w F(\\theta^{(t)}_m + \\epsilon_i)\\big)"
+        }
+      },
+      {
+        "id": "image-248f3b788017",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/NS-ES-experiments.png",
+          "alt": "(Left) The environment is Humanoid locomotion with a three-sided wall which plays a role as a deceptive trap to create local optimum. (Right) Experiments compare ES baseline and other variations that encourage exploration. (Image source: NS-ES paper)"
+        }
+      },
+      {
+        "id": "heading-fab6b510e3e5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CEM-RL"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "image-f7d3ddc5140c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CEM-RL.png",
+          "alt": "Architectures of the (a) CEM-RL and (b) ERL algorithms (Image source: CEM-RL paper)"
+        }
+      },
+      {
+        "id": "paragraph-cbf9b4e1cd59",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The CEM-RL method ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1810.01222"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pourchot & Sigaud, 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") combines Cross Entropy Method (CEM) with either "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#ddpg"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "DDPG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#td3"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "TD3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". CEM here works pretty much the same as the simple Gaussian ES described "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#simple-gaussian-evolution-strategies"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "above"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and therefore the same function can be replaced using CMA-ES. CEM-RL is built on the framework of "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolutionary Reinforcement Learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "ERL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/7395-evolution-guided-policy-gradient-in-reinforcement-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Khadka & Tumer, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") in which the standard EA algorithm selects and evolves a population of actors and the rollout experience generated in the process is then added into reply buffer for training both RL-actor and RL-critic networks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7ded648ef4ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Workflow:"
+          }
+        ]
+      },
+      {
+        "id": "list-a5b47c610df5",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a6c61c7820c7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-312b79ee32a7",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-9c7b87190222",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The mean actor of the CEM population is "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\pi_\\mu"
+                      },
+                      {
+                        "type": "text",
+                        "text": " is initialized with a random actor network."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-a6c61c7820c7-2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-3062f596b68d",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-f035b7ada8c8",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The critic network "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "Q"
+                      },
+                      {
+                        "type": "text",
+                        "text": " is initialized too, which will be updated by DDPG/TD3."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-a6c61c7820c7-3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-a270ee0230e2",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-35208c99f7f7",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Repeat until happy:"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "list-4a8d84ee4bb6",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-86ef26e6ad71",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "a. Sample a population of actors "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\sim \\mathcal{N}(\\pi_\\mu, \\Sigma)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-e7f41c519f8a",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "b. Half of the population is evaluated. Their fitness scores are used as the cumulative reward "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "R"
+                      },
+                      {
+                        "type": "text",
+                        "text": " and added into replay buffer."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-31b98c461eba",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "c. The other half are updated together with the critic."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-c66df4f13b8c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "d. The new "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\pi_mu"
+                      },
+                      {
+                        "type": "text",
+                        "text": " and "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\Sigma"
+                      },
+                      {
+                        "type": "text",
+                        "text": " is computed using top performing elite samples. "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/#covariance-matrix-adaptation-evolution-strategies-cma-es"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "CMA-ES"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " can be used for parameter update too."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-c24f7a10535d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Extension: EA in Deep Learning"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b082cf708847",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(This section is not on evolution strategies, but still an interesting and relevant reading.)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b971d8e1980b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolutionary Algorithms"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " have been applied on many deep learning problems. POET ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.01753"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al, 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a framework based on EA and attempts to generate a variety of different tasks while the problems themselves are being solved. POET has been introduced in my "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#task-generation-by-domain-randomization"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "last post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on meta-RL. Evolutionary Reinforcement Learning (ERL) is another example; See Fig. 7 (b)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d252e18ab3b6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Below I would like to introduce two applications in more detail, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Population-Based Training (PBT)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Weight-Agnostic Neural Networks (WANN)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-d51a556889f4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hyperparameter Tuning: PBT"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "image-582d1d6de99c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/PBT.png",
+          "alt": "Paradigms of comparing different ways of hyperparameter tuning. (Image source: PBT paper)"
+        }
+      },
+      {
+        "id": "paragraph-64ac9b38bcff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Population-Based Training ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1711.09846"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jaderberg, et al, 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), short for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "PBT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " applies EA on the problem of hyperparameter tuning. It jointly trains a population of models and corresponding hyperparameters for optimal performance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-06ec9e7b28ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "PBT starts with a set of random candidates, each containing a pair of model weights initialization and hyperparameters, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{(\\theta_i, h_i)\\mid i=1, \\dots, N\\}"
+          },
+          {
+            "type": "text",
+            "text": ". Every sample is trained in parallel and asynchronously evaluates its own performance periodically. Whenever a member deems ready (i.e. after taking enough gradient update steps, or when the performance is good enough), it has a chance to be updated by comparing with the whole population:"
+          }
+        ]
+      },
+      {
+        "id": "list-fdf6cbebb15b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-b410c2ca6e95",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "inline_code",
+                    "text": "exploit()"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": When this model is under-performing, the weights could be replaced with a better performing model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a380a25271fd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "inline_code",
+                    "text": "explore()"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": If the model weights are overwritten, "
+              },
+              {
+                "type": "inline_code",
+                "text": "explore"
+              },
+              {
+                "type": "text",
+                "text": " step perturbs the hyperparameters with random noise."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6769d3461dd1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this process, only promising model and hyperparameter pairs can survive and keep on evolving, achieving better utilization of computational resources."
+          }
+        ]
+      },
+      {
+        "id": "image-f24a403a83d1",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/PBT-algorithm.png",
+          "alt": "The algorithm of population-based training. (Image source: PBT paper)"
+        }
+      },
+      {
+        "id": "heading-4534506cd3e9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Network Topology Optimization: WANN"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d7f915669629",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Weight Agnostic Neural"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Networks (short for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "WANN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.04358"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gaier & Ha 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") experiments with searching for the smallest network topologies that can achieve the optimal performance without training the network weights. By not considering the best configuration of network weights, WANN puts much more emphasis on the architecture itself, making the focus different from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://openaccess.thecvf.com/content_cvpr_2018/papers/Zoph_Learning_Transferable_Architectures_CVPR_2018_paper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "NAS"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". WANN is heavily inspired by a classic genetic algorithm to evolve network topologies, called "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "NEAT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Neuroevolution of Augmenting Topologies”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://nn.cs.utexas.edu/downloads/papers/stanley.gecco02_1.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Stanley & Miikkulainen 2002"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2c797bc34e33",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The workflow of WANN looks pretty much the same as standard GA:"
+          }
+        ]
+      },
+      {
+        "id": "list-810375782eaa",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-fdce72fcb533",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize: Create a population of minimal networks."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7a1b4c3a660b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Evaluation: Test with a range of "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "shared"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " weight values."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d3ca4fc963b8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Rank and Selection: Rank by performance and complexity."
+              }
+            ]
+          },
+          {
+            "id": "list-item-10506e7f760e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Mutation: Create new population by varying best networks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-8d3ff6634ba2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/WANN-mutations.png",
+          "alt": "mutation operations for searching for new network topologies in WANN (Image source: WANN paper)"
+        }
+      },
+      {
+        "id": "paragraph-60de7a52b2fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At the “evaluation” stage, all the network weights are set to be the same. In this way, WANN is actually searching for network that can be described with a minimal description length. In the “selection” stage, both the network connection and the model performance are considered."
+          }
+        ]
+      },
+      {
+        "id": "image-52fc067f581c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/WANN-results.png",
+          "alt": "Performance of WANN found network topologies on different RL tasks are compared with baseline FF networks commonly used in the literature. \"Tuned Shared Weight\" only requires adjusting one weight value. (Image source: WANN paper)"
+        }
+      },
+      {
+        "id": "paragraph-ade49a246444",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As shown in Fig. 11, WANN results are evaluated with both random weights and shared weights (single weight). It is interesting that even when enforcing weight-sharing on all weights and tuning this single parameter, WANN can discover topologies that achieve non-trivial good performance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-ac7559c25fe7",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2019ES,\n  title   = \"Evolution Strategies\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2019\",\n  url     = \"https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-cd08e72f6151",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Nikolaus Hansen. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1604.00772"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The CMA Evolution Strategy: A Tutorial”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1604.00772 (2016)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ca6eb047e29",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Marc Toussaint. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ipvs.informatik.uni-stuttgart.de/mlr/marc/teaching/13-Optimization/06-blackBoxOpt.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Slides: “Introduction to Optimization”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aa39d2ab44a9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] David Ha. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://blog.otoro.net/2017/10/29/visual-evolution-strategies/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Visual Guide to Evolution Strategies”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " blog.otoro.net. Oct 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-72cacfcf6b68",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Daan Wierstra, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1106.4487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Natural evolution strategies.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " IEEE World Congress on Computational Intelligence, 2008."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2ea2202f1ad9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Agustinus Kristiadi. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://wiseodd.github.io/techblog/2018/03/14/natural-gradient/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Natural Gradient Descent”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Mar 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6a51bcc25048",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Razvan Pascanu & Yoshua Bengio. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1301.3584v7"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Revisiting Natural Gradient for Deep Networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1301.3584 (2013)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4fc45ceedc42",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Tim Salimans, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03864"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Evolution strategies as a scalable alternative to reinforcement learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1703.03864 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b4f15c90a08c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Edoardo Conti, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.06560"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Improving exploration in evolution strategies for deep reinforcement learning via a population of novelty-seeking agents.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS. 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-119cea876fd6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Aloïs Pourchot & Olivier Sigaud. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1810.01222"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“CEM-RL: Combining evolutionary and gradient-based methods for policy search.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6c00f53a9a56",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Shauharda Khadka & Kagan Tumer. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/7395-evolution-guided-policy-gradient-in-reinforcement-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Evolution-guided policy gradient in reinforcement learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b53db0cca95e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Max Jaderberg, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1711.09846"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Population based training of neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1711.09846 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-256e3cc57ac2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Adam Gaier & David Ha. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.04358"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Weight Agnostic Neural Networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1906.04358 (2019)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "evolution-strategies",
+    "source_slug": "2019-09-05-evolution-strategies",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 18,
+      "math": 32,
+      "image": 13,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/EA-illustration.png",
+      "alt": "How natural selection works. (Image source: Khan Academy: Darwin, evolution, & natural selection )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-step-size-path.png",
+      "alt": "Three scenarios of how single steps are correlated in different ways and their impacts on step size update. (Image source: additional annotations on Fig 5 in CMA-ES tutorial paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-algorithm.png",
+      "alt": "Illustration of how CMA-ES works on a 2D optimization problem (the lighter color the better). Black dots are samples in one generation. The samples are more spread out initially but when the model has higher confidence in finding a good solution in the late stage, the samples become very concentrated over the global optimum. (Image source: Wikipedia CMA-ES )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-illustration.png",
+      "alt": "Illustration of how CMA-ES works on a 2D optimization problem (the lighter color the better). Black dots are samples in one generation. The samples are more spread out initially but when the model has higher confidence in finding a good solution in the late stage, the samples become very concentrated over the global optimum. (Image source: Wikipedia CMA-ES )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CMA-ES-coordinates.png",
+      "alt": "The natural gradient samples (black solid arrows) in the right are the plain gradient samples (black solid arrows)  in the left multiplied by the inverse of their covariance. In this way, a gradient direction with high uncertainty (indicated by high covariance with other samples) are penalized with a small weight. The aggregated natural gradient (red dash arrow) is therefore more trustworthy than the natural gradient (green solid arrow). (Image source: additional annotations on Fig 2 in NES paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/NES-algorithm.png",
+      "alt": "The algorithm for training a RL policy using evolution strategies. (Image source: ES-for-RL paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/OpenAI-ES-algorithm.png",
+      "alt": "The algorithm for training a RL policy using evolution strategies. (Image source: ES-for-RL paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/NS-ES-experiments.png",
+      "alt": "(Left) The environment is Humanoid locomotion with a three-sided wall which plays a role as a deceptive trap to create local optimum. (Right) Experiments compare ES baseline and other variations that encourage exploration. (Image source: NS-ES paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/CEM-RL.png",
+      "alt": "Architectures of the (a) CEM-RL and (b) ERL algorithms (Image source: CEM-RL paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/PBT.png",
+      "alt": "Paradigms of comparing different ways of hyperparameter tuning. (Image source: PBT paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/PBT-algorithm.png",
+      "alt": "The algorithm of population-based training. (Image source: PBT paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/WANN-mutations.png",
+      "alt": "mutation operations for searching for new network topologies in WANN (Image source: WANN paper)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-09-05-evolution-strategies/WANN-results.png",
+      "alt": "Performance of WANN found network topologies on different RL tasks are compared with baseline FF networks commonly used in the literature. \"Tuned Shared Weight\" only requires adjusting one weight value. (Image source: WANN paper)"
+    }
+  ]
+}

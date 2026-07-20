@@ -1,0 +1,2841 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2017-10-15-word-embedding",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2017-10-15T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:f812e5aaec273f2c28aa4252602117cb463010d121001af07509d8dafc21c2d6",
+    "fetched_at": "2026-07-14T02:04:53.997462+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Learning Word Embedding",
+    "title_en": "Learning Word Embedding",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-a75a78e20472",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Human vocabulary comes in free text. In order to make a machine learning model understand and process the natural language, we need to transform the free-text words into numeric values. One of the simplest transformation approaches is to do a one-hot encoding in which each distinct word stands for one dimension of the resulting vector and a binary value indicates whether the word presents (1) or not (0)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0160f77dd28d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, one-hot encoding is impractical computationally when dealing with the entire vocabulary, as the representation demands hundreds of thousands of dimensions. Word embedding represents words and phrases in vectors of (non-binary) numeric values with much lower and thus denser dimensions. An intuitive assumption for good word embedding is that they can approximate the similarity between words (i.e., “cat” and “kitten” are similar words, and thus they are expected to be close in the reduced vector space) or disclose hidden semantic relationships (i.e., the relationship between “cat” and “kitten” is an analogy to the one between “dog” and “puppy”). Contextual information is super useful for learning word meaning and relationship, as similar words may appear in the similar context often."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c41667b0513f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are two main approaches for learning word embedding, both relying on the contextual knowledge."
+          }
+        ]
+      },
+      {
+        "id": "list-96a2777e5680",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-67ebb02e338b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Count-based"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The first one is unsupervised, based on matrix factorization of a global word co-occurrence matrix. Raw co-occurrence counts do not work well, so we want to do smart things on top."
+              }
+            ]
+          },
+          {
+            "id": "list-item-82919597d8dd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Context-based"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The second approach is supervised. Given a local context, we want to design a model to predict the target words and in the meantime, this model learns the efficient word embedding representation."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-6d9c56db8091",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Count-Based Vector Space Model"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-6c06d8eb17ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Count-based vector space models heavily rely on the word frequency and co-occurrence matrix with the assumption that words in the same contexts share similar or related semantic meanings. The models map count-based statistics like co-occurrences between neighboring words down to a small and dense word vectors. PCA, topic models, and neural probabilistic language models are all good examples of this category."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2d91f6df866c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Different from the count-based approaches, context-based methods build predictive models that directly target at predicting a word given its neighbors. The dense word vectors are part of the model parameters. The best vector representation of each word is learned during the model training process."
+          }
+        ]
+      },
+      {
+        "id": "heading-2650e3fa25bf",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Context-Based: Skip-Gram Model"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-7d843d24c57a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Suppose that you have a sliding window of a fixed size moving along a sentence: the word in the middle is the “target” and those on its left and right within the sliding window are the context words. The skip-gram model ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1301.3781.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Mikolov et al., 2013"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is trained to predict the probabilities of a word being a context word for the given target."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f7564373c3ee",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The following example demonstrates multiple pairs of target and context words as training samples, generated by a 5-word window sliding along the sentence."
+          }
+        ]
+      },
+      {
+        "id": "blockquote-6f830d0a3954",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-e9f44917d9c5",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“The man who passes the sentence should swing the sword.” – Ned Stark"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "table-94123f25cafa",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Sliding window (size = 5)",
+            "Target word",
+            "Context"
+          ],
+          "rows": [
+            [
+              "[The man who]",
+              "the",
+              "man, who"
+            ],
+            [
+              "[The man who passes]",
+              "man",
+              "the, who, passes"
+            ],
+            [
+              "[The man who passes the]",
+              "who",
+              "the, man, passes, the"
+            ],
+            [
+              "[man who passes the sentence]",
+              "passes",
+              "man, who, the, sentence"
+            ],
+            [
+              "…",
+              "…",
+              "…"
+            ],
+            [
+              "[sentence should swing the sword]",
+              "swing",
+              "sentence, should, the, sword"
+            ],
+            [
+              "[should swing the sword]",
+              "the",
+              "should, swing, sword"
+            ],
+            [
+              "[swing the sword]",
+              "sword",
+              "swing, the"
+            ],
+            [
+              "{:.info}",
+              "",
+              ""
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-43b3d52b3113",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each context-target pair is treated as a new observation in the data. For example, the target word “swing” in the above case produces four training samples: (“swing”, “sentence”), (“swing”, “should”), (“swing”, “the”), and (“swing”, “sword”)."
+          }
+        ]
+      },
+      {
+        "id": "image-e1a5544efe03",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/word2vec-skip-gram.png",
+          "alt": "The skip-gram model. Both the input vector $\\mathbf{x}$ and the output $\\mathbf{y}$ are one-hot encoded word representations. The hidden layer is the word embedding of size $N$."
+        }
+      },
+      {
+        "id": "paragraph-9c131e9d65e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given the vocabulary size "
+          },
+          {
+            "type": "inline_math",
+            "text": "V"
+          },
+          {
+            "type": "text",
+            "text": ", we are about to learn word embedding vectors of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": ". The model learns to predict one context word (output) using one target word (input) at a time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ed88d90e77de",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to Fig. 1,"
+          }
+        ]
+      },
+      {
+        "id": "list-be8a9cc21327",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-b8019609b176",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Both input word "
+              },
+              {
+                "type": "inline_math",
+                "text": "w_i"
+              },
+              {
+                "type": "text",
+                "text": " and the output word "
+              },
+              {
+                "type": "inline_math",
+                "text": "w_j"
+              },
+              {
+                "type": "text",
+                "text": " are one-hot encoded into binary vectors "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{y}"
+              },
+              {
+                "type": "text",
+                "text": " of size "
+              },
+              {
+                "type": "inline_math",
+                "text": "V"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6e3008c75b01",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, the multiplication of the binary vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}"
+              },
+              {
+                "type": "text",
+                "text": " and the word embedding matrix "
+              },
+              {
+                "type": "inline_math",
+                "text": "W"
+              },
+              {
+                "type": "text",
+                "text": " of size "
+              },
+              {
+                "type": "inline_math",
+                "text": "V \\times N"
+              },
+              {
+                "type": "text",
+                "text": " gives us the embedding vector of the input word "
+              },
+              {
+                "type": "inline_math",
+                "text": "w_i"
+              },
+              {
+                "type": "text",
+                "text": ": the i-th row of the matrix "
+              },
+              {
+                "type": "inline_math",
+                "text": "W"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-139837516516",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "This newly discovered embedding vector of dimension "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " forms the hidden layer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b19774af7d6e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The multiplication of the hidden layer and the word context matrix "
+              },
+              {
+                "type": "inline_math",
+                "text": "W’"
+              },
+              {
+                "type": "text",
+                "text": " of size "
+              },
+              {
+                "type": "inline_math",
+                "text": "N \\times V"
+              },
+              {
+                "type": "text",
+                "text": " produces the output one-hot encoded vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{y}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-41a94dc99605",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The output context matrix "
+              },
+              {
+                "type": "inline_math",
+                "text": "W’"
+              },
+              {
+                "type": "text",
+                "text": " encodes the meanings of words as context, different from the embedding matrix "
+              },
+              {
+                "type": "inline_math",
+                "text": "W"
+              },
+              {
+                "type": "text",
+                "text": ". NOTE: Despite the name, "
+              },
+              {
+                "type": "inline_math",
+                "text": "W’"
+              },
+              {
+                "type": "text",
+                "text": " is independent of "
+              },
+              {
+                "type": "inline_math",
+                "text": "W"
+              },
+              {
+                "type": "text",
+                "text": ", not a transpose or inverse or whatsoever."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-fce80db87d42",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Context-Based: Continuous Bag-of-Words (CBOW)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-212bc330fe5b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Continuous Bag-of-Words (CBOW) is another similar model for learning word vectors. It predicts the target word (i.e. “swing”) from source context words (i.e., “sentence should the sword”)."
+          }
+        ]
+      },
+      {
+        "id": "image-c437bd1e39db",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/word2vec-cbow.png",
+          "alt": "The CBOW model. Word vectors of multiple context words are averaged to get a fixed-length vector as in the hidden layer. Other symbols have the same meanings as in Fig 1."
+        }
+      },
+      {
+        "id": "paragraph-f18e03aa46f4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because there are multiple contextual words, we average their corresponding word vectors, constructed by the multiplication of the input vector and the matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": ". Because the averaging stage smoothes over a lot of the distributional information, some people believe the CBOW model is better for small dataset."
+          }
+        ]
+      },
+      {
+        "id": "heading-860c1d38c9e5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Loss Functions"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-7d5bb4178378",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both the skip-gram model and the CBOW model should be trained to minimize a well-designed loss/objective function. There are several loss functions we can incorporate to train these language models. In the following discussion, we will use the skip-gram model as an example to describe how the loss is computed."
+          }
+        ]
+      },
+      {
+        "id": "heading-be3c21d5e25d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Full Softmax"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-56869dd9ebea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The skip-gram model defines the embedding vector of every word by the matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " and the context vector by the output matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "W’"
+          },
+          {
+            "type": "text",
+            "text": ". Given an input word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_I"
+          },
+          {
+            "type": "text",
+            "text": ", let us label the corresponding row of "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " as vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "v_{w_I}"
+          },
+          {
+            "type": "text",
+            "text": " (embedding vector) and its corresponding column of "
+          },
+          {
+            "type": "inline_math",
+            "text": "W’"
+          },
+          {
+            "type": "text",
+            "text": " as "
+          },
+          {
+            "type": "inline_math",
+            "text": "v’_{w_I}"
+          },
+          {
+            "type": "text",
+            "text": " (context vector). The final output layer applies softmax to compute the probability of predicting the output word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_O"
+          },
+          {
+            "type": "text",
+            "text": " given "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_I"
+          },
+          {
+            "type": "text",
+            "text": ", and therefore:"
+          }
+        ]
+      },
+      {
+        "id": "math-409e03f4a8c0",
+        "type": "math",
+        "attrs": {
+          "latex": "p(w_O \\vert w_I) = \\frac{\\exp({v'_{w_O}}^{\\top} v_{w_I})}{\\sum_{i=1}^V \\exp({v'_{w_i}}^{\\top} v_{w_I})}"
+        }
+      },
+      {
+        "id": "paragraph-145a3501888e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This is accurate as presented in However, when "
+          },
+          {
+            "type": "inline_math",
+            "text": "V"
+          },
+          {
+            "type": "text",
+            "text": " is extremely large, calculating the denominator by going through all the words for every single sample is computationally impractical. The demand for more efficient conditional probability estimation leads to the new methods like "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "hierarchical softmax"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-86dcf244fe5f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hierarchical Softmax"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4f73edcd870a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Morin and Bengio ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "2005"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") proposed hierarchical softmax to make the sum calculation faster with the help of a binary tree structure. The hierarchical softmax encodes the language model’s output softmax layer into a tree hierarchy, where each leaf is one word and each internal node stands for relative probabilities of the children nodes."
+          }
+        ]
+      },
+      {
+        "id": "image-81240cfdff68",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/word2vec-hierarchical-softmax.png",
+          "alt": "An illustration of the hierarchical softmax binary tree. The leaf nodes in white are words in the vocabulary. The gray inner nodes carry information on the probabilities of reaching its child nodes. One path starting from the root to the leaf $w\\_i$. $n(w\\_i, j)$ denotes the j-th node on this path. (Image source: word2vec Parameter Learning Explained )"
+        }
+      },
+      {
+        "id": "paragraph-519a8c1ff9c8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " has a unique path from the root down to its corresponding leaf. The probability of picking this word is equivalent to the probability of taking this path from the root down through the tree branches. Since we know the embedding vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "v_n"
+          },
+          {
+            "type": "text",
+            "text": " of the internal node "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": ", the probability of getting the word can be computed by the product of taking left or right turn at every internal node stop."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5bc2e8aeeac7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to Fig. 3, the probability of one node is ("
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma"
+          },
+          {
+            "type": "text",
+            "text": " is the sigmoid function):"
+          }
+        ]
+      },
+      {
+        "id": "math-3357546509b6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\np(\\text{turn right} \\to \\dots w_I \\vert n) &= \\sigma({v'_n}^{\\top} v_{w_I})\\\\\np(\\text{turn left } \\to \\dots w_I \\vert n) &= 1 - p(\\text{turn right} \\vert n) = \\sigma(-{v'_n}^{\\top} v_{w_I})\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-d805fec7d8ab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final probability of getting a context word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_O"
+          },
+          {
+            "type": "text",
+            "text": " given an input word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_I"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-837de3876d57",
+        "type": "math",
+        "attrs": {
+          "latex": "p(w_O \\vert w_I) = \\prod_{k=1}^{L(w_O)} \\sigma(\\mathbb{I}_{\\text{turn}}(n(w_O, k), n(w_O, k+1)) \\cdot {v'_{n(w_O, k)}}^{\\top} v_{w_I})"
+        }
+      },
+      {
+        "id": "paragraph-6e3d706dc7bf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(w_O)"
+          },
+          {
+            "type": "text",
+            "text": " is the depth of the path leading to the word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_O"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{I}_{\\text{turn}}"
+          },
+          {
+            "type": "text",
+            "text": " is a specially indicator function which returns 1 if "
+          },
+          {
+            "type": "inline_math",
+            "text": "n(w_O, k+1)"
+          },
+          {
+            "type": "text",
+            "text": " is the left child of "
+          },
+          {
+            "type": "inline_math",
+            "text": "n(w_O, k)"
+          },
+          {
+            "type": "text",
+            "text": " otherwise -1. The internal nodes’ embeddings are learned during the model training. The tree structure helps greatly reduce the complexity of the denominator estimation from O(V) (vocabulary size) to O(log V) (the depth of the tree) at the training time. However, at the prediction time, we still to compute the probability of every word and pick the best, as we don’t know which leaf to reach for in advance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-778d7d5d4001",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A good tree structure is crucial to the model performance. Several handy principles are: group words by frequency like what is implemented by Huffman tree for simple speedup; group similar words into same or close branches (i.e. use predefined word clusters, WordNet)."
+          }
+        ]
+      },
+      {
+        "id": "heading-72a571309be1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cross Entropy"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c2021f80ee66",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another approach completely steers away from the softmax framework. Instead, the loss function measures the cross entropy between the predicted probabilities "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": " and the true binary labels "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{y}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6a234324e779",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First, let’s recall that the cross entropy between two distributions "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "q"
+          },
+          {
+            "type": "text",
+            "text": " is measured as "
+          },
+          {
+            "type": "inline_math",
+            "text": " H(p, q) = -\\sum_x p(x) \\log q(x) "
+          },
+          {
+            "type": "text",
+            "text": ". In our case, the true label "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i"
+          },
+          {
+            "type": "text",
+            "text": " is 1 only when "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " is the output word; "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_j"
+          },
+          {
+            "type": "text",
+            "text": " is 0 otherwise. The loss function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " of the model with parameter config "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " aims to minimize the cross entropy between the prediction and the ground truth, as lower cross entropy indicates high similarity between two distributions."
+          }
+        ]
+      },
+      {
+        "id": "math-f6bc4c89dc30",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\theta = - \\sum_{i=1}^V y_i \\log p(w_i | w_I) = - \\log p(w_O \\vert w_I)"
+        }
+      },
+      {
+        "id": "paragraph-37dae0636d1e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recall that,"
+          }
+        ]
+      },
+      {
+        "id": "math-409e03f4a8c0-2",
+        "type": "math",
+        "attrs": {
+          "latex": "p(w_O \\vert w_I) = \\frac{\\exp({v'_{w_O}}^{\\top} v_{w_I})}{\\sum_{i=1}^V \\exp({v'_{w_i}}^{\\top} v_{w_I})}"
+        }
+      },
+      {
+        "id": "paragraph-3b88212aebba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Therefore,"
+          }
+        ]
+      },
+      {
+        "id": "math-423463940579",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_{\\theta} \n= - \\log \\frac{\\exp({v'_{w_O}}^{\\top}{v_{w_I}})}{\\sum_{i=1}^V \\exp({v'_{w_i}}^{\\top}{v_{w_I} })}\n= - {v'_{w_O}}^{\\top}{v_{w_I} } + \\log \\sum_{i=1}^V \\exp({v'_{w_i} }^{\\top}{v_{w_I}})"
+        }
+      },
+      {
+        "id": "paragraph-218a4b4410e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To start training the model using back-propagation with SGD, we need to compute the gradient of the loss function. For simplicity, let’s label "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_{IO} = {v’_{w_O}}^{\\top}{v_{w_I}}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-d9225c2e8eca",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\n\\nabla_\\theta \\mathcal{L}_{\\theta}\n&= \\nabla_\\theta\\big( - z_{IO} + \\log \\sum_{i=1}^V e^{z_{Ii}} \\big) \\\\ \n&= - \\nabla_\\theta z_{IO} + \\nabla_\\theta \\big( \\log \\sum_{i=1}^V e^{z_{Ii}} \\big) \\\\\n&= - \\nabla_\\theta z_{IO} + \\frac{1}{\\sum_{i=1}^V e^{z_{Ii}}} \\sum_{i=1}^V e^{z_{Ii}} \\nabla_\\theta z_{Ii} \\\\\n&= - \\nabla_\\theta z_{IO} + \\sum_{i=1}^V \\frac{e^{z_{Ii}}}{\\sum_{i=1}^V e^{z_{Ii}}} \\nabla_\\theta z_{Ii} \\\\\n&= - \\nabla_\\theta z_{IO} + \\sum_{i=1}^V p(w_i \\vert w_I) \\nabla_\\theta z_{Ii} \\\\\n&= - \\nabla_\\theta z_{IO} + \\mathbb{E}_{w_i \\sim Q(\\tilde{w})} \\nabla_\\theta z_{Ii}\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-a86955953fb9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q(\\tilde{w})"
+          },
+          {
+            "type": "text",
+            "text": " is the distribution of noise samples."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-119e3d4813f6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to the formula above, the correct output word has a positive reinforcement according to the first term (the larger "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\nabla_\\theta z_{IO}"
+          },
+          {
+            "type": "text",
+            "text": " the better loss we have), while other words have a negative impact as captured by the second term."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-37b541065e67",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How to estimate "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_{w_i \\sim Q(\\tilde{w})} \\nabla_\\theta {v’_{w_i}}^{\\top}{v_{w_I}}"
+          },
+          {
+            "type": "text",
+            "text": " with a sample set of noise words rather than scanning through the entire vocabulary is the key of using cross-entropy-based sampling approach."
+          }
+        ]
+      },
+      {
+        "id": "heading-cd30b3cd7382",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Noise Contrastive Estimation (NCE)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-871d90eb59ca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Noise Contrastive Estimation (NCE) metric intends to differentiate the target word from noise samples using a logistic regression classifier ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://proceedings.mlr.press/v9/gutmann10a/gutmann10a.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gutmann and Hyvärinen, 2010"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0120c485e662",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given an input word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_I"
+          },
+          {
+            "type": "text",
+            "text": ", the correct output word is known as "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": ". In the meantime, we sample "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " other words from the noise sample distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": ", denoted as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{w}_1, \\tilde{w}_2, \\dots, \\tilde{w}_N \\sim Q"
+          },
+          {
+            "type": "text",
+            "text": ". Let’s label the decision of the binary classifier as "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " and $d$$ can only take a binary value."
+          }
+        ]
+      },
+      {
+        "id": "math-046f25489230",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\theta = - [ \\log p(d=1 \\vert w, w_I) + \\sum_{i=1, \\tilde{w}_i \\sim Q}^N \\log p(d=0|\\tilde{w}_i, w_I) ]"
+        }
+      },
+      {
+        "id": "paragraph-2d8464757ad0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " is big enough, according to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Law_of_large_numbers"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the Law of large numbers"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-89ff5597fdf3",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\theta = - [ \\log p(d=1 \\vert w, w_I) +  N\\mathbb{E}_{\\tilde{w}_i \\sim Q} \\log p(d=0|\\tilde{w}_i, w_I)]"
+        }
+      },
+      {
+        "id": "paragraph-37e403905c4a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To compute the probability "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(d=1 \\vert w, w_I)"
+          },
+          {
+            "type": "text",
+            "text": ", we can start with the joint probability "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(d, w \\vert w_I)"
+          },
+          {
+            "type": "text",
+            "text": ". Among "
+          },
+          {
+            "type": "inline_math",
+            "text": "w, \\tilde{w}_1, \\tilde{w}_2, \\dots, \\tilde{w}_N"
+          },
+          {
+            "type": "text",
+            "text": ", we have 1 out of (N+1) chance to pick the true word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": ", which is sampled from the conditional probability "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(w \\vert w_I)"
+          },
+          {
+            "type": "text",
+            "text": "; meanwhile, we have N out of (N+1) chances to pick a noise word, each sampled from "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(\\tilde{w}) \\sim Q"
+          },
+          {
+            "type": "text",
+            "text": ". Thus,"
+          }
+        ]
+      },
+      {
+        "id": "math-d0d97a9af7aa",
+        "type": "math",
+        "attrs": {
+          "latex": "p(d, w | w_I) = \n  \\begin{cases}\n  \\frac{1}{N+1} p(w \\vert w_I) & \\text{if } d=1 \\\\\n  \\frac{N}{N+1} q(\\tilde{w}) & \\text{if } d=0\n  \\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-cd2c383c65e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then we can figure out "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(d=1 \\vert w, w_I)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(d=0 \\vert w, w_I)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-c017be9fabe8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\np(d=1 \\vert w, w_I) \n&= \\frac{p(d=1, w \\vert w_I)}{p(d=1, w \\vert w_I) + p(d=0, w \\vert w_I)}\n&= \\frac{p(w \\vert w_I)}{p(w \\vert w_I) + Nq(\\tilde{w})}\n\\end{align}"
+        }
+      },
+      {
+        "id": "math-369eec2af33d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\np(d=0 \\vert w, w_I) \n&= \\frac{p(d=0, w \\vert w_I)}{p(d=1, w \\vert w_I) + p(d=0, w \\vert w_I)}\n&= \\frac{Nq(\\tilde{w})}{p(w \\vert w_I) + Nq(\\tilde{w})}\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-c157e033d338",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally the loss function of NCE’s binary classifier becomes:"
+          }
+        ]
+      },
+      {
+        "id": "math-1a1754e3c786",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\n\\mathcal{L}_\\theta \n& = - [ \\log p(d=1 \\vert w, w_I) +  \\sum_{\\substack{i=1 \\\\ \\tilde{w}_i \\sim Q}}^N \\log p(d=0|\\tilde{w}_i, w_I)] \\\\\n& = - [ \\log \\frac{p(w \\vert w_I)}{p(w \\vert w_I) + Nq(\\tilde{w})} +  \\sum_{\\substack{i=1 \\\\ \\tilde{w}_i \\sim Q}}^N \\log \\frac{Nq(\\tilde{w}_i)}{p(w \\vert w_I) + Nq(\\tilde{w}_i)}]\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-8a97ee594cda",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(w \\vert w_I)"
+          },
+          {
+            "type": "text",
+            "text": " still involves summing up the entire vocabulary in the denominator. Let’s label the denominator as a partition function of the input word, "
+          },
+          {
+            "type": "inline_math",
+            "text": "Z(w_I)"
+          },
+          {
+            "type": "text",
+            "text": ". A common assumption is "
+          },
+          {
+            "type": "inline_math",
+            "text": "Z(w) \\approx 1"
+          },
+          {
+            "type": "text",
+            "text": " given that we expect the softmax output layer to be normalized ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.toronto.edu/~amnih/papers/ncelm.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Minh and Teh, 2012"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Then the loss function is simplified to:"
+          }
+        ]
+      },
+      {
+        "id": "math-0a337dd4dfe4",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\theta = - [ \\log \\frac{\\exp({v'_w}^{\\top}{v_{w_I}})}{\\exp({v'_w}^{\\top}{v_{w_I}}) + Nq(\\tilde{w})} +  \\sum_{\\substack{i=1 \\\\ \\tilde{w}_i \\sim Q}}^N \\log \\frac{Nq(\\tilde{w}_i)}{\\exp({v'_w}^{\\top}{v_{w_I}}) + Nq(\\tilde{w}_i)}]"
+        }
+      },
+      {
+        "id": "paragraph-4c19cba251cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The noise distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": " is a tunable parameter and we would like to design it in a way so that:"
+          }
+        ]
+      },
+      {
+        "id": "list-e7cc49b7f171",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-c2e421aa1cac",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "intuitively it should be very similar to the real data distribution; and"
+              }
+            ]
+          },
+          {
+            "id": "list-item-fd70f21c7611",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "it should be easy to sample from."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-58838a0e87f3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, the sampling implementation ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/candidate_sampling_ops.py#L83"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "log_uniform_candidate_sampler"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") of NCE loss in tensorflow assumes that such noise samples follow a log-uniform distribution, also known as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Zipf%27s_law"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zipfian’s law"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The probability of a given word in logarithm is expected to be reversely proportional to its rank, while high-frequency words are assigned with lower ranks. In this case, "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(\\tilde{w}) = \\frac{1}{ \\log V}(\\log (r_{\\tilde{w}} + 1) - \\log r_{\\tilde{w}})"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "r_{\\tilde{w}} \\in [1, V]"
+          },
+          {
+            "type": "text",
+            "text": " is the rank of a word by frequency in descending order."
+          }
+        ]
+      },
+      {
+        "id": "heading-f1ad7f93247b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Negative Sampling (NEG)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d4912989837d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Negative Sampling (NEG) proposed by Mikolov et al. ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "2013"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a simplified variation of NCE loss. It is especially famous for training Google’s "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://code.google.com/archive/p/word2vec/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "word2vec"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " project. Different from NCE Loss which attempts to approximately maximize the log probability of the softmax output, negative sampling did further simplification because it focuses on learning high-quality word embedding rather than modeling the word distribution in natural language."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6890cfc1197a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "NEG approximates the binary classifier’s output with sigmoid functions as follows:"
+          }
+        ]
+      },
+      {
+        "id": "math-23dead5dbb3e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\np(d=1 \\vert w_, w_I) &= \\sigma({v'_{w}}^\\top v_{w_I}) \\\\\np(d=0 \\vert w, w_I) &= 1 - \\sigma({v'_{w}}^\\top v_{w_I}) = \\sigma(-{v'_{w}}^\\top v_{w_I})\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-c9aa69a12d9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final NCE loss function looks like:"
+          }
+        ]
+      },
+      {
+        "id": "math-da9a32a5df7b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\theta = - [ \\log \\sigma({v'_{w}}^\\top v_{w_I}) +  \\sum_{\\substack{i=1 \\\\ \\tilde{w}_i \\sim Q}}^N \\log \\sigma(-{v'_{\\tilde{w}_i}}^\\top v_{w_I})]"
+        }
+      },
+      {
+        "id": "heading-e963bf94cce2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Other Tips for Learning Word Embedding"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-52117745b0ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mikolov et al. ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "2013"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") suggested several helpful practices that could result in good word embedding learning outcomes."
+          }
+        ]
+      },
+      {
+        "id": "list-ec7a931cb1d9",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-66af981761d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Soft sliding window"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". When pairing the words within the sliding window, we could assign less weight to more distant words. One heuristic is — given a maximum window size parameter defined, "
+              },
+              {
+                "type": "inline_math",
+                "text": "s_{\\text{max}}"
+              },
+              {
+                "type": "text",
+                "text": ", the actual window size is randomly sampled between 1 and "
+              },
+              {
+                "type": "inline_math",
+                "text": "s_{\\text{max}}"
+              },
+              {
+                "type": "text",
+                "text": " for every training sample. Thus, each context word has the probability of 1/(its distance to the target word) being observed, while the adjacent words are always observed."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-54aac62ce926",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Subsampling frequent words"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Extremely frequent words might be too general to differentiate the context (i.e. think about stopwords). While on the other hand, rare words are more likely to carry distinct information. To balance the frequent and rare words, Mikolov et al. proposed to discard words "
+              },
+              {
+                "type": "inline_math",
+                "text": "w"
+              },
+              {
+                "type": "text",
+                "text": " with probability "
+              },
+              {
+                "type": "inline_math",
+                "text": "1-\\sqrt{t/f(w)}"
+              },
+              {
+                "type": "text",
+                "text": " during sampling. Here "
+              },
+              {
+                "type": "inline_math",
+                "text": "f(w)"
+              },
+              {
+                "type": "text",
+                "text": " is the word frequency and "
+              },
+              {
+                "type": "inline_math",
+                "text": "t"
+              },
+              {
+                "type": "text",
+                "text": " is an adjustable threshold."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-23fcc07e6af9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Learning phrases first"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". A phrase often stands as a conceptual unit, rather than a simple composition of individual words. For example, we cannot really tell “New York” is a city name even we know the meanings of “new” and “york”. Learning such phrases first and treating them as word units before training the word embedding model improves the outcome quality. A simple data-driven approach is based on unigram and bigram counts: "
+              },
+              {
+                "type": "inline_math",
+                "text": "s_{\\text{phrase}} = \\frac{C(w_i w_j) - \\delta}{ C(w_i)C(w_j)}"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "C(.)"
+              },
+              {
+                "type": "text",
+                "text": " is simple count of an unigram "
+              },
+              {
+                "type": "inline_math",
+                "text": "w_i"
+              },
+              {
+                "type": "text",
+                "text": " or bigram "
+              },
+              {
+                "type": "inline_math",
+                "text": "w_i w_j"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\delta"
+              },
+              {
+                "type": "text",
+                "text": " is a discounting threshold to prevent super infrequent words and phrases. Higher scores indicate higher chances of being phrases. To form phrases longer than two words, we can scan the vocabulary multiple times with decreasing score cutoff values."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-f3f496374dd5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GloVe: Global Vectors"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-e1c13396fa58",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Global Vector (GloVe) model proposed by Pennington et al. ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.aclweb.org/anthology/D14-1162"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "2014"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") aims to combine the count-based matrix factorization and the context-based skip-gram model together."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5d9ccd396ac4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We all know the counts and co-occurrences can reveal the meanings of words. To distinguish from "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(w_O \\vert w_I)"
+          },
+          {
+            "type": "text",
+            "text": " in the context of a word embedding word, we would like to define the co-ocurrence probability as:"
+          }
+        ]
+      },
+      {
+        "id": "math-3ed4be1065cd",
+        "type": "math",
+        "attrs": {
+          "latex": "p_{\\text{co}}(w_k \\vert w_i) = \\frac{C(w_i, w_k)}{C(w_i)}"
+        }
+      },
+      {
+        "id": "paragraph-28ba64eb9a92",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "C(w_i, w_k)"
+          },
+          {
+            "type": "text",
+            "text": " counts the co-occurrence between words "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_k"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c58811710400",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Say, we have two words, "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": "=“ice” and "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_j"
+          },
+          {
+            "type": "text",
+            "text": "=“steam”. The third word "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{w}_k"
+          },
+          {
+            "type": "text",
+            "text": "=“solid” is related to “ice” but not “steam”, and thus we expect "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_{\\text{co}}(\\tilde{w}_k \\vert w_i)"
+          },
+          {
+            "type": "text",
+            "text": " to be much larger than "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_{\\text{co}}(\\tilde{w}_k \\vert w_j)"
+          },
+          {
+            "type": "text",
+            "text": " and therefore "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}"
+          },
+          {
+            "type": "text",
+            "text": " to be very large. If the third word "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{w}_k"
+          },
+          {
+            "type": "text",
+            "text": " = “water” is related to both or "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{w}_k"
+          },
+          {
+            "type": "text",
+            "text": " = “fashion” is unrelated to either of them, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}"
+          },
+          {
+            "type": "text",
+            "text": " is expected to be close to one."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-397e72e352c5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The intuition here is that the word meanings are captured by the ratios of co-occurrence probabilities rather than the probabilities themselves. The global vector models the relationship between two words regarding to the third context word as:"
+          }
+        ]
+      },
+      {
+        "id": "math-3073705c0024",
+        "type": "math",
+        "attrs": {
+          "latex": "F(w_i, w_j, \\tilde{w}_k) = \\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}"
+        }
+      },
+      {
+        "id": "paragraph-3142e228f3b6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Further, since the goal is to learn meaningful word vectors, "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " is designed to be a function of the linear difference between two words "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i - w_j"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-db911053dc5e",
+        "type": "math",
+        "attrs": {
+          "latex": "F((w_i - w_j)^\\top \\tilde{w}_k) = \\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}"
+        }
+      },
+      {
+        "id": "paragraph-c3386df3907e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With the consideration of "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " being symmetric between target words and context words, the final solution is to model "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " as an "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "exponential"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " function. Please read the original paper ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.aclweb.org/anthology/D14-1162"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pennington et al., 2014"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") for more details of the equations."
+          }
+        ]
+      },
+      {
+        "id": "math-a00f00dfc87d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\nF({w_i}^\\top \\tilde{w}_k) &= \\exp({w_i}^\\top \\tilde{w}_k) = p_{\\text{co}}(\\tilde{w}_k \\vert w_i) \\\\\nF((w_i - w_j)^\\top \\tilde{w}_k) &= \\exp((w_i - w_j)^\\top \\tilde{w}_k) = \\frac{\\exp(w_i^\\top \\tilde{w}_k)}{\\exp(w_j^\\top \\tilde{w}_k)} = \\frac{p_{\\text{co}}(\\tilde{w}_k \\vert w_i)}{p_{\\text{co}}(\\tilde{w}_k \\vert w_j)}\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-689204cefdec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally,"
+          }
+        ]
+      },
+      {
+        "id": "math-2e1cb58535d9",
+        "type": "math",
+        "attrs": {
+          "latex": "{w_i}^\\top \\tilde{w}_k = \\log p_{\\text{co}}(\\tilde{w}_k \\vert w_i) = \\log \\frac{C(w_i, \\tilde{w}_k)}{C(w_i)} = \\log C(w_i, \\tilde{w}_k) - \\log C(w_i)"
+        }
+      },
+      {
+        "id": "paragraph-c679bd091a9e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since the second term "
+          },
+          {
+            "type": "inline_math",
+            "text": "-\\log C(w_i)"
+          },
+          {
+            "type": "text",
+            "text": " is independent of "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": ", we can add bias term "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_i"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " to capture "
+          },
+          {
+            "type": "inline_math",
+            "text": "-\\log C(w_i)"
+          },
+          {
+            "type": "text",
+            "text": ". To keep the symmetric form, we also add in a bias "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{b}_k"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{w}_k"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-e27fb8e9c340",
+        "type": "math",
+        "attrs": {
+          "latex": "\\log C(w_i, \\tilde{w}_k) = {w_i}^\\top \\tilde{w}_k + b_i + \\tilde{b}_k"
+        }
+      },
+      {
+        "id": "paragraph-d9f9ad50429d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The loss function for the GloVe model is designed to preserve the above formula by minimizing the sum of the squared errors:"
+          }
+        ]
+      },
+      {
+        "id": "math-f20099841252",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\theta = \\sum_{i=1, j=1}^V f(C(w_i,w_j)) ({w_i}^\\top \\tilde{w}_j + b_i + \\tilde{b}_j - \\log C(w_i, \\tilde{w}_j))^2"
+        }
+      },
+      {
+        "id": "paragraph-27d2e8ed5900",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The weighting schema "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(c)"
+          },
+          {
+            "type": "text",
+            "text": " is a function of the co-occurrence of "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_j"
+          },
+          {
+            "type": "text",
+            "text": " and it is an adjustable model configuration. It should be close to zero as "
+          },
+          {
+            "type": "inline_math",
+            "text": "c \\to 0"
+          },
+          {
+            "type": "text",
+            "text": "; should be non-decreasing as higher co-occurrence should have more impact; should saturate when "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " become extremely large. The paper proposed the following weighting function."
+          }
+        ]
+      },
+      {
+        "id": "math-8f8ac08cb701",
+        "type": "math",
+        "attrs": {
+          "latex": "f(c) = \n  \\begin{cases}\n  (\\frac{c}{c_{\\max}})^\\alpha & \\text{if } c < c_{\\max} \\text{, } c_{\\max} \\text{ is adjustable.} \\\\\n  1 & \\text{if } \\text{otherwise}\n  \\end{cases}"
+        }
+      },
+      {
+        "id": "heading-e9557699a571",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Examples: word2vec on “Game of Thrones”"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-0e0bb4f052dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After reviewing all the theoretical knowledge above, let’s try a little experiment in word embedding extracted from “the Games of Thrones corpus”. The process is super straightforward using "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://radimrehurek.com/gensim/models/word2vec.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "gensim"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-166f42ee9ef1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 1: Extract words"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-92bcd8b9344f",
+        "type": "code",
+        "attrs": {
+          "code": "import sys\nfrom nltk.corpus import stopwords\nfrom nltk.tokenize import sent_tokenize\n\nSTOP_WORDS = set(stopwords.words('english'))\n\ndef get_words(txt):\n    return filter(\n        lambda x: x not in STOP_WORDS, \n        re.findall(r'\\b(\\w+)\\b', txt)\n    )\n\ndef parse_sentence_words(input_file_names):\n   \"\"\"Returns a list of a list of words. Each sublist is a sentence.\"\"\"\n    sentence_words = []\n    for file_name in input_file_names:\n        for line in open(file_name):\n            line = line.strip().lower()\n            line = line.decode('unicode_escape').encode('ascii','ignore')\n            sent_words = map(get_words, sent_tokenize(line))\n            sent_words = filter(lambda sw: len(sw) > 1, sent_words)\n            if len(sent_words) > 1:\n                sentence_words += sent_words\n    return sentence_words\n\n# You would see five .txt files after unzip 'a_song_of_ice_and_fire.zip'\ninput_file_names = [\"001ssb.txt\", \"002ssb.txt\", \"003ssb.txt\", \n                    \"004ssb.txt\", \"005ssb.txt\"]\nGOT_SENTENCE_WORDS= parse_sentence_words(input_file_names)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-5e06ae97470a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 2: Feed a word2vec model"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-316128b2a1e7",
+        "type": "code",
+        "attrs": {
+          "code": "from gensim.models import Word2Vec\n\n# size: the dimensionality of the embedding vectors.\n# window: the maximum distance between the current and predicted word within a sentence.\nmodel = Word2Vec(GOT_SENTENCE_WORDS, size=128, window=3, min_count=5, workers=4)\nmodel.wv.save_word2vec_format(\"got_word2vec.txt\", binary=False)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-f478f81e4c62",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 3: Check the results"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f44d4862df1a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the GoT word embedding space, the top similar words to “king” and “queen” are:"
+          }
+        ]
+      },
+      {
+        "id": "table-46b162e6d521",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "model.most_similar('king', topn=10) (word, similarity with ‘king’)",
+            "model.most_similar('queen', topn=10) (word, similarity with ‘queen’)"
+          ],
+          "rows": [
+            [
+              "(‘kings’, 0.897245)",
+              "(‘cersei’, 0.942618)"
+            ],
+            [
+              "(‘baratheon’, 0.809675)",
+              "(‘joffrey’, 0.933756)"
+            ],
+            [
+              "(‘son’, 0.763614)",
+              "(‘margaery’, 0.931099)"
+            ],
+            [
+              "(‘robert’, 0.708522)",
+              "(‘sister’, 0.928902)"
+            ],
+            [
+              "(’lords’, 0.698684)",
+              "(‘prince’, 0.927364)"
+            ],
+            [
+              "(‘joffrey’, 0.696455)",
+              "(‘uncle’, 0.922507)"
+            ],
+            [
+              "(‘prince’, 0.695699)",
+              "(‘varys’, 0.918421)"
+            ],
+            [
+              "(‘brother’, 0.685239)",
+              "(’ned’, 0.917492)"
+            ],
+            [
+              "(‘aerys’, 0.684527)",
+              "(‘melisandre’, 0.915403)"
+            ],
+            [
+              "(‘stannis’, 0.682932)",
+              "(‘robb’, 0.915272)"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-73b6178fcfa6",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2017wordembedding,\n  title   = \"Learning word embedding\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2017\",\n  url     = \"https://lilianweng.github.io/posts/2017-10-15-word-embedding/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b5145694c574",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Tensorflow Tutorial "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/tutorials/word2vec"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Vector Representations of Words"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-062f85edbe07",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://mccormickml.com/2016/04/19/word2vec-tutorial-the-skip-gram-model/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Word2Vec Tutorial - The Skip-Gram Model”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Chris McCormick."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-adfd0e677304",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://ruder.io/word-embeddings-softmax/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“On word embeddings - Part 2: Approximating the Softmax”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Sebastian Ruder."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-beccbb4b3aff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Xin Rong. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1411.2738.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "word2vec Parameter Learning Explained"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-537c180f4ee7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Mikolov, Tomas, Kai Chen, Greg Corrado, and Jeffrey Dean. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1301.3781.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Efficient estimation of word representations in vector space.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1301.3781 (2013)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ca982e69ca2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Frederic Morin and Yoshua Bengio. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.iro.umontreal.ca/~lisa/pointeurs/hierarchical-nnlm-aistats05.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Hierarchical Probabilistic Neural Network Language Model.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Aistats. Vol. 5. 2005."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-90652bf6b6b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Michael Gutmann and Aapo Hyvärinen. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://proceedings.mlr.press/v9/gutmann10a/gutmann10a.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Noise-contrastive estimation: A new estimation principle for unnormalized statistical models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Proc. Intl. Conf. on Artificial Intelligence and Statistics. 2010."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-75c0aa8a8a51",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg Corrado, and Jeffrey Dean. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/5021-distributed-representations-of-words-and-phrases-and-their-compositionality.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Distributed representations of words and phrases and their compositionality.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Advances in neural information processing systems. 2013."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6b35951a1642",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1301.3781.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Efficient estimation of word representations in vector space.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1301.3781 (2013)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-615f2cd0e735",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Marco Baroni, Georgiana Dinu, and Germán Kruszewski. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://anthology.aclweb.org/P/P14/P14-1023.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Don’t count, predict! A systematic comparison of context-counting vs. context-predicting semantic vectors.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL (1). 2014."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-32b3da5990c0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Jeffrey Pennington, Richard Socher, and Christopher Manning. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.aclweb.org/anthology/D14-1162"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Glove: Global vectors for word representation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Proc. Conf. on empirical methods in natural language processing (EMNLP). 2014."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "learning-word-embedding",
+    "source_slug": "2017-10-15-word-embedding",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 13,
+      "math": 24,
+      "image": 3,
+      "table": 2,
+      "code": 3
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/word2vec-skip-gram.png",
+      "alt": "The skip-gram model. Both the input vector $\\mathbf{x}$ and the output $\\mathbf{y}$ are one-hot encoded word representations. The hidden layer is the word embedding of size $N$."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/word2vec-cbow.png",
+      "alt": "The CBOW model. Word vectors of multiple context words are averaged to get a fixed-length vector as in the hidden layer. Other symbols have the same meanings as in Fig 1."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/word2vec-hierarchical-softmax.png",
+      "alt": "An illustration of the hierarchical softmax binary tree. The leaf nodes in white are words in the vocabulary. The gray inner nodes carry information on the probabilities of reaching its child nodes. One path starting from the root to the leaf $w\\_i$. $n(w\\_i, j)$ denotes the j-th node on this path. (Image source: word2vec Parameter Learning Explained )"
+    }
+  ]
+}

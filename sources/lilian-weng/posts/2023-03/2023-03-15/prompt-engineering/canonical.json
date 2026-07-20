@@ -1,0 +1,4352 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2023-03-15-prompt-engineering",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2023-03-15T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:8f9fa3bda887450231845d9fd5367ee66d5d1b6dd9ad9420ef94c953ecf4edd4",
+    "fetched_at": "2026-07-14T02:05:43.891507+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Prompt Engineering",
+    "title_en": "Prompt Engineering",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-a523a18644ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prompt Engineering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", also known as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "In-Context Prompting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", refers to methods for how to communicate with LLM to steer its behavior for desired outcomes "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "without"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " updating the model weights. It is an empirical science and the effect of prompt engineering methods can vary a lot among models, thus requiring heavy experimentation and heuristics."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fe384e57e344",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This post only focuses on prompt engineering for autoregressive language models, so nothing with Cloze tests, image generation or multimodality models. At its core, the goal of prompt engineering is about alignment and model steerability. Check my "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "previous post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on controllable text generation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-58dde0caae49",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[My personal spicy take]"
+          },
+          {
+            "type": "text",
+            "text": " In my opinion, some prompt engineering papers are not worthy 8 pages long, since those tricks can be explained in one or a few sentences and the rest is all about benchmarking. An easy-to-use and shared benchmark infrastructure should be more beneficial to the community. Iterative prompting or external tool use would not be trivial to set up. Also non-trivial to align the whole research community to adopt it."
+          }
+        ]
+      },
+      {
+        "id": "heading-ca9c968e7865",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Basic Prompting"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-5f21535487ef",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Zero-shot and few-shot learning are two most basic approaches for prompting the model, pioneered by many LLM papers and commonly used for benchmarking LLM performance."
+          }
+        ]
+      },
+      {
+        "id": "heading-9e4822238659",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Zero-Shot"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0db9919f4043",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Zero-shot learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is to simply feed the task text to the model and ask for results."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-726158487ef2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(All the sentiment analysis examples are from SST-2)"
+          }
+        ]
+      },
+      {
+        "id": "code-614ba65bb944",
+        "type": "code",
+        "attrs": {
+          "code": "Text: i'll bet the video game is a lot more fun than the film.\nSentiment:",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-fca7cd0dd9c9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Few-shot"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d6f6cfdf0948",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Few-shot learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " presents a set of high-quality demonstrations, each consisting of both input and desired output, on the target task. As the model first sees good examples, it can better understand human intention and criteria for what kinds of answers are wanted. Therefore, few-shot learning often leads to better performance than zero-shot. However, it comes at the cost of more token consumption and may hit the context length limit when input and output text are long."
+          }
+        ]
+      },
+      {
+        "id": "code-5b9402c94133",
+        "type": "code",
+        "attrs": {
+          "code": "Text: (lawrence bounces) all over the stage, dancing, running, sweating, mopping his face and generally displaying the wacky talent that brought him fame in the first place.\nSentiment: positive\n\nText: despite all evidence to the contrary, this clunker has somehow managed to pose as an actual feature movie, the kind that charges full admission and gets hyped on tv and purports to amuse small children and ostensible adults.\nSentiment: negative\n\nText: for the first time in years, de niro digs deep emotionally, perhaps because he's been stirred by the powerful work of his co-stars.\nSentiment: positive\n\nText: i'll bet the video game is a lot more fun than the film.\nSentiment:",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-10226ccedffd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Many studies looked into how to construct in-context examples to maximize the performance and observed that "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "choice of prompt format, training examples, and the order of the examples can lead to dramatically different performance"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", from near random guess to near SoTA."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-46f8e4aef84f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.09690"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhao et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " investigated the case of few-shot classification and proposed that several biases with LLM (they use GPT-3 in the experiments) contribute to such high variance: (1) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Majority label bias"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " exists if distribution of labels among the examples is unbalanced; (2) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Recency bias"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " refers to the tendency where the model may repeat the label at the end; (3) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Common token bias"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " indicates that LLM tends to produce common tokens more often than rare tokens. To conquer such bias, they proposed a method to calibrate the label probabilities output by the model to be uniform when the input string is "
+          },
+          {
+            "type": "inline_code",
+            "text": "N/A"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-29163c5419f2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Tips for Example Selection"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "list-c4161dbe0954",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a2849961c1e5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Choose examples that are semantically similar to the test example using "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": "-NN clustering in the embedding space ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2101.06804"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Liu et al., 2021"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c42950f495a5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "To select a diverse and representative set of examples, "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2209.01975"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Su et al. (2022)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " proposed to use a graph-based approach: (1) First, construct a directed graph "
+              },
+              {
+                "type": "inline_math",
+                "text": "G=(V, E)"
+              },
+              {
+                "type": "text",
+                "text": " based on the embedding (e.g. by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1908.10084"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "SBERT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " or "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2201.10005"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "other"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://platform.openai.com/docs/guides/embeddings"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "embedding"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://openai.com/blog/new-and-improved-embedding-model"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "models"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") cosine similarity between samples, where each node points to its "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " nearest neighbors; (2) Start with a set of selected samples "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}=\\emptyset"
+              },
+              {
+                "type": "text",
+                "text": " and a set of remaining samples "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{U}"
+              },
+              {
+                "type": "text",
+                "text": ". Each sample "
+              },
+              {
+                "type": "inline_math",
+                "text": "u \\in \\mathcal{U}"
+              },
+              {
+                "type": "text",
+                "text": " is scored by "
+              },
+              {
+                "type": "text",
+                "text": "$"
+              },
+              {
+                "type": "inline_math",
+                "text": "\n\\text{score}(u) = \\sum_{v \\in \\{v \\mid (u, v) \\in E, v\\in \\mathcal{U}\\}} s(v)\\quad\\text{where }s(v)=\\rho^{- \\vert \\{\\ell \\in \\mathcal{L} \\vert (v, \\ell)\\in E \\}\\vert},\\quad\\rho > 1\n"
+              },
+              {
+                "type": "text",
+                "text": "$"
+              },
+              {
+                "type": "text",
+                "text": " such that "
+              },
+              {
+                "type": "inline_math",
+                "text": "s(v)"
+              },
+              {
+                "type": "text",
+                "text": " is low if many of "
+              },
+              {
+                "type": "inline_math",
+                "text": "v"
+              },
+              {
+                "type": "text",
+                "text": "’s neighbors are selected and thus the scoring encourages to pick diverse samples."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c1e47295ddcb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2112.08633"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rubin et al. (2022)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " proposed to train embeddings via "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "contrastive learning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " specific to one training dataset for in-context learning sample selection.  Given each training pair "
+              },
+              {
+                "type": "inline_math",
+                "text": "(x, y)"
+              },
+              {
+                "type": "text",
+                "text": ", the quality of one example "
+              },
+              {
+                "type": "inline_math",
+                "text": "e_i"
+              },
+              {
+                "type": "text",
+                "text": " (formatted input-output pair) can be measured by a conditioned probability assigned by LM: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\text{score}(e_i) = P_\\text{LM}(y \\mid e_i, x)"
+              },
+              {
+                "type": "text",
+                "text": ". We can identify other examples with top-"
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " and bottom-"
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " scores as positive and negative sets of candidates for every training pair and use that for contrastive learning."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-cd81cc95f8bb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Some researchers tried "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#q-learning-off-policy-td-control"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Q-Learning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to do sample selection. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2211.04486"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zhang et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-0ee0283fb6bd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Motivated by uncertainty-based "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2022-02-20-active-learning/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "active learning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2302.12246"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Diao et al. (2023)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " suggested to identify examples with high disagreement or entropy among multiple sampling trials. Then annotate these examples to be used in few-shot prompts."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-9edadd279bb7",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Tips for Example Ordering"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "list-7ac3e98ebbad",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-0bbf901cec55",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A general suggestion is to keep the selection of examples diverse, relevant to the test sample and in random order to avoid majority label bias and recency bias."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ed790c884b93",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Increasing model sizes or including more training examples does not reduce variance among different permutations of in-context examples. Same order may work well for one model but badly for another. When the validation set is limited, consider choosing the order such that the model does not produce extremely unbalanced predictions or being overconfident about its predictions. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2104.08786"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Lu et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-73fd262cfde0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Instruction Prompting"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-2836cf23a3f4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The purpose of presenting few-shot examples in the prompt is to explain our intent to the model; in other words, describe the task instruction to the model in the form of demonstrations. However, few-shot can be expensive in terms of token usage and restricts the input length due to limited context length. So, why not just give the instruction directly?"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c58f4f424aa2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Instructed LM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (e.g. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openai.com/research/instruction-following"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "InstructGPT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/allenai/natural-instructions"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "natural instruction"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") finetunes a pretrained model with high-quality tuples of (task instruction, input, ground truth output) to make LM better understand user intention and follow instruction. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#rl-fine-tuning-with-human-preferences"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "RLHF"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Reinforcement Learning from Human Feedback) is a common method to do so. The benefit of instruction following style fine-tuning improves the model to be more aligned with human intention and greatly reduces the cost of communication."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-70860df1272c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When interacting with instruction models, we should describe the task requirement in details, trying to be "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "specific"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "precise"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and avoiding say “not do something” but rather specify what to do."
+          }
+        ]
+      },
+      {
+        "id": "code-f3a1998fb9ee",
+        "type": "code",
+        "attrs": {
+          "code": "Please label the sentiment towards the movie of the given movie review. The sentiment label should be \"positive\" or \"negative\". \nText: i'll bet the video game is a lot more fun than the film. \nSentiment:",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-8c090b2b18cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Explaining the desired audience is another smart way to give instructions"
+          }
+        ]
+      },
+      {
+        "id": "list-715ea3506b7b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-270609529925",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "For example to produce education materials for kids,"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-763abd5b8ebc",
+        "type": "code",
+        "attrs": {
+          "code": "Describe what is quantum physics to a 6-year-old.",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-1c46ba593d8a",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-c9282136cea8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "And safe content,"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-d4c128cdab15",
+        "type": "code",
+        "attrs": {
+          "code": "... in language that is safe for work.",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-637bb69c01c4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "In-context instruction learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.14691"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ye et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") combines few-shot learning with instruction prompting. It incorporates multiple demonstration examples across different tasks in the prompt, each demonstration consisting of instruction, task input and output. Note that their experiments were only on classification tasks and the instruction prompt contains all label options."
+          }
+        ]
+      },
+      {
+        "id": "code-ba0e059a47df",
+        "type": "code",
+        "attrs": {
+          "code": "Definition: Determine the speaker of the dialogue, \"agent\" or \"customer\".\nInput: I have successfully booked your tickets.\nOuput: agent\n\nDefinition: Determine which category the question asks for, \"Quantity\" or \"Location\".\nInput: What's the oldest building in US?\nOuput: Location\n\nDefinition: Classify the sentiment of the given movie review, \"positive\" or \"negative\".\nInput: i'll bet the video game is a lot more fun than the film.\nOutput:",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-e62ba2e269f3",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Self-Consistency Sampling"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-45493d7f1f4c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Self-consistency sampling"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.11171"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al. 2022a"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is to sample multiple outputs with temperature > 0 and then selecting the best one out of these candidates.\nThe criteria for selecting the best candidate can vary from task to task. A general solution is to pick "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "majority vote"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". For tasks that are easy to validate such as a programming question with unit tests, we can simply run through the interpreter and verify the correctness with unit tests."
+          }
+        ]
+      },
+      {
+        "id": "heading-c3f63130faba",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Chain-of-Thought (CoT)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c15cfffc69b1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Chain-of-thought (CoT) prompting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.11903"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wei et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") generates a sequence of short sentences to describe reasoning logics step by step, known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "reasoning chains"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "rationales"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", to eventually lead to the final answer. The benefit of CoT is more pronounced for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "complicated reasoning tasks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", while using "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "large models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (e.g. with more than 50B parameters). Simple tasks only benefit slightly from CoT prompting."
+          }
+        ]
+      },
+      {
+        "id": "heading-d29b4940d809",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Types of CoT prompts"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-94510b8b7229",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two main types of CoT prompting:"
+          }
+        ]
+      },
+      {
+        "id": "list-680a01c7c415",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-4dc98e959669",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Few-shot CoT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". It is to prompt the model with a few demonstrations, each containing manually written (or model-generated) high-quality reasoning chains."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b5ca73543d6e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(All the math reasoning examples are from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/openai/grade-school-math"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GSM8k"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")"
+          }
+        ]
+      },
+      {
+        "id": "code-a5c103b0a93a",
+        "type": "code",
+        "attrs": {
+          "code": "Question: Tom and Elizabeth have a competition to climb a hill. Elizabeth takes 30 minutes to climb the hill. Tom takes four times as long as Elizabeth does to climb the hill. How many hours does it take Tom to climb up the hill?\nAnswer: It takes Tom 30*4 = <<30*4=120>>120 minutes to climb the hill.\nIt takes Tom 120/60 = <<120/60=2>>2 hours to climb the hill.\nSo the answer is 2.\n===\nQuestion: Jack is a soccer player. He needs to buy two pairs of socks and a pair of soccer shoes. Each pair of socks cost $9.50, and the shoes cost $92. Jack has $40. How much more money does Jack need?\nAnswer: The total cost of two pairs of socks is $9.50 x 2 = $<<9.5*2=19>>19.\nThe total cost of the socks and the shoes is $19 + $92 = $<<19+92=111>>111.\nJack need $111 - $40 = $<<111-40=71>>71 more.\nSo the answer is 71.\n===\nQuestion: Marty has 100 centimeters of ribbon that he must cut into 4 equal parts. Each of the cut parts must be divided into 5 equal parts. How long will each final cut be?\nAnswer:",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-c9681ebeecb7",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-5d4f98372642",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zero-shot CoT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Use natural language statement like "
+              },
+              {
+                "type": "inline_code",
+                "text": "Let's think step by step"
+              },
+              {
+                "type": "text",
+                "text": " to explicitly encourage the model to first generate reasoning chains and then to prompt with "
+              },
+              {
+                "type": "inline_code",
+                "text": "Therefore, the answer is"
+              },
+              {
+                "type": "text",
+                "text": " to produce answers ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2205.11916"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kojima et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ). Or a similar statement "
+              },
+              {
+                "type": "inline_code",
+                "text": "Let's work this out it a step by step to be sure we have the right answer"
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2211.01910"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zhou et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-95f5135bc528",
+        "type": "code",
+        "attrs": {
+          "code": "Question: Marty has 100 centimeters of ribbon that he must cut into 4 equal parts. Each of the cut parts must be divided into 5 equal parts. How long will each final cut be?\nAnswer: Let's think step by step.",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-ee5b5f4058a8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Tips and Extensions"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-b33e916609b9",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-393002f8366f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/#self-consistency-sampling"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Self-consistency sampling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " can improve reasoning accuracy by sampling a number of diverse answers and then taking the majority vote. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2203.11171"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Wang et al. 2022a"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-197c36d21277",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Another approach for ensemble learning is to alter the example order or use model generated rationales to replace human-written ones to introduce randomness during multiple sample trials. Then aggregate model outputs with a majority vote to get final answer. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2207.00747"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Wang et al. 2022b"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-43b538af9a57",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "If training examples are only associated with true answers (easy to verify!) but no rationales, we can follow the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "STaR"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Self-Taught Reasoner; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2203.14465"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zelikman et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") method : (1) Ask LLM to generate reasoning chains and only keep those leading to correct answers; (2) Then fine-tune the model with generated rationales and repeat the process until convergence. Note that higher temperature is more likely to generate incorrect rationales with correct answers. If training examples do not have ground truth answers, maybe consider using majority votes as the “correct” answers."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-a6764cca69a9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Prompts with demonstrations of higher reasoning complexity can achieve better performance, where complexity is measured by the number of reasoning steps in the chains. When separating reasoning steps, newline "
+              },
+              {
+                "type": "inline_code",
+                "text": "\\n"
+              },
+              {
+                "type": "text",
+                "text": " symbol works better than "
+              },
+              {
+                "type": "inline_code",
+                "text": "step i"
+              },
+              {
+                "type": "text",
+                "text": ", period "
+              },
+              {
+                "type": "inline_code",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": " or semicolon "
+              },
+              {
+                "type": "inline_code",
+                "text": ";"
+              },
+              {
+                "type": "text",
+                "text": ". ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2210.00720"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fu et al. 2023"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-0965415857de",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Complexity-based consistency"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is to explicitly prefer complex chains among all the generations by taking majority vote among only top "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " complex chains. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2210.00720"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fu et al. 2023"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-1f955ac363d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Later, "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2302.12822"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Shum et al. (2023)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " found that in their experiments CoT prompts with only complex examples can improve the accuracy of complex questions, but perform poorly in simple questions; evidence shown on GSM8k."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e8d1544b596b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Changing "
+              },
+              {
+                "type": "inline_code",
+                "text": "Q:"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_code",
+                "text": "Question:"
+              },
+              {
+                "type": "text",
+                "text": " is found to be helpful. ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2210.00720"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fu et al. 2023"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-0d6592ab8a04",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2205.03401"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Ye & Durrett (2022)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " found that the benefit of including explanations in the prompt is small to moderate for NLP tasks that involve reasoning over text (i.e. QA and NLI) and the effects vary by models. They observed that explanations are more likely to be nonfactual than be inconsistent (i.e. whether explanation entails prediction). Nonfactual explanations most likely lead to incorrect predictions."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-93a980eb0482",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Self-Ask"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2210.03350"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Press et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is a method to repeatedly prompt the model to "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ask following-up questions"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to construct the thought process iteratively. Follow-up questions can be answered by search engine results. Similarly, "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "IRCoT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Interleaving Retrieval CoT; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2212.10509"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Trivedi et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") and "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ReAct"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Reason + Act; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2210.03629"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Yao et al. 2023"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") combines iterative CoT prompting with queries to Wikipedia APIs to search for relevant entities and content and then add it back into the context."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-4f5d568f71e0",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/SelfAsk-search.png",
+          "alt": "How Self-Ask works with external search queries. (Image source: Press et al. 2022 )."
+        }
+      },
+      {
+        "id": "list-dfdfe4a56242",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-59359acbe847",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Tree of Thoughts"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2305.10601"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Yao et al. 2023"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") extends CoT by exploring multiple reasoning possibilities at each step. It first decomposes the problem into multiple thought steps and generates multiple thoughts per step, essentially creating a tree structure. The search process can be BFS or DFS while each state is evaluated by a classifier (via a prompt) or majority vote."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-3b8526dd4c6d",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/tree-of-thoughts.png",
+          "alt": "How Self-Ask works with external search queries. (Image source: Yao et al. 2022 )."
+        }
+      },
+      {
+        "id": "heading-8f414f83803e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Automatic Prompt Design"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-1abdca0ac262",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Prompt is a sequence of prefix tokens that increase the probability of getting  desired output given input. Therefore we can treat them as trainable parameters and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#smart-prompt-design"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "optimize them directly"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on the embedding space via gradient descent, such as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "AutoPrompt"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.15980"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shin et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prefix-Tuning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2101.00190"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Li & Liang (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "P-tuning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.10385"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prompt-Tuning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08691"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lester et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#smart-prompt-design"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "This section in my “Controllable Neural Text Generation” post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " has a good coverage of them. The trend from AutoPrompt to Prompt-Tuning is that the setup gets gradually simplified."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9eec31997b9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "APE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Automatic Prompt Engineer; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.01910"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhou et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a method to search over a pool of model-generated instruction candidates and then filters the candidate set according to a chosen score function to ultimately choose the best candidate with highest score."
+          }
+        ]
+      },
+      {
+        "id": "list-0c4133ba3aca",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-9b710fc8c933",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Prompt LLM to generate instruction candidates based on a small set of demonstrations in the form of input-output pairs. E.g. "
+              },
+              {
+                "type": "inline_code",
+                "text": "{{Given desired input-output pairs}}\\n\\nThe instruction is"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-75ca7e6c1ff8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Given a dataset of "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{D}_\\text{train} = \\{(x, y)\\}"
+              },
+              {
+                "type": "text",
+                "text": ", we would like to find an instruction "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\rho"
+              },
+              {
+                "type": "text",
+                "text": " such that "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\rho^* = \\arg\\max_\\rho \\mathbb{E}_{(x, y) \\in \\mathcal{D}_\\text{train}} [f(\\rho, x, y)]"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "f(.)"
+              },
+              {
+                "type": "text",
+                "text": " is a per-sample score function, such as execution accuracy "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbb{1}[\\text{LM}(.\\vert \\rho, x)=y]"
+              },
+              {
+                "type": "text",
+                "text": " or log probability: "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\text{LM}(y \\mid \\rho, x)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-91a743fd01b7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Use an iterative Monte Carlo search method to improve the best candidates by proposing semantically similar variants via prompts like "
+              },
+              {
+                "type": "inline_code",
+                "text": "Generate a variation of the following instruction while keeping the semantic meaning.\\n\\nInput: ...\\n\\nOutput:..."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ed7c441b5616",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To construct chain-of-thought prompts automatically, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.12822"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shum et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " suggested augment-prune-select, a three-step process:"
+          }
+        ]
+      },
+      {
+        "id": "list-610be6039296",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-072464cd3770",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Augment"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Generate multiple pseudo-chains of thought given question using few-shot or zero-shot CoT prompts;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e0a67775e97b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Prune"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Prune pseudo chains based on whether generated answers match ground truths."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ec9b0673460e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Select"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Apply a variance-reduced policy gradient strategy to learn the probability distribution over selected examples, while considering the probability distribution over examples as policy and the validation set accuracy as reward."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fe4b497d5068",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.03493"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " instead adopted "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "clustering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " techniques to sample questions and then generates chains. They observed that LLMs tend to make certain types of mistakes. One type of errors can be similar in the emebedding space and thus get grouped together. By only sampling one or a few from frequent-error clusters, we can prevent too many wrong demonstrations of one error type and collect a diverse set of examples."
+          }
+        ]
+      },
+      {
+        "id": "list-04419aef0149",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-6bb408bc3a45",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Question clustering"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Embed questions and run "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": "-means for clustering."
+              }
+            ]
+          },
+          {
+            "id": "list-item-96a40708cc43",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Demonstration selection"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Select a set of representative questions from each cluster; i.e. one demonstration from one cluster. Samples in each cluster are sorted by distance to the cluster centroid and those closer to the centroid are selected first."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9fd5786b8422",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rationale generation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Use zero-shot CoT to generate reasoning chains for selected questions and construct few-shot prompt to run inference."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-ebc8f18f868b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Augmented Language Models"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-2f829775b7d1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A survey on augmented language models by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.07842"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Mialon et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " has great coverage over multiple categories of language models augmented with reasoning skills and the ability of using external tools. Recommend it."
+          }
+        ]
+      },
+      {
+        "id": "heading-9c180075b64a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Retrieval"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-06a739de9724",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Often we need to complete tasks that require latest knowledge after the model pretraining time cutoff or internal/private knowledge base. In that case, the model would not know the context if we don’t explicitly provide it in the prompt. Many methods for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Open Domain Question Answering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " depend on first doing retrieval over a knowledge base and then incorporating the retrieved content as part of the prompt. The accuracy of such a process depends on the quality of both retrieval and generation steps."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-556ae6046864",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.05115"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lazaridou et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " studied how to use Google Search for document retrieval to augment LLMs. Given a question "
+          },
+          {
+            "type": "inline_math",
+            "text": "q"
+          },
+          {
+            "type": "text",
+            "text": ", clean text is extracted out of 20 URLs returned by Google, resulting in a set of documents. Because these documents are long, each document is split into paragraphs of 6 sentences, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{p\\}"
+          },
+          {
+            "type": "text",
+            "text": ". Paragraphs are ranked by TF-IDF based cosine similarity between evidence paragraphs and the query. Only the most relevant paragraph is used in the prompt to produce an answer "
+          },
+          {
+            "type": "inline_math",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-084776fdab07",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For closed-book QA, each demonstration is formatted as follows to construct few-shot prompts. Swapping the question with the evidence (longer distance between questions and answers) is found to consistently yield lower results across all datasets."
+          }
+        ]
+      },
+      {
+        "id": "code-ae50a409a94d",
+        "type": "code",
+        "attrs": {
+          "code": "Evidence: ...\nQuestion: ...\nAnswer: ...",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-6a8f0369a465",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The answer probability is computed in three ways:"
+          }
+        ]
+      },
+      {
+        "id": "list-dd1be730c9b8",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-49045e5998d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#RAG"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RAG"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " style, "
+              },
+              {
+                "type": "inline_math",
+                "text": "p(a_i \\mid q) = \\sum_{i=1}^n p_\\text{tf-idf} (p_i \\mid q) \\cdot p_\\text{LM}(a_i \\mid q, p_i)"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\text{tf-idf} (p_i \\mid q)"
+              },
+              {
+                "type": "text",
+                "text": " is the normalized cosine similarities between the TF-IDF passage and question representations."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e35fe7fd6afa",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Noisy channel inference, "
+              },
+              {
+                "type": "inline_math",
+                "text": "p(a_i\\mid q) = \\frac{p_\\text{LM}(q \\mid a_i, p_i) \\cdot p_\\text{LM}(a_i \\mid p_i)}{p_\\text{LM}(q \\mid p_i)}"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e2a210c0f102",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Product-of-Experts (PoE), combines all probabilities used above in addition to "
+              },
+              {
+                "type": "inline_math",
+                "text": "p_\\text{LM}(p_i \\mid q)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d0ef603d9ded",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to their experiments on generation and classification tasks, among three answer reranking scores - PoE > Noisy channel > RAG. Among individual probabilities, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\text{LM}(a \\mid q, p_i)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\text{LM}(q \\mid p_i, a)"
+          },
+          {
+            "type": "text",
+            "text": " are found to be most informative. "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\text{LM}(q \\mid p_i, a)"
+          },
+          {
+            "type": "text",
+            "text": " captures how well the question can be explained by LM given evidence paragraph and answer and can reliably be used for reranking answer candidates."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-664895985124",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One observation with "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://situatedqa.github.io/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "SituatedQA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " dataset for questions grounded in different dates is that despite LM (pretraining cutoff is year 2020) has access to latest information via Google Search, its performance on post-2020 questions are still a lot "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "worse"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " than on pre-2020 questions. This suggests the existence of some discrepencies or conflicting parametric between contextual information and model internal knowledge."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-021b53a90197",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Interestingly it is found to be beneficial even with only “internal retrieval”, that is, to generate knowledge about a topic before answering the question ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.08387"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). First we can use  the following template to extract knowledge:"
+          }
+        ]
+      },
+      {
+        "id": "code-f9c99f0eee29",
+        "type": "code",
+        "attrs": {
+          "code": "Generate some knowledge about the input. Examples:\n\nInput: What type of water formation is formed by clouds?\nKnowledge: Clouds are made of water vapor.\n\nInput: {question}\nKnowledge:",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-e993d3f0961b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "And then with model-generated knowledge, prompt the LM further to get the answer."
+          }
+        ]
+      },
+      {
+        "id": "heading-351b5269b8bc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Programming Language"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0ec4b432e7a0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "PAL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Program-aided language models); "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.10435"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gao et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "PoT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Program of Thoughts prompting; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.12588"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chen et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") ask LLM to generate programming language statements to resolve natural language reasoning problems, hence offloading the solution step to a runtime such as a Python interpreter. Such setup decouples complex computation and reasoning. It relies on a LM with good enough coding skills."
+          }
+        ]
+      },
+      {
+        "id": "image-78dd1198a07e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/PoT.png",
+          "alt": "Comparing CoT and PoT. (Image source: Chen et al. 2022 )."
+        }
+      },
+      {
+        "id": "heading-7c6904df987d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "External APIs"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4cf361004e23",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "TALM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Tool Augmented Language Models; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.12255"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Parisi et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a language model augmented with text-to-text API calls. LM is guided to generate "
+          },
+          {
+            "type": "inline_code",
+            "text": "|tool-call"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_code",
+            "text": "tool input text"
+          },
+          {
+            "type": "text",
+            "text": " conditioned on task input text to construct API call requests. When "
+          },
+          {
+            "type": "inline_code",
+            "text": "|result"
+          },
+          {
+            "type": "text",
+            "text": " shows up, the specified tool API is called and the returned result gets appended to the text sequence. The final output is generated following "
+          },
+          {
+            "type": "inline_code",
+            "text": "|output"
+          },
+          {
+            "type": "text",
+            "text": " token."
+          }
+        ]
+      },
+      {
+        "id": "image-cb50565c9648",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/TALM.png",
+          "alt": "The format of API calls in TALM. (Image source: Parisi et al. 2022 )."
+        }
+      },
+      {
+        "id": "paragraph-0715f902a23e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "TALM adopts a self-play approach to iteratively bootstrap the dataset of tool use examples and finetune LM with it. This self-play, defined as a model interacting with a tool API, iteratively expands the dataset based on whether a newly added tool API can improve the model outputs. Same idea is adopted in Toolformer too, described in more details below. The pipeline loosely mimics a RL process where LM is the policy network and it is trained by policy gradient with a binary reward signal."
+          }
+        ]
+      },
+      {
+        "id": "image-59199cdc7bc7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/TALM-iteration.png",
+          "alt": "Self-play iterations help boost the model performance. (Image source: Parisi et al. 2022 )."
+        }
+      },
+      {
+        "id": "paragraph-bc61db066739",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Toolformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.04761"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Schick et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a LM that can use external tools via simple APIs, which is built in a self-supervised manner and only requires a handful of demonstrations for each API. The toolbox of Toolformer includes:"
+          }
+        ]
+      },
+      {
+        "id": "list-b566a8170240",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e6c22c0e90ea",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Calculator"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to help LM with the lack of precise math skills;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-74aaf23db322",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Q&A system"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to help with unfaithful content and hallucination;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-3ec0f30a2d2c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Search engine"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to provide up-to-date information after pretraining cut off time;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-5bff7f3dcef7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Translation system"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to improve performance on low resource language;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-33a9412008ec",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Calendar"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to make LM be aware of time progression."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-019bd84885c5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/toolformer.png",
+          "alt": "Illustration of how to build Toolformer. (Image source: Schick et al. 2023 )."
+        }
+      },
+      {
+        "id": "paragraph-cefd36c92abe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Toolformer is trained as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-37247730b0d6",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-8c172fc4ccf3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Prompting to annotate potential API calls"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Ask a pre-trained LM to annotate a dataset via few-shot learning with API call usage examples. Formatting example:"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-8efdcf4808fe",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/toolformer-annotation.png",
+          "alt": "How dataset is annotated to do API calls. (Image source: Schick et al. 2023 )."
+        }
+      },
+      {
+        "id": "code-b81cc6ebe753",
+        "type": "code",
+        "attrs": {
+          "code": "- Each API call is represented as a tuple of (API name, corresponding input), $c=(a_c, i_c)$ and its corresponding result is denoted as $r$. The API call sequences with and without results are labeled as follows, respectively:\n\n    <div>\n    $$\n    \\begin{aligned}\n    e(c) &= \\langle\\texttt{API}\\rangle a_c(i_c) \\langle\\texttt{/API}\\rangle \\\\\n    e(c, r) &= \\langle\\texttt{API}\\rangle a_c(i_c) \\to r \\langle\\texttt{/API}\\rangle\n    \\end{aligned}\n    $$\n    </div>\n\n- Sample API calls based on the probabilities $p_\\text{LM}(\\langle\\texttt{API}\\rangle \\mid \\text{prompt}(\\mathbf{x}), \\mathbf{x}_{1:i})$ and select top $k$ candidate positions for doing API calls at position $i$ if the probability is larger than a threshold.\n\n- Then we sample potential API calls from the LM given the sequence $[\\text{prompt}(\\mathbf{x}), x_1, \\dots, x_{i-1}, \\langle\\texttt{API}\\rangle]$ as prefix and $\\langle\\texttt{/API}\\rangle$ as suffix.",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-21ed38270d7d",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-ced8dd9884a8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Filter annotations based on whether API calls help model predict future tokens."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Use a self-supervised loss to decide which API calls are actually helpful."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-3bc63228b022",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-32085053b813",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "Execute each API call "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "c_i"
+                      },
+                      {
+                        "type": "text",
+                        "text": " to get corresponding result "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "r_i"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-d451cdbee5b1",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "Compute weighted cross entropy loss for the LM over tokens "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "x_i, \\dots, x_n"
+                      },
+                      {
+                        "type": "text",
+                        "text": " when the model is prefixed with the prompt. Two versions are computed, one with API result and the other with empty sequence "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\varepsilon"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "Only API calls with "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "L^-_i - L^+_i"
+                      },
+                      {
+                        "type": "text",
+                        "text": " larger than a threshold are kept, meaning that adding this API call and its results help the model predict future tokens."
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-ded2aa47f3ac",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fine-tune LM on this annotated dataset."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The new training sequences are constructed as "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}^* = x_{1:i-1}, e(c_i, r_i), x_{i:n}"
+              },
+              {
+                "type": "text",
+                "text": " . The training data is a combination of the original dataset (e.g. a subset of CCNet, as in the paper) and its augmented version."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-e3928f72a32d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n  L^+_i &= L_i(e(c_i, r_i)) \\\\\n  L^-_i &= \\min(L_i(\\varepsilon), L_i(e(c_i, \\varepsilon))) \\\\\n  \\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-92fdec39157f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At inference time, decoding runs until the model produces “"
+          },
+          {
+            "type": "inline_math",
+            "text": "\\to"
+          },
+          {
+            "type": "text",
+            "text": " \" token, indicating that it is expecting response from an API call next."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-86a4de4b77fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Toolformer currently does not support tool use in a chain (i.e. using the output of one tool as an input for another tool) or in an interactive way (i.e. adopt API response after human selection). Both are interesting future directions to expand the model for."
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-86a568c1b1c3",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-5a30fa867ec7",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Mar 2023). Prompt Engineering. Lil’Log. https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-84093cf157b6",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2023prompt,\n  title   = \"Prompt Engineering\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2023\",\n  month   = \"Mar\",\n  url     = \"https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-141a922970ff",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Useful Resources"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "list-597722037be0",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-c010f5066c67",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/openai/openai-cookbook"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "OpenAI Cookbook"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " has many in-depth examples for how to utilize LLM efficiently."
+              }
+            ]
+          },
+          {
+            "id": "list-item-cb8fa460c221",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://langchain.readthedocs.io/en/latest/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "LangChain"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", a library for combining language models with other components to build applications."
+              }
+            ]
+          },
+          {
+            "id": "list-item-19103fde6d25",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/dair-ai/Prompt-Engineering-Guide"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Prompt Engineering Guide"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " repo contains a pretty comprehensive collection of education materials on prompt engineering."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e4402331449d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://learnprompting.org/docs/intro"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "learnprompting.org"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-cf938741e57f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://promptperfect.jina.ai"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "PromptPerfect"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-3ba8f962e978",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/microsoft/semantic-kernel"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Semantic Kernel"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a5149d2e41ad",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Zhao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.09690"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Calibrate Before Use: Improving Few-shot Performance of Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2021"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4544d363de6a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Liu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2101.06804"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“What Makes Good In-Context Examples for GPT-3?”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2101.06804 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-98bfad0a9be3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Lu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08786"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Fantastically Ordered Prompts and Where to Find Them: Overcoming Few-Shot Prompt Order Sensitivity.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2022"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5290ab85611f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Ye et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.14691"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“In-Context Instruction Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2302.14691 (2023)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fc9df2f7ee9f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Su et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2209.01975"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Selective annotation makes language models better few-shot learners.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2209.01975 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3ffc040617dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Rubin et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2112.08633"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning to retrieve prompts for in-context learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NAACL-HLT 2022"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-793c5aac5c61",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Wei et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.11903"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Chain of thought prompting elicits reasoning in large language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeurIPS 2022"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d63fe48a7806",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.11171"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Self-Consistency Improves Chain of Thought Reasoning in Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ca48597e968",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Diao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.12246"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Active Prompting with Chain-of-Thought for Large Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2302.12246 (2023)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6c58a792514b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Zelikman et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.14465"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“STaR: Bootstrapping Reasoning With Reasoning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2203.14465 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7ca0cd7e36fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Ye & Durrett. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.03401"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The unreliability of explanations in few-shot in-context learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2205.03401 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7511aa2facc8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Trivedi et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2212.10509"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Interleaving retrieval with chain-of-thought reasoning for knowledge-intensive multi-step questions.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2212.10509 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b3d86421c0b4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Press et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.03350"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Measuring and narrowing the compositionality gap in language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2210.03350 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-02c0d7a02bf9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Yao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.03629"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“ReAct: Synergizing reasoning and acting in language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-54c771d17c99",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Fu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.00720"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Complexity-based prompting for multi-step reasoning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2210.00720 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e1c32ff43523",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2207.00747"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Rationale-augmented ensembles in language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2207.00747 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6158ca5b2e4b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Zhang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.03493"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Automatic chain of thought prompting in large language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2210.03493 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a9980e4f07b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] Shum et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.12822"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Automatic Prompt Augmentation and Selection with Chain-of-Thought from Labeled Data.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2302.12822 (2023)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1f5ff6dd6f90",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[19] Zhou et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.01910"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Large Language Models Are Human-Level Prompt Engineers.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f0be757af588",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[20] Lazaridou et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.05115"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Internet augmented language models through few-shot prompting for open-domain question answering.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2203.05115 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-719f37dde342",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[21] Chen et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.12588"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Program of Thoughts Prompting: Disentangling Computation from Reasoning for Numerical Reasoning Tasks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2211.12588 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-17f6a03a417c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[22] Gao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2211.10435"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“PAL: Program-aided language models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2211.10435 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e9438230d2d3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[23] Parisi et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.12255"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“TALM: Tool Augmented Language Models”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2205.12255 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1e41459bb1f1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[24] Schick et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.04761"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Toolformer: Language Models Can Teach Themselves to Use Tools.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2302.04761 (2023)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6cf25de47e57",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[25] Mialon et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2302.07842"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Augmented Language Models: a Survey”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2302.07842 (2023)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a1f3e43d8091",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[26] Yao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.10601"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Tree of Thoughts: Deliberate Problem Solving with Large Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2305.10601 (2023)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "prompt-engineering",
+    "source_slug": "2023-03-15-prompt-engineering",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 18,
+      "math": 1,
+      "image": 7,
+      "table": 0,
+      "code": 12
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/SelfAsk-search.png",
+      "alt": "How Self-Ask works with external search queries. (Image source: Press et al. 2022 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/tree-of-thoughts.png",
+      "alt": "How Self-Ask works with external search queries. (Image source: Yao et al. 2022 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/PoT.png",
+      "alt": "Comparing CoT and PoT. (Image source: Chen et al. 2022 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/TALM.png",
+      "alt": "The format of API calls in TALM. (Image source: Parisi et al. 2022 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/TALM-iteration.png",
+      "alt": "Self-play iterations help boost the model performance. (Image source: Parisi et al. 2022 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/toolformer.png",
+      "alt": "Illustration of how to build Toolformer. (Image source: Schick et al. 2023 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2023-03-15-prompt-engineering/toolformer-annotation.png",
+      "alt": "How dataset is annotated to do API calls. (Image source: Schick et al. 2023 )."
+    }
+  ]
+}

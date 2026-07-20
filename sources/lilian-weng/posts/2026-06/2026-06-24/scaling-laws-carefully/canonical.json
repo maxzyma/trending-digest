@@ -1,0 +1,3669 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2026-06-24-scaling-laws",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2026-06-24T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:fadc35d8ada3dbaf0ca5fe5d42c33b438d301f52c1aa6dbfea8c2f35a4e551ef",
+    "fetched_at": "2026-07-13T12:13:42.667675+00:00",
+    "parser_version": "lilian-weng.v2"
+  },
+  "content": {
+    "title": "Scaling Laws, Carefully",
+    "title_en": "Scaling Laws, Carefully",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-c785032f2beb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Scaling laws are one of the most critical empirical findings in deep learning. The observation is simple in form: the training loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "L"
+          },
+          {
+            "type": "text",
+            "text": " decreases predictably as we scale up model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": ", dataset size "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": ", and compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": ", following a power-law curve, which appears as a straight line on a log-log plot. We can view scaling laws as a framework for describing the relationship between compute, loss, model size and data; at its core, it is about how to allocate precious compute optimally between "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-61f5bf19a2ef",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This predictability makes scaling laws highly valuable in practice. A common workflow is to fit scaling laws on a handful of small runs and then extrapolate to estimate the token and compute requirements for larger models."
+          }
+        ]
+      },
+      {
+        "id": "table-a3e2a43d17e7",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Symbol",
+            "Note"
+          ],
+          "rows": [
+            [
+              "$N$",
+              "Model size, measured in parameter count."
+            ],
+            [
+              "$D$",
+              "Training dataset size, usually measured in token count."
+            ],
+            [
+              "$C$",
+              "Training compute in FLOPs. As a useful approximation, $C \\approx 6ND$ ( Kaplan et al. 2020 ), where $2ND$ accounts for the forward pass and $4ND$ for backpropagation."
+            ],
+            [
+              "$E$",
+              "Irreducible loss"
+            ],
+            [
+              "$L, \\hat{L}(.)$",
+              "Test loss / test loss prediction function; can also refer to training loss, since they are strongly correlated."
+            ],
+            [
+              "$\\epsilon$",
+              "Generalization error."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "heading-3aa7d49cbbbc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Early days: ML loss predictability"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-3bbb199054fc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The predictability of generalization error with scale had already been investigated before scaling laws became a mainstream concept."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d92ec8e1e753",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ieeexplore.ieee.org/document/6796972"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Amari et al. (1992)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " derived four types of learning curves using a Bayesian approach and the annealed approximation."
+          }
+        ]
+      },
+      {
+        "id": "list-1646f2d8e903",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-12f96aeb10d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Deterministic learning algorithm, noiseless data, one unique solution: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\epsilon \\sim c \\cdot D^{-1}"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "c"
+              },
+              {
+                "type": "text",
+                "text": " is some constant."
+              }
+            ]
+          },
+          {
+            "id": "list-item-529c2c1ddae1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Deterministic learning algorithm, noiseless data, multiple equivalent solutions: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\epsilon \\sim c \\cdot D^{-2}"
+              },
+              {
+                "type": "text",
+                "text": "; the learning is faster with each new data point, because the model only learns the optimal manifold of parameters, instead of finding the single solution point."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b32558fe4093",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Deterministic learning algorithm, noisy data: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\epsilon \\sim c \\cdot D^{-1/2}"
+              },
+              {
+                "type": "text",
+                "text": "; noises in data make learning harder."
+              }
+            ]
+          },
+          {
+            "id": "list-item-01f93a223759",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Stochastic learning algorithm, noisy data: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\epsilon \\sim c \\cdot D^{-1} + E"
+              },
+              {
+                "type": "text",
+                "text": "; here the irreducible loss "
+              },
+              {
+                "type": "inline_math",
+                "text": "E"
+              },
+              {
+                "type": "text",
+                "text": " is the residual error that a stochastic learner cannot reduce further, for example when the model runs out of capacity on large data.\nAll four types of learning curves follow a power law:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-bc6f450fc4dd",
+        "type": "math",
+        "attrs": {
+          "latex": "\\epsilon \\sim c \\cdot D^\\alpha + E"
+        }
+      },
+      {
+        "id": "paragraph-d4bfc9f7e9c7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "E"
+          },
+          {
+            "type": "text",
+            "text": " can be 0 and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha = -2, -1, -1/2"
+          },
+          {
+            "type": "text",
+            "text": ". Although their theoretical setup is based on a simplified binary classification task, it points in a useful direction for building empirical ML loss prediction models."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-67ce2def17de",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One of the earliest empirical studies by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.00409"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hestness et al. (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " explained the relationship between generalization error, model size and data. For a given training data size, they identified the best-fit model size via grid search and then plotted loss against training dataset size. Across four different domains in deep learning (neural machine translation, image classification, language modeling, and speech recognition), a recurring pattern was observed where:"
+          }
+        ]
+      },
+      {
+        "id": "list-2de93368c7dc",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-67c08d602d64",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Generalization error scales as a power law across a set of factors (e.g. data size)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d22c4f27a642",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Model improvements shift the error curve but do not seem to affect the power-law exponent."
+              }
+            ]
+          },
+          {
+            "id": "list-item-81c654043413",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Interestingly, architecture changes the offset ("
+              },
+              {
+                "type": "inline_math",
+                "text": "E"
+              },
+              {
+                "type": "text",
+                "text": ") of the power-law fit but does not change the exponent ("
+              },
+              {
+                "type": "inline_math",
+                "text": "\\alpha"
+              },
+              {
+                "type": "text",
+                "text": "). The slope of the power law appears to be a property of the problem domain rather than the model architecture."
+              }
+            ]
+          },
+          {
+            "id": "list-item-edfa576c3cf4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The number of model parameters "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " needed to fit a dataset of size "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": " also scales as a power law."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-f38b919c8810",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/hestness-1.png",
+          "alt": "Learning curves for (Left) Deep-Speech-2 (DS2) and attention speech model and for (Right) DS2 models of various sizes. The losses of small models plateau when training data becomes large. (Image source: Hestness et al. 2017)"
+        }
+      },
+      {
+        "id": "paragraph-ea619662238e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A conceptual illustration breaks the learning curve into three stages. In the small-data region, when there are not enough learning signals, the model performs only slightly better than random guessing. In the middle (“power-law region”), we observe a power-law relationship between loss, data, and model size. The final irreducible-error region can be attributed to factors such as noise in the data."
+          }
+        ]
+      },
+      {
+        "id": "image-e2907ab7ecf9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/hestness-2.png",
+          "alt": "Illustration of power-law learning curve phases. (Image source: Hestness et al. 2017)"
+        }
+      },
+      {
+        "id": "paragraph-455525110532",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.12673"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rosenfeld et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " pushed this further by trying to model error as a joint function of both model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " and data size "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": ", across a diverse set of architectures (ResNet, WRN, LSTM, Transformer) and optimizers (Adam, SGD variants). Empirically they observed that, holding one axis fixed, the error decays as a power law in the other:"
+          }
+        ]
+      },
+      {
+        "id": "math-60f2cc7659c2",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(D,N) \\approx \\frac{A}{N^{\\alpha}} + E_N,\\quad \n\\hat{L}(D,N) \\approx \\frac{B}{D^{\\beta}} + E_D"
+        }
+      },
+      {
+        "id": "paragraph-1966b44cf43c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "which can be combined into a joint form:"
+          }
+        ]
+      },
+      {
+        "id": "math-3ccac87af957",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(D, N) \\approx \\frac{A}{N^{\\alpha}} + \\frac{B}{D^{\\beta}} + E"
+        }
+      },
+      {
+        "id": "paragraph-a04ebcf40719",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "A > 0, B > 0, \\alpha \\geq 0, \\beta \\geq 0"
+          },
+          {
+            "type": "text",
+            "text": " are scalar constants and "
+          },
+          {
+            "type": "inline_math",
+            "text": "E"
+          },
+          {
+            "type": "text",
+            "text": " is not dependent on either "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-327d7ea7bb1f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/rosenfeld-1.png",
+          "alt": "A 3D contour plot of data size, model size and generalization error in log-log-log scale. Blue dots are derived from empirical experiments and the surface is a linear interpolation between blue dots. (Image source: Rosenfeld et al. 2020)"
+        }
+      },
+      {
+        "id": "paragraph-f2eb88afdeea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus, they can build a prediction model in the form of a simple parametric function with "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{\\theta} = \\langle A, B, E, \\alpha, \\beta \\rangle"
+          },
+          {
+            "type": "text",
+            "text": " to predict the expected loss for "
+          },
+          {
+            "type": "inline_math",
+            "text": "(D, N)"
+          },
+          {
+            "type": "text",
+            "text": " > certain thresholds by only training on a set of smaller training configs, "
+          },
+          {
+            "type": "inline_math",
+            "text": "(D, N)"
+          },
+          {
+            "type": "text",
+            "text": " < certain thresholds."
+          }
+        ]
+      },
+      {
+        "id": "image-263eb4cc7485",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/rosenfeld-2.png",
+          "alt": "Fitting the parametric error model on small-scale configurations and extrapolating to larger model/data regimes: (a) Illustration of the experiment setup; Experiment results on (b) ImageNet, (c) WikiText-103 and (d) CIFAR100 Error estimation with three architectures (WRN, VGG, DenseNet) and two optimizers (SGD, Adam). (Image source: Rosenfeld et al. 2020)"
+        }
+      },
+      {
+        "id": "paragraph-10c27bf067cd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Side note: These early works lean on classical learning-theory intuition like the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Vapnik%E2%80%93Chervonenkis_dimension"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VC dimension"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (the cardinality of the largest set of points a model can shatter) as a proxy for capacity, but in modern deep learning work the VC dimension is often too coarse to explain the behavior and the empirical power laws turned out to be much cleaner and more practical than the worst-case bounds that theory provides."
+          }
+        ]
+      },
+      {
+        "id": "heading-b034c94dc883",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Scaling Laws in Data-Infinite Region"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-830bacd9a0fa",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Kaplan et al.’s Scaling Laws"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5a9f36e6b094",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2001.08361"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kaplan et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " popularized the concept of scaling laws in the language modeling community. They found that the cross-entropy test loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "L"
+          },
+          {
+            "type": "text",
+            "text": " scales as a power law with each of model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " (excluding embedding layers), dataset size "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": ", and training compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " across many orders of magnitude. The findings are aligned with early work in the last section, but Kaplan et al. formalized the concept with a focus on Transformer language models and empirical experimentation at a larger scale, with model size ranging from 768M to 1.5B non-embedding parameters and dataset size from 22M to 23B tokens. All training runs in the paper used a learning rate schedule with a 3000 step linear warmup, followed by a cosine decay to zero."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ce0de38b6a3e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "List of key findings:"
+          }
+        ]
+      },
+      {
+        "id": "list-cdd80c45fada",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9579fc31e7f4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The loss "
+              },
+              {
+                "type": "inline_math",
+                "text": "L"
+              },
+              {
+                "type": "text",
+                "text": " scales as a power law with "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": ", and "
+              },
+              {
+                "type": "inline_math",
+                "text": "C"
+              },
+              {
+                "type": "text",
+                "text": " individually; for optimal performance all three must scale in tandem."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2ef72aa8749b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Training curves follow predictable power laws whose parameters are roughly independent of model size."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5c9efde2d445",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Larger models are more sample-efficient, meaning that they reach a given loss with fewer optimization steps and fewer data points than small models."
+              }
+            ]
+          },
+          {
+            "id": "list-item-677ab5ace263",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Architectural details (width, aspect ratio, etc.) matter less than sheer scale."
+              }
+            ]
+          },
+          {
+            "id": "list-item-470e2da22aea",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Train loss and test loss are positively correlated. (Sounds trivial but this is the foundation for pretraining work. On the other hand, whether pretraining loss improvement transfers to posttraining evaluation needs separate studies.)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-1b72f5c831f1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Given a fixed compute budget, it is more efficient to train a very large model and stop "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "before convergence"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " than to train a smaller model all the way to convergence. "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "This finding is where the Chinchilla scaling laws (the next section) disagree: Kaplan et al. overestimated the optimal model size as their fitted exponent was larger."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ebd421377bd6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They summarize the joint dependence on "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " in a single equation:"
+          }
+        ]
+      },
+      {
+        "id": "math-5e7f9572dd83",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(N,D) = \\left[ \\left(\\frac{a}{N}\\right)^{\\frac{\\alpha}{\\beta}} + \\frac{b}{D} \\right]^{\\beta}"
+        }
+      },
+      {
+        "id": "paragraph-c4d262e9104e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A nice consequence of this form is that the extent of overfitting (i.e. model is complex or data is small) depends predominantly on the ratio "
+          },
+          {
+            "type": "inline_math",
+            "text": "N^{\\alpha / \\beta} / D"
+          },
+          {
+            "type": "text",
+            "text": ", which indicates that the data needs to grow in a specific proportion to the growth of the model size to avoid training being data-limited."
+          }
+        ]
+      },
+      {
+        "id": "image-19d5adef7f4e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/kaplan-1.png",
+          "alt": "Test loss as a power law in compute, dataset size, and parameters, spanning many orders of magnitude. (Image source: Kaplan et al. 2020)"
+        }
+      },
+      {
+        "id": "paragraph-01f747937be3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The most influential and, in hindsight, most contested conclusion was the compute-optimal allocation. Kaplan et al. found "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_\\text{opt} \\propto C^{0.73}"
+          },
+          {
+            "type": "text",
+            "text": " and concluded that model size should grow faster than dataset size. Concretely, for a 10x increase in compute they suggested scaling the model size by ~5.5x but the training tokens by only ~1.8x. The Chinchilla paper would later overturn this recommendation, arguing that it leaves large models badly "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "undertrained"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-551176db24bb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another useful analysis in Kaplan et al. approximates the number of training FLOPs needed based on "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": ". Each multiply-add is counted as ~2 FLOPs."
+          }
+        ]
+      },
+      {
+        "id": "image-e396cabd68ef",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/kaplan-2.png",
+          "alt": "Parameter and compute estimation for different Transformer architectural components, given the number of layers $n_\\text{layer}$, model width $d_\\text{model}$ (= $d_\\text{embed}$; the notation is inconsistent in the original table), dimension of feed-forward layer $d_\\text{ff}$ (often equivalent to $4 d_\\text{model}$, attention dimension $d_\\text{attn}$ (often equivalent to $d_\\text{model}$), the context length $n_\\text{ctx}$ and the vocabulary size $n_\\text{vocab}$. (Image source: Kaplan et al. 2020)"
+        }
+      },
+      {
+        "id": "paragraph-6685434cd87a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a standard config where "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\text{attn} = d_\\text{model} = d_\\text{ff}/4"
+          },
+          {
+            "type": "text",
+            "text": ", and excluding embedding layers from "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " and the per-token forward compute:"
+          }
+        ]
+      },
+      {
+        "id": "math-39b87e102623",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\nN &= n_\\text{layer} d_\\text{model} 3 d_\\text{attn} + n_\\text{layer} d_\\text{attn} d_\\text{model} + n_\\text{layer} 2 d_\\text{model} d_\\text{ff} & \\small{\\text{; no embedding layer}} \\\\\n&= 2\\;n_\\text{layer} d_\\text{model}(2d_\\text{attn} + d_\\text{ff}) & \\\\\n&= 12\\;n_\\text{layer} d_\\text{model}^2 & \\\\\n\\\\\nC_\\text{fwd} &= 2 n_\\text{layer} (d_\\text{model} 3 d_\\text{attn} + n_\\text{ctx}d_\\text{attn} + d_\\text{attn}d_\\text{embed} + 2 d_\\text{model} d_\\text{ff}) & \\\\\n&= 2 n_\\text{layer} (12 d_\\text{model}^2 + n_\\text{ctx}d_\\text{attn}) & \\\\\n&= 2N + 2 n_\\text{layer}n_\\text{ctx}d_\\text{attn} & \\\\\n&\\approx 2N \\quad\\quad \\small{\\text{; assuming }n_\\text{ctx} < 12 d_\\text{model} \\text{ and the }n_\\text{ctx}\\text{ term is relatively small.}}\\\\\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-92948059bc28",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then we count backward-pass FLOPs as twice the forward-pass FLOPs, because backpropagation runs two matrix multiplications, for gradients with respect to the input activations and the weights, respectively. Thus, in total, the training FLOPs per token are approximately "
+          },
+          {
+            "type": "inline_math",
+            "text": "6N"
+          },
+          {
+            "type": "text",
+            "text": ", and the total FLOPs for training over "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " tokens are "
+          },
+          {
+            "type": "inline_math",
+            "text": "C \\approx 6ND"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-1ef021561f08",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Chinchilla Scaling Laws"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0aea30256f0d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Chinchilla paper ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.15556"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hoffmann et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") studied the relationship between the optimal model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " (total parameters, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "including"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " embeddings) and the number of tokens "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " under a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fixed"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " compute budget "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " with a more careful experimental design and arrived at a somewhat different answer from Kaplan et al.."
+          }
+        ]
+      },
+      {
+        "id": "image-df6d2ffebec7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/animal.png",
+          "alt": "You should know how chinchilla looks 😊 (Image source: ChatGPT generated)"
+        }
+      },
+      {
+        "id": "paragraph-f7f9680b9292",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The central question is on the best strategy to allocate resources given a constraint "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{FLOPs}(N, D) = C \\approx 6ND"
+          },
+          {
+            "type": "text",
+            "text": ". In other words, when we have only limited FLOPs (a given number of GPUs running for a given period of time), how should we choose between more data tokens and more model parameters?"
+          }
+        ]
+      },
+      {
+        "id": "math-b261da929e6f",
+        "type": "math",
+        "attrs": {
+          "latex": "N_\\text{opt}(C), D_\\text{opt}(C) = \\operatorname*{arg\\,min}_{\\text{s.t. } \\text{FLOPs}(N,D) = C} \\hat{L}(N, D)"
+        }
+      },
+      {
+        "id": "paragraph-67362a66f891",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Chinchilla paper presented three neatly designed methods for scaling laws fitting."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c29671f6e43d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The empirical experiments scanned over 400 models, with sizes from 70M to over 16B parameters and training tokens from 5B to 500B. The experiments were under the assumption that every training token is unique (the infinite-data regime). All runs used a cosine learning-rate schedule decaying by 10x over the training horizon. Sweeping over model sizes traces out the compute-optimal frontier."
+          }
+        ]
+      },
+      {
+        "id": "heading-823559aca6b5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Method 1: Fix model sizes, vary the token budget"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-f76e193ec12c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For each parameter count "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": ", train several runs with different token budgets, and record the minimal loss achieved per FLOP budget "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-d7573b16890d",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-1.png",
+          "alt": "Chinchilla Method 1: training loss curves over FLOP budgets for a sweep of model sizes. (Image source: Hoffmann et al. 2022)"
+        }
+      },
+      {
+        "id": "heading-34546b68113e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Method 2: IsoFLOP profiles"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-ed6189dc124c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fix a compute budget "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " and plot the final loss against parameter count "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": ". Each iso-FLOP curve is roughly a parabola in log-space, and its minimum flags the optimal model size for that compute budget. Then repeating across budgets traces a power-law line in the plot."
+          }
+        ]
+      },
+      {
+        "id": "image-133617fddcbd",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-2.png",
+          "alt": "Chinchilla Method 2: IsoFLOP parabolas; the minimum of each curve is the compute-optimal model size for that budget. (Image source: Hoffmann et al. 2022)"
+        }
+      },
+      {
+        "id": "heading-4e665cc4e666",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Method 3: Parametric fit"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-4f35e3d0bd4e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fit the same parametric function as in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.12673"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rosenfeld et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " directly,"
+          }
+        ]
+      },
+      {
+        "id": "math-a1c04873b005",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(N, D) = \\frac{A}{N^\\alpha} + \\frac{B}{D^\\beta} + E"
+        }
+      },
+      {
+        "id": "paragraph-a3300611aea6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can actually get a closed form approximation of optimal "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_\\text{opt}(C), D_\\text{opt}(C)"
+          },
+          {
+            "type": "text",
+            "text": " by minimizing "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{L}(N, D)"
+          },
+          {
+            "type": "text",
+            "text": " under the constraint "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{FLOPs}(N,D) = C \\approx 6ND"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aea9d5e039f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First let’s reduce the expression to contain only "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-60fa7a118ed6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\n\\hat{L}(N) &= A N^{-\\alpha} + B \\Big(\\frac{C}{6}\\Big)^{-\\beta}N^\\beta + E \\\\\n\\hat{L}'(N) &= -\\alpha A N^{-\\alpha-1} + \\beta B \\Big(\\frac{C}{6}\\Big)^{-\\beta} N^{\\beta -1} = 0 & \\small{\\text{; derivative wrt }N\\text{ should be zero.}} \\\\\n\\text{Thus}\\quad & \\alpha A N^{-\\alpha-1} = \\beta B \\Big(\\frac{C}{6}\\Big)^{-\\beta} N^{\\beta -1} \\\\\n& \\alpha A = \\beta B \\Big(\\frac{C}{6}\\Big)^{-\\beta} N^{\\alpha + \\beta} \\\\\n& N_\\text{opt} = \\Big(\\frac{\\alpha A}{\\beta B}\\Big)^{\\frac{1}{\\alpha + \\beta}} \\Big(\\frac{C}{6}\\Big)^{\\frac{\\beta}{\\alpha+\\beta}} \\\\\n& D_\\text{opt} = \\frac{C}{6 N_\\text{opt}} = \\Big(\\frac{\\beta B}{\\alpha A}\\Big)^{\\frac{1}{\\alpha + \\beta}} \\Big(\\frac{C}{6}\\Big)^{\\frac{\\alpha}{\\alpha+\\beta}}\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-2fd11d07b6cc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha \\approx \\beta"
+          },
+          {
+            "type": "text",
+            "text": ", model size and training tokens should scale at equal rates."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8531a109799e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To find the optimal "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{\\theta} = \\langle A, B, E, \\alpha, \\beta\\rangle"
+          },
+          {
+            "type": "text",
+            "text": ", the Chinchilla paper adopts a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Huber_loss"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Huber loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (robust to outliers; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\delta=10^{-3}"
+          },
+          {
+            "type": "text",
+            "text": ") and the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Limited-memory_BFGS"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "L-BFGS algorithm"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (good for curve fitting with a small number of parameters)."
+          }
+        ]
+      },
+      {
+        "id": "math-c040b47e938d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\n\\min_{A,B,E,\\alpha,\\beta} \\sum_{\\text{runs }\\{i\\}} \\text{Huber}_\\delta (\\log \\hat{L}(N_i, D_i) - \\log L_i) \\\\\n\\text{ where }\\text{Huber}_\\delta (x) = \\begin{cases}\\frac{1}{2} x^2 & \\text{for }\\vert x \\vert \\leq \\delta \\\\ \\delta \\cdot (\\vert x \\vert - \\frac{1}{2}\\delta), & \\text{otherwise.}\\end{cases}\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-5bf4822d6149",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Chinchilla arrives at its answer through three complementary methods whose final results agree with each other, and this is part of why the result was quite convincing."
+          }
+        ]
+      },
+      {
+        "id": "image-01027d629717",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-3.png",
+          "alt": "The three methods agree on a compute-optimal frontier where $N_\\text{opt} \\propto C^{0.5}$, but disagree with Kaplan et al. Note that method 3's results are slightly off from the other two, which we will explain later. (Image source: Hoffmann et al. 2022)"
+        }
+      },
+      {
+        "id": "image-afe5d9e226ba",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-4.png",
+          "alt": "The plot of the Chinchilla predictions by three different approaches, as well as predictions by Kaplan et al. (2020). All three methods suggest that several mainstream LLMs at the time were undertrained. (Image source: Hoffmann et al. 2022)"
+        }
+      },
+      {
+        "id": "paragraph-a3d9143c827c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The claim in the Chinchilla paper that most large models (at the time, ~2022) were undertrained is supported by a famous demonstration: under the same compute budget as Gopher ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2112.11446"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rae et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; 280B parameter count, 300B token budget), they trained Chinchilla (70B parameter count, 1.4T token budget), a model 4x smaller but trained on roughly 4x more tokens and it outperformed Gopher across the board."
+          }
+        ]
+      },
+      {
+        "id": "heading-c5b83272a175",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reconciling Kaplan and Chinchilla"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-06a18c27c2e5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Chinchilla scaling laws disagree with Kaplan et al. as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-a20c51679a15",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a6c31543d9d3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Instead of “grow the model faster than the data” ("
+              },
+              {
+                "type": "inline_math",
+                "text": "N_\\text{opt} \\propto C^{0.73}"
+              },
+              {
+                "type": "text",
+                "text": "), for every doubling of model size, you should also double the number of training tokens ("
+              },
+              {
+                "type": "inline_math",
+                "text": "N_\\text{opt} \\propto C^{0.5}"
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          },
+          {
+            "id": "list-item-11f9da421fe8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Instead of “train a big model and stop before convergence,” you should train a smaller model on more data."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8fe80e45352b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both papers still agree on the same underlying principle, but they disagree on where the optimal size-vs-token tradeoff lies. Why do they disagree so much?"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f449f4dfd2cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Difference 1: Kaplan et al. experimented mostly on small models."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\nKaplan et al. experimented mostly on smaller models, while the Chinchilla paper’s experiments reached more than 10x larger scales. When we extrapolate in log-log space, a small difference in the fit can result in large differences (See "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/#toy-simulation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "toy simulation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ead6d078f677",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Difference 2: Embedding parameter count matters for small models."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\nIn the small-parameter regime, embedding parameters are a non-negligible fraction of the total and thus counting them or not matters. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2406.12907"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pearce & Song (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " did a thorough analysis along this line. Let’s use "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_{\\setminus E}, C_{\\setminus E}"
+          },
+          {
+            "type": "text",
+            "text": " to denote model size and compute when embedding is excluded and use "
+          },
+          {
+            "type": "inline_math",
+            "text": "N, C"
+          },
+          {
+            "type": "text",
+            "text": " to count total parameters."
+          }
+        ]
+      },
+      {
+        "id": "list-cfb3e05c8068",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-8e34f3e71b96",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Kaplan et al.: "
+              },
+              {
+                "type": "inline_math",
+                "text": "N^*_{\\setminus E} \\propto C^{0.73}_{\\setminus E}"
+              },
+              {
+                "type": "text",
+                "text": " (non-embedding)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-d6ce8b0bc162",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Chinchilla: "
+              },
+              {
+                "type": "inline_math",
+                "text": "N^* \\propto C^{0.50}"
+              },
+              {
+                "type": "text",
+                "text": " (total)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6cd3c7d60f2f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To bridge them, they fit a relationship between total parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_T"
+          },
+          {
+            "type": "text",
+            "text": " and non-embedding parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_{\\setminus E}"
+          },
+          {
+            "type": "text",
+            "text": ", for some constant "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\omega"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-6d6f32629fe8",
+        "type": "math",
+        "attrs": {
+          "latex": "N = N_{\\setminus E} + \\omega\\, N_{\\setminus E}^{1/3}."
+        }
+      },
+      {
+        "id": "paragraph-3df04eee6fef",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This form has nice properties of being strictly increasing and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lim_{N \\to \\infty} N = N_{\\setminus E}"
+          },
+          {
+            "type": "text",
+            "text": " (because "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{N}{N_{\\setminus E}} = 1 + \\omega {N_{\\setminus E}}^{- \\frac{2}{3}}, \\lim_{N_{\\setminus E} \\to \\infty} \\frac{N}{N_{\\setminus E}} = 1"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5639c26dc8b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Plugging this into the Chinchilla laws equation,"
+          }
+        ]
+      },
+      {
+        "id": "math-c020586cb7a1",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{align}\nL(N_{\\setminus E}, C_{\\setminus E}) &= A(N_{\\setminus E} + \\omega\\, N_{\\setminus E}^{1/3})^{-\\alpha} + B \\Big(\\frac{C_{\\setminus E}}{6}\\Big)^{-\\beta} N_{\\setminus E}^\\beta + E \\\\\nL'(N_{\\setminus E}, C_{\\setminus E}) &= - \\alpha A (N_{\\setminus E} + \\omega N_{\\setminus E}^{1/3})^{-\\alpha -1}(1 + \\frac{\\omega}{3}N_{\\setminus E}^{-2/3}) + \\beta B \\Big(\\frac{C_{\\setminus E}}{6}\\Big)^{-\\beta} N_{\\setminus E}^{\\beta -1} = 0 & \\small{\\text{; derivative wrt }N_{\\setminus E}\\text{ should be zero.}} \\\\\n\\text{Rearrange to get }& \\alpha A (N^{*}_{\\setminus E} + \\omega {N^{*}_{\\setminus E}}^{1/3})^{-\\alpha -1}(1 + \\frac{\\omega}{3} {N^{*}_{\\setminus E}}^{-2/3}) = \\beta B \\Big(\\frac{C_{\\setminus E}}{6}\\Big)^{-\\beta} {N^{*}_{\\setminus E}}^{\\beta -1} \\\\\n& 6^{-\\beta}\\frac{\\alpha A}{\\beta B} ({N^{*}_{\\setminus E}} + \\omega {N^{*}_{\\setminus E}}^{1/3})^{-\\alpha -1}(1 + \\frac{\\omega}{3}{N^{*}_{\\setminus E}}^{-2/3}) {N^{*}_{\\setminus E}}^{1 - \\beta} = C_{\\setminus E}^{-\\beta} \\\\\n& 6 \\Big(\\frac{\\beta B}{\\alpha A}\\Big)^{\\frac{1}{\\beta}} ({N^{*}_{\\setminus E}} + \\omega {N^{*}_{\\setminus E}}^{1/3})^{\\frac{1 + \\alpha}{\\beta}} ({N^{*}_{\\setminus E}} + \\frac{\\omega}{3}{N^{*}_{\\setminus E}}^{1/3})^{-\\frac{1}{\\beta}} {N^{*}_{\\setminus E}} = C_{\\setminus E} \\\\\n\\end{align}"
+        }
+      },
+      {
+        "id": "paragraph-a0104bbf140b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The relationship between "
+          },
+          {
+            "type": "inline_math",
+            "text": "C_{\\setminus E}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_{\\setminus E}"
+          },
+          {
+            "type": "text",
+            "text": " in the above equation is no longer a clean power law. We can only approximate it locally as "
+          },
+          {
+            "type": "inline_math",
+            "text": "N^*_{\\setminus E} \\overset{\\propto}{\\sim} C_{\\setminus E}^g"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "g"
+          },
+          {
+            "type": "text",
+            "text": " is a local exponent based on a first-order derivative ("
+          },
+          {
+            "type": "inline_math",
+            "text": "\\overset{\\propto}{\\sim}"
+          },
+          {
+            "type": "text",
+            "text": ") rather than a global power-law exponent, resulting in "
+          },
+          {
+            "type": "inline_math",
+            "text": "g = \\frac{\\mathrm{d} \\log C_{\\setminus E}}{\\mathrm{d} \\log N_{\\setminus E}}"
+          },
+          {
+            "type": "text",
+            "text": ". See the full details of how the exponent "
+          },
+          {
+            "type": "inline_math",
+            "text": "g"
+          },
+          {
+            "type": "text",
+            "text": " is approximated in Appendix A.1 in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2406.12907"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Pearce & Song (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-2ec7ba2d1709",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/pearce-1.png",
+          "alt": "Visualization of how the local power-law exponent $g$ grows with $C_{\\setminus E}$. (Image source: Pearce & Song 2024)"
+        }
+      },
+      {
+        "id": "paragraph-9633b361010b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As shown in the visualization above, as "
+          },
+          {
+            "type": "inline_math",
+            "text": "C_{\\setminus E}"
+          },
+          {
+            "type": "text",
+            "text": " gets larger, "
+          },
+          {
+            "type": "inline_math",
+            "text": "g"
+          },
+          {
+            "type": "text",
+            "text": " converges to the Chinchilla estimate. By generating synthetic training curves using above equation, in the range of model size from 768M to 1.5B (as in Kaplan et al.), they estimated that "
+          },
+          {
+            "type": "inline_math",
+            "text": "g"
+          },
+          {
+            "type": "text",
+            "text": " is close to the Kaplan coefficient of 0.73 in that region."
+          }
+        ]
+      },
+      {
+        "id": "heading-2eedf41629e0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Why power law?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-525909364118",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Power laws are widely observed across many domains outside AI, such as in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Zipf%27s_law"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zipf’s law"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Scale-free_network"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "scale-free networks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Urban_scaling"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "urban scaling laws"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and many other complex systems. The recurring pattern is that large events are rare, small events are common and the relationship between size and frequency often follows a straight line at log-log scale."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5b94679372f9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Why do LLM scaling laws also have the shape of a power law?"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-290335b34a9d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Inspired partly by different domains displaying different exponents ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.00409"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hestness et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), one early explanation by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.10802"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sharma & Kaplan (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " hypothesizes that language modeling can be viewed as doing regression on a low-dimensional manifold of data. More model parameters can induce a finer partition of the data manifold and therefore smaller generalization error. In the simplest terms, if a model of effective size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N"
+          },
+          {
+            "type": "text",
+            "text": " partitions a "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional manifold into "
+          },
+          {
+            "type": "inline_math",
+            "text": "O(N)"
+          },
+          {
+            "type": "text",
+            "text": " regions, the typical linear resolution scales like "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sim N^{-1/d}"
+          },
+          {
+            "type": "text",
+            "text": ". This has a similar power-law form to the scaling laws above. This theory applies most cleanly in the infinite-data, underfitting regime, but in reality estimating the intrinsic dimension of a data manifold is quite hard."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bc6dea780087",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A later hypothesis ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2303.13506"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Michaud et al. 2023"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2412.07942"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Brill 2024"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") assumes that knowledge or skills are learned in discrete chunks (“quantized”) and that the frequency distribution of these skills follows a power law. The model learns common skills first and rare skills later, resulting in a smooth power-law decay in loss."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ca26b0dfeca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I only listed two hypotheses here, but there are more studies on explaining the shape of power-law scaling through spectral tails of data, kernel eigenvalues, natural-language statistics, or phase transitions in training dynamics."
+          }
+        ]
+      },
+      {
+        "id": "heading-07344bc76e7b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Scaling Laws in Data-Limited Region"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-cecf1c04fcfd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Classic scaling laws assume effectively "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "unlimited unique data"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", no repetition, and no multi-epoch training. As the model size grows significantly, we are running out of enough high-quality unique tokens. In fact, some arguments about how long scaling in AI can continue are centered on whether we are hitting a “data wall”."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-75d9272e30bb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is also worth emphasizing that the dataset behind "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " is expected to be already cleaned. The pretraining data pipeline is often a large part of an effective pretraining pipeline, with common steps like deduplication (exact and fuzzy), quality filtering, boilerplate removal, safety filtering, PII/copyright masking, benchmark decontamination and careful reweighting of data mix components based on language, quality, content type, etc. Even when two datasets contain the same token count "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": ", a high-quality dataset and a dataset of Internet slop can yield drastically different compute efficiency."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9bc1086f90a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The study by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.10487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hernandez et al. (2022)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " focused on a controlled version: a mostly-unique dataset with a small fraction of repeated data. Starting from a large dataset, the data mix keeps 90% non-repeated but replaces the remaining 10% with repeats of a tiny portion of the original. By training a Transformer model for 100B tokens, they observed a double-descent phenomenon, that is, the test loss can actually get "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "worse"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and then better again as a function of how much the repeated data is emphasized, an effect that becomes more pronounced as the repeated fraction grows."
+          }
+        ]
+      },
+      {
+        "id": "image-4800efe39c55",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/hernandez-1.png",
+          "alt": "Double-descent in the test loss as the repeated fraction increases (90% repeated on the left, 50% on the right). (Image source: Hernandez et al. 2022)"
+        }
+      },
+      {
+        "id": "paragraph-305bfa992fd1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The flat or increasing trend in the middle of training is possibly due to memorization of repeated data. Learning curves with such shapes make scaling law fitting less accurate. They also concluded repeated data hurts some OOD evaluation and downstream fine-tuning. However, their data mix is constructed in a more lab-like setup, and repetition in real-world data is often more nuanced (e.g. different data has different levels of repetition, semantic repetition, etc.)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-441fbfdbeb62",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Rather than saying data repetition hurts training, we are more interested in how to fit scaling laws, given that the unique high-quality data is not infinite and we likely have to repeat data during training."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4e949367aca5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.16264"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Muennighoff et al. (2023)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " took on the research question of how compute should be allocated optimally when model training is data-constrained. Specifically, they empirically studied the impact of data repetition across roughly 400 experiments, 10M–9B parameters, data sizes up to 900B tokens, and up to 1500 epochs. The exact same dataset is repeated each epoch, shuffled between epochs, and evaluated on a held-out test set."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-511108404200",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The key modeling adjustment is to decompose the total token count "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " into two parts: (i) the number of unique tokens "
+          },
+          {
+            "type": "inline_math",
+            "text": "U_D"
+          },
+          {
+            "type": "text",
+            "text": " and (ii) the number of repeats "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_D"
+          },
+          {
+            "type": "text",
+            "text": " (i.e. num. epochs - 1). Thus we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "D = U_D(1 + R_D)"
+          },
+          {
+            "type": "text",
+            "text": ". With a unique-data budget "
+          },
+          {
+            "type": "inline_math",
+            "text": "D_\\text{uniq}"
+          },
+          {
+            "type": "text",
+            "text": ", by definition "
+          },
+          {
+            "type": "inline_math",
+            "text": "U_D = \\min \\{{ D_\\text{uniq}, D\\}}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_D = (D / U_D) - 1"
+          },
+          {
+            "type": "text",
+            "text": ". They use the Chinchilla scaling laws to find the optimal model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "U_N"
+          },
+          {
+            "type": "text",
+            "text": " for fitting "
+          },
+          {
+            "type": "inline_math",
+            "text": "U_D"
+          },
+          {
+            "type": "text",
+            "text": ", and define excess model size via repeats "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_N = (N / U_N) - 1"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a49d9b2535aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They then update the Chinchilla parametric fit ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/#chinchilla-method3"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "method 3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") to use effective (discounted) data "
+          },
+          {
+            "type": "inline_math",
+            "text": "D’"
+          },
+          {
+            "type": "text",
+            "text": " and model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "N’"
+          },
+          {
+            "type": "text",
+            "text": " in place of the raw quantities:"
+          }
+        ]
+      },
+      {
+        "id": "math-8ecb82797628",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(N, D) = \\frac{A}{N'^\\alpha} + \\frac{B}{D'^\\beta} + E\n\\quad\\text{ where }\nD' = U_D + U_D\\, r_D\\left(1 - \\exp\\!\\left(-\\frac{R_D}{r_D}\\right)\\right)."
+        }
+      },
+      {
+        "id": "paragraph-1f2dd8b8b8b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The intuition is that a token’s value decays "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "exponentially"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " as it is repeated. In their modeling, each repetition costs the token a "
+          },
+          {
+            "type": "inline_math",
+            "text": "(1 - 1/r_D)"
+          },
+          {
+            "type": "text",
+            "text": " fraction of its remaining value, where "
+          },
+          {
+            "type": "inline_math",
+            "text": "r_D"
+          },
+          {
+            "type": "text",
+            "text": " is a learnable “half-life” parameter. When "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_D = 0"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_D \\ll r_D"
+          },
+          {
+            "type": "text",
+            "text": ", we recover "
+          },
+          {
+            "type": "inline_math",
+            "text": "D’ \\approx D"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0c35b549210a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A symmetric formulation handles excess model size, "
+          },
+          {
+            "type": "inline_math",
+            "text": "N’ = U_N + U_N r_N(1 - \\exp(-R_N / r_N))"
+          },
+          {
+            "type": "text",
+            "text": ", capturing the idea that “larger models overfit more quickly on repeated data” and that “a model can be too large for its dataset.” This component is less intuitive, and I could not find a satisfactory explanation for why model size needs to appear in such a symmetric form as repeated data. Later work by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2605.01640"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lovelace et al. (2026)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " changed this assumption."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-45af83ec424c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Their empirical fit finds that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "excess parameters decay faster in value than repeated data"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "r_N < r_D"
+          },
+          {
+            "type": "text",
+            "text": ", so we should allocate more resources on more epochs rather than more model parameters. One weakness of this modeling, as the authors also pointed out, is that it significantly underestimates the final test loss of failing models (i.e. models whose loss increases midway through training), such as models trained for 44 epochs."
+          }
+        ]
+      },
+      {
+        "id": "image-1e78780f1d24",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/muennighoff-1.png",
+          "alt": "Data-constrained scaling under repetition captures the experimental results better than data-unaware fitting; the value of repeated tokens decays exponentially toward a ceiling. The fitting gets worse with more epochs as high repetition causes the test loss to increase midway through training, not depicted in the plot. (Image source: Muennighoff et al. 2023)"
+        }
+      },
+      {
+        "id": "paragraph-5eb65b7007df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Most recently, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2605.01640"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lovelace et al. (2026)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " revisited the same problem with a different approach. Rather than modeling overparameterization as a diminishing return on effective model size, Lovelace et al. model the interaction between model size "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\times"
+          },
+          {
+            "type": "text",
+            "text": " data repetition explicitly. Empirically, they trained about 300 models, spanning 15M to 1B parameters and 50M to 6B unique tokens."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dc1e5e301fda",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When they plot the fit residual for a fixed model size across a range of data-repetition levels, the observation is intuitive: more epochs cause more damage, and interestingly "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "larger models are more sensitive"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to repetition. This hints that the loss penalty is likely a function of both model size and data size."
+          }
+        ]
+      },
+      {
+        "id": "image-18ca2de113f7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/lovelace-1.png",
+          "alt": "Residuals of the effective-size fit reveal that overfitting damage grows with both the number of epochs and the model size. (Image source: Lovelace et al. 2026)"
+        }
+      },
+      {
+        "id": "paragraph-2db3b1352455",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An explicit overfitting penalty term was introduced and built around the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "capacity ratio"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "N / U_D"
+          },
+          {
+            "type": "text",
+            "text": " (parameter count relative to unique tokens):"
+          }
+        ]
+      },
+      {
+        "id": "math-894ee7b4c5f5",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(N, U_D, R_D) = E + \\frac{A}{N^\\alpha} + \\frac{B}{\\big(U_D (1 + R_D)\\big)^\\beta} + \\color{red}{P \\cdot R_D^\\delta \\cdot \\left(\\frac{N}{U_D}\\right)^\\kappa}"
+        }
+      },
+      {
+        "id": "paragraph-fd387ea20653",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where:"
+          }
+        ]
+      },
+      {
+        "id": "list-77e87c639894",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-22028b8c28ee",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "R_D"
+              },
+              {
+                "type": "text",
+                "text": " is the repetition count;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-51dae720e125",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the scalar "
+              },
+              {
+                "type": "inline_math",
+                "text": "P"
+              },
+              {
+                "type": "text",
+                "text": " is a learnable parameter;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-4219f9bc76a1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the exponent "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\kappa"
+              },
+              {
+                "type": "text",
+                "text": " (the 2nd learnable parameter) lets the penalty scale nonlinearly with the capacity ratio "
+              },
+              {
+                "type": "inline_math",
+                "text": "N / U_D"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-910aef2763d7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the separate exponent "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\delta"
+              },
+              {
+                "type": "text",
+                "text": " (the 3rd learnable parameter) on the repetition count decouples repetition nonlinearity from "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\kappa"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-65c0e80c41a9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The added term (in red) is a direct overfitting penalty that grows with both how many times you repeat the data and how over-parameterized the model is relative to the unique data available."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9fb2233bcfc8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They also did a case study on how weight decay impacts training with the limited-data constraint and found that strong weight decay reduces the overfitting penalty caused by data repetition."
+          }
+        ]
+      },
+      {
+        "id": "image-fd1a59fef3dc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/lovelace-2.png",
+          "alt": "Strong weight decay reduces the overfitting penalty from data repetition. (Image source: Lovelace et al. 2026)"
+        }
+      },
+      {
+        "id": "paragraph-73571748337f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both modeling approaches by Muennighoff et al. and Lovelace et al. are constructed from empirical curve fitting, so it is still unclear why data-constrained scaling laws should have exactly these forms and why each free parameter is needed. Curious about more theoretical work along this line."
+          }
+        ]
+      },
+      {
+        "id": "heading-07574de8f638",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Trickiness of Fitting Scaling Laws in Reality"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-59c8204e1bf0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Despite its clean form, in practice, scaling law fitting can be surprisingly sensitive to seemingly trivial procedural choices, like how you count parameters, how you round the precision, how you sum or average the loss, etc."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1a3e597ed144",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because a scaling law is only fit on the (relatively small, relatively cheap) models that we can afford to train, and the prediction is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "extrapolated"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for a model orders of magnitude larger. In such a setup, choices that look like rounding error may lead to wild differences in prediction."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-38899253e636",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meanwhile, scaling-law fitting assumes the only changing factor is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "scale"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which means that the model architecture, optimizer, learning rate schedule, batch ramp, data mix, tokenizer, and other design choices should remain the same. Another underlying assumption is that all these settings should have been carefully tuned, as cases like undertrained models can lead to a different conclusion."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ee60eaebe4a0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The disagreement between results by Kaplan et al. and Chinchilla is one example to showcase the trickiness of scaling laws fitting."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5095fe25b85f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A second example is a follow-up analysis investigating why Chinchilla "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/#method-3-parametric-fit"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "method 3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is slightly off from the other two methods. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2404.10102"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Besiroglu et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " extracted the raw "
+          },
+          {
+            "type": "inline_math",
+            "text": "(N, D, L)"
+          },
+          {
+            "type": "text",
+            "text": " data points from Figure 4 of Hoffmann et al. (2022) and re-ran the method 3 parametric fitting. They found a couple of concrete issues:"
+          }
+        ]
+      },
+      {
+        "id": "list-453f8d443281",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-c717e051d384",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A high loss scale in the L-BFGS-B minimizer, caused by averaging Huber-loss values over examples instead of summing them, which led to premature termination of the optimization. The early stopping of loss minimization during both the original fit and bootstrapping produced inconsistent estimates and implausibly narrow confidence intervals."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a01c1ea1205c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The reported "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\alpha"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\beta"
+              },
+              {
+                "type": "text",
+                "text": " were rounded to 2 digits of precision, which made the derived "
+              },
+              {
+                "type": "inline_math",
+                "text": "A, B"
+              },
+              {
+                "type": "text",
+                "text": " look more off than they really were."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-87510fcae83a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Toy simulation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-f469520adab5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here is a toy simulation widget, created by ChatGPT, designed to demonstrate three specific failure modes."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e4ea57673815",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We assume the ground truth function is:"
+          }
+        ]
+      },
+      {
+        "id": "math-68fc7b4cdb52",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{L}(N, D) = 482.01 \\cdot N^{-0.3478} + 2085.43 D^{-0.3658} + 1.8172"
+        }
+      },
+      {
+        "id": "paragraph-8dc29e02b176",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "and thus "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_\\text{opt} \\propto C^{0.5126}, D_\\text{opt} \\propto C^{0.4874}"
+          },
+          {
+            "type": "text",
+            "text": ". This is the estimate from "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2404.10102"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Besiroglu et al. (2024)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-03829bb4a114",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The simulation plots the loss prediction "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{L}"
+          },
+          {
+            "type": "text",
+            "text": " vs dataset size "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": ", while providing a set of sliders to show case:"
+          }
+        ]
+      },
+      {
+        "id": "list-254b8c6b57a8",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-08f02a067336",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Loss precision: rounding losses from high to low decimal points can change the fitted parameter values."
+              }
+            ]
+          },
+          {
+            "id": "list-item-58db2e1e65fc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Loss noise: perturbing loss values by only a multiplier of milli-loss (0.001) units leads to different fit."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ae2adb57a9c4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Fit-region sensitivity: fitting only small models, only medium models, or all models gives different apparent scaling laws."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-dc6b8ded3ade",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Please cite this work as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-40b14c847347",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-9127643af56a",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. “Scaling Laws, Carefully”. Lil’Log (Jun 2026). https://lilianweng.github.io/posts/2026-06-24-scaling-laws/"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e28daf2ab704",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or use the BibTex citation:"
+          }
+        ]
+      },
+      {
+        "id": "code-395479ca6cb9",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2026scaling,\n title = {Scaling Laws, Carefully},\n author = {Weng, Lilian},\n journal = {lilianweng.github.io},\n year = {2026},\n month = {June},\n url = \"https://lilianweng.github.io/posts/2026-06-24-scaling-laws/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-f460fc36b9b1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] S. Amari, N. Fujita, and S. Shinomoto. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://ieeexplore.ieee.org/document/6796972"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Four Types of Learning Curves. Neural Computation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 4(4):605–618, 1992."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-90d81b4ff5e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Hestness et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.00409"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Deep Learning Scaling is Predictable, Empirically.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1712.00409, 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fbd8caeace89",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Rosenfeld et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.12673"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Constructive Prediction of the Generalization Error Across Scales.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f5ca2804230b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Kaplan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2001.08361"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Scaling Laws for Neural Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2001.08361, 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-60d59b33c28c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Hoffmann et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2203.15556"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Training Compute-Optimal Large Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeurIPS 2022."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f06cd692e404",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Pearce and Song. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2406.12907"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reconciling Kaplan and Chinchilla Scaling Laws.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " TMLR 2024."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5a4039969fff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Bahri et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.06701"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Explaining Neural Scaling Laws.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2102.06701, 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-91800a38f70a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Sharma and Kaplan. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.10802"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Neural Scaling Law from the Dimension of the Data Manifold.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2004.10802, 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-86ba06d1bb57",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Hernandez et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.10487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Scaling Laws and Interpretability of Learning from Repeated Data.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2205.10487, 2022."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fa68ba804ca0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Muennighoff et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2305.16264"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Scaling Data-Constrained Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeurIPS 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-85d3ded962cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Lovelace et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2605.01640"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Prescriptive Scaling Laws for Data Constrained Training.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2605.01640, 2026."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-578dc5a4e9e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Besiroglu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2404.10102"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Chinchilla Scaling: A Replication Attempt.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2404.10102, 2024."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-954c620c1116",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Michaud et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2303.13506"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The Quantization Model of Neural Scaling”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeurIPS 2023."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2c9f4681f487",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Brill. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2412.07942"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Neural Scaling Laws Rooted in the Data Distribution.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2412.07942, 2024."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ec13d5c563c9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Rae et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2112.11446"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Scaling Language Models: Methods, Analysis & Insights from Training Gopher.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2112.11446, 2021."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "scaling-laws-carefully",
+    "source_slug": "2026-06-24-scaling-laws",
+    "source_profile": "lilian-weng.v2",
+    "source_counts": {
+      "heading": 14,
+      "math": 14,
+      "image": 16,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/hestness-1.png",
+      "alt": "Learning curves for (Left) Deep-Speech-2 (DS2) and attention speech model and for (Right) DS2 models of various sizes. The losses of small models plateau when training data becomes large. (Image source: Hestness et al. 2017)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/hestness-2.png",
+      "alt": "Illustration of power-law learning curve phases. (Image source: Hestness et al. 2017)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/rosenfeld-1.png",
+      "alt": "A 3D contour plot of data size, model size and generalization error in log-log-log scale. Blue dots are derived from empirical experiments and the surface is a linear interpolation between blue dots. (Image source: Rosenfeld et al. 2020)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/rosenfeld-2.png",
+      "alt": "Fitting the parametric error model on small-scale configurations and extrapolating to larger model/data regimes: (a) Illustration of the experiment setup; Experiment results on (b) ImageNet, (c) WikiText-103 and (d) CIFAR100 Error estimation with three architectures (WRN, VGG, DenseNet) and two optimizers (SGD, Adam). (Image source: Rosenfeld et al. 2020)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/kaplan-1.png",
+      "alt": "Test loss as a power law in compute, dataset size, and parameters, spanning many orders of magnitude. (Image source: Kaplan et al. 2020)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/kaplan-2.png",
+      "alt": "Parameter and compute estimation for different Transformer architectural components, given the number of layers $n_\\text{layer}$, model width $d_\\text{model}$ (= $d_\\text{embed}$; the notation is inconsistent in the original table), dimension of feed-forward layer $d_\\text{ff}$ (often equivalent to $4 d_\\text{model}$, attention dimension $d_\\text{attn}$ (often equivalent to $d_\\text{model}$), the context length $n_\\text{ctx}$ and the vocabulary size $n_\\text{vocab}$. (Image source: Kaplan et al. 2020)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/animal.png",
+      "alt": "You should know how chinchilla looks 😊 (Image source: ChatGPT generated)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-1.png",
+      "alt": "Chinchilla Method 1: training loss curves over FLOP budgets for a sweep of model sizes. (Image source: Hoffmann et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-2.png",
+      "alt": "Chinchilla Method 2: IsoFLOP parabolas; the minimum of each curve is the compute-optimal model size for that budget. (Image source: Hoffmann et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-3.png",
+      "alt": "The three methods agree on a compute-optimal frontier where $N_\\text{opt} \\propto C^{0.5}$, but disagree with Kaplan et al. Note that method 3's results are slightly off from the other two, which we will explain later. (Image source: Hoffmann et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/chinchilla-4.png",
+      "alt": "The plot of the Chinchilla predictions by three different approaches, as well as predictions by Kaplan et al. (2020). All three methods suggest that several mainstream LLMs at the time were undertrained. (Image source: Hoffmann et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/pearce-1.png",
+      "alt": "Visualization of how the local power-law exponent $g$ grows with $C_{\\setminus E}$. (Image source: Pearce & Song 2024)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/hernandez-1.png",
+      "alt": "Double-descent in the test loss as the repeated fraction increases (90% repeated on the left, 50% on the right). (Image source: Hernandez et al. 2022)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/muennighoff-1.png",
+      "alt": "Data-constrained scaling under repetition captures the experimental results better than data-unaware fitting; the value of repeated tokens decays exponentially toward a ceiling. The fitting gets worse with more epochs as high repetition causes the test loss to increase midway through training, not depicted in the plot. (Image source: Muennighoff et al. 2023)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/lovelace-1.png",
+      "alt": "Residuals of the effective-size fit reveal that overfitting damage grows with both the number of epochs and the model size. (Image source: Lovelace et al. 2026)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2026-06-24-scaling-laws/lovelace-2.png",
+      "alt": "Strong weight decay reduces the overfitting penalty from data repetition. (Image source: Lovelace et al. 2026)"
+    }
+  ]
+}

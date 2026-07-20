@@ -1,0 +1,4593 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2021-03-21-lm-toxicity",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2021-03-21T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:66fc96829582c6c2a2b3a156dde10f660654477d47630c516f1e123bcf5dd742",
+    "fetched_at": "2026-07-14T02:05:27.350550+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Reducing Toxicity in Language Models",
+    "title_en": "Reducing Toxicity in Language Models",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-4f48355d2220",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Large pretrained "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "language models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " are trained over a sizable collection of online data. They unavoidably acquire certain toxic behavior and biases from the Internet. Pretrained language models are very powerful and have shown great success in many NLP tasks. However, to safely deploy them for practical real-world applications demands a strong safety control over the model generation process."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-557611468546",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Many challenges are associated with the effort to diminish various types of unsafe content:"
+          }
+        ]
+      },
+      {
+        "id": "list-25b8c52df247",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-499277306552",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, there are a variety of unsafe content types, such as toxicity, abusiveness, hate speech, biases, stereotypes, cyberbullying, identity attacks and more, which may or may not demand different treatment."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4361ab040abc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Second, there is no clearly and widely agreed-upon categorization and definition of unsafe behavior in pretrained language models. Individual perceptions could vary a lot due to different social backgrounds."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cab28004004b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this post, we delve into the issue of toxicity in language models. As I’m still struggling to find a concrete definition of toxic content, I list a couple in the literature below."
+          }
+        ]
+      },
+      {
+        "id": "blockquote-68d81994f2a7",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-531aec88bb84",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "["
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://support.perspectiveapi.com/s/about-the-api-attributes-and-languages"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Perspective API"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "] A rude, disrespectful, or unreasonable comment; likely to make people leave a discussion."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-ead7a095f40e",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-ab008b8e3b6a",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "["
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1912.06872"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kurita et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "] Content that can offend or harm its recipients, including hate speech, racism, and offensive language."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-153ce1807d6a",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-c02295b61b2b",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "["
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2006.00998"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Pavlopoulos et al. 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "] We use the term ’toxic’ as an umbrella term, but we note that the literature uses several terms for different kinds of toxic language or related phenomena: ‘offensive’, ‘abusive’, ‘hateful’, etc."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e39109993030",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Overall, toxicity is a broad term to describe several types of unsafe content. Methodologies in this post can be applied given some form of definition of toxicity; e.g. presented in the instruction for annotators. How to properly define the concept of toxicity and thus collect accurate annotation labels is out of the scope of this post."
+          }
+        ]
+      },
+      {
+        "id": "heading-639502843bc1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Categorization of Toxic Content"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-eb3dc06f65d8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How to categorize toxic content is not a straightforward task. Which content should be considered toxic and what types of toxic content exist can be very subjective. Language that does not look offensive to one group might seem inappropriate to another."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-64b1d27c8bde",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One popular categorization of offensive language is proposed by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.09666"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zampieri et al. (2019)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", a three-level hierarchical taxonomy considering both the type and the target of offense. The Offensive Language Identification Dataset ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#OLID"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "OLID"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") dataset is collected based on this taxonomy."
+          }
+        ]
+      },
+      {
+        "id": "image-829cb66c557c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/offensive-taxonomy.png",
+          "alt": "The three-level hierarchical taxonomy for categorizing offensive language, proposed by Zampieri et al. (2019) ."
+        }
+      },
+      {
+        "id": "list-430d1b66340f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-11d40d02b443",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Level A: “Is it offensive?”\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-930f6712bed9",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-ba3c7048d01e",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[OFF]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " Offensive: Inappropriate language, insults, or threats."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-024add10b73b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[NOT]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " Not offensive: No offense or profanity."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-a388432747b5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Level B: “Is the offensive text targeted?”\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-7faf4a176c49",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-0364ec07ee17",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[TIN]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " Targeted Insult: Targeted insult or threat towards an individual, a group or other."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-018716be188a",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[UNT]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " Untargeted: Non-targeted profanity and swearing."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-666d82a0a1ef",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Level C: What is the target?\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-68be6d311ba7",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-b908ab2ca71d",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[IND]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " The offense targets an individual, often defined as “cyberbullying”."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-e20964584277",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[GRP]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " The offense targets a group of people based on ethnicity, gender, sexual orientation, religion, or other common characteristic, often defined as “hate speech”."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-72c3b46b9e39",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_code",
+                        "text": "[OTH]"
+                      },
+                      {
+                        "type": "text",
+                        "text": " The target can belong to other categories, such as an organization, an event, an issue, etc."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-132e7481095f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Data Collection"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-9dce38c26a32",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Preparing a dataset of samples labelled as “safe” vs “unsafe” is the foundation for training a toxic language classifier and further providing signals for model detoxification."
+          }
+        ]
+      },
+      {
+        "id": "heading-71ed07756dbf",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Human Annotations"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-8cf22df68c50",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.01670"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Vidgen & Derczynski (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " summarized that training data annotations for toxicity detection on the high level can be collected by:"
+          }
+        ]
+      },
+      {
+        "id": "list-a30b3d9ff828",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-8acfe5eb633f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Expert coding"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": An expert has enough knowledge or training to complete the annotation tasks with good quality, such as a researcher who studies prejudice, a student with moderate level of training, or a NLP practitioner. It is more expensive but produces high-quality data."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e3aa19c26f88",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Crowdsourcing"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Crowdsourcing platform pairs a large number of non-expert annotators with tasks. It is easier to scale up but demands more attention on quality control."
+              }
+            ]
+          },
+          {
+            "id": "list-item-dd4d12524044",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Professional moderators"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Professional moderators are experienced, well-trained on the tasks, but their goals are likely to optimize for the output specific to the platform."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5979e316f46e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Synthetic data"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Training dataset can also be manually created by relevant content creators to cover a broad range of toxic content types."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d7616f49bc32",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Crowdsourcing is the most common approach among them ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.04009"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Davidson et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.09666"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zampieri et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and there are several good practices to improve the data quality:"
+          }
+        ]
+      },
+      {
+        "id": "list-95d3705ec0b2",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-5540685df2c6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Test data"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ":  A small set of annotations collected from a few experts can be used as test questions ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1902.09666"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zampieri et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") to filter out human annotators on the crowdsourcing platform who cannot achieve a certain threshold."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c1430368bf2b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Clear guidelines"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Detailed instructions are useful to guide annotators to produce aligned and consistent labels. Without any guideline, annotators are encouraged to apply their personal perceptions, which could be problematic because (1) subjective interpretation of toxic content varies across individuals greatly and (2) it is tricky to mark certain types of noise like sarcasm and irony without any guideline."
+              }
+            ]
+          },
+          {
+            "id": "list-item-05dd10286f52",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Majority vote"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": It is very common that we need labels from multiple annotators per sample and take the majority vote."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d8bf4c967bff",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Understanding annotators’ identities"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Demographic background has a big impact on the annotator’s understanding of the task. We should aim to recruit diverse and qualified annotators."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-82facf819987",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Semi-supervised Dataset"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d443fe77902b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1811.12900"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Khatri et al. (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a simple approach to bootstrap a large amount of semi-supervised dataset for learning toxic content classifiers. Their approach relies on a small annotated dataset and a large unlabelled dataset."
+          }
+        ]
+      },
+      {
+        "id": "list-aa9b6ae10363",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-5a307cd58a42",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, they gather a blacklist of 800+ words covering topics of profanity, hate, sexual content and insults. A black list of profanities may have high precision and low recall, but it can provide weak supervised signals."
+              }
+            ]
+          },
+          {
+            "id": "list-item-85751ba67ecc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Subreddits are sorted by the percentage of blacklisted words. Then sensitive examples are sampled from the top subreddits and non-sensitive ones from the bottom, respectively."
+              }
+            ]
+          },
+          {
+            "id": "list-item-fa9739a145fc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Train a weak binary classifier to further select more samples from the sorted subreddits,\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-4c72571bfe95",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-285814bb764b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Sensitive: contain blacklisted words or toxic classifier confidence > 0.8;"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-177d606661d2",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Non-sensitive: not contain blacklisted words and toxic classifier confidence < 0.3"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-ec6a12c72c8d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Given this large expanded dataset, train a new classifier named “Two-stage bootstrap” ("
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TS bootstrap"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-22679a9efea0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Their experiments showed that the TS bootstrap classifier achieved pretty good numbers on F1 score, accuracy and recall and it could also transfer to out-of-domain test data."
+          }
+        ]
+      },
+      {
+        "id": "image-2475731517b0",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/TS-bootstrap.png",
+          "alt": "The two-stage bootstrap classifier is trained on a dataset bootstrapped by a weak toxic binary classifier on Reddit data. (Image source: Khatri et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-4596bd3c83ef",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#SOLID"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "SOLID"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Semi-Supervised Offensive Language Identification Dataset; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.14454"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rosenthal et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") contains 9+ M tweets annotated with the same taxonomy system as for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#OLID"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "OLID"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". SOLID treats OLID as a seed and extends it via a semi-supervised technique called "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "democratic co-training"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Democratic co-training ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.76.3152&rep=rep1&type=pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhou & Goldman, 2004"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") creates a large dataset from noisy labels provided by a collection of diverse models trained on a small supervised dataset. SOLID is constructed by:"
+          }
+        ]
+      },
+      {
+        "id": "list-45841174f5cd",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f54ee56c3ad2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, train a diverse set of supervised models on the labeled dataset OLID. The paper experimented with PMI (n-gram-based similarity), FastText (shallow neural model similar to BoW model), LSTM and BERT."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f14c122bbe9e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "For each sample in the unannotated dataset, each model predicts a confidence score for the target class. The scores are aggregated by taking "
+              },
+              {
+                "type": "inline_code",
+                "text": "avg()"
+              },
+              {
+                "type": "text",
+                "text": " or "
+              },
+              {
+                "type": "inline_code",
+                "text": "min()"
+              },
+              {
+                "type": "text",
+                "text": ". Samples with high confidence are added into the dataset."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f21b49a24114",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "BERT model performance does not improve when the supervised dataset is large enough for a simple task, but can benefit from a big semi-supervised dataset if the original supervised dataset is too small for the task."
+          }
+        ]
+      },
+      {
+        "id": "heading-3975056c9139",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Toxicity Detection"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-1e50e7d21d54",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a supervised dataset, we can train a text classifier from scratch or fine-tune a pretrained language model to perform the classification task. But what if training samples are not good or sufficient enough? What if we don’t have access to such a supervised dataset?"
+          }
+        ]
+      },
+      {
+        "id": "heading-9455afd60823",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adversarial Attacks"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a804e524c059",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To create a toxicity detection model that is robust to adversarial attacks, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.06083"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dinan et al. (2019)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed an iterative “"
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "build it, break it, fix it"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "” strategy to improve the dialogue system safety with humans in the loop."
+          }
+        ]
+      },
+      {
+        "id": "list-8510729c4936",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-8c2e4d1ecc14",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Build it"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": A BERT model is trained to classify toxic comments on the "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#jigsaw"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Jigsaw dataset"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f8681214e8ab",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Break it"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Crowdsourced workers are asked to write toxic messages that are mistakenly labelled as “safe” by the model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c54379429965",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fix it"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The model is re-trained on the combination of the original dataset and newly collected adversarial samples."
+              }
+            ]
+          },
+          {
+            "id": "list-item-dab28ffab710",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Repeat"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Redeploy the robustified model and repeat a new round from step 1."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-e02a4d88d568",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/build-break-fix.png",
+          "alt": "The illustration of iteratively improving a toxic content detection model via the \"build it, break it, fix it\" process. (Image source: Dinan et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-4c17c218d430",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One baseline in their experiments is to replace the adversarial collection in the “break it” step with the standard collection where workers are asked to submit “offensive” messages directly . Compared to the standard collection, the adversarial collection has less explicit profanity and more negations to trick the model. The tasks become more challenging in the later rounds."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0909289bec93",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adversarial models are more robust against adversarial attacks than baseline models trained on the standard collection.  The third round adversarial model has worse performance on the standard task than the standard model, likely due to overfitting. I’m curious about how the model performance would be like if it is trained on both adversarial and standard collection, but I didn’t find it in the paper."
+          }
+        ]
+      },
+      {
+        "id": "image-fe6e088d611e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/build-break-fix-it-results.png",
+          "alt": "The comparison of performance on standard and adversarial tasks of models trained on standard ($S\\_i$) and adversarial data collection ($A\\_i$). The subscript $i$ indicates the number of training rounds. (Image source: Dinan et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-19279a1623c7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another type of adversarial attack is to trick the detection model to mistakenly classify a toxic sentence as safe by replacing or scrambling a subset of characters. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1912.06872"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kurita et al. (2019)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " developed a method of generating such model-agnostic adversarial attacks, incorporating several types of character-level perturbations:"
+          }
+        ]
+      },
+      {
+        "id": "list-4988068f4a26",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-18b86baea87e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Character scrambling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": randomly permute character positions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-821e7c01e8a1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Homoglyph substitution"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": replace one or multiple letters with similar looking international letters."
+              }
+            ]
+          },
+          {
+            "id": "list-item-11c9a58efabb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Dictionary-based near-neighbor replacement"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": find closest but distinct token in terms of Levenshtein distance."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d9f5b616b76e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Distractor injection"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": inject distractor tokens by repeating random selected sequences of non-toxic tokens."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d7b66197cffc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adversarial noise combining token obfuscation and distractor tokens leads to substantial performance degradation of a toxic classifier. Character-level perturbation degrades performance more than distractors."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0d4f1fe593fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The paper proposed two ways to resolve adversarial attacks:"
+          }
+        ]
+      },
+      {
+        "id": "list-f4a74263d36b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-0c2356dc29d7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Adversarial training"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " refers to training the model on a dataset with noise. However, you need to know the details of the incoming attacks in advance. And there is no guarantee that training samples with arbitrary noise would generalize to the test set."
+              }
+            ]
+          },
+          {
+            "id": "list-item-74930dec4576",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "CDAE (contextual denoising autoencoder)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uses character-level and contextual information to denoise obfuscated tokens. CDAE takes a noise sample to predict the denoised version. Still, you need to know what types of character-level perturbation can be applied to create noise samples. CDAE performs comparable to BERT, but not substantially better."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-173d2f7cc3c8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Perspective API"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-775ff335421d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "perspective API"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.perspectiveapi.com/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "www.perspectiveapi.com"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is the most widely used commercial API for toxic content detection. Perspective trains machine learning models to provide scores for several different "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://support.perspectiveapi.com/s/about-the-api-attributes-and-languages"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "attributes"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": toxicity, severe toxicity, insult, profanity, identity attack, threat, and sexually explicit. Each score is a number between [0, 1], indicating how likely the message contains a given attribute (i.e. confidence of a binary classifier) and it does not signify the severity of the attribute."
+          }
+        ]
+      },
+      {
+        "id": "image-e35deade203e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/about-perspective-api.png",
+          "alt": "The overview of Perspective API scores. (Image source: About Perspective API )"
+        }
+      },
+      {
+        "id": "paragraph-d4f676d13770",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.11462"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gehman et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " measured the Perspective API toxicity scores of unprompted generations sampled from several pretrained language models. “Unprompted” means that the generation is only conditioned on the start-of-sentence tokens, without injecting any additional context. Noticeably, all the tested models get to the expected maximum toxicity > 0.5 after 100 generations. They also pointed out that training datasets for large LMs contain an non-negligible amount of toxic content."
+          }
+        ]
+      },
+      {
+        "id": "image-3369b2185c79",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/unprompted-toxicity.png",
+          "alt": "Perspective API toxicity scores of unprompted generations. Each model generates a pool of 10k samples and the expected maximum toxicity score is estimated via bootstrapping. (Image source: Gehman et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-a72f41e9c8c7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They collected the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#RealToxicityPrompt"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RealToxicityPrompt"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " dataset"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for studying toxicity in conditional language model generation. It contains 100k naturally occurring prompts with associated toxicity scores from Perspective API. Some prompts that do not contain any toxic language still can trigger very offensive completion."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a68bee684b92",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Despite of its popularity, Perspective API contains known biases, as summarized by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.11462"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gehman et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-f41a42ac1a52",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-5175232bdb2c",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "… exhibit biases against minorities and suffer from low agreement in annotations, partially due to annotator identity influencing their perception of hate speech and differences in annotation task setup."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-fd76bf2d2022",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-de83ad577e27",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Notably, recent work has found that systems are overestimating the prevalence of toxicity in text that contains a minority identity mention (e.g., “I’m a gay man”) or text by racial minorities (e.g., text in African American English). This is partially due to detectors’ over-reliance on lexical cues of toxicity (including swearwords, slurs, and other “bad” words)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-9cd71f1f60a2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Prompt-based Detection"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c930290d176d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Self-diagnosis"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.00453"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Schick, et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a process of exploiting the capacity of a pretrained language model to detect socially undesired attributes in its own outputs. The diagnosis depends on a predefined prompt template where the attributes are described in short text and measures the normalized probability of the model outputting “yes” versus “no”. Note that self-diagnosis does not need to access a labelled dataset for training."
+          }
+        ]
+      },
+      {
+        "id": "code-cda4303ee471",
+        "type": "code",
+        "attrs": {
+          "code": "# Self-diagnosis template\n\"{sample text}\"\nQuestion: Does the above text contain {undesired attribute}?\nAnswer: {yes/no}",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-0623ccf00c5d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They use RealToxicityPrompts dataset and Perspective API for evaluation in the experiments. The self-diagnosis performance is positively correlated with the model size."
+          }
+        ]
+      },
+      {
+        "id": "image-15f4f2747ebe",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/self-diagnosis-toxicity-score.png",
+          "alt": "Self-diagnosis abilities for identifying undesired attributes. The ground truth is provided by Perspective API. (Image source: Schick, et al. 2021 )"
+        }
+      },
+      {
+        "id": "heading-a8fc87cac24e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Detoxification"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-a600b3d943a5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Blacklisting"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-faa128fa5e87",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Bad word filtering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a pretty intuitive and effective way to avoid explicit profane "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/%20LDNOOBW/List-of-Dirty-Naughty-Obscene-%20and-Otherwise-Bad-Words"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "words"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in the language model generation. At decoding time, we can manually reduce the probabilities of blocked words to avoid sampling them. However, it is not perfect, as it is still possible to have unsafe content composed of safe tokens."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-204f176a2351",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Vocabulary shifting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.11462"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gehman et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") learns a 2-dimensional representation of toxicity versus non-toxicity for every token in the vocabulary of the pretrained model. Then the representation that encodes the non-toxicity is used to boost the likelihood of non-toxic tokens at decoding time."
+          }
+        ]
+      },
+      {
+        "id": "heading-9140a7495d8a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Prompt-based Detox"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-498a79d67382",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Self-debiasing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.00453"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Schick et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") follows the similar idea as in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#prompt-based-detection"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "self-diagnosis"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". It is a process for using the internal knowledge of a pretrained language model to reduce the probability of undesired attributes in the model generation."
+          }
+        ]
+      },
+      {
+        "id": "code-ef3ec47b083c",
+        "type": "code",
+        "attrs": {
+          "code": "# Self-debiasing template, denoted as sdb(.)\nThe following text contains {undesired attribute s}:\n{sample text x}",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-5fe230680afe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given an input prompt "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ", a textual description of undesired attributes "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": ", and the language model "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": ", self-debiasing computes the difference between the probability of next words without and with the self-debiasing template "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{sdb}(.)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-e14c7b7fa83c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\Delta(w, \\mathbf{x}, s) = p_M(w\\vert\\mathbf{x}) - p_M(w\\vert\\text{sdb}(\\mathbf{x}, s))"
+        }
+      },
+      {
+        "id": "paragraph-510e3c5f9e2a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{sdb}(.)"
+          },
+          {
+            "type": "text",
+            "text": " is expected to boost the probabilities of undesired words, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta(w, \\mathbf{x}, s)"
+          },
+          {
+            "type": "text",
+            "text": " should be negative for undesirable words."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ce5b17a7ed53",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In self-diasing decoding, a scaling function of the probability difference "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha(\\Delta(w, \\mathbf{x}, s)): \\mathbb{R}\\to[0,1]"
+          },
+          {
+            "type": "text",
+            "text": " is used to alter the true sampling distribution,"
+          }
+        ]
+      },
+      {
+        "id": "math-020b03b8f0ee",
+        "type": "math",
+        "attrs": {
+          "latex": "\\tilde{p}_M(w\\vert\\mathbf{x}) \\propto \\alpha(\\Delta(w, \\mathbf{x}, s)) p_M(w\\vert\\mathbf{x})"
+        }
+      },
+      {
+        "id": "paragraph-92d600f987f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the paper, they used a soft variant where the probabilities of the words with negative "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta"
+          },
+          {
+            "type": "text",
+            "text": " are reduced w.r.t. the magnitude of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta(w, \\mathbf{x}, s)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-a95174204cac",
+        "type": "math",
+        "attrs": {
+          "latex": "\\alpha(x)=\\begin{cases} 1 & \\text{ if } x\\geq 0 \\\\ e^{\\lambda\\cdot x} & \\text{ otherwise} \\end{cases}"
+        }
+      },
+      {
+        "id": "image-0b3f46cc1d76",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/self-debiasing-decoding.png",
+          "alt": "Self-diasing decoding can reduce the probabilities of undesirable attributes. The scores are provided by Perspective API. (Image source: Schick et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-a23522d4da70",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are a couple of major limitations in self-debiasing detoxification:"
+          }
+        ]
+      },
+      {
+        "id": "list-442b76bdd645",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-59cba0a5b13e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The evaluation solely relies on Perspective API, so it cannot capture bias & toxicity attributes that are "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#perspective-api-biases"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "not covered"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " by Perspective API, such as gender biases. Using human evaluation is another alternative but the scale is limited."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6e207371b72c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Self-debiasing sometimes acts too aggressively and filters out harmless words and it does not maintain the same level of perplexity as the original model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-51555e38e47f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The approach is constrained by the internal capacity of the model. For example, if the model is not aware of certain biases, it would not be able to correct them."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-36d66645f88a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Text Style Transfer"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e619aa1e3c2a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Unsupervised style transfer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " can be used to translate offensive sentences into innocuous ones ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07685"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Santos et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The approach should work for non-parallel datasets, meaning that we only have access to two separate datasets of offensive and non-offensive samples, but not paired versions. To preserve the content when transferring the text into another style, a cycle consistency loss ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.10593"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhu et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is adopted."
+          }
+        ]
+      },
+      {
+        "id": "image-64eb3d2a482b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/offensive-text-style-transfer.png",
+          "alt": "The training process of a neural text style transfer algorithm using non-parallel data. (Image source: Santos et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-451e6093796a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "s_i"
+          },
+          {
+            "type": "text",
+            "text": " be the desired style ("
+          },
+          {
+            "type": "inline_math",
+            "text": "i=0"
+          },
+          {
+            "type": "text",
+            "text": " for offensive and "
+          },
+          {
+            "type": "inline_math",
+            "text": "i=1"
+          },
+          {
+            "type": "text",
+            "text": " for non-offensive), and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}^i_k"
+          },
+          {
+            "type": "text",
+            "text": " be the "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "-th sample of style "
+          },
+          {
+            "type": "inline_math",
+            "text": "s_i"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "k = 1, \\dots, n"
+          },
+          {
+            "type": "text",
+            "text": ". Both the encoder "
+          },
+          {
+            "type": "inline_math",
+            "text": "E"
+          },
+          {
+            "type": "text",
+            "text": " and decoder "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " take a sample (or hidden state) along with a style label. The classifier "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " predicts a probability distribution over the style labels given an input sample."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d4847c934153",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Following the illustration in Fig. 9:"
+          }
+        ]
+      },
+      {
+        "id": "list-d27940dc6305",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-ea034be9b74c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The top branch of forward transfer is auto encoder: ​"
+              },
+              {
+                "type": "inline_math",
+                "text": "E(\\mathbf{x}^i_k, s_i) \\to H^i_k \\to G(H^i_k, s_i) \\to \\hat{\\mathbf{x}}^{i\\to i}_k"
+              },
+              {
+                "type": "text",
+                "text": ". Two losses are computed:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-ca95427f5de1",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-75f6cf4f08be",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Reconstruction loss measures how well the decoder can reconstruct the sample back:"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-75d4711ece1e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{self} = \\mathbb{E}_{\\mathbf{x}^i_k \\sim \\mathcal{X}} [-\\log p_G(\\mathbf{x}_k^i \\mid E(\\mathbf{x}^i_k, s_i), s_i)]"
+        }
+      },
+      {
+        "id": "list-277cd96038f6",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-5ee0d2eafaac",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The bottom branch of forward transfer: "
+              },
+              {
+                "type": "inline_math",
+                "text": "E(\\mathbf{x}^i_k, s_i) \\to H^i_k \\to G(H^i_k, s_j) \\to \\hat{\\mathbf{x}}^{i\\to j}_k"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-c55f67570e38",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-7ad0d5254462",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Classification loss measures the effectiveness of style transfer:"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-a27089f927fb",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{style_fwd} = \\mathbb{E}_{\\hat{\\mathbf{x}}^{i\\to j}_k \\sim \\hat{\\mathcal{X}}} [-\\log p_C(s_j \\mid \\hat{\\mathbf{x}}^{i\\to j}_k)]"
+        }
+      },
+      {
+        "id": "list-ac97e0d0c1cb",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-fc9fd58cd653",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The back transfer uses cycle consistency loss: "
+              },
+              {
+                "type": "inline_math",
+                "text": "E(\\hat{\\mathbf{x}}^{i\\to j}_k, s_j) \\to H^{i\\to j}_k \\to G(H^{i\\to j}_k, s_i) \\to \\hat{\\mathbf{x}}^{i\\to j \\to i}_k"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-db52c9ea7c86",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-d8679191c9af",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The cycle consistency loss controls how well the transferred sample can be converted back to the original form to encourage content preservation:"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-9ac6e852f84c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{cycle} = \\mathbb{E}_{\\mathbf{x}^i_k \\sim \\mathcal{X}} [-\\log p_G(\\mathbf{x}_k^i \\mid E(\\hat{\\mathbf{x}}^{i \\to j}_k, s_j), s_i)]"
+        }
+      },
+      {
+        "id": "code-a9350223bb12",
+        "type": "code",
+        "attrs": {
+          "code": "- The classification loss ensures that the back-transferred sample has the correct label:",
+          "language": ""
+        }
+      },
+      {
+        "id": "math-e3a67edd8ebd",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{style_back} = \\mathbb{E}_{\\hat{\\mathbf{x}}^{i\\to j}_k \\sim \\hat{\\mathcal{X}}} [-\\log p_C(s_i \\mid G(E(\\hat{\\mathbf{x}}^{i\\to j}_k, s_j), s_i))]"
+        }
+      },
+      {
+        "id": "list-028c67e0235a",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7b74a9c527bd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "There is an additional supervised classification loss for training an accurate classifier:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-6dceeb90c4b3",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{class} = \\mathbb{E}_{\\hat{\\mathbf{x}}^{i\\to j}_k \\sim \\hat{\\mathcal{X}}} [-\\log p_C(s_i \\mid \\hat{\\mathbf{x}}^i_k)]"
+        }
+      },
+      {
+        "id": "paragraph-904b786ccaa3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final training objective is as follows and the encoder, decoder and classifier are jointly trained:"
+          }
+        ]
+      },
+      {
+        "id": "math-5699afa6595d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}(\\theta_E, \\theta_G, \\theta_C) = \\min_{E, G, C} \\mathcal{L}_\\text{self} + \\mathcal{L}_\\text{style_fwd} + \\mathcal{L}_\\text{cycle} + \\mathcal{L}_\\text{style_back}+ \\mathcal{L}_\\text{class}"
+        }
+      },
+      {
+        "id": "paragraph-0a09e8c14748",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Style Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.05621"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dai et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") also aims to learn unsupervised text style transfer. Different from the encoder-decoder model in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07685"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Santos et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", it learns a Transformer-based style transfer function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta(\\mathbf{x}, s)"
+          },
+          {
+            "type": "text",
+            "text": " for a given input sample "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " and a desired style control variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-962ca7375f19",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/style-transformer.png",
+          "alt": "The comparison of style transformer and previous models that depend on disentangled latent representation. (Image source: Dai et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-7a901928a774",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Without access to the parallel corpus, the style transformer adopts a discriminator to create supervision from non-parallel dataset."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bb11cdf73aa6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{s}"
+          },
+          {
+            "type": "text",
+            "text": " be two mutually exclusive style variables and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " is a sample of style "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": ", style transformer computes several losses:"
+          }
+        ]
+      },
+      {
+        "id": "list-42708b93e0b7",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-0902cd069a27",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Self reconstruction loss: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_\\text{self} = - p_\\theta (\\mathbf{x} \\vert \\mathbf{x}, s)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-00dcef6965b3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Cycle-consistency loss: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_\\text{cycle} = - p_\\theta (\\mathbf{x} \\vert f_\\theta(\\mathbf{x}, \\hat{s}), s)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-643793537fc9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Style controlling loss: This is necessary because otherwise the model would simply learn to copy the input over."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-19e7f1c49ef9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{style} = - p_\\phi(\\text{class} = 1 \\vert f_\\theta(\\mathbf{x}, \\hat{s}), \\hat{s})"
+        }
+      },
+      {
+        "id": "paragraph-1f7b74eb1b36",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": ", where the discriminator is a simple binary classifier trained to optimize the negative log-likelihood of the correct style. The discriminator is trained by labelling"
+          }
+        ]
+      },
+      {
+        "id": "list-4b1173034410",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-eecc653453fe",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\{(\\mathbf{x}, s), (f_\\theta(\\mathbf{x}, s), s), (f_\\theta(\\mathbf{x}, \\hat{s}), \\hat{s})\\}"
+              },
+              {
+                "type": "text",
+                "text": " as positive class 1"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e5d919a9a9fc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\{(\\mathbf{x}, \\hat{s}), (f_\\theta(\\mathbf{x}, s), \\hat{s}), (f_\\theta(\\mathbf{x}, \\hat{s}), s)\\}"
+              },
+              {
+                "type": "text",
+                "text": " as negative class 0."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-d70ad530ac42",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/style-transformer-training.png",
+          "alt": "The training process of Style Transformer. (Image source: Dai et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-a85ea3202e3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Driven by the research question “Can we fine-tune a pre-trained language model to suggest civil rephrasings of rude comments using a dataset solely annotated in toxicity?”, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.05456"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Laugier et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " fine-tuned a pretrained text-to-text transformer with a denoising and cyclic auto-encoder loss."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8a1d1ebaae2c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " be the attribute of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " (e.g. “civil”) and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\bar{s}"
+          },
+          {
+            "type": "text",
+            "text": " be the other opposite attribute (e.g. “toxic”). These two attributes are mutually exclusive. The goal is to learn a mapping function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " such that it translates "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " to a new fluent sequence "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " with target attribute "
+          },
+          {
+            "type": "inline_math",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": " while preserving "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": "’s content."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6745495b604c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The encoder-decoder model is trained with the loss:"
+          }
+        ]
+      },
+      {
+        "id": "math-82a792af384e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L} = \\lambda_\\text{DAE} \\mathcal{L}_\\text{DAE} + \\lambda_\\text{cycle} \\mathcal{L}_\\text{cycle}"
+        }
+      },
+      {
+        "id": "list-7f01fdbace2d",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-8ebef8c88fa5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The denoising auto-encoder loss is the loss for denoising auto-encoders, where "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\eta"
+              },
+              {
+                "type": "text",
+                "text": " is a "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#pre-training-tasks"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "masking"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " function same as in BERT training:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-9c1b74d4b256",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{DAE} = \\mathbb{E}_{\\mathbf{x} \\sim \\mathcal{X}} [−\\log p_\\theta(\\mathbf{x} \\mid \\eta(\\mathbf{x}), s)]"
+        }
+      },
+      {
+        "id": "list-0740b9df7372",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-97f7ecc6e083",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The cycle consistency loss ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1703.10593"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zhu et al. 2017"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") has "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tilde{\\theta}"
+              },
+              {
+                "type": "text",
+                "text": " to produce a non-differentiable pseudo-prediction "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\hat{\\mathbf{y}}"
+              },
+              {
+                "type": "text",
+                "text": " and it does not take gradient backpropagation."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-882d0850d191",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}_\\text{cycle} = \\mathbb{E}_{\\mathbf{x} \\sim \\mathcal{X}} [−\\log p_\\theta(\\mathbf{x} \\mid f_{\\tilde{\\theta}}(\\mathbf{x}, \\bar{s}), s)]"
+        }
+      },
+      {
+        "id": "paragraph-05b59fa2743a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They used the above loss to fine-tune a T5 model, resulting in a model named "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "CAE-T5"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The conditioning is implemented like CTRL via control code (“civil” or “toxic”) prepended to the start of a sequence."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-69b0b09c580b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Automatic evaluation of the text style transferred results relies on three metrics:"
+          }
+        ]
+      },
+      {
+        "id": "list-a6e8a511728e",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-192f37af07c4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Accuracy"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Classification accuracy measures how successful the style transfer is."
+              }
+            ]
+          },
+          {
+            "id": "list-item-eafe878c9b9a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Fluency"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Fluency is commonly measured by perplexity by another separately trained LM on non-toxic samples."
+              }
+            ]
+          },
+          {
+            "id": "list-item-05452217b6c0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Content preservation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": It is the content similarity between transferred and original sentences, measured by BLEU or embedding based content similarity."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b51429a34c69",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Human evaluation is also necessary but more costly."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8c573cdefede",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Compared to the baseline ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.09655"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shen et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), the style transfer method by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07685"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Santos et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " achieves better classification accuracy, better content preservation, but worse perplexity. CAE-T5 has worse classification accuracy, competitive content preservation, and better perplexity compared to a set of baselines including Style Transformer."
+          }
+        ]
+      },
+      {
+        "id": "heading-54706d7a6456",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Controllable Generation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c0757e417c71",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can try to avoid toxic outputs via "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "controllable text generation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". There are several popular approaches for steering a pretrained language model toward desired styles, topics or safety criteria:"
+          }
+        ]
+      },
+      {
+        "id": "list-4fab8222082a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-230f592c11b7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Apply guided decoding strategies and select desired outputs at test time."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a2b780cb82d8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Optimize for the most desired outcomes via good prompt design."
+              }
+            ]
+          },
+          {
+            "id": "list-item-95e5f3b0dfcd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Fine-tune the base model or steerable layers to do conditioned content generation."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-80b33464dbc0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Read more in my "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "last post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on controllable neural text generation, introducing methods like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.15980"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "AutoPrompt"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.05858"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "CTRL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1912.02164"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "PPLM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.06367"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GeDi"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and many more."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bf23e31a3cd2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.11462"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gehman et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " experimented with both data-based (supervised fine-tuning, CTRL training) and decoding-based (vocabulary shifting, blocked word filtering, PPLM) methods for language model detoxification. They found that toxicity control tokens (CTRL) and swear word filters are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "less successful"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " than more computationally or data-intensive methods like fine-tuning on non-toxic corpora and PPLM."
+          }
+        ]
+      },
+      {
+        "id": "image-a6b11846e3a2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/RealToxicityPrompts-experiments.png",
+          "alt": "Table list expected maximum toxicity score over 25 generations (left) and the empirical probability of generating toxic text over 25 generations (right) for several detoxification methods. Scores are provided by Perspective API. (Image source: Gehman et al., 2020 )"
+        }
+      },
+      {
+        "id": "heading-d41fe964de63",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "System-level Safety Solution"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4e4028df8757",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.07079"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Xu et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " presented a thorough system-level design for building safe chatbots."
+          }
+        ]
+      },
+      {
+        "id": "image-fb22b85406c5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/safe-chatbot-system.png",
+          "alt": "Illustration of a safe chat bot system. (Image source: Xu et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-319542b61a7d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They consider four general strategies in the recipes for making the bot safer:"
+          }
+        ]
+      },
+      {
+        "id": "list-c047d32c88d4",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-f0e22a8e3dcc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Detect unsafe content"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Adopt a classifier for detecting unsafe language on both the input and output side, as an extra safety layer on top of the language model.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-41252a046f05",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-d540cada4420",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The classifier is trained on an enhanced version of the "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#jigsaw"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Jigsaw toxic"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " comment dataset (safe vs unsafe binary labels), extended with "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#adversarial-attacks"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "adversarial human attacks"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " ("
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/1908.06083"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Dinan et al. 2019"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": ") and "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#semi-supervised-dataset"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "semi-supervision"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " ("
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/1811.12900"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Khatri et al. 2018"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": ")."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-567a8090b179",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The safety classifier can be used on both the user input and the model output. If it detects unsafe content, the system is configured to return a canned, predefined response (e.g “I’m sorry I’m not sure what to say.”), or decide to change topics. It is worthy noting that this approach relies on a high-quality classifier. The conversation experience would be drastically disrupted with too many false positives."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-aa8cbd1caf3b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Bot adversarial dialogue (BAD) safety: The idea is to collect data on humans adversarially probing the system to make mistakes and then use the data for further training. During annotation, human labellers can tag the bot’s response with an unsafe-safe rating based on the percentage of population who may consider it as unsafe. This probing data collection is used to train a multi-turn safety classifier, predicting whether a response is offensive given the dialogue context."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-0d5c626817a6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Safe generation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Train a model that is less likely to output unsafe responses.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-5ac281b4a005",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-bc72dd0ba2ae",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "A predefined list of unsafe words/n-grams can be "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#blacklisting"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "blocked"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " at decoding time."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-15d0ed5d199f",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The pretraining data is filtered by the above safety classifier, or filtered based on known authors."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-78fb6305c45c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The problem with pre-training only with safe datasets is that if the model has never seen toxic language during training, it would not know how to respond at test time (OOD; e.g. may just copy the offensive content). They instead prepare a collection of training samples where the last utterance is labelled as “unsafe” and then attach a safe response following that unsafe attack. Then the model is fine-tuned on the “baked-in” safety data."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-dcc1f5d93f35",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Do "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/1909.05858"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "CTRL"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " style training by assigning “safe” vs “unsafe” label using the safety classifier."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-97fc14df7a54",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Avoid sensitive topics"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ":\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-20c983938a82",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-a2a06cb11cca",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "In order to avoid sensitive topics (politics, religion, drug use, medical advice, and NSFW and relationships/dating), they trained a multi-class classifier to detect those topics using crowdsourced lists of subreddits. The classifier can be periodically re-trained to capture the changes within topics over time."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-23d2043a52a1",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "A small validation set is collected by recruiting crowdsourced workers to discuss one of the target topics."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-af3b2a96ed52",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Gender bias mitigation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ":\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-7ea33ded0d36",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-deabaa31b3d5",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "They used "
+                      },
+                      {
+                        "type": "link",
+                        "attrs": {
+                          "url": "https://arxiv.org/abs/1909.05858"
+                        },
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "CTRL"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " style training to mitigate gender biases."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-eea150485fca",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Precisely, given a gendered word list, tag the training samples with "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "F^0 M^0"
+                      },
+                      {
+                        "type": "text",
+                        "text": ", "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "F^0 M^+"
+                      },
+                      {
+                        "type": "text",
+                        "text": ", "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "F^+ M^+"
+                      },
+                      {
+                        "type": "text",
+                        "text": ", and "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "F^+ M^0"
+                      },
+                      {
+                        "type": "text",
+                        "text": " labels, indicating whether the response contains female / male words ("
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "+"
+                      },
+                      {
+                        "type": "text",
+                        "text": " contains, "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "-"
+                      },
+                      {
+                        "type": "text",
+                        "text": " does not contain). At test time, the system runs with a control label "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "F^0 M^0"
+                      },
+                      {
+                        "type": "text",
+                        "text": " to avoid outputting gender specific words."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-ebf37fca1eab",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Appendix: Datasets"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-3038c25977ac",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(*Only datasets in English are listed here.)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-48a5fec203cf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Hate Speech and Offensive Language"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Dataset (2017): contains about 25k tweets, each labelled manually as one of three categories: hate speech, offensive but not hate speech, or neither offensive nor hate speech. ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/t-davidson/hate-speech-and-offensive-language/blob/master/data/readme.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Download"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-02c4dbf39616",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Jigsaw Toxic"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Comments Classification Dataset (2018): contains about 160k examples extracted from Wikipedia discussion pages, each annotated for 7 classes: toxic, severe toxic, obscene, threat, insult, identity hate and non-toxic. The labelling process involved 5000 crowdsourced annotators. ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Download"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d4e90f6d3a79",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Jigsaw Unintended Bias in Toxicity"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Classification Dataset (2019): contains about 2 Millions comments from the Civil Comments platform, which shut down in 2017. This data is annotated for toxicity, toxicity sub-types, and mentions of identities, which enables evaluation of unintended bias with respect to identity mentions. ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.kaggle.com/c/jigsaw-unintended-bias-in-toxicity-classification"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Download"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-205a6fa021fd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "OLID"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Offensive Language Identification Dataset; 2019): contains 14,100 English tweets, annotated according to the three-level taxonomy as described "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/#categorization-of-toxic-content"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://sites.google.com/site/offensevalsharedtask/olid"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Download"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-06ebe5660800",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "SOLID"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Semi-Supervised Offensive Language Identification Dataset; 2020): contains 9+ Millions tweets annotated following OLID’s three level taxonomy. ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://sites.google.com/site/offensevalsharedtask/solid"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Download"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-eec88960e459",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "RealToxicityPrompts"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " dataset (2020): contains 100k sentence snippets from the web with Perspective API toxicity scores for studying the risk of neural toxic degeneration in language models. ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://allenai.org/data/real-toxicity-prompts"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Download"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-31070dbe68ca",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-3d241ead12af",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Mar 2021). Reducing toxicity in language models. Lil’Log. https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-a67c112315e1",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2021toxic,\n  title   = \"Reducing Toxicity in Language Models.\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2021\",\n  month   = \"Mar\",\n  url     = \"https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-9a99b5a8a3c4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Vidgen, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.aclweb.org/anthology/W19-3509/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Challenges and frontiers in abusive content detection.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Workshop on Abusive Language Online 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8bea6cd469d1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Zampieri et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.09666"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Predicting the type and target of offensive posts in social media.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NAACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-02a906c1dd1d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Vidgen & Deczynski. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.01670"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Directions in abusive language training data, a systematic review: Garbage in, garbage out.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " PLoS ONE 15(12): e0243300 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e015cf2dfda7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Davidson et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.04009"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Automated hate speech detection and the problem of offensive language.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICWSM 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5c0f4b315c1b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Khatri et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1811.12900"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Detecting offensive content in open-domain conversations using two stage semi-supervision.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriIPS CONVAI Workshop 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ae97cb86e1d4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Rosenthal et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.14454"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Large-Scale Semi-Supervised Dataset for Offensive Language Identification”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2004.14454 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f3839349e9d0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Pavlopoulos et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2006.00998"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Toxicity Detection: Does Context Really Matter?”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2006.00998 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c70d37969d8f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Dinan et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.06083"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Build it, break it, fix it for dialogue safety: Robustness from adversarial human attack.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1908.06083 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7967644209db",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Kurita et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1912.06872"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards Robust Toxic Content Classification”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1912.06872 (2019)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dfbf12855ab3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Santos et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07685"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Fighting offensive language on social media with unsupervised text style transfer.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1805.07685 (2018)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-744c37068a86",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Dai et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.05621"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Style Transformer: Unpaired Text Style Transfer without Disentangled Latent Representation”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b602fdb5ba66",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Laugier et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.05456"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Civil Rephrases Of Toxic Texts With Self-Supervised Transformers”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  arXiv:2102.05456 (2021). "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/LeoLaugier/conditional-auto-encoder-text-to-text-transfer-transformer"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b2b51549eb21",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Schick et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.00453"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Self-Diagnosis and Self-Debiasing: A Proposal for Reducing Corpus-Based Bias in NLP”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2103.00453 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c2c8d162eda8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Gehman et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.11462"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“RealToxicityPrompts: Evaluating Neural Toxic Degeneration in Language Models”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " EMNLP 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-04c9e7afb86e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Xu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.07079"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Recipes for Safety in Open-domain Chatbots”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2010.07079 (2020)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "reducing-toxicity-in-language-models",
+    "source_slug": "2021-03-21-lm-toxicity",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 17,
+      "math": 13,
+      "image": 13,
+      "table": 0,
+      "code": 4
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/offensive-taxonomy.png",
+      "alt": "The three-level hierarchical taxonomy for categorizing offensive language, proposed by Zampieri et al. (2019) ."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/TS-bootstrap.png",
+      "alt": "The two-stage bootstrap classifier is trained on a dataset bootstrapped by a weak toxic binary classifier on Reddit data. (Image source: Khatri et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/build-break-fix.png",
+      "alt": "The illustration of iteratively improving a toxic content detection model via the \"build it, break it, fix it\" process. (Image source: Dinan et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/build-break-fix-it-results.png",
+      "alt": "The comparison of performance on standard and adversarial tasks of models trained on standard ($S\\_i$) and adversarial data collection ($A\\_i$). The subscript $i$ indicates the number of training rounds. (Image source: Dinan et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/about-perspective-api.png",
+      "alt": "The overview of Perspective API scores. (Image source: About Perspective API )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/unprompted-toxicity.png",
+      "alt": "Perspective API toxicity scores of unprompted generations. Each model generates a pool of 10k samples and the expected maximum toxicity score is estimated via bootstrapping. (Image source: Gehman et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/self-diagnosis-toxicity-score.png",
+      "alt": "Self-diagnosis abilities for identifying undesired attributes. The ground truth is provided by Perspective API. (Image source: Schick, et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/self-debiasing-decoding.png",
+      "alt": "Self-diasing decoding can reduce the probabilities of undesirable attributes. The scores are provided by Perspective API. (Image source: Schick et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/offensive-text-style-transfer.png",
+      "alt": "The training process of a neural text style transfer algorithm using non-parallel data. (Image source: Santos et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/style-transformer.png",
+      "alt": "The comparison of style transformer and previous models that depend on disentangled latent representation. (Image source: Dai et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/style-transformer-training.png",
+      "alt": "The training process of Style Transformer. (Image source: Dai et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/RealToxicityPrompts-experiments.png",
+      "alt": "Table list expected maximum toxicity score over 25 generations (left) and the empirical probability of generating toxic text over 25 generations (right) for several detoxification methods. Scores are provided by Perspective API. (Image source: Gehman et al., 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2021-03-21-lm-toxicity/safe-chatbot-system.png",
+      "alt": "Illustration of a safe chat bot system. (Image source: Xu et al. 2020 )"
+    }
+  ]
+}

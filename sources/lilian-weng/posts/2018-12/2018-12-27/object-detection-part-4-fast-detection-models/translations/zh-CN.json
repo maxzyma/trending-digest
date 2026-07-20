@@ -1,0 +1,3005 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:743156ccb214f96b42c42e0906aa4d4792ffb1cfafbf78b2e5413921288d1ea7",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "目标检测第四部分：快速检测模型",
+  "segments": {
+    "paragraph-c4eb8a0518c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第三部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中，我们回顾了R-CNN家族的模型。它们都是基于区域的目标检测算法。它们可以实现高精度，但对于自动驾驶等某些应用来说可能太慢。在第四部分中，我们只关注快速目标检测模型，包括SSD、RetinaNet和YOLO家族的模型。"
+        }
+      ]
+    },
+    "paragraph-4832669d769c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本系列所有文章的链接：[[KEEP_NEWLINE]]["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-29-object-recognition-part-1/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第一部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "][[KEEP_NEWLINE]]["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第二部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "][[KEEP_NEWLINE]]["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第三部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "][[KEEP_NEWLINE]]["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第四部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]。"
+        }
+      ]
+    },
+    "heading-e3901bfcaa09": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "两阶段检测器与一阶段检测器"
+        }
+      ]
+    },
+    "paragraph-1774b156345c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "R-CNN家族的模型都是基于区域的。检测分两个阶段进行：(1) 首先，模型通过选择性搜索或区域提议网络提出一组感兴趣区域。由于潜在的边界框候选是无限的，因此提议的区域是稀疏的。(2) 然后分类器只处理区域候选。"
+        }
+      ]
+    },
+    "paragraph-9d38aa6f996c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一种不同的方法是跳过区域提议阶段，直接在可能的密集采样位置上运行检测。这就是一阶段目标检测算法的工作方式。这种方法更快、更简单，但可能会稍微降低性能。"
+        }
+      ]
+    },
+    "paragraph-a1ab8d6c4c4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本文介绍的所有模型都是单阶段检测器。"
+        }
+      ]
+    },
+    "heading-14e8be64e9d5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "YOLO：你只看一次"
+        }
+      ]
+    },
+    "paragraph-48c286636caf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "YOLO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模型（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "“你只看一次”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Redmon 等人，2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是构建快速实时目标检测器的首次尝试。由于YOLO不经过区域提议步骤，并且只对有限数量的边界框进行预测，因此它能够以超快的速度进行推理。"
+        }
+      ]
+    },
+    "heading-73b83ba1accd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "工作流程"
+        }
+      ]
+    },
+    "list-item-b21efa08f923": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "在图像分类任务上预训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "一个CNN网络。\n"
+        }
+      ]
+    },
+    "list-item-1e400b45b884": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n将图像分割成"
+        },
+        {
+          "type": "inline_math",
+          "text": "S \\times S"
+        },
+        {
+          "type": "text",
+          "text": "个单元格。如果一个物体的中心落入某个单元格，那么该单元格就“负责”检测该物体的存在。每个单元格预测 (a) "
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": "个边界框的位置，(b) 一个置信度分数，以及 (c) 在边界框中存在物体的情况下，物体类别的概率。\n\n"
+        }
+      ]
+    },
+    "list-item-27d9c5bad76d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "边界框的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "坐标"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "由一个包含4个值的元组定义，即（中心x坐标，中心y坐标，宽度，高度）— "
+        },
+        {
+          "type": "inline_math",
+          "text": "(x, y, w, h)"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "被设置为单元格位置的偏移量。此外，"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "w"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "h"
+        },
+        {
+          "type": "text",
+          "text": "通过图像的宽度和高度进行归一化，因此它们的值都在(0, 1]之间。"
+        }
+      ]
+    },
+    "list-item-b2d56c976662": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "置信度分数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "表示单元格包含对象的可能性："
+        },
+        {
+          "type": "inline_code",
+          "text": "Pr(containing an object) x IoU(pred, truth)"
+        },
+        {
+          "type": "text",
+          "text": "；其中"
+        },
+        {
+          "type": "inline_code",
+          "text": "Pr"
+        },
+        {
+          "type": "text",
+          "text": " = 概率，"
+        },
+        {
+          "type": "inline_code",
+          "text": "IoU"
+        },
+        {
+          "type": "text",
+          "text": " = 联合下的交集。"
+        }
+      ]
+    },
+    "list-item-ca83caf339f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果单元格包含一个对象，它会预测该对象属于每个类别的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "概率"
+            }
+          ]
+        },
+        {
+          "type": "inline_math",
+          "text": "C_i, i=1, \\dots, K"
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "inline_code",
+          "text": "Pr(the object belongs to the class C_i | containing an object)"
+        },
+        {
+          "type": "text",
+          "text": "。在此阶段，无论边界框的数量如何，模型每个单元格只预测一组类别概率，"
+        },
+        {
+          "type": "inline_math",
+          "text": "B"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-03cb665aee46": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总的来说，一张图像包含"
+        },
+        {
+          "type": "inline_math",
+          "text": "S \\times S \\times B"
+        },
+        {
+          "type": "text",
+          "text": "个边界框，每个框对应4个位置预测、1个置信度分数和K个用于对象分类的条件概率。一张图像的总预测值为"
+        },
+        {
+          "type": "inline_math",
+          "text": "S \\times S \\times (5B + K)"
+        },
+        {
+          "type": "text",
+          "text": "，这是模型最终卷积层的张量形状。"
+        }
+      ]
+    },
+    "list-item-3066cd4e8b5e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "预训练CNN的最后一层被修改，以输出大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "S \\times S \\times (5B + K)"
+        },
+        {
+          "type": "text",
+          "text": "的预测张量。"
+        }
+      ]
+    },
+    "heading-cfbcfc22afbd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "网络架构"
+        }
+      ]
+    },
+    "paragraph-a086d1b82f81": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基础模型类似于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cs.unc.edu/~wliu/papers/GoogLeNet.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "GoogLeNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，其中Inception模块被1x1和3x3卷积层取代。形状为"
+        },
+        {
+          "type": "inline_math",
+          "text": "S \\times S \\times (5B + K)"
+        },
+        {
+          "type": "text",
+          "text": "的最终预测由覆盖整个卷积特征图的两个全连接层生成。"
+        }
+      ]
+    },
+    "heading-0e029b7a5f6b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失函数"
+        }
+      ]
+    },
+    "paragraph-06e341d51406": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失由两部分组成：用于边界框偏移预测的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "定位损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和用于条件类别概率的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "分类损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。两部分都计算为平方误差之和。使用两个尺度参数来控制我们希望增加多少来自边界框坐标预测的损失（"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{coord}"
+        },
+        {
+          "type": "text",
+          "text": "），以及我们希望减少多少针对没有对象的框的置信度分数预测的损失（"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{noobj}"
+        },
+        {
+          "type": "text",
+          "text": "）。降低背景框造成的损失很重要，因为大多数边界框不包含实例。在论文中，模型设置了"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{coord} = 5"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{noobj} = 0.5"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-8c423a4a3b2d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "注意：在原始YOLO论文中，损失函数使用"
+        },
+        {
+          "type": "inline_math",
+          "text": "C_i"
+        },
+        {
+          "type": "text",
+          "text": "而不是"
+        },
+        {
+          "type": "inline_math",
+          "text": "C_{ij}"
+        },
+        {
+          "type": "text",
+          "text": "作为置信度分数。我根据自己的理解进行了修正，因为每个边界框都应该有自己的置信度分数。如果您不同意，请告诉我。非常感谢。"
+        }
+      ]
+    },
+    "paragraph-7a2f554804b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中，"
+        }
+      ]
+    },
+    "list-item-414d94a90869": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}_i^\\text{obj}"
+        },
+        {
+          "type": "text",
+          "text": "：一个指示函数，表示单元格i是否包含对象。"
+        }
+      ]
+    },
+    "list-item-5860ef0e9081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}_{ij}^\\text{obj}"
+        },
+        {
+          "type": "text",
+          "text": "：它指示单元格i的第j个边界框是否“负责”对象预测（参见图3）。"
+        }
+      ]
+    },
+    "list-item-eba0a799b470": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "C_{ij}"
+        },
+        {
+          "type": "text",
+          "text": ": 单元格 i 的置信度分数，"
+        },
+        {
+          "type": "inline_code",
+          "text": "Pr(containing an object) * IoU(pred, truth)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-ba3e3f3f3b63": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\hat{C}_{ij}"
+        },
+        {
+          "type": "text",
+          "text": ": 预测的置信度分数。"
+        }
+      ]
+    },
+    "list-item-2941c0d6693c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{C}"
+        },
+        {
+          "type": "text",
+          "text": ": 所有类别的集合。"
+        }
+      ]
+    },
+    "list-item-f92b8fc97b39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "p_i(c)"
+        },
+        {
+          "type": "text",
+          "text": ": 单元格 i 是否包含 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c \\in \\mathcal{C}"
+        },
+        {
+          "type": "text",
+          "text": " 类对象的条件概率。"
+        }
+      ]
+    },
+    "list-item-a004eddc0f91": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\hat{p}_i(c)"
+        },
+        {
+          "type": "text",
+          "text": ": 预测的条件类别概率。"
+        }
+      ]
+    },
+    "paragraph-e282a6eafb37": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失函数仅在网格单元中存在对象时才惩罚分类错误，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}_i^\\text{obj} = 1"
+        },
+        {
+          "type": "text",
+          "text": "。它也仅在该预测器“负责”真实边界框时才惩罚边界框坐标错误，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}_{ij}^\\text{obj} = 1"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-02dbb105628b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "作为一种单阶段目标检测器，YOLO 速度超快，但由于边界框候选数量有限，它不擅长识别不规则形状的对象或一组小对象。"
+        }
+      ]
+    },
+    "heading-c160d09e59b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SSD：单次多盒检测器"
+        }
+      ]
+    },
+    "paragraph-733422c14d72": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "单次检测器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "SSD"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1512.02325"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Liu et al, 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是首次尝试使用卷积神经网络的金字塔特征层次结构来有效检测各种尺寸对象的方法之一。"
+        }
+      ]
+    },
+    "heading-20ffd15b9d5d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图像金字塔"
+        }
+      ]
+    },
+    "paragraph-a9c7f74b9e6e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SSD 使用在 ImageNet 上预训练的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1409.1556"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "VGG-16"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 模型作为其基础模型，用于提取有用的图像特征。\\n在 VGG16 之上，SSD 添加了几个尺寸递减的卷积特征层。它们可以被视为不同尺度图像的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "金字塔表示"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。直观地说，早期层的大型细粒度特征图擅长捕获小对象，而小型粗粒度特征图可以很好地检测大对象。在 SSD 中，检测发生在每个金字塔层，针对各种尺寸的对象。"
+        }
+      ]
+    },
+    "heading-73b83ba1accd-2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "工作流程"
+        }
+      ]
+    },
+    "paragraph-6475abe46ba7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与YOLO不同，SSD不将图像分割成任意大小的网格，而是预测预定义的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "锚框"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（在论文中这被称为“默认框”）的偏移量，针对特征图的每个位置。每个框都有相对于其对应单元格的固定尺寸和位置。所有锚框以卷积方式平铺整个特征图。"
+        }
+      ]
+    },
+    "paragraph-9306021b9537": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "不同层级的特征图具有不同的感受野大小。不同层级的锚框被重新缩放，使得一个特征图只负责特定尺度的物体。例如，在图 5 中，狗只能在 4x4 特征图（更高层级）中被检测到，而猫则仅由 8x8 特征图（更低层级）捕获。"
+        }
+      ]
+    },
+    "paragraph-6e3be0a95641": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "锚框的宽度、高度和中心位置都被归一化到 (0, 1) 之间。在某个位置"
+        },
+        {
+          "type": "inline_math",
+          "text": "(i, j)"
+        },
+        {
+          "type": "text",
+          "text": "的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": "特征层，其大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "m \\times n"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "i=1,\\dots,n, j=1,\\dots,m"
+        },
+        {
+          "type": "text",
+          "text": "，我们有一个与层级成比例的独特线性尺度，以及 5 种不同的框长宽比（宽度与高度之比），此外，当长宽比为 1 时，还有一个特殊的尺度（为什么需要这个？论文没有解释。也许只是一个启发式技巧）。这使得每个特征单元总共有 6 个锚框。"
+        }
+      ]
+    },
+    "paragraph-e33ea6c73eb3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每个位置，模型输出4个偏移量和"
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": "个类别概率，通过应用一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "3 \\times 3 \\times p"
+        },
+        {
+          "type": "text",
+          "text": "卷积滤波器（其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": "是特征图中的通道数），对于"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个锚框中的每一个。因此，给定一个大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "m \\times n"
+        },
+        {
+          "type": "text",
+          "text": "的特征图，我们需要"
+        },
+        {
+          "type": "inline_math",
+          "text": "kmn(c+4)"
+        },
+        {
+          "type": "text",
+          "text": "个预测滤波器。"
+        }
+      ]
+    },
+    "heading-0e029b7a5f6b-2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失函数"
+        }
+      ]
+    },
+    "paragraph-48c76e881b4d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与 YOLO 相同，损失函数是定位损失和分类损失的总和。"
+        }
+      ]
+    },
+    "paragraph-2c4be8e72479": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{L} = \\frac{1}{N}(\\mathcal{L}_\\text{cls} + \\alpha \\mathcal{L}_\\text{loc})"
+        }
+      ]
+    },
+    "paragraph-127b3b45098c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 是匹配边界框的数量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": " 平衡了两种损失之间的权重，通过交叉验证选择。"
+        }
+      ]
+    },
+    "paragraph-4fb94e988d57": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "定位损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是预测边界框校正与真实值之间的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/rbgirshick/py-faster-rcnn/files/764206/SmoothL1Loss.1.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "平滑L1损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。坐标校正变换与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/#r-cnn"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "R-CNN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/#bounding-box-regression"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "边界框回归"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中所做的相同。"
+        }
+      ]
+    },
+    "paragraph-e6a2402cc789": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}_{ij}^\\text{match}"
+        },
+        {
+          "type": "text",
+          "text": " 表示第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个边界框（坐标为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(p^i_x, p^i_y, p^i_w, p^i_h)"
+        },
+        {
+          "type": "text",
+          "text": "）是否与第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 个真实框（坐标为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(g^j_x, g^j_y, g^j_w, g^j_h)"
+        },
+        {
+          "type": "text",
+          "text": "）匹配，针对任何对象。"
+        },
+        {
+          "type": "inline_math",
+          "text": "d^i_m, m\\in\\{x, y, w, h\\}"
+        },
+        {
+          "type": "text",
+          "text": " 是预测的校正项。有关转换如何工作，请参阅 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/#bounding-box-regression"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-4cff65df0b17": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "分类损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是多类别上的 softmax 损失（在 tensorflow 中为 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.tensorflow.org/api_docs/python/tf/nn/softmax_cross_entropy_with_logits"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "softmax_cross_entropy_with_logits"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）："
+        }
+      ]
+    },
+    "paragraph-1d44506076e2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbb{1}_{ij}^k"
+        },
+        {
+          "type": "text",
+          "text": " 表示第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个边界框和第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 个真实框是否与类别 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 中的一个对象匹配。"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{pos}"
+        },
+        {
+          "type": "text",
+          "text": " 是匹配的边界框集合（总共有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": " 项），"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{neg}"
+        },
+        {
+          "type": "text",
+          "text": " 是负样本集合。SSD 使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/#common-tricks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "难例挖掘"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 来选择容易被错误分类的负样本，以构建这个 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{neg}"
+        },
+        {
+          "type": "text",
+          "text": " 集合：一旦所有锚框按目标置信度分数排序，模型会选择排名靠前的候选框进行训练，以使负样本与正样本的比例至多为 3:1。"
+        }
+      ]
+    },
+    "heading-2f9c831a7b96": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "YOLOv2 / YOLO9000"
+        }
+      ]
+    },
+    "paragraph-191b4aa5d36d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "YOLOv2"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1612.08242"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Redmon & Farhadi, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是 YOLO 的增强版本。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "YOLO9000"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 建立在 YOLOv2 的基础上，但使用结合了 COCO 检测数据集和 ImageNet 中前 9000 个类别的联合数据集进行训练。"
+        }
+      ]
+    },
+    "heading-a21b8552333e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "YOLOv2 改进"
+        }
+      ]
+    },
+    "paragraph-1a3e39ac611d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "应用了多种修改，使 YOLO 预测更准确、更快，包括："
+        }
+      ]
+    },
+    "paragraph-a6c8d62ff180": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "1. 批归一化有帮助"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：将"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "批归一化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "添加到所有卷积层，显著改善了收敛性。"
+        }
+      ]
+    },
+    "paragraph-6df3793b842e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "2. 图像分辨率很重要"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "高分辨率"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "图像对基础模型进行微调，可以提高检测性能。"
+        }
+      ]
+    },
+    "paragraph-4658472f3c89": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "3. 卷积锚框检测"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：YOLOv2 没有使用全连接层在整个特征图上预测边界框位置，而是使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "卷积层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来预测"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "锚框"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的位置，类似于 Faster R-CNN。空间位置和类别概率的预测是解耦的。总的来说，这一改变导致 mAP 略有下降，但召回率有所提高。"
+        }
+      ]
+    },
+    "paragraph-51cbf51eac73": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "4. 边界框尺寸的 K 均值聚类"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 不同于 Faster R-CNN 使用手动选择的锚框尺寸，YOLOv2 在训练数据上运行 K 均值聚类，以找到锚框尺寸的良好先验。距离度量旨在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "依赖于 IoU 分数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ":"
+        }
+      ]
+    },
+    "paragraph-a105d7387dbf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 是一个真实框候选，"
+        },
+        {
+          "type": "inline_math",
+          "text": "c_i"
+        },
+        {
+          "type": "text",
+          "text": " 是其中一个质心。最佳质心数量（锚框）"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 可以通过 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Elbow_method_(clustering)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "肘部法则"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 选择。"
+        }
+      ]
+    },
+    "paragraph-3ccb82949f0c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过聚类生成的锚框在固定数量的框的条件下提供了更好的平均 IoU。"
+        }
+      ]
+    },
+    "paragraph-e0a7e3951341": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "5. 直接位置预测"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": YOLOv2 以一种方式制定了边界框预测，使其"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "不会偏离"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中心位置太远。如果边界框位置预测可以将框放置在图像的任何部分，就像在区域提议网络中那样，模型训练可能会变得不稳定。"
+        }
+      ]
+    },
+    "paragraph-f8b10fde31b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "(p_w, p_h)"
+        },
+        {
+          "type": "text",
+          "text": "的锚框，位于网格单元格，其左上角在"
+        },
+        {
+          "type": "inline_math",
+          "text": "(c_x, c_y)"
+        },
+        {
+          "type": "text",
+          "text": "，模型预测偏移量和尺度，"
+        },
+        {
+          "type": "inline_math",
+          "text": "(t_x, t_y, t_w, t_h)"
+        },
+        {
+          "type": "text",
+          "text": "，以及相应的预测边界框"
+        },
+        {
+          "type": "inline_math",
+          "text": "b"
+        },
+        {
+          "type": "text",
+          "text": "的中心点为"
+        },
+        {
+          "type": "inline_math",
+          "text": "(b_x, b_y)"
+        },
+        {
+          "type": "text",
+          "text": "，大小为"
+        },
+        {
+          "type": "inline_math",
+          "text": "(b_w, b_h)"
+        },
+        {
+          "type": "text",
+          "text": "。置信度分数是sigmoid函数（"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "）的另一个输出"
+        },
+        {
+          "type": "inline_math",
+          "text": "t_o"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-ab5ce7c6924f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "6. 添加细粒度特征"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": YOLOv2 添加了一个直通层，用于将"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "细粒度特征"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "从较早的层带到最终输出层。这个直通层的机制类似于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "ResNet 中的恒等映射"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以从前一层提取更高维度的特征。这使得性能提高了 1%。"
+        }
+      ]
+    },
+    "paragraph-dc47c3960a71": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "7. 多尺度训练"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 为了训练模型使其对不同尺寸的输入图像具有鲁棒性，每10个批次，输入维度的一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "新尺寸"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "会被"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "随机采样"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。由于YOLOv2的卷积层将输入维度下采样32倍，因此新采样的尺寸是32的倍数。"
+        }
+      ]
+    },
+    "paragraph-09dceccc3370": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "8. 轻量级基础模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 为了使预测更快，YOLOv2采用了轻量级基础模型DarkNet-19，它有19个卷积层和5个最大池化层。关键是在3x3卷积层之间插入平均池化层和1x1卷积核。"
+        }
+      ]
+    },
+    "heading-d4bed913a8a0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "YOLO9000: 丰富数据集训练"
+        }
+      ]
+    },
+    "paragraph-8cb092cd8131": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因为在图像上绘制用于目标检测的边界框比为图像进行分类标记要昂贵得多，所以该论文提出了一种将小型目标检测数据集与大型ImageNet结合的方法，以便模型能够接触到更多数量的目标类别。YOLO9000这个名字来源于ImageNet中排名前9000的类别。在联合训练期间，如果输入图像来自分类数据集，它只会反向传播分类损失。"
+        }
+      ]
+    },
+    "paragraph-893e46791c39": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检测数据集的标签数量少得多，且更通用，此外，跨多个数据集的标签通常不是互斥的。例如，ImageNet 有一个标签“波斯猫”，而在 COCO 中，同一张图片会被标记为“猫”。如果没有互斥性，对所有类别应用 softmax 就没有意义。"
+        }
+      ]
+    },
+    "paragraph-1a836b86e8a6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了有效地将 ImageNet 标签（1000 个类别，细粒度）与 COCO/PASCAL（< 100 个类别，粗粒度）合并，YOLO9000 参考 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://wordnet.princeton.edu/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "WordNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 构建了一个分层树结构，使得通用标签更接近根节点，而细粒度类别标签是叶子节点。通过这种方式，“猫”是“波斯猫”的父节点。"
+        }
+      ]
+    },
+    "paragraph-1f50a9ba9b41": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了预测一个类别节点的概率，我们可以沿着从该节点到根节点的路径进行："
+        }
+      ]
+    },
+    "paragraph-075c808a35c7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，"
+        },
+        {
+          "type": "inline_code",
+          "text": "Pr(contain a \"physical object\")"
+        },
+        {
+          "type": "text",
+          "text": " 是置信度分数，在边界框检测管道中单独预测。条件概率预测的路径可以在任何步骤停止，具体取决于哪些标签可用。"
+        }
+      ]
+    },
+    "heading-7301250583c6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RetinaNet"
+        }
+      ]
+    },
+    "paragraph-eb1899483996": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "RetinaNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1708.02002"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lin 等人，2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是一种单阶段密集目标检测器。两个关键的构建块是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "特征化图像金字塔"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "焦点损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的使用。"
+        }
+      ]
+    },
+    "heading-c4f16db1c729": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "焦点损失"
+        }
+      ]
+    },
+    "paragraph-a6dc1d22a179": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标检测模型训练的一个问题是，不包含目标的背景与包含感兴趣目标的前景之间存在极端不平衡。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "焦点损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "旨在为难以分类、容易误分类的样本（即具有噪声纹理的背景或部分目标）分配更高的权重，并降低简单样本（即明显为空的背景）的权重。"
+        }
+      ]
+    },
+    "paragraph-38e5de411f5a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从二元分类的普通交叉熵损失开始，"
+        }
+      ]
+    },
+    "paragraph-30e2b511abfe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "y \\in \\{0, 1\\}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个真实二元标签，表示边界框是否包含一个对象，而 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p \\in [0, 1]"
+        },
+        {
+          "type": "text",
+          "text": " 是对象性的预测概率（又称置信度分数）。"
+        }
+      ]
+    },
+    "paragraph-32158f11d709": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为方便起见，"
+        }
+      ]
+    },
+    "paragraph-fb660ce9b563": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "容易分类的例子，当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_t \\gg 0.5"
+        },
+        {
+          "type": "text",
+          "text": " 很大时，即当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p"
+        },
+        {
+          "type": "text",
+          "text": " 非常接近 0（当 y=0 时）或 1（当 y=1 时），可能会产生非平凡大小的损失。Focal loss 明确地为交叉熵中的每一项添加了一个加权因子 "
+        },
+        {
+          "type": "inline_math",
+          "text": "(1-p_t)^\\gamma, \\gamma \\geq 0"
+        },
+        {
+          "type": "text",
+          "text": "，使得当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p_t"
+        },
+        {
+          "type": "text",
+          "text": " 很大时权重很小，从而降低了容易分类的例子的权重。"
+        }
+      ]
+    },
+    "paragraph-f7eb844463ae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了更好地控制加权函数的形状（参见图 10.），RetinaNet 使用了 focal loss 的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": " 平衡变体，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha=0.25, \\gamma=2"
+        },
+        {
+          "type": "text",
+          "text": " 效果最好。"
+        }
+      ]
+    },
+    "heading-54584870f6e7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "特征化图像金字塔"
+        }
+      ]
+    },
+    "paragraph-d985690ada18": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "特征化图像金字塔"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " （"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1612.03144"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lin 等人，2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是 RetinaNet 的骨干网络。遵循 SSD 中 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/#image-pyramid"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "图像金字塔"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的相同方法，特征化图像金字塔为不同尺度的目标检测提供了基本的视觉组件。"
+        }
+      ]
+    },
+    "paragraph-98850421435d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "特征金字塔网络的核心思想体现在其基本结构中，该结构包含一系列 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "金字塔层级"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，每个层级对应一个网络 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "阶段"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。一个阶段包含多个相同大小的卷积层，并且阶段大小按 2 的因子缩小。我们将第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个阶段的最后一层表示为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_i"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-3f51ebfd383b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "两条路径连接卷积层："
+        }
+      ]
+    },
+    "list-item-b942d00f0d7a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自下而上路径"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是正常的正向计算。"
+        }
+      ]
+    },
+    "list-item-fa63cd16a618": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自上而下路径"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 沿相反方向进行，通过横向连接将粗糙但语义更强的特征图添加回前一个更大尺寸的金字塔层级。\n\n"
+        }
+      ]
+    },
+    "list-item-d256668c11b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "首先，高层特征被空间上粗略地向上采样，使其尺寸增大 2 倍。对于图像上采样，该论文使用了最近邻上采样。虽然有许多 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Image_scaling#Algorithms"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "图像上采样算法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，例如使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.tensorflow.org/api_docs/python/tf/layers/conv2d_transpose"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "反卷积"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，但采用另一种图像缩放方法可能不会改善 RetinaNet 的性能。"
+        }
+      ]
+    },
+    "list-item-281c11f3ad82": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更大的特征图经过一个 1x1 卷积层以减少通道维度。"
+        }
+      ]
+    },
+    "list-item-757d0dc70495": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，这两个特征图通过逐元素相加进行合并。\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n横向连接只发生在阶段的最后一层，表示为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{C_i\\}"
+        },
+        {
+          "type": "text",
+          "text": "，并且该过程持续进行，直到生成最精细（最大）的合并特征图。预测是在每个合并图经过一个 3x3 卷积层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{P_i\\}"
+        },
+        {
+          "type": "text",
+          "text": " 之后进行的。"
+        }
+      ]
+    },
+    "paragraph-33135609c64c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据消融研究，特征化图像金字塔设计的组件重要性排序如下："
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "1x1 横向连接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " > 跨多层检测对象 > 自上而下丰富 > 金字塔表示（与仅检查最精细层相比）。"
+        }
+      ]
+    },
+    "heading-241a917e329a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型架构"
+        }
+      ]
+    },
+    "paragraph-f58764d59a95": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "特征化金字塔构建在 ResNet 架构之上。回想一下，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/TBA"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ResNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 有 5 个卷积块（= 网络阶段 / 金字塔层级）。第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个金字塔层级的最后一层 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_i"
+        },
+        {
+          "type": "text",
+          "text": " 的分辨率比原始输入维度低 "
+        },
+        {
+          "type": "inline_math",
+          "text": "2^i"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-410694f7eb5b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RetinaNet 利用特征金字塔层级 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_3"
+        },
+        {
+          "type": "text",
+          "text": " 到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_7"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "list-item-9300e2400d0f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "P_3"
+        },
+        {
+          "type": "text",
+          "text": " 到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_5"
+        },
+        {
+          "type": "text",
+          "text": " 是从 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_3"
+        },
+        {
+          "type": "text",
+          "text": " 到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_5"
+        },
+        {
+          "type": "text",
+          "text": " 对应的 ResNet 残差阶段计算得出的。它们通过自上而下和自下而上两条路径连接。"
+        }
+      ]
+    },
+    "list-item-2317721f93ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "P_6"
+        },
+        {
+          "type": "text",
+          "text": " 是通过在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "C_5"
+        },
+        {
+          "type": "text",
+          "text": " 之上进行 3×3 步长为 2 的卷积获得的"
+        }
+      ]
+    },
+    "list-item-58485e3519a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "P_7"
+        },
+        {
+          "type": "text",
+          "text": " 在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_6"
+        },
+        {
+          "type": "text",
+          "text": " 上应用 ReLU 和一个 3×3 步长为 2 的卷积。"
+        }
+      ]
+    },
+    "paragraph-76f364fced1d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 ResNet 上添加更高的金字塔层级可以提高检测大型对象的性能。"
+        }
+      ]
+    },
+    "paragraph-a81d20256728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与 SSD 中一样，检测发生在所有金字塔层级，通过对每个合并的特征图进行预测。由于预测共享相同的分类器和边界框回归器，它们都被形成为具有相同的通道维度 d=256。"
+        }
+      ]
+    },
+    "paragraph-fbaf428c8d19": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个层级有 A=9 个锚框："
+        }
+      ]
+    },
+    "list-item-e2a5573011ec": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基本尺寸对应于"
+        },
+        {
+          "type": "inline_math",
+          "text": "32^2"
+        },
+        {
+          "type": "text",
+          "text": "到"
+        },
+        {
+          "type": "inline_math",
+          "text": "512^2"
+        },
+        {
+          "type": "text",
+          "text": "像素的区域，分别在"
+        },
+        {
+          "type": "inline_math",
+          "text": "P_3"
+        },
+        {
+          "type": "text",
+          "text": "到"
+        },
+        {
+          "type": "inline_math",
+          "text": "P_7"
+        },
+        {
+          "type": "text",
+          "text": "上。有三种尺寸比例，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{2^0, 2^{1/3}, 2^{2/3}\\}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-080024b9c634": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于每种尺寸，有三种长宽比 {1/2, 1, 2}。"
+        }
+      ]
+    },
+    "paragraph-1d05b1c0356c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "像往常一样，对于每个锚框，模型在分类子网中为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": " 个类别中的每个类别输出一个类别概率，并在框回归子网中回归从该锚框到最近的真实目标之间的偏移量。分类子网采用上面介绍的焦点损失。"
+        }
+      ]
+    },
+    "heading-a7ca2e89ffdb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "YOLOv3"
+        }
+      ]
+    },
+    "paragraph-28806a377d96": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pjreddie.com/media/files/papers/YOLOv3.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "YOLOv3"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是通过在 YOLOv2 上应用一系列设计技巧创建的。这些改变受到了目标检测领域最新进展的启发。"
+        }
+      ]
+    },
+    "paragraph-8f3f71ebc9cc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下是更改列表："
+        }
+      ]
+    },
+    "paragraph-5ce183990035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "1. 置信度分数的逻辑回归"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": YOLOv3 为每个边界框预测一个置信度分数，使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逻辑回归"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，而 YOLO 和 YOLOv2 使用平方误差和作为分类项（参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/#loss-function"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "损失函数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "以上）。偏移预测的线性回归导致 mAP 下降。"
+        }
+      ]
+    },
+    "paragraph-d473d5c50e02": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "2. 不再使用 Softmax 进行类别预测"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 在预测类别置信度时，YOLOv3 为每个类别使用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多个独立的逻辑分类器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，而不是一个 softmax 层。这非常有用，特别是考虑到一张图像可能具有多个标签，并且并非所有标签都保证是互斥的。"
+        }
+      ]
+    },
+    "paragraph-6e898b7e6c3b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "3. Darknet + ResNet 作为基础模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 新的 Darknet-53 仍然依赖于连续的 3x3 和 1x1 卷积层，就像原始的 Darknet 架构一样，但增加了残差块。"
+        }
+      ]
+    },
+    "paragraph-e9f13bbae81f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "4. 多尺度预测"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 受图像金字塔的启发，YOLOv3 在基础特征提取模型之后添加了几个卷积层，并在这些卷积层中以三种不同的尺度进行预测。通过这种方式，它必须处理更多各种尺寸的边界框候选。"
+        }
+      ]
+    },
+    "paragraph-9e9d85b2fd22": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "5. 跳层连接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": YOLOv3 还在两个预测层（输出层除外）和更早的细粒度特征图之间添加了跨层连接。模型首先对粗糙特征图进行上采样，然后通过拼接将其与之前的特征合并。与细粒度信息的结合使其在检测小物体方面表现更好。"
+        }
+      ]
+    },
+    "paragraph-813b1711f458": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有趣的是，focal loss 对 YOLOv3 没有帮助，这可能是由于使用了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{noobj}"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda_\\text{coord}"
+        },
+        {
+          "type": "text",
+          "text": " —— 它们增加了边界框位置预测的损失，并减少了背景框置信度预测的损失。"
+        }
+      ]
+    },
+    "paragraph-f36372495f4b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总的来说，YOLOv3 的性能优于 SSD 且速度更快，但不如 RetinaNet，不过速度快了 3.8 倍。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用来源："
+        }
+      ]
+    },
+    "heading-1e128c52c168": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-2b1177dc4778": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Joseph Redmon, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“You only look once: Unified, real-time object detection.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2016."
+        }
+      ]
+    },
+    "paragraph-35467ddac355": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Joseph Redmon and Ali Farhadi. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://openaccess.thecvf.com/content_cvpr_2017/papers/Redmon_YOLO9000_Better_Faster_CVPR_2017_paper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“YOLO9000: Better, Faster, Stronger.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2017."
+        }
+      ]
+    },
+    "paragraph-b94945c18e50": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Joseph Redmon, Ali Farhadi. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pjreddie.com/media/files/papers/YOLOv3.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“YOLOv3: An incremental improvement.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    "paragraph-190010e4cb33": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Wei Liu et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1512.02325"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“SSD: Single Shot MultiBox Detector.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ECCV 2016."
+        }
+      ]
+    },
+    "paragraph-4c8763b9bf54": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Tsung-Yi Lin, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1612.03144"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Feature Pyramid Networks for Object Detection.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " CVPR 2017."
+        }
+      ]
+    },
+    "paragraph-0971b661ec36": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Tsung-Yi Lin, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1708.02002"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Focal Loss for Dense Object Detection.”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IEEE transactions on pattern analysis and machine intelligence, 2018."
+        }
+      ]
+    },
+    "paragraph-ebc17c6ed9f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://towardsdatascience.com/yolo-v3-object-detection-53fb7d3bfe6b"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“What’s new in YOLO v3?”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " by Ayoosh Kathuria on “Towards Data Science”, Apr 23, 2018."
+        }
+      ]
+    }
+  }
+}

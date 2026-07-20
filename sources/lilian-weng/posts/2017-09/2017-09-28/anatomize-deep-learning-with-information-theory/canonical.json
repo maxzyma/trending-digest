@@ -1,0 +1,1568 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2017-09-28-information-bottleneck",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2017-09-28T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:9dd1a65b287301bd8b28533979989152805d6e0aa1f7178559313b93d7011961",
+    "fetched_at": "2026-07-14T02:04:52.270052+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Anatomize Deep Learning with Information Theory",
+    "title_en": "Anatomize Deep Learning with Information Theory",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-6eb4a24a1eeb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Professor Naftali Tishby passed away in 2021. Hope the post can introduce his cool idea of information bottleneck to more people."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-eee2743c7b9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Recently I watched the talk "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://youtu.be/bLqJHjXihK8"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Information Theory in Deep Learning”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Prof Naftali Tishby and found it very interesting. He presented how to apply the information theory to study the growth and transformation of deep neural networks during training. Using the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/physics/0004057.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Information Bottleneck (IB)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " method, he proposed a new learning bound for deep neural networks (DNN), as the traditional learning theory fails due to the exponentially large number of parameters. Another keen observation is that DNN training involves two distinct phases: First, the network is trained to fully represent the input data and minimize the generalization error; then, it learns to forget the irrelevant details by compressing the representation of the input."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d54b26bf6b9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Most of the materials in this post are from Prof Tishby’s talk and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/#references"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "related papers"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-a9fdc5507973",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Basic Concepts"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c514ac55c05f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Markov_chain"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Markov Chain"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d25cdc76b90c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A Markov process is a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://mathworld.wolfram.com/Memoryless.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“memoryless”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (also called “Markov Property”) stochastic process. A Markov chain is a type of Markov process containing multiple discrete states. That is being said, the conditional probability of future states of the process is only determined by the current state and does not depend on the past states."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-16797dfc92aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kullback–Leibler (KL) Divergence"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6dc5ff7ae375",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "KL divergence measures how one probability distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": " diverges from a second expected probability distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "q"
+          },
+          {
+            "type": "text",
+            "text": ". It is asymmetric."
+          }
+        ]
+      },
+      {
+        "id": "math-ae39ba4b318f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nD_{KL}(p \\| q) &= \\sum_x p(x) \\log \\frac{p(x)}{q(x)} \\\\\n &= - \\sum_x p(x)\\log q(x) + \\sum_x p(x)\\log p(x) \\\\\n &= H(P, Q) - H(P)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-1b8363272f2d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "D_{KL}"
+          },
+          {
+            "type": "text",
+            "text": " achieves the minimum zero when "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(x)"
+          },
+          {
+            "type": "text",
+            "text": " == "
+          },
+          {
+            "type": "inline_math",
+            "text": "q(x)"
+          },
+          {
+            "type": "text",
+            "text": " everywhere."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ef595e9abbf6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Mutual_information"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Mutual Information"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-773d297dca19",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mutual information measures the mutual dependence between two variables. It quantifies the “amount of information” obtained about one random variable through the other random variable. Mutual information is symmetric."
+          }
+        ]
+      },
+      {
+        "id": "math-3ede924e4bfd",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nI(X;Y) &= D_{KL}[p(x,y) \\| p(x)p(y)] \\\\\n &= \\sum_{x \\in X, y \\in Y} p(x, y) \\log(\\frac{p(x, y)}{p(x)p(y)}) \\\\\n &= \\sum_{x \\in X, y \\in Y} p(x, y) \\log(\\frac{p(x|y)}{p(x)}) \\\\ \n &= H(X) - H(X|Y) \\\\\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-d8c5ab8d6d36",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Data_processing_inequality"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Data Processing Inequality (DPI)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e9cb6edbc2ca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For any markov chain: "
+          },
+          {
+            "type": "inline_math",
+            "text": "X \\to Y \\to Z"
+          },
+          {
+            "type": "text",
+            "text": ", we would have "
+          },
+          {
+            "type": "inline_math",
+            "text": "I(X; Y) \\geq I(X; Z)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-942dd7b38ffb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A deep neural network can be viewed as a Markov chain, and thus when we are moving down the layers of a DNN, the mutual information between the layer and the input can only decrease."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-38d451ac3cf8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Parametrization#Parametrization_invariance"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reparametrization invariance"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-484e3e940a3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For two invertible functions "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\psi"
+          },
+          {
+            "type": "text",
+            "text": ", the mutual information still holds: "
+          },
+          {
+            "type": "inline_math",
+            "text": "I(X; Y) = I(\\phi(X); \\psi(Y))"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d5b0b8f3d85a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, if we shuffle the weights in one layer of DNN, it would not affect the mutual information between this layer and another."
+          }
+        ]
+      },
+      {
+        "id": "heading-0147c74c0583",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep Neural Networks as Markov Chains"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c251a59e9d1a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training data contains sampled observations from the joint distribution of "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y"
+          },
+          {
+            "type": "text",
+            "text": ". The input variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": " and weights of hidden layers are all high-dimensional random variable. The ground truth target "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y"
+          },
+          {
+            "type": "text",
+            "text": " and the predicted value "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{Y}"
+          },
+          {
+            "type": "text",
+            "text": " are random variables of smaller dimensions in the classification settings."
+          }
+        ]
+      },
+      {
+        "id": "image-e3b6232a01a5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-dnn-structure.png",
+          "alt": "The structure of a deep neural network, which consists of the target label $Y$, input layer $X$, hidden layers $h\\_1, \\dots, h\\_m$ and the final prediction $\\hat{Y}$. (Image source: Tishby and Zaslavsky, 2015 )"
+        }
+      },
+      {
+        "id": "paragraph-1d27d9ac22f2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we label the hidden layers of a DNN as "
+          },
+          {
+            "type": "inline_math",
+            "text": "h_1, h_2, \\dots, h_m"
+          },
+          {
+            "type": "text",
+            "text": " as in Fig. 1, we can view each layer as one state of a Markov Chain: "
+          },
+          {
+            "type": "inline_math",
+            "text": " h_i \\to h_{i+1}"
+          },
+          {
+            "type": "text",
+            "text": ". According to DPI, we would have:"
+          }
+        ]
+      },
+      {
+        "id": "math-0c2f95e45040",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nH(X) \\geq I(X; h_1) \\geq I(X; h_2) \\geq \\dots \\geq I(X; h_m) \\geq I(X; \\hat{Y}) \\\\\nI(X; Y) \\geq I(h_1; Y) \\geq I(h_2; Y) \\geq \\dots \\geq I(h_m; Y) \\geq I(\\hat{Y}; Y)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-899f4056b2f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A DNN is designed to learn how to describe "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": " to predict "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y"
+          },
+          {
+            "type": "text",
+            "text": " and eventually, to compress "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": " to only hold the information related to "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y"
+          },
+          {
+            "type": "text",
+            "text": ". Tishby describes this processing as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“successive refinement of relevant information”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-8e5ae4f6b874",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Information Plane Theorem"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a3aba0d95e33",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A DNN has successive internal representations of "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": ", a set of hidden layers "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{T_i\\}"
+          },
+          {
+            "type": "text",
+            "text": ". The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "information plane"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " theorem characterizes each layer by its encoder and decoder information. The encoder is a representation of the input data "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": ", while the decoder translates the information in the current layer to the target ouput "
+          },
+          {
+            "type": "inline_math",
+            "text": "Y"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-174c58dbd7e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Precisely, in an information plane plot:"
+          }
+        ]
+      },
+      {
+        "id": "list-6783de1273cc",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-72fb42afab6f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "X-axis"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The sample complexity of "
+              },
+              {
+                "type": "inline_math",
+                "text": "T_i"
+              },
+              {
+                "type": "text",
+                "text": " is determined by the encoder mutual information "
+              },
+              {
+                "type": "inline_math",
+                "text": "I(X; T_i)"
+              },
+              {
+                "type": "text",
+                "text": ". Sample complexity refers to how many samples you need to achieve certain accuracy and generalization."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e2386cd4dda3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Y-axis"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The accuracy (generalization error) is determined by the decoder mutual information "
+              },
+              {
+                "type": "inline_math",
+                "text": "I(T_i; Y)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-a8346e118a98",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-information-plane.png",
+          "alt": "The encoder vs decoder mutual information of DNN hidden layers of 50 experiments. Different layers are color-coders, with green being the layer right next to the input and the orange being the furthest. There are three snapshots, at the initial epoch, 400 epochs and 9000 epochs respectively. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-f3554242ae39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each dot in marks the encoder/ decoder mutual information of one hidden layer of one network simulation (no regularization is applied; no weights decay, no dropout, etc.). They move up as expected because the knowledge about the true labels is increasing (accuracy increases). At the early stage, the hidden layers learn a lot about the input "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": ", but later they start to compress to forget some information about the input. Tishby believes that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“the most important part of learning is actually forgetting”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Check out this "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://youtu.be/P1A1yNsxMjc"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "nice video"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " that demonstrates how the mutual information measures of layers are changing in epoch time."
+          }
+        ]
+      },
+      {
+        "id": "image-95e42a7f44e4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-information-plane-merged.png",
+          "alt": "Here is an aggregated view of Fig 2. The compression happens after the generalization error becomes very small. (Image source: Tishby’ talk 15:15 )"
+        }
+      },
+      {
+        "id": "heading-341e10add2ed",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two Optimization Phases"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-033209a04bf5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Tracking the normalized mean and standard deviation of each layer’s weights in time also reveals two optimization phases of the training process."
+          }
+        ]
+      },
+      {
+        "id": "image-6eb7c6dc58e6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-mean-variation.png",
+          "alt": "The norm of mean and standard deviation of each layer's weight gradients for each layer as a function of training epochs. Different layers are color-coded. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-470c4f710b17",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Among early epochs, the mean values are three magnitudes larger than the standard deviations. After a sufficient number of epochs, the error saturates and the standard deviations become much noisier afterward. The further a layer is away from the output, the noisier it gets, because the noises can get amplified and accumulated through the back-prop process (not due to the width of the layer)."
+          }
+        ]
+      },
+      {
+        "id": "heading-e85fddd26c9b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Learning Theory"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-bce87525c46d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "“Old” Generalization Bounds"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4bd2ab4ae64a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The generalization bounds defined by the classic learning theory is:"
+          }
+        ]
+      },
+      {
+        "id": "math-64123de6e07c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\epsilon^2 < \\frac{\\log|H_\\epsilon| + \\log{1/\\delta}}{2m}"
+        }
+      },
+      {
+        "id": "list-e3558d4472aa",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-607fd61fa594",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\epsilon"
+              },
+              {
+                "type": "text",
+                "text": ": The difference between the training error and the generalization error. The generalization error measures how accurate the prediction of an algorithm is for previously unseen data."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b026663e5827",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "H_\\epsilon"
+              },
+              {
+                "type": "text",
+                "text": ": "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\epsilon"
+              },
+              {
+                "type": "text",
+                "text": "-cover of the hypothesis class. Typically we assume the size "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\vert H_\\epsilon \\vert \\sim (1/\\epsilon)^d"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6344f2eaf4ee",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\delta"
+              },
+              {
+                "type": "text",
+                "text": ": Confidence."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c1b8baa5709f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "m"
+              },
+              {
+                "type": "text",
+                "text": ": The number of training samples."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8be91b15e76a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "d"
+              },
+              {
+                "type": "text",
+                "text": ": The VC dimension of the hypothesis."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-75c7ce833ae4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This definition states that the difference between the training error and the generalization error is bounded by a function of the hypothesis space size and the dataset size. The bigger the hypothesis space gets, the bigger the generalization error becomes. I recommend this tutorial on ML theory, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://mostafa-samir.github.io/ml-theory-pt1/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "part1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://mostafa-samir.github.io/ml-theory-pt2/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "part2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", if you are interested in reading more on generalization bounds."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0778edbca867",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, it does not work for deep learning. The larger a network is, the more parameters it needs to learn. With this generalization bounds, larger networks (larger "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": ") would have worse bounds. This is contrary to the intuition that larger networks are able to achieve better performance with higher expressivity."
+          }
+        ]
+      },
+      {
+        "id": "heading-b5f158997d9e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "“New” Input compression bound"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-72e5552e9b65",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To solve this counterintuitive observation, Tishby et al. proposed a new input compression bound for DNN."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-603f52f170b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First let us have "
+          },
+          {
+            "type": "inline_math",
+            "text": "T_\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": " as an "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": "-partition of the input variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": ". This partition compresses the input with respect to the homogeneity to the labels into small cells. The cells in total can cover the whole input space. If the prediction outputs binary values, we can replace the cardinality of the hypothesis, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\vert H_\\epsilon \\vert"
+          },
+          {
+            "type": "text",
+            "text": ", with "
+          },
+          {
+            "type": "inline_math",
+            "text": "2^{\\vert T_\\epsilon \\vert}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-03b56adfecea",
+        "type": "math",
+        "attrs": {
+          "latex": "|H_\\epsilon| \\sim 2^{|X|} \\to 2^{|T_\\epsilon|}"
+        }
+      },
+      {
+        "id": "paragraph-ee587589d966",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": " is large, the size of "
+          },
+          {
+            "type": "inline_math",
+            "text": "X"
+          },
+          {
+            "type": "text",
+            "text": " is approximately "
+          },
+          {
+            "type": "inline_math",
+            "text": "2^{H(X)}"
+          },
+          {
+            "type": "text",
+            "text": ". Each cell in the "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": "-partition is of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "2^{H(X \\vert T_\\epsilon)}"
+          },
+          {
+            "type": "text",
+            "text": ". Therefore we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\vert T_\\epsilon \\vert \\sim \\frac{2^{H(X)}}{2^{H(X \\vert T_\\epsilon)}} = 2^{I(T_\\epsilon; X)}"
+          },
+          {
+            "type": "text",
+            "text": ". Then the input compression bound becomes:"
+          }
+        ]
+      },
+      {
+        "id": "math-0c9cfe98521d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\epsilon^2 < \\frac{2^{I(T_\\epsilon; X)} + \\log{1/\\delta}}{2m}"
+        }
+      },
+      {
+        "id": "image-01fbcd2932af",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-bound.png",
+          "alt": "The black line is the optimal achievable information bottleneck (IB) limit. The red line corresponds to the upper bound on the out-of-sample IB distortion, when trained on a finite sample set. $\\Delta C$ is the complexity gap and $\\Delta G$ is the generalization gap. (Recreated based on Tishby’ talk 24:50 )"
+        }
+      },
+      {
+        "id": "heading-0058a92cb05c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Network Size and Training Data Size"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-baa6473467f7",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Benefit of More Hidden Layers"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e05fd434f24a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Having more layers give us computational benefits and speed up the training process for good generalization."
+          }
+        ]
+      },
+      {
+        "id": "image-15a9fc785a92",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-layers.png",
+          "alt": "The optimization time is much shorter (fewer epochs) with more hidden layers. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-883d961b7a16",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Compression through stochastic relaxation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": According to the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Fokker%E2%80%93Planck_equation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "diffusion equation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the relaxation time of layer "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " is proportional to the exponential of this layer’s compression amount "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta S_k"
+          },
+          {
+            "type": "text",
+            "text": ": "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta t_k \\sim \\exp(\\Delta S_k)"
+          },
+          {
+            "type": "text",
+            "text": ". We can compute the layer compression as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta S_k = I(X; T_k) - I(X; T_{k-1})"
+          },
+          {
+            "type": "text",
+            "text": ".  Because "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\exp(\\sum_k \\Delta S_k) \\geq \\sum_k \\exp(\\Delta S_k)"
+          },
+          {
+            "type": "text",
+            "text": ", we would expect an exponential decrease in training epochs with more hidden layers (larger "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "heading-5250a054d8ad",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Benefit of More Training Samples"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-08735b99576e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fitting more training data requires more information captured by the hidden layers. With increased training data size, the decoder mutual information (recall that this is directly related to the generalization error), "
+          },
+          {
+            "type": "inline_math",
+            "text": "I(T; Y)"
+          },
+          {
+            "type": "text",
+            "text": ", is pushed up and gets closer to the theoretical information bottleneck bound. Tishby emphasized that It is the mutual information, not the layer size or the VC dimension, that determines generalization, different from standard theories."
+          }
+        ]
+      },
+      {
+        "id": "image-518661758af6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-training-size.png",
+          "alt": "The training data of different sizes is color-coded. The information plane of multiple converged networks are plotted. More training data leads to better generalization. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-12fe5576c804",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2017infotheory,\n  title   = \"Anatomize Deep Learning with Information Theory\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2017\",\n  url     = \"https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-ca6f2b19ed1b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Naftali Tishby. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://youtu.be/bLqJHjXihK8"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Information Theory of Deep Learning"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9f707a922b4d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://mostafa-samir.github.io/ml-theory-pt1/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Machine Learning Theory - Part 1: Introduction"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d728957a1cbf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://mostafa-samir.github.io/ml-theory-pt2/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Machine Learning Theory - Part 2: Generalization Bounds"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bcb57183b63c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.quantamagazine.org/new-theory-cracks-open-the-black-box-of-deep-learning-20170921/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "New Theory Cracks Open the Black Box of Deep Learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Quanta Magazine."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-31682d90e218",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Naftali Tishby and Noga Zaslavsky. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1503.02406.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Deep learning and the information bottleneck principle.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " IEEE Information Theory Workshop (ITW), 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ce3b939bd8d4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Ravid Shwartz-Ziv and Naftali Tishby. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1703.00810.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Opening the Black Box of Deep Neural Networks via Information.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1703.00810, 2017."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "anatomize-deep-learning-with-information-theory",
+    "source_slug": "2017-09-28-information-bottleneck",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 11,
+      "math": 6,
+      "image": 7,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-dnn-structure.png",
+      "alt": "The structure of a deep neural network, which consists of the target label $Y$, input layer $X$, hidden layers $h\\_1, \\dots, h\\_m$ and the final prediction $\\hat{Y}$. (Image source: Tishby and Zaslavsky, 2015 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-information-plane.png",
+      "alt": "The encoder vs decoder mutual information of DNN hidden layers of 50 experiments. Different layers are color-coders, with green being the layer right next to the input and the orange being the furthest. There are three snapshots, at the initial epoch, 400 epochs and 9000 epochs respectively. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-information-plane-merged.png",
+      "alt": "Here is an aggregated view of Fig 2. The compression happens after the generalization error becomes very small. (Image source: Tishby’ talk 15:15 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-mean-variation.png",
+      "alt": "The norm of mean and standard deviation of each layer's weight gradients for each layer as a function of training epochs. Different layers are color-coded. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-bound.png",
+      "alt": "The black line is the optimal achievable information bottleneck (IB) limit. The red line corresponds to the upper bound on the out-of-sample IB distortion, when trained on a finite sample set. $\\Delta C$ is the complexity gap and $\\Delta G$ is the generalization gap. (Recreated based on Tishby’ talk 24:50 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-layers.png",
+      "alt": "The optimization time is much shorter (fewer epochs) with more hidden layers. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/ib-training-size.png",
+      "alt": "The training data of different sizes is color-coded. The information plane of multiple converged networks are plotted. More training data leads to better generalization. (Image source: Shwartz-Ziv and Tishby, 2017 )"
+    }
+  ]
+}

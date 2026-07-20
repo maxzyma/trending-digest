@@ -1,0 +1,3754 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:a55392675efe747a0f0650e831da7b2647df67940612b47269febfbf9c016b91",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "元强化学习",
+  "segments": {
+    "paragraph-e7da5fb1ae02": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我之前关于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "元学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的帖子中，该问题主要是在少样本分类的背景下定义的。在这里，我想更深入地探讨当我们尝试通过开发一个能够快速高效地解决未见任务的智能体来“元学习”"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "强化学习（RL）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "任务的情况。"
+        }
+      ]
+    },
+    "paragraph-9b5f7e7e514b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "回顾一下，一个好的元学习模型有望泛化到训练期间从未遇到过的新任务或新环境。适应过程，本质上是一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "小型学习会话"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，在测试时发生，对新配置的接触有限。即使没有任何显式微调（没有对可训练变量进行梯度反向传播），元学习模型也能自主调整内部隐藏状态以进行学习。"
+        }
+      ]
+    },
+    "paragraph-96f8d9efc6b3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练强化学习算法有时可能非常困难。如果元学习智能体能够变得如此智能，以至于可解决的未见任务的分布变得极其广泛，那么我们正朝着"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://incompleteideas.net/IncIdeas/BitterLesson.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "通用方法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "迈进——本质上是构建一个“大脑”，它可以在没有太多人为干预或手动特征工程的情况下解决各种强化学习问题。听起来很棒，对吧？💖"
+        }
+      ]
+    },
+    "heading-6dc3f0bad30a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元强化学习的起源"
+        }
+      ]
+    },
+    "heading-42f47277a06e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "回到2001年"
+        }
+      ]
+    },
+    "paragraph-5e589b424ce3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我偶然发现了一篇2001年由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://snowedin.net/tmp/Hochreiter2001.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Hochreiter et al."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在阅读"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1611.05763.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "时。尽管这个想法是为监督学习提出的，但它与当前元强化学习的方法有许多相似之处。"
+        }
+      ]
+    },
+    "paragraph-8bd7c54e38c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Hochreiter 的元学习模型是一个带有 LSTM 单元的循环网络。LSTM 是一个很好的选择，因为它能够内化输入历史并通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Backpropagation_through_time"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "BPTT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。训练数据包含"
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": "个序列，每个序列由"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "个样本组成，这些样本由目标函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "f_k(.), k=1, \\dots, K"
+        },
+        {
+          "type": "text",
+          "text": "生成，"
+        }
+      ]
+    },
+    "paragraph-8ecf6afcd06f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "值得注意的是，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "最后一个标签"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{y}^k_{i-1}"
+        },
+        {
+          "type": "text",
+          "text": " 也作为一个辅助输入提供，以便函数可以学习所呈现的映射。"
+        }
+      ]
+    },
+    "paragraph-a835ece6921c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在解码二维二次函数的实验中，"
+        },
+        {
+          "type": "inline_math",
+          "text": "a x_1^2 + b x_2^2 + c x_1 x_2 + d x_1 + e x_2 + f"
+        },
+        {
+          "type": "text",
+          "text": "，其系数"
+        },
+        {
+          "type": "inline_math",
+          "text": "a"
+        },
+        {
+          "type": "text",
+          "text": "-"
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": "从[-1, 1]中随机采样，这个元学习系统在只看到大约35个示例后就能够近似该函数。"
+        }
+      ]
+    },
+    "heading-14048c564f12": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "2016年的提案"
+        }
+      ]
+    },
+    "paragraph-c32a125f349e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在深度学习的现代，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.05763"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang 等人"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (2016) 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.02779"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Duan 等人"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (2017) 同时提出了非常相似的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "元强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（Meta-RL）思想（在第二篇论文中被称为"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "RL^2"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。元强化学习模型在MDPs的分布上进行训练，在测试时，它能够快速学习解决新任务。元强化学习的目标是雄心勃勃的，它向通用算法又迈进了一步。"
+        }
+      ]
+    },
+    "heading-dd4e550e812f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定义元强化学习"
+        }
+      ]
+    },
+    "paragraph-f9773c0c5604": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "元强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，简而言之，就是在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "领域进行"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "元学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。通常，训练和测试任务不同，但都来自同一类问题；例如，论文中的实验包括具有不同奖励概率的多臂老虎机、具有不同布局的迷宫、模拟器中具有不同物理参数的相同机器人等等。"
+        }
+      ]
+    },
+    "heading-672afba9e8e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "公式化"
+        }
+      ]
+    },
+    "paragraph-5174926cc6e3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们有一个任务分布，每个任务都公式化为一个"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#markov-decision-processes"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MDP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（马尔可夫决策过程），"
+        },
+        {
+          "type": "inline_math",
+          "text": "M_i \\in \\mathcal{M}"
+        },
+        {
+          "type": "text",
+          "text": "。一个MDP由一个四元组决定，"
+        },
+        {
+          "type": "inline_math",
+          "text": "M_i= \\langle \\mathcal{S}, \\mathcal{A}, P_i, R_i \\rangle"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "table-f0ead91b5a16": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "符号",
+          "含义"
+        ],
+        "rows": [
+          [
+            "$\\mathcal{S}$",
+            "一组状态。"
+          ],
+          [
+            "$\\mathcal{A}$",
+            "一组动作。"
+          ],
+          [
+            "$P_i: \\mathcal{S} \\times \\mathcal{A} \\times \\mathcal{S} \\to \\mathbb{R}_{+}$",
+            "转移概率函数。"
+          ],
+          [
+            "$R_i: \\mathcal{S} \\times \\mathcal{A} \\to \\mathbb{R}$",
+            "奖励函数。"
+          ]
+        ]
+      }
+    },
+    "paragraph-5acd81dc30da": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(RL^2 论文增加了一个额外的参数，horizon "
+        },
+        {
+          "type": "inline_math",
+          "text": "T"
+        },
+        {
+          "type": "text",
+          "text": "，到 MDP 元组中，以强调每个 MDP 都应该有一个有限的 horizon。）"
+        }
+      ]
+    },
+    "paragraph-410ac1467748": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，上面使用了共同的状态 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{S}"
+        },
+        {
+          "type": "text",
+          "text": " 和动作空间 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}"
+        },
+        {
+          "type": "text",
+          "text": "，这样（随机）策略："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta: \\mathcal{S} \\times \\mathcal{A} \\to \\mathbb{R}_{+}"
+        },
+        {
+          "type": "text",
+          "text": " 将获得在不同任务中兼容的输入。测试任务从相同的分布 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{M}"
+        },
+        {
+          "type": "text",
+          "text": " 或略微修改的版本中采样。"
+        }
+      ]
+    },
+    "heading-2e44f4aa45b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与 RL 的主要区别"
+        }
+      ]
+    },
+    "paragraph-0e7b7f284575": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元强化学习（meta-RL）的整体配置与普通强化学习算法非常相似，不同之处在于"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "上一个奖励"
+            }
+          ]
+        },
+        {
+          "type": "inline_math",
+          "text": "r_{t-1}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "上一个动作"
+            }
+          ]
+        },
+        {
+          "type": "inline_math",
+          "text": "a_{t-1}"
+        },
+        {
+          "type": "text",
+          "text": "除了当前状态之外，还被纳入策略观察中"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_t"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-7f8636a56cb9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在强化学习中："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta(s_t) \\to"
+        },
+        {
+          "type": "text",
+          "text": " 一个关于"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}"
+        },
+        {
+          "type": "text",
+          "text": "的分布"
+        }
+      ]
+    },
+    "list-item-ec52f25a88fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在元强化学习中："
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta(a_{t-1}, r_{t-1}, s_t) \\to"
+        },
+        {
+          "type": "text",
+          "text": " 一个关于 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{A}"
+        },
+        {
+          "type": "text",
+          "text": " 的分布"
+        }
+      ]
+    },
+    "paragraph-7a8d43a7af8e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种设计的目的是将历史信息输入模型，以便策略能够内化当前MDP中状态、奖励和动作之间的动态，并相应地调整其策略。这与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#back-in-2001"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Hochreiter的系统"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中的设置非常吻合。元强化学习和RL^2都实现了LSTM策略，并且LSTM的隐藏状态作为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "记忆"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来跟踪轨迹的特征。由于策略是循环的，因此无需显式地将最后一个状态作为输入。"
+        }
+      ]
+    },
+    "paragraph-ba7de9a0c2f5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练过程如下："
+        }
+      ]
+    },
+    "list-item-aa55d3a70a64": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "采样一个新的MDP，"
+        },
+        {
+          "type": "inline_math",
+          "text": "M_i \\sim \\mathcal{M}"
+        },
+        {
+          "type": "text",
+          "text": "；"
+        }
+      ]
+    },
+    "list-item-7a52faa3b51a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "重置模型隐藏状态"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；"
+        }
+      ]
+    },
+    "list-item-679ee0e42ba3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "收集多条轨迹并更新模型权重；"
+        }
+      ]
+    },
+    "list-item-4f1d586ac0ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从步骤1重复。"
+        }
+      ]
+    },
+    "heading-b8cfe5a4e339": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关键组成部分"
+        }
+      ]
+    },
+    "paragraph-555632fcd715": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元强化学习（Meta-RL）中有三个关键组成部分："
+        }
+      ]
+    },
+    "paragraph-b63a6fffd757": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "⭐ "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "具有记忆的模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n循环神经网络维护一个隐藏状态。因此，它可以通过在rollout期间更新隐藏状态来获取和记忆当前任务的知识。没有记忆，元强化学习将无法工作。"
+        }
+      ]
+    },
+    "paragraph-2ed41005e623": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "⭐ "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "元学习算法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n元学习算法指的是我们如何更新模型权重，以优化在测试时快速解决一个未见任务的目的。在Meta-RL和RL^2两篇论文中，元学习算法都是LSTM的普通梯度下降更新，并在MDPs切换之间重置隐藏状态。"
+        }
+      ]
+    },
+    "paragraph-5b149640e733": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "⭐ "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "MDPs的分布"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n虽然智能体在训练期间会接触到各种环境和任务，但它必须学习如何适应不同的MDPs。"
+        }
+      ]
+    },
+    "paragraph-fefe492b323b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cell.com/action/showPdf?pii=S1364-6613%2819%2930061-0"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Botvinick et al."
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (2019)的说法，强化学习训练缓慢的一个原因是"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "弱"
+            },
+            {
+              "type": "link",
+              "attrs": {
+                "url": "https://en.wikipedia.org/wiki/Inductive_bias"
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "text": "归纳偏置"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（=“学习器用来预测给定未遇到输入的输出的一组假设”）。作为一条通用的机器学习规则，具有弱归纳偏置的学习算法能够掌握更广泛的变异，但通常样本效率较低。因此，通过更强的归纳偏置来缩小假设范围有助于提高学习速度。"
+        }
+      ]
+    },
+    "paragraph-f5f9b403671f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在元强化学习中，我们从"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "任务分布"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中施加特定类型的归纳偏置，并将其存储在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "记忆"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中。在测试时采用哪种归纳偏置取决于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "算法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。这三个关键组成部分共同描绘了元强化学习的一个引人注目的观点：调整循环网络的权重很慢，但它允许模型通过其内部活动动态中实现的自身强化学习算法快速解决新任务。"
+        }
+      ]
+    },
+    "paragraph-4b261c0170e5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元强化学习有趣且不令人意外地与Jeff Clune (2019)的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.10985"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "AI-GAs"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（“AI生成算法”）论文中的思想相吻合。他提出，构建通用人工智能的一种有效方法是使学习尽可能自动化。AI-GAs方法包括三个支柱：（1）元学习架构，（2）元学习算法，以及（3）用于有效学习的自动生成环境。"
+        }
+      ]
+    },
+    "paragraph-8202c37ab9fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设计好的循环网络架构这个话题有点太宽泛，不适合在这里讨论，所以我将跳过它。接下来，让我们进一步探讨另外两个组成部分：元强化学习背景下的元学习算法以及如何获取各种训练MDPs。"
+        }
+      ]
+    },
+    "heading-8f2b10b2f712": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元强化学习的元学习算法"
+        }
+      ]
+    },
+    "paragraph-8aed1e05ce8e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我之前的关于元学习的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "已经涵盖了几种经典的元学习算法。这里我将包含更多与强化学习相关的算法。"
+        }
+      ]
+    },
+    "heading-87da1ad1bef0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "优化元学习的模型权重"
+        }
+      ]
+    },
+    "paragraph-406bbd6e4c0b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "MAML ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.03400"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Finn, et al. 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 和 Reptile ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.02999"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nichol et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 都是更新模型参数以在新任务上实现良好泛化性能的方法。请参阅之前关于 MAML 和 Reptile 的帖子中的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#optimization-based"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "章节"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-a84e99fc73c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元学习超参数"
+        }
+      ]
+    },
+    "paragraph-cb6547b81c5d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RL 问题中的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-function"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "回报"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "函数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "G_t^{(n)}"
+        },
+        {
+          "type": "text",
+          "text": " 或 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G_t^\\lambda"
+        },
+        {
+          "type": "text",
+          "text": "，涉及一些通常凭经验设置的超参数，例如折扣因子 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-function"
+          },
+          "children": [
+            {
+              "type": "inline_math",
+              "text": "\\gamma"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和自举参数 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#combining-td-and-mc-learning"
+          },
+          "children": [
+            {
+              "type": "inline_math",
+              "text": "\\lambda"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。元梯度强化学习 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/7507-meta-gradient-reinforcement-learning.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Xu et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 将它们视为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "元参数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta=\\{\\gamma, \\lambda \\}"
+        },
+        {
+          "type": "text",
+          "text": "，可以在智能体与环境交互时"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "在线"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "调整和学习。因此，回报成为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": " 的函数，并随着时间动态地适应特定任务。"
+        }
+      ]
+    },
+    "paragraph-9c7a5cdcd8fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在训练期间，我们希望使用梯度更新策略参数，作为所有现有信息的函数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’ = \\theta + f(\\tau, \\theta, \\eta)"
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 是当前模型权重，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": " 是轨迹序列，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": " 是元参数。"
+        }
+      ]
+    },
+    "paragraph-b4e6fcd7b992": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "同时，假设我们有一个元目标函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "J(\\tau, \\theta, \\eta)"
+        },
+        {
+          "type": "text",
+          "text": " 作为性能度量。训练过程遵循在线交叉验证的原则，使用一系列连续的经验："
+        }
+      ]
+    },
+    "list-item-6c6db09c43c4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 开始，策略 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 在第一批样本 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": " 上更新，得到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta’"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-7ae2fddbd8c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后我们继续运行策略 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_{\\theta’}"
+        },
+        {
+          "type": "text",
+          "text": " 以收集一组新的经验 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau’"
+        },
+        {
+          "type": "text",
+          "text": "，只是按时间顺序连续地遵循 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "。性能以 "
+        },
+        {
+          "type": "inline_math",
+          "text": "J(\\tau’, \\theta’, \\bar{\\eta})"
+        },
+        {
+          "type": "text",
+          "text": " 衡量，其中元参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{\\eta}"
+        },
+        {
+          "type": "text",
+          "text": " 是固定的。"
+        }
+      ]
+    },
+    "list-item-20d041bf8baf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元目标 "
+        },
+        {
+          "type": "inline_math",
+          "text": "J(\\tau’, \\theta’, \\bar{\\eta})"
+        },
+        {
+          "type": "text",
+          "text": " 对 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": " 的梯度用于更新 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-41c83cebb3e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": " 是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": " 的学习率。"
+        }
+      ]
+    },
+    "paragraph-6a6629cc4f25": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元梯度强化学习算法通过将次级梯度项设置为零来简化计算，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{I} + \\partial g(\\tau, \\theta, \\eta)/\\partial\\theta = 0"
+        },
+        {
+          "type": "text",
+          "text": " — 这种选择倾向于元参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\eta"
+        },
+        {
+          "type": "text",
+          "text": "对参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "的即时影响。最终我们得到："
+        }
+      ]
+    },
+    "paragraph-99ca5c6f7ce2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "论文中的实验采用了与"
+        },
+        {
+          "type": "inline_math",
+          "text": "TD(\\lambda)"
+        },
+        {
+          "type": "text",
+          "text": "算法相同的元目标函数，最小化近似值函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "v_\\theta(s)"
+        },
+        {
+          "type": "text",
+          "text": "与"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\lambda"
+        },
+        {
+          "type": "text",
+          "text": "回报之间的误差："
+        }
+      ]
+    },
+    "heading-218ebbcc77a0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元学习损失函数"
+        }
+      ]
+    },
+    "paragraph-5377404ab924": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在策略梯度算法中，通过沿着估计梯度的方向更新策略参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "来最大化预期总奖励（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1506.02438"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Schulman et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），"
+        }
+      ]
+    },
+    "paragraph-2bf9ba7a2388": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Psi_t"
+        },
+        {
+          "type": "text",
+          "text": "的候选包括轨迹回报"
+        },
+        {
+          "type": "inline_math",
+          "text": "G_t"
+        },
+        {
+          "type": "text",
+          "text": "、Q值"
+        },
+        {
+          "type": "inline_math",
+          "text": "Q(s_t, a_t)"
+        },
+        {
+          "type": "text",
+          "text": "或优势值"
+        },
+        {
+          "type": "inline_math",
+          "text": "A(s_t, a_t)"
+        },
+        {
+          "type": "text",
+          "text": "。策略梯度对应的替代损失函数可以逆向工程得到："
+        }
+      ]
+    },
+    "paragraph-b9e615b60d3f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个损失函数是对轨迹历史的度量，"
+        },
+        {
+          "type": "inline_math",
+          "text": "(s_0, a_0, r_0, \\dots, s_t, a_t, r_t, \\dots)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "演化策略梯度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "EPG"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/7785-evolved-policy-gradients.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Houthooft, et al, 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过将策略梯度损失函数定义为基于智能体过往经验的时间卷积（一维卷积）而更进一步，"
+        },
+        {
+          "type": "inline_math",
+          "text": "L_\\phi"
+        },
+        {
+          "type": "text",
+          "text": "。损失函数网络的参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 以智能体能够获得更高回报的方式进行演化。"
+        }
+      ]
+    },
+    "paragraph-c967280a40a4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "类似于许多元学习算法，EPG 有两个优化循环："
+        }
+      ]
+    },
+    "list-item-29c18e475397": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在内部循环中，一个智能体学习改进其策略"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-822cfe6f1d7a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在外层循环中，模型更新参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": "的损失函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "L_\\phi"
+        },
+        {
+          "type": "text",
+          "text": "。因为没有明确的方法来写出回报与损失之间的可微分方程，EPG 转向了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Evolution_strategy"
+          },
+          "children": [
+            {
+              "type": "emphasis",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "进化策略"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（ES）。"
+        }
+      ]
+    },
+    "paragraph-2ec2084262d7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个普遍的想法是训练一组"
+        },
+        {
+          "type": "inline_math",
+          "text": "N"
+        },
+        {
+          "type": "text",
+          "text": "智能体，每个智能体都使用损失函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "L_{\\phi + \\sigma \\epsilon_i}"
+        },
+        {
+          "type": "text",
+          "text": "进行参数化，其中参数为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": "并添加了小的 Gaussian 噪声"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\epsilon_i \\sim \\mathcal{N}(0, \\mathbf{I})"
+        },
+        {
+          "type": "text",
+          "text": "，其标准差为"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma"
+        },
+        {
+          "type": "text",
+          "text": "在内循环训练期间，EPG 会跟踪经验历史，并根据损失函数更新策略参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "L_{\\phi + \\sigma\\epsilon_i}"
+        },
+        {
+          "type": "text",
+          "text": "，针对每个智能体："
+        }
+      ]
+    },
+    "paragraph-97a24e5ab0fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_\\text{in}"
+        },
+        {
+          "type": "text",
+          "text": " 是内循环的学习率，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau_{t-K, \\dots, t}"
+        },
+        {
+          "type": "text",
+          "text": " 是一系列 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": " 转换，直到当前时间步 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-cdcac4e1b297": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一旦内循环策略足够成熟，就会通过在多个随机采样的轨迹上计算平均回报 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\bar{G}_{\\phi+\\sigma\\epsilon_i}"
+        },
+        {
+          "type": "text",
+          "text": " 来评估该策略。最终，我们能够根据 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://blog.otoro.net/2017/10/29/visual-evolution-strategies/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "NES"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 数值估计 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 的梯度（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.03864"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Salimans et al, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。在重复此过程的同时，策略参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": " 和损失函数权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 会同时更新，以实现更高的回报。"
+        }
+      ]
+    },
+    "paragraph-c60eff06e61c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha_\\text{out}"
+        },
+        {
+          "type": "text",
+          "text": " 是外循环的学习率。"
+        }
+      ]
+    },
+    "paragraph-f96ae1af6874": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在实践中，损失 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L_\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 通过普通的策略梯度（例如 REINFORCE 或 PPO）替代损失 "
+        },
+        {
+          "type": "inline_math",
+          "text": "L_\\text{pg}"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\hat{L} = (1-\\alpha) L_\\phi + \\alpha L_\\text{pg}"
+        },
+        {
+          "type": "text",
+          "text": " 进行自举。权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": " 在训练期间从 1 逐渐退火到 0。在测试时，损失函数参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi"
+        },
+        {
+          "type": "text",
+          "text": " 保持固定，并且通过计算历史经验的损失值来更新策略参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\theta"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-2937b2109067": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "元学习探索策略"
+        }
+      ]
+    },
+    "paragraph-182af65de529": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在强化学习中，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "利用与探索"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的困境是一个关键问题。常见的探索方法包括"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\epsilon"
+        },
+        {
+          "type": "text",
+          "text": "-贪婪策略、动作上的随机噪声，或者在动作空间中内置随机性的随机策略。"
+        }
+      ]
+    },
+    "paragraph-8134e9ac8d71": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "MAESN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/7776-meta-reinforcement-learning-of-structured-exploration-strategies.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gupta 等人，2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一种从先验经验中学习结构化动作噪声的算法，以实现更好、更有效的探索。简单地在动作上添加随机噪声无法捕捉任务相关或时间相关的探索策略。MAESN 将策略修改为以每个任务的随机变量"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_i \\sim \\mathcal{N}(\\mu_i, \\sigma_i)"
+        },
+        {
+          "type": "text",
+          "text": "为条件，对于第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个任务"
+        },
+        {
+          "type": "inline_math",
+          "text": "M_i"
+        },
+        {
+          "type": "text",
+          "text": "，我们将得到策略"
+        },
+        {
+          "type": "inline_math",
+          "text": "a \\sim \\pi_\\theta(a\\mid s, z_i)"
+        },
+        {
+          "type": "text",
+          "text": "。潜在变量"
+        },
+        {
+          "type": "inline_math",
+          "text": "z_i"
+        },
+        {
+          "type": "text",
+          "text": "在一次回合中被采样一次并固定。直观地，潜在变量决定了一种行为（或技能）类型，这种类型在 rollout 开始时应更多地被探索，并且智能体将相应地调整其动作。策略参数和潜在空间都经过优化，以最大化总任务奖励。同时，策略学习利用潜在变量进行探索。"
+        }
+      ]
+    },
+    "paragraph-f7218230c90e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，损失函数包含学习到的潜在变量与单位高斯先验之间的KL散度，"
+        },
+        {
+          "type": "inline_math",
+          "text": "D_\\text{KL}(\\mathcal{N}(\\mu_i, \\sigma_i)|\\mathcal{N}(0, \\mathbf{I}))"
+        },
+        {
+          "type": "text",
+          "text": "。一方面，它限制了学习到的潜在空间与共同先验不会相距太远。另一方面，它为奖励函数创建了变分证据下界（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://users.umiacs.umd.edu/~xyang35/files/understanding-variational-lower.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ELBO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。有趣的是，该论文发现每个任务的"
+        },
+        {
+          "type": "inline_math",
+          "text": "(\\mu_i, \\sigma_i)"
+        },
+        {
+          "type": "text",
+          "text": "在收敛时通常接近先验。"
+        }
+      ]
+    },
+    "heading-3fe16d22c765": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "幕时控制"
+        }
+      ]
+    },
+    "paragraph-76495f5a71a2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强化学习的一个主要批评是其样本效率低下。强化学习需要大量的样本和小的学习步长来进行增量参数调整，以最大化泛化能力并避免灾难性遗忘早期学习内容（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cell.com/trends/cognitive-sciences/fulltext/S1364-6613(19)30061-0"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Botvinick et al., 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-cb0e7f59e405": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "情景控制"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/3311-hippocampal-contributions-to-control-the-third-way.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lengyel & Dayan, 2008"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 被提出作为一种解决方案，以避免遗忘并在训练时提高泛化能力，同时加快训练速度。它部分受到基于实例的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Hippocampus"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "海马体"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "学习假说的启发。"
+        }
+      ]
+    },
+    "paragraph-ada4593f7717": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "情景记忆"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "保留过去事件的明确记录，并直接使用这些记录作为做出新决策的参考点（即，就像"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#metric-based"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "基于度量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的元学习）。在"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "MFEC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（无模型情景控制；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.04460"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Blundell et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）中，记忆被建模为一个大表，将状态-动作对"
+        },
+        {
+          "type": "inline_math",
+          "text": "(s, a)"
+        },
+        {
+          "type": "text",
+          "text": "存储为键，将相应的Q值"
+        },
+        {
+          "type": "inline_math",
+          "text": "Q_\\text{EC}(s, a)"
+        },
+        {
+          "type": "text",
+          "text": "存储为值。当接收到新的观测"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "时，Q值以非参数方式估计为前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个最相似样本的平均Q值："
+        }
+      ]
+    },
+    "paragraph-7acc45424cb1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "s^{(i)}, i=1, \\dots, k"
+        },
+        {
+          "type": "text",
+          "text": "是前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个与状态"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "。然后选择产生最高估计Q值的动作。然后根据在"
+        },
+        {
+          "type": "inline_math",
+          "text": "s_t"
+        },
+        {
+          "type": "text",
+          "text": "处收到的回报更新记忆表："
+        }
+      ]
+    },
+    "paragraph-2edbe880437c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "作为一种表格型强化学习方法，MFEC 存在内存消耗大和难以在相似状态之间泛化的问题。第一个问题可以通过 LRU 缓存解决。受 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#metric-based"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "基于度量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的元学习，特别是匹配网络（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/6385-matching-networks-for-one-shot-learning.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Vinyals et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）的启发，泛化问题在后续算法 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "NEC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（神经情景控制；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.01988"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pritzel et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）中得到了改进。"
+        }
+      ]
+    },
+    "paragraph-433dc32439a2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "NEC 中的情景记忆是一个可微分神经字典（"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "DND"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），其中键是输入图像像素的卷积嵌入向量，值存储估计的 Q 值。给定一个查询键，输出是与最相似键的值的加权和，其中权重是查询键与字典中选定键之间的归一化核度量。这听起来像是一种硬 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-06-24-attention/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "注意力"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 机制。"
+        }
+      ]
+    },
+    "paragraph-f9bd2dc9c116": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "情景式LSTM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1805.09692"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ritter 等人，2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过DND情景记忆增强了基本的LSTM架构，该记忆将任务上下文嵌入存储为键，将LSTM单元状态存储为值。存储的隐藏状态通过LSTM内部相同的门控机制被检索并直接添加到当前单元状态中："
+        }
+      ]
+    },
+    "paragraph-2a156727f08b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{c}_t"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{h}_t"
+        },
+        {
+          "type": "text",
+          "text": " 分别是时间 "
+        },
+        {
+          "type": "inline_math",
+          "text": "t"
+        },
+        {
+          "type": "text",
+          "text": " 的隐藏状态和单元状态；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{i}_t"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{f}_t"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{r}_t"
+        },
+        {
+          "type": "text",
+          "text": " 分别是输入门、遗忘门和恢复门；"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathbf{c}_\\text{ep}"
+        },
+        {
+          "type": "text",
+          "text": " 是从情景记忆中检索到的单元状态。新添加的情景记忆组件以绿色标记。"
+        }
+      ]
+    },
+    "paragraph-007ad980ef3d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种架构通过基于上下文的检索为先前的经验提供了捷径。同时，将任务相关的经验明确地保存在外部记忆中可以避免遗忘。在论文中，所有的实验都手动设计了上下文向量。如何为更自由形式的任务构建有效且高效的任务上下文嵌入格式将是一个有趣的话题。"
+        }
+      ]
+    },
+    "paragraph-ce00384d0481": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总的来说，情景控制的能力受限于环境的复杂性。在现实世界的任务中，智能体很少会重复访问完全相同的状态，因此正确编码状态至关重要。学习到的嵌入空间将观测数据压缩到低维空间中，同时，在这个空间中接近的两个状态预计会需要相似的策略。"
+        }
+      ]
+    },
+    "heading-5ce153dd98d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练任务获取"
+        }
+      ]
+    },
+    "paragraph-d3fb66535419": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在三个关键组件中，如何设计一个合适的任务分布是研究较少且可能对元强化学习本身最具特异性的一个。如"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#formulation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "上文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "所述，每个任务都是一个MDP："
+        },
+        {
+          "type": "inline_math",
+          "text": "M_i = \\langle \\mathcal{S}, \\mathcal{A}, P_i, R_i \\rangle \\in \\mathcal{M}"
+        },
+        {
+          "type": "text",
+          "text": "。我们可以通过修改以下内容来构建MDP的分布："
+        }
+      ]
+    },
+    "list-item-e99b0cf941c8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励配置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在不同任务中，相同的行为可能会根据"
+        },
+        {
+          "type": "inline_math",
+          "text": "R_i"
+        },
+        {
+          "type": "text",
+          "text": "获得不同的奖励。"
+        }
+      ]
+    },
+    "list-item-0179e00acda1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或者，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "环境"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：转移函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "P_i"
+        },
+        {
+          "type": "text",
+          "text": " 可以通过初始化具有不同状态间偏移量的环境来重塑。"
+        }
+      ]
+    },
+    "heading-a70fae5fb806": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过域随机化生成任务"
+        }
+      ]
+    },
+    "paragraph-84d779aeca61": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在模拟器中随机化参数是获取具有修改过的转移函数的任务的简单方法。如果有兴趣进一步了解，请查看我的上一篇"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-05-05-domain-randomization/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，内容关于"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "领域随机化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "heading-343a014854fc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "环境生成中的进化算法"
+        }
+      ]
+    },
+    "paragraph-8a6f514b0966": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Evolutionary_algorithm"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "进化算法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是一种受自然选择启发的无梯度启发式优化方法。解决方案的种群遵循评估、选择、繁殖和变异的循环。最终，好的解决方案得以存活并被选中。"
+        }
+      ]
+    },
+    "paragraph-4e2f313fbf31": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "POET"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.01753"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al, 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一个基于进化算法的框架，它试图在问题本身被解决的同时生成任务。POET 的实现仅专门为简单的 2D "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://gym.openai.com/envs/BipedalWalkerHardcore-v2/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "双足步行器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "环境设计，但指出了一个有趣的方向。值得注意的是，进化算法在深度学习中也有一些引人注目的应用，例如 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#meta-learning-the-loss-function"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "EPG"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 PBT (Population-Based Training; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1711.09846"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": " Jaderberg et al, 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "paragraph-9fc6db919285": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "2D 双足行走环境正在演变：从简单的平坦表面到更具挑战性的路径，其中可能包含间隙、树桩和崎岖地形。POET 将环境挑战的生成与智能体的优化结合起来，以便 (a) 选择能够解决当前挑战的智能体，以及 (b) 演化出可解决的环境。该算法维护一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "环境-智能体对"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "列表，并重复以下步骤："
+        }
+      ]
+    },
+    "list-item-70569a194905": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "变异"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：从当前活跃的环境中生成新环境。请注意，这里的变异操作类型是专为双足步行器创建的，新环境将需要一套新的配置。"
+        }
+      ]
+    },
+    "list-item-f78b15221128": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "优化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在各自的环境中训练配对的智能体。"
+        }
+      ]
+    },
+    "list-item-e2dbd637c870": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "选择"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 定期尝试将当前智能体从一个环境转移到另一个环境。复制并更新每个环境中表现最佳的智能体。直觉是，在一个环境中学习到的技能可能对不同的环境有所帮助。"
+        }
+      ]
+    },
+    "paragraph-c53fe6cfda09": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上述过程与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1711.09846"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "PBT"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "非常相似，但PBT是变异和演化超参数。在某种程度上，POET正在进行"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-05-05-domain-randomization/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "域随机化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，因为所有的间隙、树桩和地形粗糙度都由一些随机化概率参数控制。与DR不同的是，智能体并非一次性暴露在完全随机的困难环境中，而是通过进化算法配置的课程逐步学习。"
+        }
+      ]
+    },
+    "heading-e9fcc44a206f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随机奖励学习"
+        }
+      ]
+    },
+    "paragraph-141d3fa8f7a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "没有奖励函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": "的MDP被称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "受控马尔可夫过程"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（CMP）。给定一个预定义的CMP，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\langle \\mathcal{S}, \\mathcal{A}, P\\rangle"
+        },
+        {
+          "type": "text",
+          "text": "，我们可以通过生成一系列奖励函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mathcal{R}"
+        },
+        {
+          "type": "text",
+          "text": "来获取各种任务，这些奖励函数鼓励训练出有效的元学习策略。"
+        }
+      ]
+    },
+    "paragraph-9f1e7944f112": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1806.04640"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gupta 等人 (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出了两种无监督方法，用于在CMP背景下扩展任务分布。假设每个任务都关联着一个潜在变量"
+        },
+        {
+          "type": "inline_math",
+          "text": "z \\sim p(z)"
+        },
+        {
+          "type": "text",
+          "text": "，它参数化/决定了一个奖励函数："
+        },
+        {
+          "type": "inline_math",
+          "text": "r_z(s) = \\log D(z|s)"
+        },
+        {
+          "type": "text",
+          "text": "，其中使用“判别器”函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "D(.)"
+        },
+        {
+          "type": "text",
+          "text": "从状态中提取潜在变量。该论文描述了两种构建判别器函数的方法："
+        }
+      ]
+    },
+    "list-item-133fc8954896": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对判别器的随机权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\phi_\\text{rand}"
+        },
+        {
+          "type": "text",
+          "text": " 进行采样, "
+        },
+        {
+          "type": "inline_math",
+          "text": "D_{\\phi_\\text{rand}}(z \\mid s)"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-ae9e807d1c6c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "学习一个判别器函数，以鼓励多样性驱动的探索。该方法在另一篇姊妹论文“DIAYN”中进行了更详细的介绍（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1802.06070"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Eysenbach et al., 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-cfaeb0006cb8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "DIAYN，即“多样性就是你所需要的一切”，是一个鼓励策略在没有奖励函数的情况下学习有用技能的框架。它明确地将潜在变量建模为"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "作为一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "技能"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "嵌入，并使策略以...为条件"
+        },
+        {
+          "type": "inline_math",
+          "text": "z"
+        },
+        {
+          "type": "text",
+          "text": "除了状态"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\theta(a \\mid s, z)"
+        },
+        {
+          "type": "text",
+          "text": "。（好的，这部分与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-06-23-meta-rl/#meta-learning-the-exploration-strategies"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MAESN"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "毫不奇怪，因为这些论文来自同一个研究组。）DIAYN 的设计受到以下几个假设的启发："
+        }
+      ]
+    },
+    "list-item-fdb5672e18a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "技能应该多样化并导致访问不同的状态。→ 最大化状态和技能之间的互信息，"
+        },
+        {
+          "type": "inline_math",
+          "text": "I(S; Z)"
+        }
+      ]
+    },
+    "list-item-3fb8fbd460c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "技能应该通过状态而不是动作来区分。→ 最小化动作和技能之间的互信息，以状态为条件 "
+        },
+        {
+          "type": "inline_math",
+          "text": "I(A; Z \\mid S)"
+        }
+      ]
+    },
+    "paragraph-f3ac2d88e944": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "要最大化的目标函数如下，其中还添加了策略熵以鼓励多样性："
+        }
+      ]
+    },
+    "paragraph-8b75114ba7a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "I(.)"
+        },
+        {
+          "type": "text",
+          "text": " 是互信息，"
+        },
+        {
+          "type": "inline_math",
+          "text": "H[.]"
+        },
+        {
+          "type": "text",
+          "text": " 是熵度量。我们无法整合所有状态来计算 "
+        },
+        {
+          "type": "inline_math",
+          "text": "p(z \\mid s)"
+        },
+        {
+          "type": "text",
+          "text": "，因此用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "D_\\phi(z \\mid s)"
+        },
+        {
+          "type": "text",
+          "text": " 来近似它——这就是多样性驱动的判别器函数。"
+        }
+      ]
+    },
+    "paragraph-547db5f70374": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一旦判别器函数被学习，为训练采样一个新的 MDP 就很简单了：首先，采样一个潜在变量 "
+        },
+        {
+          "type": "inline_math",
+          "text": "z \\sim p(z)"
+        },
+        {
+          "type": "text",
+          "text": " 并构建一个奖励函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "r_z(s) = \\log(D(z \\vert s))"
+        },
+        {
+          "type": "text",
+          "text": "。将奖励函数与预定义的 CMP 配对会创建一个新的 MDP。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用来源："
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-8ccdfcea869f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Richard S. Sutton. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://incompleteideas.net/IncIdeas/BitterLesson.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“惨痛的教训。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2019年3月13日。"
+        }
+      ]
+    },
+    "paragraph-6b1f043d197f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Sepp Hochreiter, A. Steven Younger, and Peter R. Conwell. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://snowedin.net/tmp/Hochreiter2001.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用梯度下降学习如何学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 国际人工神经网络会议。2001。"
+        }
+      ]
+    },
+    "paragraph-8622b3c02525": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Jane X Wang, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.05763"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“学习强化学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1611.05763 (2016)。"
+        }
+      ]
+    },
+    "paragraph-dfbe7fcd9318": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Yan Duan, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1611.02779"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“RL "
+            },
+            {
+              "type": "inline_math",
+              "text": "^ 2"
+            },
+            {
+              "type": "text",
+              "text": "：通过慢速强化学习实现快速强化学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2017。"
+        }
+      ]
+    },
+    "paragraph-fbddbbc3676c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Matthew Botvinick, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cell.com/trends/cognitive-sciences/fulltext/S1364-6613(19)30061-0"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“强化学习，快与慢”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Cell Review, 第23卷, 第5期, P408-422, 2019年5月1日。"
+        }
+      ]
+    },
+    "paragraph-9553b8351e83": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Jeff Clune. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.10985"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“AI-GAs：AI生成算法，一种产生通用人工智能的替代范式”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1905.10985 (2019)。"
+        }
+      ]
+    },
+    "paragraph-125547a862d8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Zhongwen Xu, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/7507-meta-gradient-reinforcement-learning.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“元梯度强化学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2018。"
+        }
+      ]
+    },
+    "paragraph-3e2033015764": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Rein Houthooft, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://papers.nips.cc/paper/7785-evolved-policy-gradients.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“演化策略梯度。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2018。"
+        }
+      ]
+    },
+    "paragraph-7da59d4d1510": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Tim Salimans, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.03864"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“演化策略作为强化学习的可扩展替代方案。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1703.03864 (2017)。"
+        }
+      ]
+    },
+    "paragraph-e7e6c205ab5e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Abhishek Gupta, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://papers.nips.cc/paper/7776-meta-reinforcement-learning-of-structured-exploration-strategies.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“结构化探索策略的元强化学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " NIPS 2018。"
+        }
+      ]
+    },
+    "paragraph-364a8ad226ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Alexander Pritzel, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1703.01988"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“神经情景控制。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 国际机器学习会议论文集，第70卷，2017。"
+        }
+      ]
+    },
+    "paragraph-5a7550ca695c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Charles Blundell, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.04460"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“无模型情景控制。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1606.04460 (2016)。"
+        }
+      ]
+    },
+    "paragraph-cee017d46557": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Samuel Ritter, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1805.09692"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“去过那里，做过那事：具有情景回忆的元学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML, 2018。"
+        }
+      ]
+    },
+    "paragraph-f3f334ce0c3b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Rui Wang et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.01753"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“配对开放式拓荒者 (POET)：无休止地生成日益复杂和多样化的学习环境及其解决方案”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1901.01753 (2019)。"
+        }
+      ]
+    },
+    "paragraph-a45cf0209f6b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Uber 工程博客："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://eng.uber.com/poet-open-ended-deep-learning/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“POET：通过配对开放式拓荒者无休止地生成日益复杂和多样化的学习环境及其解决方案。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2019年1月8日。"
+        }
+      ]
+    },
+    "paragraph-263276930d98": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Abhishek Gupta, et al."
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1806.04640"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“强化学习的无监督元学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1806.04640 (2018)。"
+        }
+      ]
+    },
+    "paragraph-8a8303f6eaf7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Eysenbach, Benjamin, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1802.06070"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“多样性是你所需要的一切：在没有奖励函数的情况下学习技能。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2019。"
+        }
+      ]
+    },
+    "paragraph-40130b90f4b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] Max Jaderberg, et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1711.09846"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“基于种群的神经网络训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1711.09846 (2017)。"
+        }
+      ]
+    }
+  }
+}

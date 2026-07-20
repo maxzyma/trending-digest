@@ -1,0 +1,4832 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2022-06-09-vlm",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2022-06-09-vlm/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2022-06-09T15:10:30-07:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:3b597cd6481a09bbf4e875a90c194201ef28335388a1005e3c3142f97e30d39a",
+    "fetched_at": "2026-07-14T02:05:36.068775+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Generalized Visual Language Models",
+    "title_en": "Generalized Visual Language Models",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-e6553832961b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Processing images to generate text, such as image captioning and visual question-answering, has been studied for years. Traditionally such systems rely on an object detection network as a vision encoder to capture visual features and then produce text via a text decoder. Given a large amount of existing literature, in this post, I would like to only focus on one approach for solving vision language tasks, which is to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "extend pre-trained "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "generalized language models"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " to be capable of consuming visual signals"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-06a278c1b7db",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I roughly group such vision language models (VLMs) into four buckets:"
+          }
+        ]
+      },
+      {
+        "id": "list-3ed89cf0ebf0",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-907b4c910684",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Translating images into embedding features that can be jointly trained with token embeddings."
+              }
+            ]
+          },
+          {
+            "id": "list-item-22c769cefcd8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Learning good image embeddings that can work as a prefix for a frozen, pre-trained language model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b3c6c0ab0844",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Using a specially designed cross-attention mechanism to fuse visual information into layers of the language model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-cee125206fe1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Combine vision and language models without any training."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-50f26b79dfbc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Jointly Training with Image and Text"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-e66e4b3d6b0a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One straightforward approach to fuse visual information into language models is to treat images as normal text tokens and train the model on a sequence of joint representations of both text and images. Precisely, images are divided into multiple smaller patches and each patch is treated as one “token” in the input sequence."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a77947f853a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VisualBERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.03557"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Li et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") feeds both text inputs and image regions into "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#bert"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " such that it is able to discover the internal alignment between images and text with self-attention mechanism."
+          }
+        ]
+      },
+      {
+        "id": "image-70ebf0aeaf51",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualBERT-arch.png",
+          "alt": "VisualBERT is trained on the combination of both text and image embeddings. (Image source: Li et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-b579a0453fce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#input-embedding"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "text embedding in BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", each visual embedding in VisualBERT also sums up three types of embeddings, tokenized features "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_o"
+          },
+          {
+            "type": "text",
+            "text": ", segmentation embedding "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_s"
+          },
+          {
+            "type": "text",
+            "text": " and position embedding "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_p"
+          },
+          {
+            "type": "text",
+            "text": ", precisely:"
+          }
+        ]
+      },
+      {
+        "id": "list-f1656670f31c",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-24b18d84e141",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "f_o"
+              },
+              {
+                "type": "text",
+                "text": " is a visual feature vector computed for a bounding region of the image by a convolutional neural network;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-b159caaf0bb6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "f_s"
+              },
+              {
+                "type": "text",
+                "text": " is a segment embedding to indicate whether the embedding is for vision not for text;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-dee247fc8bdd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "f_p"
+              },
+              {
+                "type": "text",
+                "text": " is a position embedding used for aligning the order of bounding regions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-83d01d689e08",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model is trained on MS COCO image caption dataset with both text and image as inputs to predict text captions, using two visually-grounded language model objectives:"
+          }
+        ]
+      },
+      {
+        "id": "list-b7eb7a0f1e82",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-aa459624f4d7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "link",
+                    "attrs": {
+                      "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#pre-training-tasks"
+                    },
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "MLM"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "text": " with the image"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". The model needs to predict masked text tokens, while image embeddings always stay not masked."
+              }
+            ]
+          },
+          {
+            "id": "list-item-479b1f12590f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Sentence-image prediction"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". When provided with an image and two associated captions, one of two captions might be a random unrelated caption with 50% probability. The model is asked to distinguish these two situations."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-278a80fb6d65",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to ablation experiments, the most important configuration is to fuse visual information early on into the transformer layers and to pretrain the model on the COCO caption dataset. Initialization from a pre-trained BERT and the adoption of the sentence-image prediction training objective have relatively small impacts."
+          }
+        ]
+      },
+      {
+        "id": "image-9c0e52c8260f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualBERT-ablation.png",
+          "alt": "Ablation study results of VisualBERT on NLVR. (Image source: Li et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-e027b6bd8dfb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "VisualBERT outperforms SoTA at the time on NLVR and Flickr30K, but still has some performance gap with SoTA on VQA."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49630d7faae5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "SimVLM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Simple Visual Language Model; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2108.10904"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a simple "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "prefix language model"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", where the prefix sequence is processed with bi-directional attention like BERT, but the main input sequence only has causal attention like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/#gpt"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GPT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Images are encoded as prefix tokens such that the model can fully consume the visual information and then generates associated text in an autoregressive manner."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3ff7f2dcc2eb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Inspired by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.11929"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ViT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.04803"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "CoAtNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", SimVLM splits the image into smaller patches in a flatten 1D sequence of patches. They use the convolutional stage consisting of the first 3 blocks of ResNet to extract contextualized patches and this setup is found to work better than a naive linear projection."
+          }
+        ]
+      },
+      {
+        "id": "image-3cea87564145",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SimVLM-arch.png",
+          "alt": "Training architecture for SimVLM, where the image patches are processed by the cross-attention encoder and the text decoder has causal attention. (Image source: Wang et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-fee7ea3e207d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training data for SimVLM consists of a large number of image-text pairs from ALIGN ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.05918"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jia et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and text-only data from C4 dataset ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.10683"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Raffel et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). They mix the two pretraining datasets within each batch, containing 4,096 image-text pairs (ALIGN) and 512 text-only documents (C4)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2fae5ec4ba6f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to ablation studies, it is important to have both image-text and text-only data for training. The PrefixLM objective outperforms both "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.10683"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "span corruption"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and naive LM."
+          }
+        ]
+      },
+      {
+        "id": "image-5e959d9ac90a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SimVLM-ablation.png",
+          "alt": "Ablation study results of SimVLM on VQA. (Image source: Wang et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-ce93681222ec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "CM3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Causally-Masked Multimodal Modeling; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.07520"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Aghajanyan, et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a hyper-text language model, learning to generate the content (hypertext markup, hyperlinks and images) of large scale HTML web pages of CC-NEWS and Wikipedia articles. The resulting CM3 models can generate rich structured, multi-modal outputs while conditioning on arbitrary masked document contexts."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7f48dd49dcf2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Architecture-wise, CM3 is an autoregressive model. However, in order to combine causal and masked language modeling, CM3 also masks out a small number of long token spans and tries to generate them at the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "end"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of the sequences."
+          }
+        ]
+      },
+      {
+        "id": "image-427350b5c55e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CM3-arch.png",
+          "alt": "Illustration of how a causally masked language model works. (Image source: Aghajanyan, et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-332c437a86ab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training dataset for CM3 contains close to 1T Web data. During preprocessing, images are first downloaded from "
+          },
+          {
+            "type": "inline_code",
+            "text": "src"
+          },
+          {
+            "type": "text",
+            "text": " and resized to 256 x 256 with random cropping. Then they are tokenized by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2012.09841"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VQVAE-GAN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", resulting in 256 tokens per image. These tokens, joined with spaces, are inserted back into the "
+          },
+          {
+            "type": "inline_code",
+            "text": "src"
+          },
+          {
+            "type": "text",
+            "text": " attribute."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-522fe1ebeb91",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CM3 can be used to complete several types of tasks by prompt engineering:"
+          }
+        ]
+      },
+      {
+        "id": "list-92a9e689745f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9556c24e850c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Image in-filling:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-f727e86b4cc8",
+        "type": "code",
+        "attrs": {
+          "code": "Infilling Prompt: <figure>\n\t<img src=\"{prefix}<mask:0>{postfix}\"><mask:0>",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-65ede68a54db",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-6ac05ec9ff0a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Conditional image in-filling:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-277165e5217a",
+        "type": "code",
+        "attrs": {
+          "code": "Conditional Infilling Prompt:\n<figure>\n\t<img alt=\"Photo: {text}\" src=\"{prefix}<mask:0>{postfix}\"><mask:0>",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-a5ef55f35452",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-ddc31c6232c6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Conditional image generation:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-ce1a2d7d9715",
+        "type": "code",
+        "attrs": {
+          "code": "Conditional Generation Prompt: <figure>\n\t<img alt=\"{prompt}",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-f3cc4aaf0492",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-74abfb80a71f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Image captions:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-2947a6a43442",
+        "type": "code",
+        "attrs": {
+          "code": "Captioning Masked Prompt #1: \n<figure>\n\t<img alt=\"Photo: A photo taken of<mask:0>\" src=\"{image}\">\n\nCaptioning Causal Prompt #1: \n<figure>\n\t<img src=\"{image}\" title=\"Photo: A photo taken of",
+          "language": ""
+        }
+      },
+      {
+        "id": "list-190af357ef3e",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-6238e6d56244",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Entity disambiguation"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "code-77464e8ef5e3",
+        "type": "code",
+        "attrs": {
+          "code": "Original: Manetho writes that these kings ruled from <a title=\"Memphis, Egypt\">Memphis</a>\n\nPrompt: Manetho writes that these kings ruled from <a title=\"<mask:0>\">Memphis</a>...<mask:0>\n\nTarget: Manetho writes that these kings ruled from <a title=\"<mask:0>\">Memphis</a>...<mask:0> Memphis, Egypt",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-f6d1ae034e56",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Learned Image Embedding as (Frozen) LM Prefix"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-66c6b893ede8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What if we don’t want to change the language model parameters when adapting it to handle visual signals? Instead we learn such an embedding space for images that it is compatible with the language model’s."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9cc17d9392c0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Inspired by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2101.00190"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "prefix"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08691"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "prompt"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#prefix-tuning"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tuning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", both "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Frozen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.13884"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Tsimpoukelli et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "ClipCap"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2111.09734"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Mokady, Hertz & Hertz, 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") only update the parameters of the vision module during training to produce image embeddings that can work with a pretrained, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "frozen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " language model. Both are trained with aligned image caption "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/#image-caption-datasets"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "datasets"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to produce the next text token in caption conditioned on the image and previous text tokens. The powerful language capability is retained by freezing LM parameters. In addition, even though such setup is trained with limited image caption data, they can also rely on the encyclopedic knowledge of the language model at test time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d4730262c993",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The vision encoder of Frozen is based on NF-ResNet-50 and uses the final output vector of the NF-Resnet after the global pooling layer. The Frozen VLM can be used as a multi-model few-shot learner to adapt to new tasks at test time for zero-shot or few-shot transfer with a sequence of interleaved images and text."
+          }
+        ]
+      },
+      {
+        "id": "image-efec116c4f5a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Frozen-arch.png",
+          "alt": "Illustration of Frozen model (left) training architecture and (right) testing pipeline. (Image source: Tsimpoukelli et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-6144dce8b905",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Experiments showed that fine-tuning the pre-trained LM interestingly leads to worse performance on VQA tasks. It is important to initialize the language model from a pre-trained version, as training from scratch ("
+          },
+          {
+            "type": "inline_math",
+            "text": "{Frozen}_\\text{scratch}"
+          },
+          {
+            "type": "text",
+            "text": ") does not show any meaningful progress. The baseline "
+          },
+          {
+            "type": "inline_math",
+            "text": "{Frozen}_\\text{train-blind}"
+          },
+          {
+            "type": "text",
+            "text": " blacks out the image but still can achieve decent performance because of the innate power of the pre-trained LM."
+          }
+        ]
+      },
+      {
+        "id": "image-7dbfc9529d41",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Frozen-results.png",
+          "alt": "Performance of different versions of Frozen on (left) VQAv2 and (right) OKVQA, trained on Conceptual Captions. \"Frozen scratch\" does not load a pre-trained LM and is trained from scratch. \"Frozen finetuned\" has the language model finetuned, while \"Frozen\" keeps LM frozen. \"Frozen train-blind\" blacks out the image. (Image source: Tsimpoukelli et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-adc0ce190060",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ClipCap relies on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/#clip"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "CLIP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.00020"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Radford et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") for vision encoding, but it needs to be processed by a light mapping network "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " such that image embedding vectors are translated into the same semantic space as the pre-trained LM. The network "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " maps CLIP embeddings into a sequence of "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " embedding vectors, each with the same dimension as a word embedding in GPT2. Increasing the prefix size "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " helps improve the performance. Both CLIP vision encoder and the LM are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "frozen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " during training and only the mapping network "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " is learned. They found that when LM is frozen, "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " should be a transformer, with 8 multi-head self-attention layers with 8 heads each, but when LM can be fine-tuned, a MLP is enough."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b2c186efa22a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Even though ClipCap only trains such a minimum set of parameters, it still achieves decent performance on image captioning tasks, comparable with SoTA at the time (e.g. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.06165"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Oscar"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.11059"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VLP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1707.07998"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BUTD"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Hence they postulate that “the CLIP space already encapsulates the required information, and adapting it towards specific styles does not contribute to flexibility.”"
+          }
+        ]
+      },
+      {
+        "id": "image-762641149e86",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/ClipCap-arch.png",
+          "alt": "Overview of ClipCap training pipeline where only the mapping network needs to be train to transform CLIP image embedding to work with the pre-trained LM. (Image source: Mokady, Hertz & Hertz, 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-acb72ef46f4f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The fun fact is - because ClipCap translates CLIP image embeddings into LM space, the processed prefixes can be even interpreted as words."
+          }
+        ]
+      },
+      {
+        "id": "image-285f6057af01",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/ClipCap-words.png",
+          "alt": "The learned image embedding can be interpreted as text, containing words related to the image context. (Image source: Mokady, Hertz & Hertz, 2021 )"
+        }
+      },
+      {
+        "id": "heading-ae6cb6847c65",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Text-Image Cross-Attention Fuse Mechanisms"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-5076968dbb6c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To more efficiently fuse visual information into different layers of the language model, we can consider a specially designed cross-attention fuse mechanism to balance the mixture of text generation capacity and visual information."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b516514e2c8a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VisualGPT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.10407"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chen et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") employs a self-resurrecting encoder-decoder attention mechanism to quickly adapt the pre-trained LM with a small amount of in-domain image-text data."
+          }
+        ]
+      },
+      {
+        "id": "image-42784cbd1f7d",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualGPT.png",
+          "alt": "Illustration of VisualGPT architecture. (Image source: Chen et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-fc854e326706",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "I"
+          },
+          {
+            "type": "text",
+            "text": " be the output of a visual encoder and "
+          },
+          {
+            "type": "inline_math",
+            "text": "H"
+          },
+          {
+            "type": "text",
+            "text": " be the hidden state of the LM decoder. VisualGPT introduced a self-resurrecting activation unit (SRAU) to control the tradeoff between a mixture of pre-trained linguistic information "
+          },
+          {
+            "type": "inline_math",
+            "text": "H"
+          },
+          {
+            "type": "text",
+            "text": " and visual component, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{EncDecAttn}(H, I)"
+          },
+          {
+            "type": "text",
+            "text": " via two complementary gates "
+          },
+          {
+            "type": "inline_math",
+            "text": "B^\\text{vis}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "B^\\text{lan}"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7e1b17c36875",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\n& B^\\text{vis} \\otimes \\text{EncDecAttn}(H, I) + B^\\text{lan} \\otimes H \\\\\n\\text{where }\n& B^\\text{vis}[i,j] = \\sigma(H[i,j]) \\mathbb{1}[\\sigma(H[i,j]) > \\tau] \\\\\n& B^\\text{lan}[i,j] = (1 - \\sigma(H[i,j])) \\mathbb{1}[1 - \\sigma(H[i,j]) > \\tau] \\\\\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "text",
+            "text": "\nwhere "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\otimes"
+          },
+          {
+            "type": "text",
+            "text": " is element-wise multiplication and "
+          },
+          {
+            "type": "inline_math",
+            "text": "[i,j]"
+          },
+          {
+            "type": "text",
+            "text": " denotes one element in the matrix. "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": " is a predefined threshold hyperparameter."
+          }
+        ]
+      },
+      {
+        "id": "image-ac03bf742375",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualGPT-results.png",
+          "alt": "Comparison of different models trained on 0.1% and 1% of the MS COCO and Conceptual Caption datasets. (Image source: Chen et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-1ed9923ee91a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "VC-GPT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Visual Conditioned GPT; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.12723"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Luo et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") combines a pretrained visual transformer (CLIP-ViT) as visual encoder and a pretrained LM as language decoder."
+          }
+        ]
+      },
+      {
+        "id": "image-6cc64cba1702",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VC-GPT.png",
+          "alt": "Illustration of VC-GPT training framework. (Image source: Luo et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-cdaf69a6d231",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The CLIP-ViT takes a sequence of image patches as inputs and outputs representation for each patch. To avoid catastrophic forgetting, instead of injecting the visual information directly into GPT2, VC-GPT introduces extra cross-attention layers on top of the output of visual encoder and language decoder. Then a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "self-ensemble"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " module linearly combines the single model language decoder logits "
+          },
+          {
+            "type": "inline_math",
+            "text": "h^G"
+          },
+          {
+            "type": "text",
+            "text": " and cross-model vision-language fused module logits "
+          },
+          {
+            "type": "inline_math",
+            "text": "h^\\text{fuse}"
+          },
+          {
+            "type": "text",
+            "text": ". The self-ensemble module (see “VC-GPT w/o SE” in Fig. 13) is important for the performance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f400d5b83aae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\text{logits} = W^G h^G + W^\\text{fuse}h^\\text{fuse}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7ad1605ee491",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "W^G"
+          },
+          {
+            "type": "text",
+            "text": " is a linear projection of the language decoder, initialized by the word embedding matrix of GPT2 and "
+          },
+          {
+            "type": "inline_math",
+            "text": "W^\\text{fuse}"
+          },
+          {
+            "type": "text",
+            "text": " is a linear projection of the fusion module and initialized randomly."
+          }
+        ]
+      },
+      {
+        "id": "image-5267783be01f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VC-GPT-results.png",
+          "alt": "Performance of VC-GPT on the MS COCO test set, in comparison with other end-to-end image captioning baseline models. Metric abbreviation:  C = CIDEr; B = BLEU; M = METEOR; S = SPICE. (Image source: Luo et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-6eebc95a3b6f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MERLOT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.02636"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zellers, et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is trained with 6 millions of YouTube videos with transcribed speech ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://rowanzellers.com/merlot/#data"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "YT-Temporal-180M"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") to learn both spatial (frame-level) and temporal (video-level) objectives and demonstrated strong performance on VQA and visual reasoning tasks when fine-tuned."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b14cd96aba80",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each video "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{V}"
+          },
+          {
+            "type": "text",
+            "text": " is split into multiple segments "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{ \\boldsymbol{s}_t \\}"
+          },
+          {
+            "type": "text",
+            "text": ", each segment "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{s}_t"
+          },
+          {
+            "type": "text",
+            "text": " containing an image frame "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{I}_t"
+          },
+          {
+            "type": "text",
+            "text": " extracted from the middle timestep and "
+          },
+          {
+            "type": "inline_math",
+            "text": "L=32"
+          },
+          {
+            "type": "text",
+            "text": " tokens of words associated. Images are encoded by a learned image encoder and words are encoded using a learned embedding. Then both are encoded together within a joint vision-language transformer."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d5322bb1a6ec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are 3 learning objectives in MERLOT:"
+          }
+        ]
+      },
+      {
+        "id": "list-9030838b76e0",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f3cc7d73888e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Masked language modeling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (MLM) is useful especially because in videos, people tend to ramble, resulting in many repeated keywords or filler words."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3bc7316a43e9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Contrastive frame-caption matching"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " uses the language-only part from the joint vision-language transformer. Matched representations for each frame "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{I}_t"
+              },
+              {
+                "type": "text",
+                "text": " and caption "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\boldsymbol{w}_t"
+              },
+              {
+                "type": "text",
+                "text": " are treated as positive examples, while the negative examples come from all other frame-caption pairs in the minibatch."
+              }
+            ]
+          },
+          {
+            "id": "list-item-bb78552c54af",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Temporal reordering"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " learns temporal reasoning: scramble random "
+              },
+              {
+                "type": "inline_math",
+                "text": "i"
+              },
+              {
+                "type": "text",
+                "text": " frames and replace the segment-level position embeddings with a random and unique position embedding. The random position embeddings are learned, allowing the model to unshuffle these “‘shuffled’” frames conditioned on correctly-ordered ones. The loss is to predict whether "
+              },
+              {
+                "type": "inline_math",
+                "text": "t_i < t_j"
+              },
+              {
+                "type": "text",
+                "text": " or "
+              },
+              {
+                "type": "inline_math",
+                "text": "t_j < t_i"
+              },
+              {
+                "type": "text",
+                "text": " for each frame-frame pair."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-b9de8c976eae",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/MERLOT.png",
+          "alt": "Illustration of MERLOT training framework: (Left) contrastive frame-caption matching training; (Right) joint vision-language transformer is trained with MLM loss, as well as on the temporal reordering task to unshuffle scrambled video frames. (Image source: Zellers, et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-c8c33671b474",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Ablation studies showed that it is important to (1) train on videos instead of images, (2) scale up the size and diversity of the training dataset and (3) use diverse objectives to encourage full-stack multimodal reasoning."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7c34f72f82dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Flamingo"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.14198"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Alayrac et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a visual language model that accepts text interleaved with images/videos and outputs free-form text. Flamingo connects a pretrained LM and a pretrained vision encoder (i.e. CLIP image encoder) via a transformer-based mapper. To more efficiently incorporate vision signals, Flamingo adopts a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.03206"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Perceiver"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "-based architecture to produce a few hundreds of tokens out of a large number of visual input features and then use cross-attention layers interleaved with the LM layers to fuse visual information into the language decoding process. The training objective is an autoregressive, NLL loss."
+          }
+        ]
+      },
+      {
+        "id": "list-a8ddc57b77b7",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-f47c5b37a239",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The Perceiver resampler receives spatio-temporal features from the vision encoder of image/video inputs to produce fixed-size visual tokens."
+              }
+            ]
+          },
+          {
+            "id": "list-item-86c399a4fcb3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The frozen LM is equipped with newly initialized cross-attention layers interleaved between the pretrained LM layers. Thus the LM can generate text conditioned on the above visual tokens."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-080dbbf6ea4e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to ClipCap, both pretrained models are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "frozen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " during training and thus Flamingo is only trained to harmoniously connect existing, powerful language and vision models together. Tha main difference between ClipCap and Flamingo is that the former treats the image embedding as simple prefix for LM, while the latter uses the gated cross-attention-dense layer to fuse image information. In addition, Flamingo incorporates a lot more training data than ClipCap."
+          }
+        ]
+      },
+      {
+        "id": "image-72b1fed220db",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo.png",
+          "alt": "Overview of the Flamingo model. (Image source: Alayrac et al. 2022 )"
+        }
+      },
+      {
+        "id": "image-b1eb348bf91e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo-cross-attention.png",
+          "alt": "The architecture illustration and pseudo code of the gated cross-attention-dense layer in Flamingo. (Image source: Alayrac et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-ba2c732a69d0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To easily handle text with interleaved images, masking in Flamingo is designed such that text token only cross-attends to visual tokens corresponding to the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "last"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " preceding image, largely reducing the number of visual tokens that a certain text token can see. They found this works better than allowing text tokens to attend to all preceding images directly. Text still can attend to all previous images because there is a causal self-attention dependency in the text encoder. This design can deal with an arbitrary number of images in the context."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-41f827291c0e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They scraped 43 million webpages from the Internet, named MultiModal MassiveWeb (M3W) dataset, containing text with interleaved images. In addition, Flamingo is also trained on paired image/text and video/text datasets, including "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/#pair-image-text-datasets"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ALIGN, LTIP and VTP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-be3f04faee27",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Data processing of the Internet dataset includes:"
+          }
+        ]
+      },
+      {
+        "id": "list-34e02fe0f4ff",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9634fdb52ecd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The input Web page text is processed by inserting "
+              },
+              {
+                "type": "inline_code",
+                "text": "<image>"
+              },
+              {
+                "type": "text",
+                "text": " tags at the location of visual inputs, as well as special tokens, "
+              },
+              {
+                "type": "inline_code",
+                "text": "<BOS>"
+              },
+              {
+                "type": "text",
+                "text": " (beginning of sentence) and "
+              },
+              {
+                "type": "inline_code",
+                "text": "<EOC>"
+              },
+              {
+                "type": "text",
+                "text": " (end of chunks; always at the end of the document, before any image tag)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3a4fae96ac9e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "From each document, they sample a random subsequence of "
+              },
+              {
+                "type": "inline_math",
+                "text": "L = 256"
+              },
+              {
+                "type": "text",
+                "text": " tokens and take up to "
+              },
+              {
+                "type": "inline_math",
+                "text": "N = 5"
+              },
+              {
+                "type": "text",
+                "text": " images included in the sampled sequence (using only the first "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " within that sampled subsequence if there are more, or padding to "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " if fewer)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-9ef21ca5ba04",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A function "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\phi: [1,L] \\to [0,N]"
+              },
+              {
+                "type": "text",
+                "text": " is computed to track the text and image interleaving order, which assigns to each text position the index of the last image/video appearing before this position; 0 if no preceding visual data."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3608519b443e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since Flamingo is trained on a mixture of three different datasets, it optimizes for a weighted sum of dataset-specific NLL losses. Tuning the dataset weights is very important for the final performance. In practice, instead of round-robin between datasets, they actually sample one batch from each dataset and apply a weighted sum of these gradients in each update. Gradient accumulation across different heterogeneous datasets can be viewed as a mean to stabilize training, as it reduces the gradient variance between each update."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5e13699c24c0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At test time, Flamingo naturally supports few-shot learning since it can work with any sequence of interleaved text and images. And more examples in the context contribute to better performance."
+          }
+        ]
+      },
+      {
+        "id": "image-326efba4e82b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo-fewshot.png",
+          "alt": "Larger model sizes and more few-shot examples lead to better performance. (Image source: Alayrac et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-eaf2d83e8853",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Flamingo outperforms SoTA fine-tuned models on 6 out of the 16 tasks despite even when not using any fine-tuning but only few-shot prompting. Fine-tuning Flamingo is expensive and it is difficult to do hyperparemeter tuning, but it does lead to better results."
+          }
+        ]
+      },
+      {
+        "id": "image-3d0306c3bf7f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo-results.png",
+          "alt": "Performance of Flamingo model using different numbers of shots and of different sizes, in comparison with SoTA fine-tuned baseline. (Image source: Alayrac et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-a15cc3192565",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "CoCa"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Contrastive Captioner; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.01917"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yu & Wang et al., 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") captures both the merits of contrastive learning and image-to-caption generation. It is a model jointly trained with contrastive loss on CLIP-style representation and generative loss on image captioning, achieving SoTA zero-shot transfer on a variety of multi-modal evaluation tasks."
+          }
+        ]
+      },
+      {
+        "id": "image-146451409ae0",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CoCa-arch.png",
+          "alt": "Overview of CoCa training framework. (Image source: Yu & Wang et al., 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-ae33f23c0a08",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CoCa is pretrained from "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "scratch"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", using web-scale alt-text data "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/#pair-image-text-datasets"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ALIGN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and annotated images by treating all labels as texts in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/#pair-image-text-datasets"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "JTB-3B"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f55570a83a3b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are two major training components in CoCa. The final loss is a weighted sum of the following two losses, with weight scalars "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda_\\text{cap}=2.0, \\lambda_\\text{con} = 1.0"
+          },
+          {
+            "type": "text",
+            "text": ".:"
+          }
+        ]
+      },
+      {
+        "id": "list-cb472fc4513f",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-2c243935e315",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_\\text{con}"
+              },
+              {
+                "type": "text",
+                "text": " -  "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Dual-encoder contrastive learning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " optimizes the symmetric contrastive learning loss, similar to CLIP."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b01ed6396173",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_\\text{cap}"
+              },
+              {
+                "type": "text",
+                "text": " - "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Encoder-decoder captioning"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " has the decoder predict the caption based on the latent encoded features from the image encoder, by optimizing an autoregressive loss. The text decoder is decoupled into two components, "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "unimodal"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "multimodal"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "; a good balance is to split the decoder by half for these two components:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-fc882604bc25",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-939c76a5edb4",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The bottom unimodal component encodes the input text with causally-masked self-attention."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-31b4692c3e62",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "The top multimodal component applies both causally-masked self-attention and cross-attention to the output of the vision encoder."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d504ac1c4267",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "CoCa performs better than the contrastive-only model and on par with the captioning-only model on VQA. Captioning loss is found to be beneficial to the zero-shot classification capacity too."
+          }
+        ]
+      },
+      {
+        "id": "image-a0a0502e88e4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CoCa.png",
+          "alt": "Illustration of how CoCa can be used to solve various downstream tasks at test time. (Image source: Yu & Wang et al., 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-45d7d262b6f2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They use task-specific attention pooling, or attention pooler, as a natural task adapter, as they found that a single pooled image embedding helps visual recognition tasks (e.g. ImageNet classification), while a more fine-grained embedding helps multimodal understanding tasks (e.g. VQA). A pooler is a single multi-head attention layer with "
+          },
+          {
+            "type": "inline_math",
+            "text": "n_\\text{query}"
+          },
+          {
+            "type": "text",
+            "text": " learnable queries (note that "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{X} \\in \\mathbb{R}^{L \\times d}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^q \\in \\mathbb{R}^{d \\times d_q}"
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_k = d_q"
+          },
+          {
+            "type": "text",
+            "text": "), with the encoder output as both keys and values. CoCa uses attentional poolers in pretraining for generative loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "n_\\text{query} = 256"
+          },
+          {
+            "type": "text",
+            "text": " and contrastive loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "n_\\text{query} = 1"
+          },
+          {
+            "type": "text",
+            "text": ". This enables the model to obtain strong performance as a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "frozen"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " encoder where we only learn a new pooler to aggregate features."
+          }
+        ]
+      },
+      {
+        "id": "image-dcc0b11e3ee4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CoCa-code.png",
+          "alt": "Pseudo code for CoCa architecture and training. (Image source: Yu & Wang et al., 2022 )"
+        }
+      },
+      {
+        "id": "heading-8320ed3b065c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "No Training"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b2f76f2ef6e2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally it is possible to solve vision language tasks by stitching pretrained language and vision models together without training any additional parameters."
+          }
+        ]
+      },
+      {
+        "id": "heading-b1ec6d076815",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Decoding Guided with Vision-based Scores"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-02489267e724",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MAGiC"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (iMAge-Guided text generatIon with CLIP; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.02655"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Su et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") does "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#guided-decoding"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "guided decoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " according to a CLIP-based score named "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "magic score"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to sample the next token, without fine-tuning. The generated text is encouraged to be relevant to the given image, while still stay coherent to the previously generated text."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-65d97b3321c9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The next token "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_t"
+          },
+          {
+            "type": "text",
+            "text": " at a time step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " is selected according to the following equation. Model confidence and degeneration penalty ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2202.06417"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Su et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") are added to avoid corrupted generation from LM."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-45f29d5bccda",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\n& x_t = \\arg\\max_{v \\in \\mathcal{V}^{(k)}} \\big\\{ (1-\\alpha) \\underbrace{p(v \\vert \\boldsymbol{x}_{<t})}_\\text{model confidence} - \\alpha \\underbrace{\\max_{1 \\leq j \\leq t-1} { \\text{cosine}(h_v, h_{x_j})}}_\\text{degeneration penalty} + \\beta \\underbrace{f_\\text{magic}(v \\vert \\mathcal{I}, \\boldsymbol{x}_{<t}, \\mathcal{V}^{(k)})}_\\text{magic score} \\big\\} \\\\\n\\text{where } & f_\\text{magic} ( v \\vert \\mathcal{I}, \\mathbf{x}_{<t}, \\mathcal{V}^{(k)} )\n= \\frac{ \\exp(\\text{CLIP}(\\mathcal{I}, [\\boldsymbol{x}_{<t}:v])) }{ \\sum_{z \\in \\mathcal{V}^{(k)}} \\exp(\\text{CLIP}(\\mathcal{I}, [\\boldsymbol{x}_{<t}:z])) }\n= \\frac{ \\exp\\big({h^\\text{image}(\\mathcal{I})}^\\top h^\\text{text}([\\boldsymbol{x}_{<t}:v])\\big) }{ \\sum_{z \\in \\mathcal{V}^{(k)}} \\exp\\big({h^\\text{image}(\\mathcal{I})}^\\top h^\\text{text}([\\boldsymbol{x}_{<t}:z])\\big) }\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fb69a58cac6d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{I}"
+          },
+          {
+            "type": "text",
+            "text": " is the input image; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{V}^{(k)}"
+          },
+          {
+            "type": "text",
+            "text": " contains top-"
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " possible tokens predicted by the language model "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{x}_{<t}"
+          },
+          {
+            "type": "text",
+            "text": " refers to the past generated tokens before time step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "inline_math",
+            "text": "h_v"
+          },
+          {
+            "type": "text",
+            "text": " is the representation of the token "
+          },
+          {
+            "type": "inline_math",
+            "text": "v"
+          },
+          {
+            "type": "text",
+            "text": " computed by LM conditioned on the concatenation of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{x}_{<t}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "v"
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "inline_math",
+            "text": "h^\\text{image}(.)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "h^\\text{text}(.)"
+          },
+          {
+            "type": "text",
+            "text": " are embeddings generated by CLIP image and text encoders, respectively."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e089cb858526",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MAGiC has decent performance compared to other unsupervised approaches, but still has big gaps with supervised methods."
+          }
+        ]
+      },
+      {
+        "id": "image-988690a138a0",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/MAGiC-results.png",
+          "alt": "Image captioning performance on COCO and Flickr30k. (Image source: Su et al. 2022 )"
+        }
+      },
+      {
+        "id": "heading-77d4ca258d8a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Language as Communication Interface"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-b7262f0837df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For knowledge-based VQA tasks, PICa (Prompts GPT-3 via the use of Image Captions; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.05014"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yang et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") first converts the images into captions or tags and then uses few-shot examples to prompt GPT3 to provide answers. Image captions or tags are extracted by some existing models (e.g. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openaccess.thecvf.com/content/CVPR2021/html/Zhang_VinVL_Revisiting_Visual_Representations_in_Vision-Language_Models_CVPR_2021_paper.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VinVL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") or Azure Tagging API. And GPT3 is considered as an unstructured, implicit knowledge base."
+          }
+        ]
+      },
+      {
+        "id": "image-1b99df6ccb60",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/PICa-fewshot.png",
+          "alt": "How PICa works for $n$-shot VQA at inference time. (Image source: Yang et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-b456021026e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "PICa explored two ways to improve few-shot examples to achieve better results:"
+          }
+        ]
+      },
+      {
+        "id": "list-7abd20f2e2e3",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-669095a5a25b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In-context examples are selected based on how "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "similar"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " they are to the question using CLIP embedding."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9c03ea4d5349",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Multi-query ensembling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is to prompt the model multiple times to get multiple answers and the one with highest logprob is selected."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-251a5b4b984b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This simple approach with only 16 examples improved SoTA on OK-VQA by +8.6 points and got decent performance on VQAv2."
+          }
+        ]
+      },
+      {
+        "id": "image-33d2f66889ba",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/PICa-OKVQA.png",
+          "alt": "Performance of PICa on OK-VQA. \"PICa-Base\" has random in-context examples, while \"PICa-Full\" incorporates both similar in-context example selection and multi-query ensembling. (Image source: Yang et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-0ab772d1eef9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Socratic Models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (SM) ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.00598"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zeng et al. 2022"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a framework to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "compose"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " multiple pretrained models for different modality via language (prompting) into one model without further training. Here language is considered as the intermediate representation by which different models can exchange information. The key idea is to use "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "multi-model multimodal prompting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", in which output of a non-language model is inserted into a language prompt and then it is used for LM for reasoning."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fe4f703b04a4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s examine a concrete example. Given an ego-centric video (images + audio), SM can produce a summary of the person’s activity using "
+          },
+          {
+            "type": "text",
+            "text": "text-to-text LM"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "text",
+            "text": " image-to-text VLM"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "text",
+            "text": "speech-to-text ALM"
+          },
+          {
+            "type": "text",
+            "text": ". They are chained as follows:"
+          }
+        ]
+      },
+      {
+        "id": "image-699178dc828a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-example.png",
+          "alt": "(Image source: Zeng et al. 2022 )"
+        }
+      },
+      {
+        "id": "list-dfe89fdba704",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-abfb25b4bdd0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the VLM detects "
+              },
+              {
+                "type": "text",
+                "text": "visual entities"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-5dfb76cbb6ea",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the LM suggests "
+              },
+              {
+                "type": "text",
+                "text": "sounds"
+              },
+              {
+                "type": "text",
+                "text": " that may be heard;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-83eecc343d65",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the ALM chooses the "
+              },
+              {
+                "type": "text",
+                "text": "most likely sound"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-664185d6282c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the LM suggests possible "
+              },
+              {
+                "type": "text",
+                "text": "activities"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-7e2d3ef23d14",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the VLM ranks the "
+              },
+              {
+                "type": "text",
+                "text": "most likely activity"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-79fd0fb4ba03",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "the LM generates a "
+              },
+              {
+                "type": "text",
+                "text": "summary"
+              },
+              {
+                "type": "text",
+                "text": " of the Socratic interaction."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-4f6e2fe0dbad",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-caption-example.png",
+          "alt": "Illustration of the Socratic Model solution for image captioning. (Image source: Zeng et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-afa6c615a80f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SM can generate image captions by first using VLM to zero-shot predict different place categories, object categories, image type and the number of people; and then the VLM-filled language prompt is fed into a causal LM to generate caption candidates. The Socratic approach still has performance gap with ClipCap on image captioning but pretty decent given it does not involve any training."
+          }
+        ]
+      },
+      {
+        "id": "image-dae4c5ec7751",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-caption.png",
+          "alt": "Comparison of image captioning performance of different models on random 100 COCO text examples. (Image source: Zeng et al. 2022 )"
+        }
+      },
+      {
+        "id": "paragraph-7b806382b854",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SM framework is very flexible and can be used on a lot more complicated tasks other than image captions. For example, the egocentric perception (User inputs + VLM + LM + ALM) task is to take as inputs egocentric videos to (1) summarize content; (2) answer free-form reasoning questions; (3) and do forecasting."
+          }
+        ]
+      },
+      {
+        "id": "image-5ef319396aa5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-egocentric.png",
+          "alt": "The Socratic Model approach for generating captions and question answering based on the egocentric videos. (Image source: Zeng et al. 2022 )"
+        }
+      },
+      {
+        "id": "heading-43131d05cd29",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Datasets"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-f8c43643f345",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Image Caption Datasets"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-a6cf8a4f5daf",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-3642cebd05b2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MS COCO"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1504.00325"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Chen et al. 2015"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): contains 328K images and each paired with 5 independent captions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3f2c49dab236",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "NoCaps"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1812.08658"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Agrawal et al., 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is designed to measure generalization to unseen classes and concepts, where in-domain contains images portraying only COCO classes, near-domain contains both COCO and novel classes, and out-of-domain consists of only novel classes."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0efa62fd9c7b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Conceptual Captions"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://aclanthology.org/P18-1238/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Sharma et al. 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 3 million pairs of images and captions, mined from the web and post-processed. To focus on the concepts, specific entities in this dataset are replaced with general notions (e.g. a politician’s name is replaced with “politician”)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-103929005ae3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Crisscrossed Captions (CxC)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2004.15020"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Parekh et al. 2021"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 247,315 human-labeled annotations including positive and negative associations between image pairs, caption pairs and image-caption pairs."
+              }
+            ]
+          },
+          {
+            "id": "list-item-122b1626c278",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Concadia"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2104.08376"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kreiss et al. 2021"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is a Wikipedia-based dataset containing 96,918 images with corresponding English-language descriptions, captions, and surrounding context."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-f4beda7a5dce",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Pair Image-Text Datasets"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-f4a6a8056775",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(*) Not a public dataset."
+          }
+        ]
+      },
+      {
+        "id": "list-1bf90693f7fd",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-fe993a67a7e6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ALIGN"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2102.05918"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Jia et al., 2021"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 1.8 billion images with alt-text. The dataset is large but noisy with only minimal frequency-based filtration."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f18e9b541fb1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(*) "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "LTIP"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Long text & image pairs; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2204.14198"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Alayrac et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): 312 million images, paired with descriptive captions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9147141f176b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(*) "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "VTP"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Video & text pairs; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2204.14198"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Alayrac et al. 2022"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): 27 million short videos (~22 seconds on average), paired with descriptive captions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0e5f87fe8669",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(*) "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "JFT-300M"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " / "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "JFT-3B"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " are internal Google datasets, containing 300M / 3B images annotated with a class-hierarchy of around 30k labels via a semi-automatic pipeline. Thus the data and associated labels are noisy."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-3bf3a3f73e01",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evaluation Tasks"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-99761a2c2c0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Visual Question-Answering"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c46d3cc38f9e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given an image and a question, the task is to correctly answer the question."
+          }
+        ]
+      },
+      {
+        "id": "list-0c555c5eff06",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-15bd423a9bde",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "VQAv2"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1612.00837"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Goyal et al., 2017"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 1+ million questions about 200K images from COCO."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3f48b80896ab",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "OK-VQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1906.00067"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Marino et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 14K open-ended questions that require outside knowledge (e.g. from Wikipedia).\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-e6b7063caf64",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-49c4e3bfb69b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "emphasis",
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "A-OKVQA"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": ": the augmented successor of OK-VQA, with no overlapped questions with OK-VAQ."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-3d844b47c349",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TextVQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1904.08920"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Singh, et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 45,336 questions on 28,408 images that require reasoning about text to answer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8635aba68c10",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "VizWiz"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1802.08218"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Gurari, et al. 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains over 31,000 visual questions originating from blind people who each took a picture using a mobile phone and recorded a spoken question about it, together with 10 crowdsourced answers per visual question."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-a079244dc50b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Visual Language Reasoning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-220add1fc9c1",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-c7699563ffd9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "VCR"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Visual Commonsense Reasoning; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1811.10830"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zellers et al. 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 290k multiple choice QA questions derived from 110k movie scenes, with focus on visual commonsense."
+              }
+            ]
+          },
+          {
+            "id": "list-item-045c69c789bb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "NLVR2"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Natural Language for Visual Reasoning; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1811.00491"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Suhr et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 100k+ examples of sentences paired with web images and the task is to determine whether a natural language caption is true about a pair of images, with a focus on semantic diversity."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7ff50f181974",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Flickr30K"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1509.04942"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Jia et al. 2015"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 30k images collected from Flickr and 250k annotations and the task is to select the bounding regions given spans of a sentence."
+              }
+            ]
+          },
+          {
+            "id": "list-item-83f37a78a6b2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "SNLI-VE"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Visual Entailment; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1901.06706"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Xie et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is built on top of SNLI and Flickr30K and the task is to reason about the relationship between an image premise and a text hypothesis."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-be56b966d7d7",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Video QA and Understanding"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-913ea5c4f2f0",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-45c717a72268",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MSR-VTT"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (MSR Video to Text; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.microsoft.com/en-us/research/wp-content/uploads/2016/06/cvpr16.msr-vtt.tmei_-1.pdf"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Xu et al. 2016"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 10K web video clips with 41.2 hours and 200K clip-sentence pairs in total; the task is to translate videos to text."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4b29b88c1130",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ActivityNet-QA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1906.02467"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Yu et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 58,000 human-annotated QA pairs on 5,800 videos derived from the popular "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "http://activity-net.org/index.html"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ActivityNet"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " dataset."
+              }
+            ]
+          },
+          {
+            "id": "list-item-fa973934354c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TGIF"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Tumblr GIF; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1604.02748"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Li et al. .2016"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 100K animated GIFs and 120K sentences describing visual content of the animated GIFs, randomly selected posts published between May and June of 2015 on Tumblr.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-9afe4458fa49",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-e1240b186998",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "emphasis",
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "TGIF-QA"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "text",
+                        "text": " contains 165K QA pairs for the animated GIFs from the TGIF dataset."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-27db1d3c93ef",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "LSMDC"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Large Scale Movie Description Challenge; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1501.02530"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rohrbach et al. 2015"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 118,081 short video clips extracted from 202 movies. Each video has a caption, either extracted from the movie script or from transcribed DVS (descriptive video services) for the visually impaired."
+              }
+            ]
+          },
+          {
+            "id": "list-item-148ef9e15f73",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TVQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1809.01696"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Lei et al. 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")  / "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TVQA+"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1904.11574"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Lei et al. 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is a large-scale video QA dataset based on 6 popular TV shows (Friends, The Big Bang Theory, How I Met Your Mother, House M.D., Grey’s Anatomy, Castle). It consists of 152.5K QA pairs from 21.8K video clips, spanning over 460 hours of video."
+              }
+            ]
+          },
+          {
+            "id": "list-item-33b6f2fef119",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "DramaQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2005.03356"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Choi et al. 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is a large-scale video QA dataset based on a Korean popular TV show, “Another Miss Oh”. This dataset contains four levels of QA on difficulty and multi-level character-centered story descriptions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-cee65b601d2e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "VLEP"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (Video-and-Language Event Prediction; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2010.07999"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Lei et al. 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") contains 28,726 future event prediction examples (along with their rationales) from 10,234 diverse TV Show and YouTube Lifestyle Vlog video clips."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-6a82cae8d6f7",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-3009efccd6a7",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Jun 2022). Generalized visual language models. Lil’Log. https://lilianweng.github.io/posts/2022-06-09-vlm/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-8ab9e703b643",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2022vlm,\n  title   = \"Generalized Visual Language Models\",\n  author  = \"Weng, Lilian\",\n  journal = \"Lil'Log\",\n  year    = \"2022\",\n  month   = \"Jun\",\n  url     = \"https://lilianweng.github.io/posts/2022-06-09-vlm/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8b3a92883558",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Li et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.03557"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“VisualBERT: A Simple and Performant Baseline for Vision and Language.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint:1908.03557 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7faee61e3e2b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2108.10904"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“SimVLM: Simple Visual Language Model Pretraining with Weak Supervision.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2022."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e00001722e04",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Aghajanyan, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.07520"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“CM3: A Causal Masked Multimodal Model of the Internet.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv: 2201.07520 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-638140b5a496",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Tsimpoukelli et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.13884"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Multimodal Few-Shot Learning with Frozen Language Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-702021655a2d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Mokady, Hertz & Hertz. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2111.09734"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“ClipCap: CLIP Prefix for Image Captioning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-381e43a54856",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Chen et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2102.10407"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“VisualGPT: Data-efficient Adaptation of Pretrained Language Models for Image Captioning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2111.09734 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f75795420649",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Luo et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2201.12723"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Frustratingly Simple Approach for End-to-End Image Captioning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2201.12723 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0349f3f32d11",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Zellers et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2106.02636"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“MERLOT: Multimodal neural script knowledge models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d3b3f7a1dea5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Alayrac et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.14198"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Flamingo: a Visual Language Model for Few-Shot Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2204.14198 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-11b6bcc2bf89",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Yu & Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.01917"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“CoCa: Contrastive Captioners are Image-Text Foundation Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2205.01917 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ca4ece69cf6c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Yang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.05014"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“An Empirical Study of GPT-3 for Few-Shot Knowledge-Based VQA.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2109.05014 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5f414c929a0b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Su et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2205.02655"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Language models can see: Plugging visual controls in text generation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2205.02655 (2022)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-11304bb00f1f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Zeng et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2204.00598"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Socratic Models: Composing Zero-Shot Multimodal Reasoning with Language.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2204.00598 (2022)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "generalized-visual-language-models",
+    "source_slug": "2022-06-09-vlm",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 15,
+      "math": 0,
+      "image": 28,
+      "table": 0,
+      "code": 6
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualBERT-arch.png",
+      "alt": "VisualBERT is trained on the combination of both text and image embeddings. (Image source: Li et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualBERT-ablation.png",
+      "alt": "Ablation study results of VisualBERT on NLVR. (Image source: Li et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SimVLM-arch.png",
+      "alt": "Training architecture for SimVLM, where the image patches are processed by the cross-attention encoder and the text decoder has causal attention. (Image source: Wang et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SimVLM-ablation.png",
+      "alt": "Ablation study results of SimVLM on VQA. (Image source: Wang et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CM3-arch.png",
+      "alt": "Illustration of how a causally masked language model works. (Image source: Aghajanyan, et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Frozen-arch.png",
+      "alt": "Illustration of Frozen model (left) training architecture and (right) testing pipeline. (Image source: Tsimpoukelli et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Frozen-results.png",
+      "alt": "Performance of different versions of Frozen on (left) VQAv2 and (right) OKVQA, trained on Conceptual Captions. \"Frozen scratch\" does not load a pre-trained LM and is trained from scratch. \"Frozen finetuned\" has the language model finetuned, while \"Frozen\" keeps LM frozen. \"Frozen train-blind\" blacks out the image. (Image source: Tsimpoukelli et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/ClipCap-arch.png",
+      "alt": "Overview of ClipCap training pipeline where only the mapping network needs to be train to transform CLIP image embedding to work with the pre-trained LM. (Image source: Mokady, Hertz & Hertz, 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/ClipCap-words.png",
+      "alt": "The learned image embedding can be interpreted as text, containing words related to the image context. (Image source: Mokady, Hertz & Hertz, 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualGPT.png",
+      "alt": "Illustration of VisualGPT architecture. (Image source: Chen et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VisualGPT-results.png",
+      "alt": "Comparison of different models trained on 0.1% and 1% of the MS COCO and Conceptual Caption datasets. (Image source: Chen et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VC-GPT.png",
+      "alt": "Illustration of VC-GPT training framework. (Image source: Luo et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/VC-GPT-results.png",
+      "alt": "Performance of VC-GPT on the MS COCO test set, in comparison with other end-to-end image captioning baseline models. Metric abbreviation:  C = CIDEr; B = BLEU; M = METEOR; S = SPICE. (Image source: Luo et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/MERLOT.png",
+      "alt": "Illustration of MERLOT training framework: (Left) contrastive frame-caption matching training; (Right) joint vision-language transformer is trained with MLM loss, as well as on the temporal reordering task to unshuffle scrambled video frames. (Image source: Zellers, et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo.png",
+      "alt": "Overview of the Flamingo model. (Image source: Alayrac et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo-cross-attention.png",
+      "alt": "The architecture illustration and pseudo code of the gated cross-attention-dense layer in Flamingo. (Image source: Alayrac et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo-fewshot.png",
+      "alt": "Larger model sizes and more few-shot examples lead to better performance. (Image source: Alayrac et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/Flamingo-results.png",
+      "alt": "Performance of Flamingo model using different numbers of shots and of different sizes, in comparison with SoTA fine-tuned baseline. (Image source: Alayrac et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CoCa-arch.png",
+      "alt": "Overview of CoCa training framework. (Image source: Yu & Wang et al., 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CoCa.png",
+      "alt": "Illustration of how CoCa can be used to solve various downstream tasks at test time. (Image source: Yu & Wang et al., 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/CoCa-code.png",
+      "alt": "Pseudo code for CoCa architecture and training. (Image source: Yu & Wang et al., 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/MAGiC-results.png",
+      "alt": "Image captioning performance on COCO and Flickr30k. (Image source: Su et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/PICa-fewshot.png",
+      "alt": "How PICa works for $n$-shot VQA at inference time. (Image source: Yang et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/PICa-OKVQA.png",
+      "alt": "Performance of PICa on OK-VQA. \"PICa-Base\" has random in-context examples, while \"PICa-Full\" incorporates both similar in-context example selection and multi-query ensembling. (Image source: Yang et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-example.png",
+      "alt": "(Image source: Zeng et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-caption-example.png",
+      "alt": "Illustration of the Socratic Model solution for image captioning. (Image source: Zeng et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-caption.png",
+      "alt": "Comparison of image captioning performance of different models on random 100 COCO text examples. (Image source: Zeng et al. 2022 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-06-09-vlm/SM-egocentric.png",
+      "alt": "The Socratic Model approach for generating captions and question answering based on the egocentric videos. (Image source: Zeng et al. 2022 )"
+    }
+  ]
+}

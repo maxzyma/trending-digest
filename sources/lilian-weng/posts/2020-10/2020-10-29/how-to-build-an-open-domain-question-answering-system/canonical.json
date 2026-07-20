@@ -1,0 +1,6333 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2020-10-29-odqa",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2020-10-29-odqa/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2020-10-29T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:da5bd408ef0b40190ecebae2e87fa814d9e54331261d2f30e6b2d3e386c81c46",
+    "fetched_at": "2026-07-14T02:05:24.939052+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "How to Build an Open-Domain Question Answering System?",
+    "title_en": "How to Build an Open-Domain Question Answering System?",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-3204a0dc0ba1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2020-11-12: add "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#openai-api-example"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "an example"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on closed-book factual QA using OpenAI API (beta)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1ee688ed007f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A model that can answer any question with regard to factual knowledge can lead to many useful and practical applications, such as working as a chatbot or an AI assistant🤖. In this post, we will review several common approaches for building such an open-domain question answering system."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-eac67727c324",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Disclaimers given so many papers in the wild:"
+          }
+        ]
+      },
+      {
+        "id": "list-a618c0d33be5",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-bedca33e38a5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Assume we have access to a powerful pretrained "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "language model"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-cfa93198dc3a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "We do not cover how to use structured knowledge base (e.g. Freebase, WikiData) here."
+              }
+            ]
+          },
+          {
+            "id": "list-item-55e3a6ac5b5f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "We only focus on a single-turn QA instead of a multi-turn conversation style QA."
+              }
+            ]
+          },
+          {
+            "id": "list-item-49102696a26f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "We mostly focus on QA models that contain neural networks, specially Transformer-based language models."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1dcdcfb5c0d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "I admit that I missed a lot of papers with architectures designed specifically for QA tasks between 2017-2019😔"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-31b0468a68b8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What is Open-Domain Question Answering?"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-90d85f747544",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Open-domain Question Answering (ODQA)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a type of language tasks, asking a model to produce answers to factoid questions in natural language. The true answer is objective, so it is simple to evaluate model performance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49d6cfe6d35f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example,"
+          }
+        ]
+      },
+      {
+        "id": "code-eabb326cfc03",
+        "type": "code",
+        "attrs": {
+          "code": "Question: What did Albert Einstein win the Nobel Prize for?\nAnswer: The law of the photoelectric effect.",
+          "language": ""
+        }
+      },
+      {
+        "id": "paragraph-e2aab8a03ddb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The “open-domain” part refers to the lack of the relevant context for any arbitrarily asked factual question. In the above case, the model only takes as the input the question but no article about “why Einstein didn’t win a Nobel Prize for the theory of relativity” is provided, where the term “the law of the photoelectric effect” is likely mentioned. In the case when both the question and the context are provided, the task is known as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Reading comprehension (RC)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a85245932831",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An ODQA model may work with or without "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "access to an external source of knowledge"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (e.g. Wikipedia) and these two conditions are referred to as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "open-book"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "closed-book"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " question answering, respectively."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-739ccc0e6bb6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When considering different types of open-domain questions, I like the classification by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2008.02637"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lewis, et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", in increasing order of difficulty:"
+          }
+        ]
+      },
+      {
+        "id": "list-e85b38bfda7b",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-8b8172afcadd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A model is able to correctly memorize and respond with the answer to a question that has been seen at training time."
+              }
+            ]
+          },
+          {
+            "id": "list-item-75ca8e04d18a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A model is able to answer novel questions at test time and choose an answer from the set of answers it has seen during training."
+              }
+            ]
+          },
+          {
+            "id": "list-item-401295505ae8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A model is able to answer novel questions which have answers not contained in the training dataset."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-51bc61ae8d79",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-summary.png",
+          "alt": "Overview of three frameworks discussed in this post."
+        }
+      },
+      {
+        "id": "heading-6ff32a12eed9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-47b2bcbdb967",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a question "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " and a ground truth answer span "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ", the context passage containing the true answer is labelled as "
+          },
+          {
+            "type": "inline_math",
+            "text": "z \\in \\mathcal{Z}"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{Z}"
+          },
+          {
+            "type": "text",
+            "text": " is an external knowledge corpus. Wikipedia is a common choice for such an external knowledge source."
+          }
+        ]
+      },
+      {
+        "id": "heading-f874a2a0ced9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Concerns of QA data fine-tuning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7ccc4d63ad3f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before we dive into the details of many models below. I would like to point out one concern of fine-tuning a model with common QA datasets, which appears as one fine-tuning step in several ODQA models. It could be concerning, because there is a significant overlap between questions in the train and test sets in several public QA datasets."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6fd6fb47a2ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2008.02637"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lewis, et al., (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/QA-Overlap"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") found that 58-71% of test-time answers are also present somewhere in the training sets and 28-34% of test-set questions have a near-duplicate paraphrase in their corresponding training sets. In their experiments, several models performed notably worse when duplicated or paraphrased questions were removed from the training set."
+          }
+        ]
+      },
+      {
+        "id": "heading-cacac6d5ef15",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Open-book QA: Retriever-Reader"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-92f202cdafbb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a factoid question, if a language model has no context or is not big enough to memorize the context which exists in the training dataset, it is unlikely to guess the correct answer. In an open-book exam, students are allowed to refer to external resources like notes and books while answering test questions. Similarly, a ODQA system can be paired with a rich knowledge base to identify relevant documents as evidence of answers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-68b915a926a6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can decompose the process of finding answers to given questions into two stages,"
+          }
+        ]
+      },
+      {
+        "id": "list-a1950d4b5ea9",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-3e35c9399828",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Find the related context in an external repository of knowledge;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-b43277a80275",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Process the retrieved context to "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "extract"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " an answer."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-d103b42aa1d5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-retriever-reader.png",
+          "alt": "The retriever-reader QA framework combines information retrieval with machine reading comprehension."
+        }
+      },
+      {
+        "id": "paragraph-9154cbb4c206",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Such a retriever + reader framework was first proposed in "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DrQA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Document retriever Question-Answering” by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1704.00051"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chen et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/DrQA"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The retriever and the reader components can be set up and trained independently, or jointly trained "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#end-to-end-joint-training"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "end-to-end"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-93731223cd2f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Retriever Model"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e952a19bc154",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two popular approaches for implementing the retriever is to use the information retrieval (IR) system that depends on (1) the classic non-learning-based "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Tf%E2%80%93idf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "TF-IDF"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " features (“classic IR”) or (2) dense embedding vectors of text produced by neural networks (“neural IR”)."
+          }
+        ]
+      },
+      {
+        "id": "heading-067c2ab57fcd",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Classic IR"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-818391d0f6c7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DrQA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1704.00051"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chen et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") adopts an efficient non-learning-based search engine based on the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Vector_space_model"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "vector space model"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Every query and document is modelled as a bag-of-word vector, where each term is weighted by TF-IDF (term frequency "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\times"
+          },
+          {
+            "type": "text",
+            "text": " inverse document frequency)."
+          }
+        ]
+      },
+      {
+        "id": "math-f6d3ef473be1",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\text{tf-idf}(t, d, \\mathcal{D}) &= \\text{tf}(t, d) \\times \\text{idf}(t, \\mathcal{D}) \\\\\n\\text{tf}(t, d) &= \\log(1 + \\text{freq}(t, d)) \\\\\n\\text{idf}(t, \\mathcal{D}) &= \\log \\Big( \\frac{\\vert\\mathcal{D}\\vert}{\\vert d\\in\\mathcal{D}: t\\in d\\vert} \\Big)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-c9abf14aefab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " is a unigram or bigram term in a document "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " from a collection of documents "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": " . "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{freq}(t, d)"
+          },
+          {
+            "type": "text",
+            "text": " measures how many times a term "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " appears in "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": ". Note that the term-frequency here includes bigram counts too, which is found to be very helpful because the local word order is taken into consideration via bigrams. As part of the implementation, DrQA maps the bigrams of "
+          },
+          {
+            "type": "inline_math",
+            "text": "2^{24}"
+          },
+          {
+            "type": "text",
+            "text": " bins using unsigned murmur3 hash."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c2734c7e985f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Precisely, DrQA implemented Wikipedia as its knowledge source and this choice has became a default setting for many ODQA studies since then. The non-ML document retriever returns the top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k=5"
+          },
+          {
+            "type": "text",
+            "text": " most relevant Wikipedia articles given a question."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f407e004f1d8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "BERTserini"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.01718"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yang et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") pairs the open-source "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/castorini/anserini"
+            },
+            "children": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Anserini"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " IR toolkit as the retriever with a fine-tuned pre-trained BERT model as the reader. The top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " documents ("
+          },
+          {
+            "type": "inline_math",
+            "text": "k=10"
+          },
+          {
+            "type": "text",
+            "text": ") are retrieved via the "
+          },
+          {
+            "type": "inline_code",
+            "text": "post-v3.0"
+          },
+          {
+            "type": "text",
+            "text": " branch of Anserini with the query treated as a bag of words. The retrieved text segments are ranked by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Okapi_BM25"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BM25"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", a classic TF-IDF-based retrieval scoring function. In terms of the effect of text granularity on performance, they found that paragraph retrieval > sentence retrieval > article retrieval."
+          }
+        ]
+      },
+      {
+        "id": "image-c38bf7e6f7d5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/BERTserini-arch.png",
+          "alt": "An illustration of BERTserini architecture. (Image source: Yang et al., 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-6528382beb3c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "ElasticSearch + BM25"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is used by the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Multi-passage BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " QA model ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.08167"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). They found that splitting articles into passages with the length of 100 words by "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "sliding window"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " brings 4% improvements, since splitting documents into passages without overlap may cause some near-boundary evidence to lose useful contexts."
+          }
+        ]
+      },
+      {
+        "id": "heading-c9758fde48f2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Neural IR"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-d0013aa22d73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There is a long history in learning a low-dimensional representation of text, denser than raw term-based vectors ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://lsa.colorado.edu/papers/JASIS.lsi.90.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Deerwester et al., 1990"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.aclweb.org/anthology/W11-0329/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yih, et al., 2011"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Dense representations can be learned through matrix decomposition or some neural network architectures (e.g. MLP, LSTM, bidirectional LSTM, etc). When involving neural networks, such approaches are referred to as “Neural IR”, Neural IR is a new category of methods for retrieval problems, but it is not necessary to perform better/superior than classic IR ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://sigir.org/wp-content/uploads/2019/01/p040.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lim, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bf67f1dc83f4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After the success of many large-scale "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "general language models"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", many QA models embrace the following approach:"
+          }
+        ]
+      },
+      {
+        "id": "math-6d9dd0da6531",
+        "type": "math",
+        "attrs": {
+          "latex": "h_x = E_x(x)\\quad\nh_z = E_z(z)\\quad\n\\text{score}(x, z) = h_x^\\top h_z"
+        }
+      },
+      {
+        "id": "list-2174dff0c12a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-b554c3820404",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Extract the dense representations of a question "
+              },
+              {
+                "type": "inline_math",
+                "text": "x"
+              },
+              {
+                "type": "text",
+                "text": " and a context passage "
+              },
+              {
+                "type": "inline_math",
+                "text": "z"
+              },
+              {
+                "type": "text",
+                "text": " by feeding them into a language model;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-26f9670d15fb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Use the dot-product of these two representations as the retrieval score to rank and select most relevant passages."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ea872b955c3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ORQA, REALM and DPR all use such a scoring function for context retrieval, which will be described in detail in a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#end-to-end-joint-training"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "later section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on the end-to-end QA model."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0a499535c2bc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An extreme approach, investigated by "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DenSPI"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Dense-Sparse Phrase Index”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.05807"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Seo et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), is to encode all the text in the knowledge corpus at the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "phrase"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " level and then only rely on the retriever to identify the most relevant phrase as the predicted answer. In this way, the retriever+reader pipeline is reduced to only retriever. Of course, the index would be much larger and the retrieval problem is more challenging."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-82084ccec6aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "DenSPI introduces a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "query-agnostic"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " indexable representation of document phrases. Precisely it encodes query-agnostic representations of text spans in Wikipedia offline and looks for the answer at inference time by performing nearest neighbor search. It can drastically speed up the inference time, because there is no need to re-encode documents for every new query, which is often required by a reader model."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7be44c4e148c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a question "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " and a fixed set of (Wikipedia) documents, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_1, \\dots, z_K"
+          },
+          {
+            "type": "text",
+            "text": " and each document "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_k"
+          },
+          {
+            "type": "text",
+            "text": " contains "
+          },
+          {
+            "type": "inline_math",
+            "text": "N_k"
+          },
+          {
+            "type": "text",
+            "text": " words, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_k = \\langle z_k^{(1)}, \\dots, z_k^{(N_k)}\\rangle"
+          },
+          {
+            "type": "text",
+            "text": ". An ODQA model is a scoring function "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " for each candidate phrase span "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_k^{(i:j)}, 1 \\leq i \\leq j \\leq N_k"
+          },
+          {
+            "type": "text",
+            "text": ", such that the truth answer is the phrase with maximum score: "
+          },
+          {
+            "type": "inline_math",
+            "text": "y = {\\arg\\max}_{k,i,j} F(x, z_k^{(i:j)})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dab881332a84",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The phrase representation "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_k^{(i:j)}"
+          },
+          {
+            "type": "text",
+            "text": " combines both dense and sparse vectors, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_k^{(i:j)} = [d_k^{(i:j)}, s_k^{(i:j)}] \\in \\mathbb{R}^{d^d + d^s}"
+          },
+          {
+            "type": "text",
+            "text": " (note that "
+          },
+          {
+            "type": "inline_math",
+            "text": "d^d \\ll d^s"
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "list-ee298e6d053f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9ff124be6e2d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The dense vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "d_k^{(i:j)}"
+              },
+              {
+                "type": "text",
+                "text": " is effective for encoding local "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "syntactic"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "semantic"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " cues, as what can be learned by a pretrained language model."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7090e6813645",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The sparse vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "s_k^{(i:j)}"
+              },
+              {
+                "type": "text",
+                "text": " is superior at encoding precise "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "lexical"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " information. The sparse vector is term-frequency-based encoding. DenSPI uses 2-gram term-frequency same as DrQA, resulting a highly sparse representation ("
+              },
+              {
+                "type": "inline_math",
+                "text": "d^s \\approx 16"
+              },
+              {
+                "type": "text",
+                "text": "M)"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ae54854fc9be",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The dense vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "d^{(i:j)}"
+          },
+          {
+            "type": "text",
+            "text": " is further decomposed into three parts, "
+          },
+          {
+            "type": "inline_math",
+            "text": "d^{(i:j)} = [a_i, b_j, c_{ij}] \\in \\mathbb{R}^{2d^b + 1}"
+          },
+          {
+            "type": "text",
+            "text": " where "
+          },
+          {
+            "type": "inline_math",
+            "text": "2d^b + 1 = d^d"
+          },
+          {
+            "type": "text",
+            "text": ". All three components are learned based on different columns of the fine-tuned BERT representations."
+          }
+        ]
+      },
+      {
+        "id": "list-00146b15938d",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-cff647c284d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "a_i"
+              },
+              {
+                "type": "text",
+                "text": " encodes the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "start"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " position for the "
+              },
+              {
+                "type": "inline_math",
+                "text": "i"
+              },
+              {
+                "type": "text",
+                "text": "-th word of the document;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-710135a4ae31",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "b_j"
+              },
+              {
+                "type": "text",
+                "text": " encodes the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "end"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " position for the "
+              },
+              {
+                "type": "inline_math",
+                "text": "j"
+              },
+              {
+                "type": "text",
+                "text": "-th word of the document;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-ac0871082a00",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A scalar "
+              },
+              {
+                "type": "inline_math",
+                "text": "c_{ij}"
+              },
+              {
+                "type": "text",
+                "text": " measures the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "coherency"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " between the start and the end vectors, helping avoid non-constituent phrases during inference."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a4aa9e8380a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For all possible "
+          },
+          {
+            "type": "inline_math",
+            "text": "(i,j,k)"
+          },
+          {
+            "type": "text",
+            "text": " tuples where "
+          },
+          {
+            "type": "inline_math",
+            "text": "j-i < J"
+          },
+          {
+            "type": "text",
+            "text": ", the text span embeddings are precomputed and stored as a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "phrase index"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The maximum span length "
+          },
+          {
+            "type": "inline_math",
+            "text": "J"
+          },
+          {
+            "type": "text",
+            "text": " is a predefined scalar constant."
+          }
+        ]
+      },
+      {
+        "id": "image-4156ba7f2d29",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/DenSPI-arch.png",
+          "alt": "An illustration of Dense-Sparse Phrase Index (DenSPI) architecture. (Image source: Seo et al., 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-fedd30255b13",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At the inference time, the question is mapped into the same vector space "
+          },
+          {
+            "type": "inline_math",
+            "text": "x=[d’, s’] \\in \\mathbb{R}^{d^d + d^s}"
+          },
+          {
+            "type": "text",
+            "text": ", where the dense vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "d’"
+          },
+          {
+            "type": "text",
+            "text": " is extracted from the BERT embedding of the special "
+          },
+          {
+            "type": "inline_code",
+            "text": "[CLS]"
+          },
+          {
+            "type": "text",
+            "text": " symbol. The same BERT model is shared for encoding both questions and phrases. The final answer is predicted by "
+          },
+          {
+            "type": "inline_math",
+            "text": "k^*, i^*, j^* = \\arg\\max x^\\top z_k^{(i:j)}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-cb74c331f9a8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reader Model"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-2c4b3f181c5f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reader model learns to solve the reading comprehension task — extract an answer for a given question from a given context document. Here we only discuss approaches for machine comprehension using neural networks."
+          }
+        ]
+      },
+      {
+        "id": "heading-2f0e1d5bcdf9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Bi-directional LSTM"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-297a6f40dab6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reader model for answer detection of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DrQA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1704.00051"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chen et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a 3-layer bidirectional LSTM with hidden size 128. Every relevant paragraph of retrieved Wikipedia articles is encoded by a sequence of feature vector, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{\\tilde{\\mathbf{z}}_1, \\dots, \\tilde{\\mathbf{z}}_m \\}"
+          },
+          {
+            "type": "text",
+            "text": ". Each feature vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\mathbf{z}}_i \\in \\mathbb{R}^{d_z}"
+          },
+          {
+            "type": "text",
+            "text": " is expected to capture useful contextual information around one token "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_i"
+          },
+          {
+            "type": "text",
+            "text": ". The feature consists of several categories of features:"
+          }
+        ]
+      },
+      {
+        "id": "list-1af18b6d86be",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-eaa3ebfd28df",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Word embeddings: A 300d "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/#glove-global-vectors"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Glove"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " word embedding trained from 800B Web crawl data, "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\text{embed} = E_g(z_i)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-84068ba0b728",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Exact match: Whether a word "
+              },
+              {
+                "type": "inline_math",
+                "text": "z_i"
+              },
+              {
+                "type": "text",
+                "text": " appears in the question "
+              },
+              {
+                "type": "inline_math",
+                "text": "x"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\text{match} = \\mathbb{I}(z_i \\in x)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5d30c55ec951",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Token features: This includes POS (part-of-speech) tagging, NER (named entity recognition), and TF (term-frequency), "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\text{token}(z_i) = (\\text{POS}(z_i), \\text{NER}(z_i), \\text{TF}(z_i))"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a57ce5589ce9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Aligned question embedding: The attention score "
+              },
+              {
+                "type": "inline_math",
+                "text": "y_{ij}"
+              },
+              {
+                "type": "text",
+                "text": " is designed to capture inter-sentence matching and similarity between the paragraph token "
+              },
+              {
+                "type": "inline_math",
+                "text": "z_i"
+              },
+              {
+                "type": "text",
+                "text": " and the question word "
+              },
+              {
+                "type": "inline_math",
+                "text": "x_j"
+              },
+              {
+                "type": "text",
+                "text": ". This feature adds soft alignments between similar but non-identical words."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-a0e7f6a0d16a",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nf_\\text{align}(z_i) &= \\sum_j y_{i,j} E_g(x_j) \\\\ \ny_{i,j} &= \\frac{\\exp(\\alpha(E_g(z_i))^\\top \\alpha(E_g(x_j)) )}{\\sum_{j'} \\exp(\\alpha(E_g(z_i))^\\top \\alpha(E_g(x_{j'})) ) }\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-cb28d1bfda97",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " is a single dense layer with ReLU and "
+          },
+          {
+            "type": "inline_math",
+            "text": "E_g(.)"
+          },
+          {
+            "type": "text",
+            "text": " is the glove word embedding."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f83be31ac462",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The feature vector of a paragraph of "
+          },
+          {
+            "type": "inline_math",
+            "text": "m"
+          },
+          {
+            "type": "text",
+            "text": " tokens is fed into LSTM to obtain the final paragraph vectors:"
+          }
+        ]
+      },
+      {
+        "id": "math-b8370a2383dc",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{z} = \\{\\mathbf{z}_1, \\dots, \\mathbf{z}_m\\} &= \\text{LSTM}(\\{\\tilde{\\mathbf{z}}_1, \\dots, \\tilde{\\mathbf{z}}_m\\}) \\\\\n\\text{where } \\tilde{\\mathbf{z}}_i &= \\{f_\\text{embed}, f_\\text{match}, f_\\text{token}, f_\\text{align}\\}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-65d5dc6fd1b6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The question is encoded as a weighted sum of the embeddings of every word in the question:"
+          }
+        ]
+      },
+      {
+        "id": "math-23c174a33502",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{x} = \\sum_j b_j E(x_j) \\quad b_j = \\text{softmax}(\\mathbf{w}^\\top E(x_j))"
+        }
+      },
+      {
+        "id": "paragraph-7295000e2e39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{w}"
+          },
+          {
+            "type": "text",
+            "text": " is a weight vector to learn."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4ed9fe71451c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Once the feature vectors are constructed for the question and all the related paragraphs, the reader needs to predict the probabilities of each position in a paragraph to be the start and the end of an answer span, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\text{start}(i_s)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\text{end}(i_s)"
+          },
+          {
+            "type": "text",
+            "text": ", respectively. Across all the paragraphs, the optimal span is returned as the final answer with maximum "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\text{start}(i_s)  \\times p_\\text{end}(i_e) "
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-ebe5d1bb3ba3",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\np_\\text{start}(i_s) \\propto \\exp(\\mathbf{z}_{i_s} \\mathbf{W}_s \\mathbf{x}) \\\\ \np_\\text{end}(i_e) \\propto \\exp(\\mathbf{z}_{i_e} \\mathbf{W}_e \\mathbf{x}) \\\\\n\\text{ s.t. } i_s \\leq i_e \\leq i_s + 15\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7a2bff12f889",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_s"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_e"
+          },
+          {
+            "type": "text",
+            "text": " are learned parameters."
+          }
+        ]
+      },
+      {
+        "id": "heading-bd7684f1a345",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "BERT-universe"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-34fd82ccebb7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Following the success of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#bert"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1810.04805"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Devlin et al., 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), many QA models develop the machine comprehension component based on BERT. Let’s define the BERT model as a function that can take one or multiple strings (concatenated by "
+          },
+          {
+            "type": "inline_code",
+            "text": "[SEP]"
+          },
+          {
+            "type": "text",
+            "text": ") as input and outputs a set of BERT encoding vectors for the special "
+          },
+          {
+            "type": "inline_code",
+            "text": "[CLS]"
+          },
+          {
+            "type": "text",
+            "text": " token and every input token:"
+          }
+        ]
+      },
+      {
+        "id": "math-2112d59870e7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{BERT}(s_1, s_2, \\dots) = [\\mathbf{h}^\\texttt{[CLS]}, \\mathbf{h}^{(1)}, \\mathbf{h}^{(2)}, \\dots]"
+        }
+      },
+      {
+        "id": "paragraph-429c313b4da3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}^\\texttt{[CLS]}"
+          },
+          {
+            "type": "text",
+            "text": " is the embedding vector for the special "
+          },
+          {
+            "type": "inline_code",
+            "text": "[CLS]"
+          },
+          {
+            "type": "text",
+            "text": " token and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}^{(i)}"
+          },
+          {
+            "type": "text",
+            "text": " is the embedding vector for the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th token."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fa4f119b3d73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To use BERT for reading comprehension, it learns two additional weights, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_s"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_e"
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{softmax}(\\mathbf{h}^{(i)}\\mathbf{W}_s)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{softmax}(\\mathbf{h}^{(i)}\\mathbf{W}_e)"
+          },
+          {
+            "type": "text",
+            "text": " define two probability distributions of start and end position of the predicted span per token."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-44c5323b20fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "BERTserini"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.01718"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Yang et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") utilizes a pre-trained BERT model to work as the reader. Their experiments showed that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fine-tuning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " pretrained BERT with SQuAD is sufficient to achieve high accuracy in identifying answer spans."
+          }
+        ]
+      },
+      {
+        "id": "image-d274628526ae",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/BERT-RC.png",
+          "alt": "How BERT is used to solve question-answering tasks. (Image source: Devlin et al., 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-e232f6fb5db3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The key difference of the BERTserini reader from the original BERT is: to allow comparison and aggregation of results from different segments, the final softmax layer over different answer spans is removed. The pre-trained BERT model is fine-tuned on the training set of SQuAD, where all inputs to the reader are padded to 384 tokens with the learning rate 3e-5."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dea6f265f0ef",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When ranking all the extracted answer spans, the retriever score (BM25) and the reader score (probability of token being the start position "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\times"
+          },
+          {
+            "type": "text",
+            "text": " probability of the same token being the end position ) are combined via linear interpolation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-63ba11688dcc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The original BERT normalizes the probability distributions of start and end position per token for every passage independently. Differently, the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Multi-passage BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.08167"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") normalizes answer scores across all the retrieved passages of one question "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.10723"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "globally"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Precisely, multi-passage BERT removes the final normalization layer per passage in BERT for QA (same as in BERTserini) and then adds a global "
+          },
+          {
+            "type": "inline_code",
+            "text": "softmax"
+          },
+          {
+            "type": "text",
+            "text": " over all the word positions of all the passages. Global normalization makes the reader model more stable while pin-pointing answers from a large number of passages."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e2c001b774b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In addition, multi-passage BERT implemented an independent "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "passage ranker"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " model via another BERT model and the rank score for "
+          },
+          {
+            "type": "inline_math",
+            "text": "(x, z)"
+          },
+          {
+            "type": "text",
+            "text": " is generated by a "
+          },
+          {
+            "type": "inline_code",
+            "text": "softmax"
+          },
+          {
+            "type": "text",
+            "text": " over the representation vectors of the first "
+          },
+          {
+            "type": "inline_code",
+            "text": "[CLS]"
+          },
+          {
+            "type": "text",
+            "text": " token. The passage ranker brings in extra 2% improvements. Similar idea of re-ranking passages with BERT was discussed in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.04085"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nogueira & Cho, 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", too."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5f502f5cc437",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Interestingly, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.08167"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " found that "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "explicit inter-sentence matching"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " does not seem to be critical for RC tasks with BERT; check the original paper for how the experiments were designed. One possible reason is that the multi-head self-attention layers in BERT has already embedded the inter-sentence matching."
+          }
+        ]
+      },
+      {
+        "id": "heading-b90a9d794c9c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "End-to-end Joint Training"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-3c47461d040e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The retriever and reader components can be jointly trained. This section covers R^3, ORQA, REALM and DPR. There are a lot of common designs, such as BERT-based dense vectors for retrieval and the loss function on maximizing the marginal likelihood of obtaining true answers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b149f7eb16a1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The retriever and reader models in the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "R^3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Reinforced Ranker-Reader”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1709.00023"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang, et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") QA system are jointly trained via "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "reinforcement learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". (Note that to keep the term consistent between papers in this section, the “ranker” model in the original R^3 paper is referred to as the “retriever” model here.) Both components are variants of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1512.08849"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Match-LSTM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which relies on an attention mechanism to compute word similarities between the passage and question sequences."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-82a5a653be91",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "How does the Match-LSTM module work?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Given a question "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{X}"
+          },
+          {
+            "type": "text",
+            "text": " of "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_x"
+          },
+          {
+            "type": "text",
+            "text": " words and a passage "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{Z}"
+          },
+          {
+            "type": "text",
+            "text": " of "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_z"
+          },
+          {
+            "type": "text",
+            "text": " words, both representations use fixed "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-10-15-word-embedding/#glove-global-vectors"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Glove"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " word embeddings,"
+          }
+        ]
+      },
+      {
+        "id": "math-d2f03268aa79",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{H}^x &= \\text{BiLSTM}(\\mathbf{X}) \\in \\mathbb{R}^{l \\times d_x} \\\\\n\\mathbf{H}^z &= \\text{BiLSTM}(\\mathbf{Z}) \\in \\mathbb{R}^{l \\times d_z} \\\\\n\\mathbf{G} &= \\text{softmax}((\\mathbf{W}^g \\mathbf{H}^x + \\mathbf{b}^g \\otimes \\mathbf{e}_{d_x})^\\top \\mathbf{H}^z) \\in \\mathbb{R}^{d_x \\times d_z} & \\text{; an attention matrix}\\\\\n\\bar{\\mathbf{H}}^x &= \\mathbf{H}^x \\mathbf{G} \\in \\mathbb{R}^{l \\times d_z} \\\\\n\\mathbf{M} &= \\text{ReLU} \\Big( \\mathbf{W}^m \\begin{bmatrix}\n\\mathbf{H}^z \\\\\n\\bar{\\mathbf{H}}^x \\\\\n\\mathbf{H}^z \\odot \\bar{\\mathbf{H}}^x \\\\\n\\mathbf{H}^z - \\bar{\\mathbf{H}}^x\n\\end{bmatrix} \\Big) \\in \\mathbb{R}^{2l \\times d_z} \\\\\n\\mathbf{H}^m &= \\text{BiLSTM}(M) \\in \\mathbb{R}^{l \\times d_z}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-d2e33d9fec94",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "l"
+          },
+          {
+            "type": "text",
+            "text": " is the hidden dimension of the bidirectional LSTM module. "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^g \\in \\mathbb{R}^{l\\times l}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{b}^g \\in \\mathbb{R}^l"
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^m \\in \\mathbb{R}^{2l \\times 4l}"
+          },
+          {
+            "type": "text",
+            "text": " are parameters to learn. The operator "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\otimes \\mathbf{e}_{d_x}"
+          },
+          {
+            "type": "text",
+            "text": " is the outer product to repeat the column vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{b}^g"
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_x"
+          },
+          {
+            "type": "text",
+            "text": " times."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cc6d60487ef6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The ranker and reader components share the same Match-LSTM module with two separate prediction heads in the last layer, resulting in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{H}^\\text{rank}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{H}^\\text{reader}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-c63113cec461",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/R^3-arch.png",
+          "alt": "The overview of R^3 (reinforced ranker-reader) architecture. Both components share the same Match-LSTM module. (Image source: Wang, et al., 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-3b091e53200c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The retriever runs a max-pooling operation per passage and then aggregates to output a probability of each passage entailing the answer."
+          }
+        ]
+      },
+      {
+        "id": "math-756f9ebc6a80",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{u}_i &= \\text{max-pooling}(\\mathbf{H}^\\text{rank}_i) \\in \\mathbb{R}^l \\\\\n\\mathbf{C} &= \\text{tanh}(\\mathbf{W}^c[\\mathbf{u}_1;\\dots;\\mathbf{u}_N] + \\mathbf{b}^c \\otimes \\mathbf{e}_N) \\in \\mathbb{R}^{l \\times n} \\\\\n\\gamma &= \\text{softmax}(\\mathbf{w}^c \\mathbf{C}) \\in \\mathbb{R}^n\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-261685ed4e4f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally, the retriever is viewed as a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "policy"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to output action to sample a passage according to predicted "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma"
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-2fa4a6bdd389",
+        "type": "math",
+        "attrs": {
+          "latex": "\\pi(z \\vert x; \\theta^\\gamma) = \\gamma_z"
+        }
+      },
+      {
+        "id": "paragraph-bbd92c7069bf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reader predicts the start position "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta^s"
+          },
+          {
+            "type": "text",
+            "text": " and the end position "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta^e"
+          },
+          {
+            "type": "text",
+            "text": " of the answer span. Two positions are computed in the same way, with independent parameters to learn. There are "
+          },
+          {
+            "type": "inline_math",
+            "text": "V"
+          },
+          {
+            "type": "text",
+            "text": " words in all the passages involved."
+          }
+        ]
+      },
+      {
+        "id": "math-00f8c312a076",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{H}^\\text{read} &= [\\mathbf{H}^\\text{read}_\\tau; \\mathbf{H}^\\text{read}_{\\text{neg}_1}; \\dots; \\mathbf{H}^\\text{read}_{\\text{neg}_n}] \\\\\n\\mathbf{F}^s &= \\text{tanh}(\\mathbf{W}^s \\mathbf{H}^\\text{read} + \\mathbf{b}^s \\otimes \\mathbf{e}_V) \\quad\n\\beta^s = \\text{softmax}(\\mathbf{w}^s \\mathbf{F}^s) \\in \\mathbb{R}^V \\\\\n\\mathbf{F}^e &= \\text{tanh}(\\mathbf{W}^e \\mathbf{H}^\\text{read} + \\mathbf{b}^e \\otimes \\mathbf{e}_V) \\quad\n\\beta^e = \\text{softmax}(\\mathbf{w}^e \\mathbf{F}^e) \\in \\mathbb{R}^V \\\\\nL(y \\vert z, x) &= -\\log(\\beta^s_{y_z^s})-\\log(\\beta^e_{y_z^e})\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-ce75b8d4fc0e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " is the ground-truth answer and the passage "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " is sampled by the retriever. "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta^s_{y_z^s}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\beta^s_{y_z^e}"
+          },
+          {
+            "type": "text",
+            "text": " represent the probabilities of the start and end positions of "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " in passage "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3f01e03377d6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training objective for the end-to-end R^3 QA system is to minimize the negative log-likelihood of obtaining the correct answer "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " given a question "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-65768b8ff54c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathcal{J}(\\theta) &= -\\mathbb{E}_{z\\sim\\pi(.\\vert x)} [L(y \\vert z, x)] \\\\\n\\nabla \\mathcal{J}(\\theta) \n&= - \\nabla_\\theta \\sum_z \\pi(z \\vert x) L(y \\vert z, x) \\\\\n&= - \\sum_z \\big( L(y \\vert z, x) \\nabla_\\theta\\pi(z \\vert x) + \\pi(z \\vert x) \\nabla_\\theta L(y \\vert z, x) \\big) \\\\\n&= - \\mathbb{E}_{z\\sim\\pi(.\\vert x)} \\big( \\color{red}{L(y \\vert z, x)\\nabla_\\theta\\log\\pi(z \\vert x)} + \\nabla_\\theta L(y \\vert z, x) \\big) \\\\\n&\\approx - \\mathbb{E}_{z\\sim\\pi(.\\vert x)} \\big( \\underbrace{\\color{red}{R(y \\vert z, x)\\nabla_\\theta\\log\\pi(z \\vert x)}}_\\text{REINFORCE} + \\nabla_\\theta L(y \\vert z, x) \\big)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-77a0b79db978",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Essentially in training, given a passage "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " sampled by the retriever, the reader is trained by gradient descent while the retriever is trained by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/#reinforce"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "REINFORCE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " using "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(y \\vert z, x)"
+          },
+          {
+            "type": "text",
+            "text": " as the reward function. However, "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(y \\vert z, x)"
+          },
+          {
+            "type": "text",
+            "text": " is not bounded and may introduce a lot of variance. The paper replaces the reward with a customized scoring function by comparing the ground truth "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " and the answer extracted by the reader "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{y}"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-89d3ce8deec0",
+        "type": "math",
+        "attrs": {
+          "latex": "R(y, \\hat{y} \\vert z) = \\begin{cases}\n2 & \\text{if } y = \\hat{y}\\\\\nf1(y, \\hat{y}) & \\text{if } y \\cap \\hat{y} = \\varnothing \\\\\n-1 & \\text{otherwise}\n\\end{cases}"
+        }
+      },
+      {
+        "id": "image-1631b1f7428c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/R^3-reward-flow.png",
+          "alt": "The workflow of R^3 training process. (Image source: acl2020-openqa-tutorial/slides/part4 )"
+        }
+      },
+      {
+        "id": "paragraph-aa52eb8dda53",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "ORQA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Open-Retrieval Question-Answering”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.00300"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lee et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") jointly learns a retriever + reader QA model to optimize marginal log-likelihood of obtaining correct answers in a supervised manner. No explicit “black-box” IR system is involved. Instead, it is capable of retrieving any text in an open corpus. During training, ORQA does not need ground-truth context passages (i.e. reading comprehension datasets) but only needs (question, answer) string pairs. Both retriever and reader components are based on BERT, but not shared."
+          }
+        ]
+      },
+      {
+        "id": "image-0d42fb36362e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/ORQA-retriever.png",
+          "alt": "An illustration of the retriever component in ORQA. (Image source: replotted based on one slide in acl2020-openqa-tutorial/slides/part5 )"
+        }
+      },
+      {
+        "id": "paragraph-e1aefb03765b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "All the evidence blocks are ranked by a retrieval score, defined as the inner product of BERT embedding vectors of the "
+          },
+          {
+            "type": "inline_code",
+            "text": "[CLS]"
+          },
+          {
+            "type": "text",
+            "text": " token of the question "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " and the evidence block "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": ". Note that the encoders for questions and context are independent."
+          }
+        ]
+      },
+      {
+        "id": "math-439d558672d4",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nh_x &= \\mathbf{W}_x \\text{BERT}_x(x)^{\\mathtt{[CLS]}} \\\\\nh_z &= \\mathbf{W}_z \\text{BERT}_z(z)^{\\mathtt{[CLS]}} \\\\\nS_\\text{retr}(z, x) &= h_x^\\top h_z\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-5c6a3d5d3b58",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The retriever module is pretrained with "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Inverse Cloze Task (ICT)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which is to predict the context given a sentence, opposite to the standard "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Cloze_test"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Cloze Task"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The ICT objective is to maximize the retrieval score of the correct context "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " given a random sentence "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-f9042b2ea95f",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{ICT} = p_\\text{early}(z \\vert x) = \\frac{\\exp(S_\\text{retr}(z, x))}{\\sum_{z'\\in\\text{BATCH}(\\mathcal{Z})} \\exp(S_\\text{retr}(z', x))}"
+        }
+      },
+      {
+        "id": "paragraph-d34712d69758",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{BATCH}(\\mathcal{Z})"
+          },
+          {
+            "type": "text",
+            "text": " is the set of evidence blocks in the same batch used as sampled negatives."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3266d3db5fda",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After such pretraining, the BERT retriever is expected to have representations good enough for evidence retrieval. Only the question encoder needs to be fine-tuned for answer extraction. In other words, the evidence block encoder (i.e., "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_z"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{BERT}_z"
+          },
+          {
+            "type": "text",
+            "text": ") is fixed and thus all the evidence block encodings can be pre-computed with support for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#fast-maximum-inner-product-search-mips"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "fast Maximum Inner Product Search (MIPS)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-a8a9a5657e86",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/ORQA-reader.png",
+          "alt": "An illustration of the reader component in ORQA. (Image source: acl2020-openqa-tutorial/slides/part5 )"
+        }
+      },
+      {
+        "id": "paragraph-bca2b44e7d86",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reader follows the same design as in the original "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#use-bert-in-downstream-tasks"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BERT RC"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " experiments. It learns in a supervised manner, while the parameters of the evidence block encoder are fixed and all other parameters are fine-tuned. Given a question "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " and a gold answer string "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ", the reader loss contains two parts:"
+          }
+        ]
+      },
+      {
+        "id": "math-b9a860e0e50b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}(x, y) = \\mathcal{L}_\\text{early}(x, y) + \\mathcal{L}_\\text{full}(x, y)"
+        }
+      },
+      {
+        "id": "paragraph-3032739c97f3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) Find all correct text spans within top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " evidence blocks and optimize for the marginal likelihood of a text span "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " that matches the true answer "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-afe4008084be",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nh_s &= \\text{BERT}_R(x, y)^{(\\text{START}(s))} \\\\\nh_e &= \\text{BERT}_R(x, y)^{(\\text{END}(s))} \\\\\nS_\\text{read}(z, s, x) &= \\text{MLP}([h_s; h_e]) \\\\\np(z, s \\vert x) &= \\frac{\\exp(S_\\text{read}(z, s, x))}{\\sum_{z'\\in\\text{TOP}(k)} \\sum_{s'\\in z'} \\exp(S_\\text{read}(z', s', x))} \\\\\nL_\\text{full}(x, y) &= - \\log \\sum_{\\substack{z \\in \\text{TOP}(k)\\\\ s \\in z}} \\sum_{y=\\text{TEXT}(s)} p(z, s \\vert x)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-27b4832269f2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "y=\\text{TEXT}(s)"
+          },
+          {
+            "type": "text",
+            "text": " indicates whether the answer "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " matches the text span "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": ". "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{TOP}(k)"
+          },
+          {
+            "type": "text",
+            "text": " is the top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " retrieved blocks according to "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_\\text{retr}(z, x)"
+          },
+          {
+            "type": "text",
+            "text": ". The paper sets "
+          },
+          {
+            "type": "inline_math",
+            "text": "k=5"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8acc7defb57b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) At the early stage of learning, when the retriever is not strong enough, it is possible none of the top "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " blocks contains the answer. To avoid such sparse learning signals, ORQA considers a larger set of "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " evidence blocks for more aggressive learning. The paper has "
+          },
+          {
+            "type": "inline_math",
+            "text": "c=5000"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-a814620a1b7f",
+        "type": "math",
+        "attrs": {
+          "latex": "L_\\text{early}(x, y)\n= -\\log \\sum_{\\substack{z\\in \\text{TOP}(c)\\\\y\\in\\text{TEXT}(z)}} p_\\text{early}(z\\vert x)\n= -\\log \\sum_{\\substack{z\\in \\text{TOP}(c)\\\\y\\in\\text{TEXT}(z)}} \\frac{\\exp(S_\\text{retr}(z, x)}{\\sum_{z'\\in\\text{TOP}(c)} \\exp(S_\\text{retr}(z', x)}"
+        }
+      },
+      {
+        "id": "paragraph-73b00c3c99b0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Some issues in SQuAD dataset were discussed in the ORQA paper:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-fe44b6eb9c9a",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-30e68b8cc5db",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\" The notable drop between development and test accuracy for SQuAD is a reflection of an artifact in the dataset—its 100k questions are derived from only 536 documents. Therefore, good retrieval targets are highly correlated between training examples, violating the IID assumption, and making it unsuitable for learned retrieval. We strongly suggest that those who are interested in end-to-end open-domain QA models no longer train and evaluate with SQuAD for this reason.\""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0ffbecf83ab4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "REALM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Retrieval-Augmented Language Model pre-training”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08909"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Guu et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") also jointly trains retriever + reader by optimizing the marginal likelihood of obtaining the true answer:"
+          }
+        ]
+      },
+      {
+        "id": "math-07792cc4cd21",
+        "type": "math",
+        "attrs": {
+          "latex": "p(y \\vert x) \n= \\sum_{z \\in \\mathcal{Z}} \\underbrace{p(y \\vert x, z)}_\\text{reader} \\underbrace{p(z \\vert x)}_\\text{retriever}\n\\approx \\sum_{z \\in \\text{TOP}_k(\\mathcal{Z})} p(y \\vert x, z) p(z \\vert x)"
+        }
+      },
+      {
+        "id": "image-58c5b592741d",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/REALM-train.png",
+          "alt": "REALM is first unsupervised pre-trained with salient spans masking and then fine-tuned with QA data. (Image source: Guu et al., 2020 )."
+        }
+      },
+      {
+        "id": "paragraph-935dda835545",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "REALM computes two probabilities, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(z \\vert x)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(y \\vert x, z)"
+          },
+          {
+            "type": "text",
+            "text": ", same as ORQA. However, different from ICT in ORQA, REALM upgrades the unsupervised pre-training step with several new design decisions, leading towards better retrievals. REALM pre-trains the model with Wikipedia or CC-News corpus."
+          }
+        ]
+      },
+      {
+        "id": "list-2a65fded33ee",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-a0a6b7ff6d58",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Use "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "salient span masking"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Named entities and dates are identified. Then one of these “salient spans” is selected and masked. Salient span masking is a special case of MLM and works out well for QA tasks."
+              }
+            ]
+          },
+          {
+            "id": "list-item-29e761845486",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Add an "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "empty null document"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Because not every question demands a context document."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6d478a1eedfb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "No trivial retrieval. The context document should not be same as the selected sentence with a masked span."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a7c622a921f1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Apply the same ICT loss as in ORQA to encourage learning when the retrieval quality is still poor at the early stage of training."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blockquote-feda5249976d",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-fa1e962240fd",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“Among all systems, the most direct comparison with REALM is ORQA (Lee et al., 2019), where the fine-tuning setup, hyperparameters and training data are identical. The improvement of REALM over ORQA is purely due to better pre-training methods.” — from REALM paper."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-01bec75f6804",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both unsupervised pre-training and supervised fine-tuning optimize the same log-likelihood "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\log p(y \\vert x)"
+          },
+          {
+            "type": "text",
+            "text": ". Because the parameters of the retriever encoder for evidence documents are also updated in the process, the index for MIPS is changing. REALM asynchronously refreshes the index with the updated encoder parameters every several hundred training steps."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2cb7d76d8c96",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08710"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Balachandran, et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " found that REALM is significantly undertrained and REALM++ achieves great EM accuracy improvement (3-5%) by scaling up the model training with larger batch size and more retrieved documents for the reader to process."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dc7a2b0d3c61",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "DPR"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Dense Passage Retriever”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.04906"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Karpukhin et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/DPR"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") argues that ICT pre-training could be too computationally expensive and the ORQA’s context encoder might be sub-optimal because it is not fine-tuned with question-answer pairs. DPR aims to resolve these two issues by only training a dense dual-encoder architecture for retrieval only from a small number of Q/A pairs, without any pre-training."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8d1c7e339ba0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Same as previous work, DPR uses the dot-product (L2 distance or cosine similarity also works) of BERT representations as retrieval score. The loss function for training the dual-encoder is the NLL of the positive passage, which essentially takes the same formulation as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ICT-loss"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ICT loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of ORQA. Note that both of them consider other passages in the same batch as the negative samples, named "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "in-batch negative sampling"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The main difference is that DPR relies on supervised QA data, while ORQA trains with ICT on unsupervised corpus. At the inference time, DPR uses "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/faiss"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "FAISS"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to run fast MIPS."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c3c42e336e52",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "DPR did a set of comparison experiments involving several different types of negatives:"
+          }
+        ]
+      },
+      {
+        "id": "list-d28a330d8644",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-080452b245b9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random: any random passage from the corpus;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-3c527a920821",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "BM25: top passages returned by BM25 which don’t contain the answer but match most question tokens;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-a4edfbd84fe6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In-batch negative sampling (“gold”): positive passages paired with other questions which appear in the training set."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c401bcefd33c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "DPR found that using gold passages from the same mini-batch and one negative passage with high BM25 score works the best. To further improve the retrieval results, DPR also explored a setting where a BM25 score and a dense embedding retrieval score are linearly combined to serve as a new ranking function."
+          }
+        ]
+      },
+      {
+        "id": "heading-90ceee1e1e03",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Open-book QA: Retriever-Generator"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-ed51752d6837",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Compared to the retriever-reader approach, the retriever-generator also has 2 stages but the second stage is to generate free text directly to answer the question rather than to extract start/end position in a retrieved passage. Some paper also refer to this as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Generative question answering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-b5cac6ff92db",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-retiever-generator.png",
+          "alt": "The retriever + generator QA framework combines a document retrieval system with a general language model."
+        }
+      },
+      {
+        "id": "paragraph-e22fbcfeb970",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A pretrained LM has a great capacity of memorizing knowledge in its parameters, as shown above. However, they cannot easily modify or expand their memory, cannot straightforwardly provide insights into their predictions, and may produce non-existent illusion."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-694871876161",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.04611"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Petroni et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " studied how the retrieved relevant context can help a generative language model produce better answers. They found:"
+          }
+        ]
+      },
+      {
+        "id": "list-7d4e255c2fde",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-24b06942d93d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Augmenting queries with relevant contexts dramatically improves the pretrained LM on unsupervised machine reading capabilities."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8bae0226b993",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "An off-the-shelf IR system is sufficient for BERT to match the performance of a supervised ODQA baseline;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-ddca71ae6bc2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "BERT’s "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#pre-training-tasks"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "NSP"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " pre-training strategy is a highly effective unsupervised mechanism in dealing with noisy and irrelevant contexts."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-22f4c2a69121",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They pair the BERT model with different types of context, including adversarial (unrelated context), retrieved (by BM25), and generative (by an autoregressive language model of 1.4N parameters, trained on CC-NEWS). The model is found to be robust to adversarial context, but only when the question and the context are provided as two segments (e.g. separated by "
+          },
+          {
+            "type": "inline_code",
+            "text": "[SEP]"
+          },
+          {
+            "type": "text",
+            "text": "). One hypothesis is related to NSP task: “BERT might learn to not condition across segments for masked token prediction if the NSP score is low, thereby implicitly detecting irrelevant and noisy contexts.”"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d1c503b808f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "RAG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Retrieval-Augmented Generation”; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.11401"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lewis et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") combines pre-trained parametric (language model) and non-parametric memory (external knowledge index) together for language generation. RAG can be fine-tuned on any seq2seq task, whereby both the retriever and the sequence generator are jointly learned. They found that unconstrained generation outperforms previous extractive approaches."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7b0fb8c18e91",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "RAG consists of a retriever model "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\eta(z \\vert x)"
+          },
+          {
+            "type": "text",
+            "text": " and a generator model "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(y_i \\vert x, z, y_{1:i-1})"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "list-ccf71602b3d8",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-ed20db6f641b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The retriever uses the input sequence "
+              },
+              {
+                "type": "inline_math",
+                "text": "x"
+              },
+              {
+                "type": "text",
+                "text": " to retrieve text passages "
+              },
+              {
+                "type": "inline_math",
+                "text": "z"
+              },
+              {
+                "type": "text",
+                "text": ", implemented as a "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#DPR"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "DPR"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " retriever. "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\log p_\\eta(z \\vert x) \\propto E_z(z)^\\top E_x(x)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-27589aba1692",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The generator uses "
+              },
+              {
+                "type": "inline_math",
+                "text": "z"
+              },
+              {
+                "type": "text",
+                "text": " as additional context when generating the target sequence "
+              },
+              {
+                "type": "inline_math",
+                "text": "y"
+              },
+              {
+                "type": "text",
+                "text": ", where the context and the question are simply concatenated."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cb82f68fec93",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Depending on whether using the same or different retrieved documents for each token generation, there are two versions of RAG:"
+          }
+        ]
+      },
+      {
+        "id": "math-185f7ed6378b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\np_\\text{RAG-seq}(y \\vert x) &= \\sum_{z \\in \\text{TOP}_k(p_\\eta(.\\vert x))} p_\\eta(z \\vert x) \\prod_i^N p_\\theta(y_i \\vert x, z, y_{1:i-1}) \\\\\np_\\text{RAG-token}(y \\vert x) &= \\prod_i^N \\sum_{z \\in \\text{TOP}_k(p_\\eta(.\\vert x))} p_\\eta(z_i\\vert x) p_\\theta(y_i \\vert x, z_i, y_{1:i-1})\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-56eb85046516",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The retriever + generator in RAG is jointly trained to minimize the NLL loss, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_\\text{RAG} = \\sum_j -\\log p(y_j \\vert x_j)"
+          },
+          {
+            "type": "text",
+            "text": ". Updating the passage encoder "
+          },
+          {
+            "type": "inline_math",
+            "text": "E_z(.)"
+          },
+          {
+            "type": "text",
+            "text": " is expensive as it requires the model to re-index the documents for fast MIPS. RAG does not find fine-tuning "
+          },
+          {
+            "type": "inline_math",
+            "text": "E_z(.)"
+          },
+          {
+            "type": "text",
+            "text": " necessary (like in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ORQA"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ORQA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and only updates the query encoder + generator."
+          }
+        ]
+      },
+      {
+        "id": "image-6c5cd6bdc4e1",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/RAG.png",
+          "alt": "An illustration of retrieval-augmented generation (RAG) architecture. (Image source: Lewis et al., 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-2dca26ff19f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At decoding/test time, RAG-token can be evaluated via a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://d2l.ai/chapter_recurrent-modern/beam-search.html#id1"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "beam search"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". RAG-seq cannot be broken down into a set of per-token likelihood, so it runs beam search for each candidate document "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " and picks the one with optimal "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_\\theta(y_i \\vert x, z, y_{1:i-1})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3dbde2ae13b0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Fusion-in-Decoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " approach, proposed by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2007.01282"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Izacard & Grave (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is also based on a pre-trained T5. It works similar to RAG but differently for how the context is integrated into the decoder."
+          }
+        ]
+      },
+      {
+        "id": "list-6192bc7a9196",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-e95a17ee429b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Retrieve top "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": " related passage of 100 words each, using BM25 or DPR."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ddb405b1fbb8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Each retrieved passage and its title are concatenated with the question using special tokens like "
+              },
+              {
+                "type": "inline_code",
+                "text": "question:"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "title:"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_code",
+                "text": "context:"
+              },
+              {
+                "type": "text",
+                "text": " to indicate the content differences."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ae8eecfb45e4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Each retrieved passage is processed independently and later combined in the decoder. Processing passages independently in the encoder allows us to parallelize the computation. OTOH, processing them jointly encourages better aggregation of multiple pieces of evidence. The aggregation part is missing in extractive approaches."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-62d835eb76d5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that they did fine-tune the pretrained LM independently for each dataset."
+          }
+        ]
+      },
+      {
+        "id": "heading-3bdf5d3c00fb",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Closed-book QA: Generative Language Model"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d783098d648b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Big language models have been pre-trained on a large collection of unsupervised textual corpus. Given enough parameters, these models are able to memorize some factual knowledge within parameter weights. Therefore, we can use these models to do question-answering without explicit context, just like in a closed-book exam. The pre-trained language models produce "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "free text"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to respond to questions, no explicit reading comprehension."
+          }
+        ]
+      },
+      {
+        "id": "image-c6d61d361675",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/LM-compute.png",
+          "alt": "The amount of computation used for training big language models of different sizes is getting big. (Image source: Brown et al., 2020 )."
+        }
+      },
+      {
+        "id": "paragraph-03cc869ce346",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08910"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Roberts et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " measured the practical utility of a language model by fine-tuning a pre-trained model to answer questions without access to any external context or knowledge. They fine-tuned the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.10683"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "T5"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " language model (same architecture as the original Transformer) to answer questions without inputting any additional information or context. Such setup enforces the language model to answer questions based on “knowledge” that it internalized during pre-training."
+          }
+        ]
+      },
+      {
+        "id": "image-4dad858acbd7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/T5_SSM.png",
+          "alt": "T5 is first pre-trained with salient span masking and then fine-tuned for each QA dataset to produce answers in free text. (Image source: Roberts et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-729ac404b525",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The original T5 models were pre-trained on a multi-task mixture including an unsupervised "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#use-bert-in-downstream-tasks"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“masked language modeling”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (MLM) tasks on the C4 (“Colossal Clean Crawled Corpus”) dataset as well as fine-tuned altogether with supervised translation, summarization, classification, and reading comprehension tasks. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08910"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Roberts, et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  took a pre-trained T5 model and continued pre-training with "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ssm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "salient span masking"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " over Wikipedia corpus, which has been found to substantially boost the performance for ODQA. Then they fine-tuned the model for each QA datasets independently."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-879d64c15719",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With a pre-trained T5 language model +  continue pre-training with salient spans masking + fine-tuning for each QA dataset,"
+          }
+        ]
+      },
+      {
+        "id": "list-0238247b4e93",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a9609d70bc8b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "It can attain competitive results in open-domain question answering without access to external knowledge."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0f5fbc211efd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A larger model can obtain better performance. For example, a T5 with 11B parameters is able to match the performance with "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#DPR"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "DPR"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " with 3 BERT-base models, each with 330M parameters."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-423bbe1cb7aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Interestingly, fine-tuning is not strictly necessary. GPT3 ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.14165"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Brown et al., 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") has been evaluated on the closed book question answering task "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "without any gradient updates or fine-tuning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". During evaluation, the few-shot, one-shot and zero-shot settings here only refer to how many demonstrations are provided as context in the text input:"
+          }
+        ]
+      },
+      {
+        "id": "list-3da8d724ecce",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-7b2936a19abf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“few-shot learning”: GPT3 is allowed to take as many demonstrations as what can fit into the model’s context window (typically 10 to 100)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3a35bceccd40",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“one-shot learning”: only one demonstration is provided."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1a266b9a88ab",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“zero-shot learning”: no demonstrations are allowed and only an instruction in natural language is given to the model."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e1a6218eddfe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The performance grows with the model size. On the TriviaQA dataset, GPT3 evaluation with demonstrations can match or exceed the performance of SOTA baseline with fine-tuning."
+          }
+        ]
+      },
+      {
+        "id": "image-da9f07e4a4f9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/GPT3-triviaqa.png",
+          "alt": "GPT3's performance on TriviaQA grows smoothly with the model size. More demonstrations lead to better performance. (Image source: Brown et al., 2020 )."
+        }
+      },
+      {
+        "id": "paragraph-eb335204d724",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check out this cool example in OpenAI API "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://beta.openai.com/playground/p/HMoho4552EHXrPLbmOIxpX4X"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "playground viewer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The model is able to answer factal questions in short answer and not to make up things when the model does not know the answer. I added the last two questions and asked the model to respond with "
+          },
+          {
+            "type": "inline_code",
+            "text": "A:"
+          },
+          {
+            "type": "text",
+            "text": ". The API is still in beta version, so you might need to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://beta.openai.com/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "apply"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to get on the wait list."
+          }
+        ]
+      },
+      {
+        "id": "code-8d93e23cad20",
+        "type": "code",
+        "attrs": {
+          "code": "Q: Who is Batman?\nA: Batman is a fictional comic book character.\n##\nQ: What is torsalplexity?\nA: ?\n##\nQ: What is Devz9?\nA: ?\n##\nQ: Who is George Lucas?\nA: George Lucas is American film director and producer famous for creating Star Wars.\n##\nQ: What is the capital of California?\nA: Sacramento.\n##\nQ: What orbits the Earth?\nA: The Moon.\n##\nQ: Who is Fred Rickerson?\nA: ?\n##\nQ: What is an atom?\nA: An atom is a tiny particle that makes up everything.\n##\nQ: Who is Alvan Muntz?\nA: ?\n##\nQ: What is Kozar-09?\nA: ?\n##\nQ: How many moons does Mars have?\nA: Two, Phobos and Deimos.\n##\nQ: What is COVID-19?\nA: ?\n##\nQ: What is H1N1?\nA: H1N1 is a strain of influenza.",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-2d963d4157c2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Related Techniques"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-a609728b491a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fast Maximum Inner Product Search (MIPS)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-08605239d612",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MIPS (maximum inner product search) is a crucial component in many open-domain question answering models. In retriever + reader/generator framework, a large number of passages from the knowledge source are encoded and stored in a memory. A retrieval model is able to query the memory to identify the top relevant passages which have the maximum inner product with the question’s embedding."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b08a1ecb249a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We need fast MIPS because the number of precomputed passage representations can be gigantic. There are several ways to achieve fast MIPS at run time, such as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/5329-asymmetric-lsh-alsh-for-sublinear-time-maximum-inner-product-search-mips.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "asymmetric LSH"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1501.01062"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "data-dependent hashing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ",  and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/faiss"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "FAISS"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-d2e7739c7efc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Language Model Pre-training"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7c79c47cab02",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two pre-training tasks are especially helpful for QA tasks, as we have discussed above."
+          }
+        ]
+      },
+      {
+        "id": "list-e7da6433a5e7",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-06f9ada2fa05",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Inverse Cloze Task"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "  (proposed by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#ORQA"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ORQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): The goal of "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Cloze_test"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Cloze Task"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is to predict masked-out text based on its context. The prediction of Inverse Cloze Task (ICT) is in the reverse direction, aiming to predict the context given a sentence. In the context of QA tasks, a random sentence can be treated as a pseudo-question, and its context can be treated as pseudo-evidence."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-3013bc1e4ab0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Salient Spans Masking"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (proposed by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/#REALM"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "REALM"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "): Salient span masking is a special case for MLM task in language model training. First, we find "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "salient spans"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " by using a tagger to identify named entities and a regular expression to identify dates. Then one of the detected salient spans is selected and masked. The task is to predict this masked salient span."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-a718189f99fe",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Summary"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "table-9661e3d9af27",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Model",
+            "Retriever",
+            "Reader / Generator",
+            "Pre-training / Fine-tuning",
+            "End2end"
+          ],
+          "rows": [
+            [
+              "DrQA",
+              "TF-IDF",
+              "Bi-directional LSTM",
+              "–",
+              "No"
+            ],
+            [
+              "BERTserini",
+              "Aserini + BM25",
+              "BERT without softmax layer",
+              "Fine-tune with SQuAD",
+              "No"
+            ],
+            [
+              "Multi-passage BERT",
+              "ElasticSearch + BM25",
+              "Multi-passage BERT + Passage ranker",
+              "",
+              "No"
+            ],
+            [
+              "R^3",
+              "Classic IR + Match-LSTM",
+              "Match-LSTM",
+              "",
+              "Yes"
+            ],
+            [
+              "ORQA",
+              "Dot product of BERT embeddings",
+              "BERT-RC",
+              "Inverse cloze task",
+              "Yes"
+            ],
+            [
+              "REALM",
+              "Dot product of BERT embeddings",
+              "BERT-RC",
+              "Salient span masking",
+              "Yes"
+            ],
+            [
+              "DPR",
+              "Dot product of BERT embeddings",
+              "BERT-RC",
+              "supervised training with QA pairs",
+              "Yes"
+            ],
+            [
+              "DenSPI",
+              "Classic + Neural IR",
+              "–",
+              "",
+              "Yes"
+            ],
+            [
+              "T5 + SSM",
+              "–",
+              "T5",
+              "SSM on CommonCrawl data + Fine-tuning on QA data",
+              "Yes"
+            ],
+            [
+              "GPT3",
+              "–",
+              "GPT3",
+              "NSP on CommonCrawl data",
+              "Yes"
+            ],
+            [
+              "RAG",
+              "DPR retriever",
+              "BART",
+              "",
+              "Yes"
+            ],
+            [
+              "Fusion-in-Decoder",
+              "BM25 / DPR retriever",
+              "Tranformer",
+              "",
+              "No"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "image-106e27393b06",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-results.png",
+          "alt": "A comparison of performance of several QA models on common QA datasets. On TriviaQA, two columns of results are reported, on the open domain test set (left) and on the hidden test set (right). (Image source: Izacard & Grave, 2020 )."
+        }
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-5250ea027047",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-91f12508ca9e",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Oct 2020). How to build an open-domain question answering system? Lil’Log. https://lilianweng.github.io/posts/2020-10-29-odqa/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-b526ab0782da",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2020odqa,\n  title   = \"How to Build an Open-Domain Question Answering System?\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2020\",\n  month   = \"Oct\"\n  url     = \"https://lilianweng.github.io/posts/2020-10-29-odqa/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-121144b5bf86",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Appendix: QA Datasets"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "list-b2ab8ae28eb3",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a6c9905ce410",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://rajpurkar.github.io/SQuAD-explorer/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "SQuAD 2.0"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": the Stanford QA dataset."
+              }
+            ]
+          },
+          {
+            "id": "list-item-737b5676ca04",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "http://www.qizhexie.com/data/RACE_leaderboard"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RACE"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": a reading comprehension dataset collected from English Examinations that are created for middle school and high school students."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5bd795f4fd9b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://trec.nist.gov/data/qa.html"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TREC QA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": the TREC QA collections."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0005093fd59f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://microsoft.github.io/msmarco/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MS MARCO"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": a QA dataset featuring 100,000 real Bing questions and a human generated answer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d6ab3d10e1fb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/brmson/dataset-factoid-curated"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "CuratedTREC"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": based on the benchmarks from the TREC QA tasks that have been curated by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://link.springer.com/chapter/10.1007%2F978-3-319-24027-5_20"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Baudis & Sedivy (2015)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b24d8c7b5f90",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://ai.google.com/research/NaturalQuestions/dataset"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Google Natural Questions"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ":  contains real user questions issued to Google search, and answers found from Wikipedia by annotators."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3cef7b1a475d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/brmson/dataset-factoid-webquestions"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "WebQuestions"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": designed for knowledge-base QA with answers restricted to Freebase entities."
+              }
+            ]
+          },
+          {
+            "id": "list-item-992158b9d36d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.microsoft.com/en-us/research/publication/wikiqa-a-challenge-dataset-for-open-domain-question-answering/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "WikiQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Bing query logs were used as the source of questions. Each question is then linked to a Wikipedia page that potentially contains the answer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-db9d413ad3bf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://research.fb.com/downloads/babi/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "WikiMovies"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": contains movie-related questions from the OMDb and MovieLens databases and where the questions can be answered using Wikipedia pages."
+              }
+            ]
+          },
+          {
+            "id": "list-item-acfa1331770b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/google-research-datasets/wiki-reading"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "WikiReading"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": to predict textual values from the structured knowledge base Wikidata by reading the text of the corresponding Wikipedia articles."
+              }
+            ]
+          },
+          {
+            "id": "list-item-490beacdafaa",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://nlp.cs.washington.edu/triviaqa/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "TriviaQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": a reading comprehension dataset containing 95K question-answer pairs authored by trivia enthusiasts and independently gathered multiple evidence documents per question."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3c3ba10e7195",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.kaggle.com/tunguz/200000-jeopardy-questions"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": " Jeopardy! Questions"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": contains 200,000+ "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Jeopardy!"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Jeopardy!"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " questions."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5a50eda7f5aa",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://cs.nyu.edu/~kcho/DMQA/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "DeepMind Q&A Dataset"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": question/answer pairs from CNN and Daily Mail articles."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1da15f5b2795",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://research.fb.com/downloads/babi/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "bAbi"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": a rich collection of datasets for text understanding by Facebook."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ccd5e0efbe0b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://fever.ai/data.html"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "FEVER"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": for fact extraction and verification."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c08c5971fca1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/nyu-dl/dl4ir-searchQA"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "SearchQA"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": question-answer pairs were crawled from from "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://j-archive.com/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": " J! Archive"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", and then augmented with text snippets from Google."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a5644810563b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/bdhingra/quasar"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Quasar-T"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": a collection of open-domain trivia questions and their answers obtained from various internet sources."
+              }
+            ]
+          },
+          {
+            "id": "list-item-24e7b0d0704a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://people.cs.umass.edu/~miyyer/qblearn/index.html"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Quiz bowl"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": contains data from a trivia competition called quiz bowl."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3e26374fc903",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://nlp.cs.washington.edu/ambigqa/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "AmbigNQ"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": ambiguous questions selected from NQ-OPEN dataset."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1e3f72937e8b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/facebookresearch/QA-Overlap"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "QA-Overlap"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": a collections of overlapped answers/questions between train and test set for Natural Questions, TriviaQA, and WebQuestions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b649712d8c42",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Danqi Chen & Scott Yih. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/danqi/acl2020-openqa-tutorial"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“ACL2020 Tutorial: Open-Domain Question Answering”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " July 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-766218c82892",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Danqi Chen, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1704.00051"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reading Wikipedia to Answer Open-Domain Questions”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2017. | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/DrQA"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ba39c4e6c1c8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Shuohang Wang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1709.00023"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“R^3: Reinforced Ranker-Reader for Open-Domain Question Answering”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AAAI 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-484cfdaaa24a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Jimmy Lin. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://sigir.org/wp-content/uploads/2019/01/p040.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The neural hype and comparisons against weak baselines.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACM SIGIR Forum. Vol. 52. No. 2. 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cbcab9184f05",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Wei Yang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.01718"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“End-to-End Open-Domain Question Answering with BERTserini”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NAACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-89752a52829d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Christopher Clark & Matt Gardner. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.10723"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Simple and Effective Multi-Paragraph Reading Comprehension.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1710.10723 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-626b551a96d9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Rodrigo Nogueira & Kyunghyun Cho. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.04085"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Passage Re-ranking with BERT.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1901.04085 (2019). | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/nyu-dl/dl4marco-bert"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-10f6d916dc73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Zhiguo Wang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1908.08167"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Multi-passage BERT: A globally normalized BERT model for open-domain question answering.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " EMNLP 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1fdfd9a15db6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Minjoon Seo et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.05807"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Real-time open-domain question answering with dense-sparse phrase index.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-10cf01d448cc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Kenton Lee, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1906.00300"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Latent Retrieval for Weakly Supervised Open Domain Question Answering”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-281a21a63709",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Kelvin Guu, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08909"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“REALM: Retrieval-Augmented Language Model Pre-Training”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2002.08909 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ec6ad552b606",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Vladimir Karpukhin et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2004.04906"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Dense passage retrieval for open-domain question answering.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". EMNLP 2020. | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/DPR"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c35a4adf4a85",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Patrick Lewis et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.11401"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2005.11401 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2ae11935184b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Adam Roberts, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08910"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“How Much Knowledge Can You Pack Into the Parameters of a Language Model?”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " EMNLP 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-11b4ae6709f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Tom Brown, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.14165"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Language models are few-shot learners.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2005.14165 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7bdd91e8b16b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Fabio Petroni, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.04611"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“How Context Affects Language Models’ Factual Predictions”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AKBC 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0a95e69df0aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Gautier Izacard & Edouard Grave. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2007.01282"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Leveraging passage retrieval with generative models for open domain question answering.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2007.01282 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4b600f2ee3eb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://d2l.ai/chapter_recurrent-modern/beam-search.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Dive into deep learning: Beam search”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-28264ade34e7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[19] Patrick Lewis, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2008.02637"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Question and Answer Test-Train Overlap in Open-Domain Question Answering Datasets”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2008.02637 (2020). | "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/facebookresearch/QA-Overlap"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "data"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8c3a54f59054",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[20] Hervé Jegou, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://engineering.fb.com/2017/03/29/data-infrastructure/faiss-a-library-for-efficient-similarity-search/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Faiss: A library for efficient similarity search”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Mar 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ac32f3eeefee",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[21] Vidhisha Balachandran, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08710"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Simple and Efficient ways to Improve REALM.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:2104.08710 (2021)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "how-to-build-an-open-domain-question-answering-system",
+    "source_slug": "2020-10-29-odqa",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 20,
+      "math": 20,
+      "image": 16,
+      "table": 1,
+      "code": 3
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-summary.png",
+      "alt": "Overview of three frameworks discussed in this post."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-retriever-reader.png",
+      "alt": "The retriever-reader QA framework combines information retrieval with machine reading comprehension."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/BERTserini-arch.png",
+      "alt": "An illustration of BERTserini architecture. (Image source: Yang et al., 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/DenSPI-arch.png",
+      "alt": "An illustration of Dense-Sparse Phrase Index (DenSPI) architecture. (Image source: Seo et al., 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/BERT-RC.png",
+      "alt": "How BERT is used to solve question-answering tasks. (Image source: Devlin et al., 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/R^3-arch.png",
+      "alt": "The overview of R^3 (reinforced ranker-reader) architecture. Both components share the same Match-LSTM module. (Image source: Wang, et al., 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/R^3-reward-flow.png",
+      "alt": "The workflow of R^3 training process. (Image source: acl2020-openqa-tutorial/slides/part4 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/ORQA-retriever.png",
+      "alt": "An illustration of the retriever component in ORQA. (Image source: replotted based on one slide in acl2020-openqa-tutorial/slides/part5 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/ORQA-reader.png",
+      "alt": "An illustration of the reader component in ORQA. (Image source: acl2020-openqa-tutorial/slides/part5 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/REALM-train.png",
+      "alt": "REALM is first unsupervised pre-trained with salient spans masking and then fine-tuned with QA data. (Image source: Guu et al., 2020 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-retiever-generator.png",
+      "alt": "The retriever + generator QA framework combines a document retrieval system with a general language model."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/RAG.png",
+      "alt": "An illustration of retrieval-augmented generation (RAG) architecture. (Image source: Lewis et al., 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/LM-compute.png",
+      "alt": "The amount of computation used for training big language models of different sizes is getting big. (Image source: Brown et al., 2020 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/T5_SSM.png",
+      "alt": "T5 is first pre-trained with salient span masking and then fine-tuned for each QA dataset to produce answers in free text. (Image source: Roberts et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/GPT3-triviaqa.png",
+      "alt": "GPT3's performance on TriviaQA grows smoothly with the model size. More demonstrations lead to better performance. (Image source: Brown et al., 2020 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-10-29-odqa/QA-results.png",
+      "alt": "A comparison of performance of several QA models on common QA datasets. On TriviaQA, two columns of results are reported, on the open domain test set (left) and on the hidden test set (right). (Image source: Izacard & Grave, 2020 )."
+    }
+  ]
+}

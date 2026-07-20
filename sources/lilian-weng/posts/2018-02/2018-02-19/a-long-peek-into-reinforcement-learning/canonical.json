@@ -1,0 +1,5631 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2018-02-19-rl-overview",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2018-02-19T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:103c1caa52ebfb80ca4cc453322a85cadab0d2dfbba342520a6e52233417773e",
+    "fetched_at": "2026-07-14T02:05:01.274570+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "A (Long) Peek into Reinforcement Learning",
+    "title_en": "A (Long) Peek into Reinforcement Learning",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-6f3c3853a677",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2020-09-03: Updated the algorithm of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#sarsa-on-policy-td-control"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "SARSA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#q-learning-off-policy-td-control"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Q-learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " so that the difference is more pronounced."
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "text",
+            "text": "[Updated on 2021-09-19: Thanks to 爱吃猫的鱼, we have this post in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://paperexplained.cn/articles/article/detail/33/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chinese"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-64f46dfe4842",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A couple of exciting news in Artificial Intelligence (AI) has just happened in recent years.  AlphaGo defeated the best professional human player in the game of Go. Very soon the extended algorithm AlphaGo Zero beat AlphaGo by 100-0 without supervised learning on human knowledge. Top professional game players lost to the bot developed by OpenAI on DOTA2 1v1 competition. After knowing these, it is pretty hard not to be curious about the magic behind these algorithms — Reinforcement Learning (RL). I’m writing this post to briefly go over the field. We will first introduce several fundamental concepts and then dive into classic approaches to solving RL problems. Hopefully, this post could be a good starting point for newbies, bridging the future study on the cutting-edge research."
+          }
+        ]
+      },
+      {
+        "id": "heading-454f97acc7a5",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What is Reinforcement Learning?"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-623836befde3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Say, we have an agent in an unknown environment and this agent can obtain some rewards by interacting with the environment. The agent ought to take actions so as to maximize cumulative rewards. In reality, the scenario could be a bot playing a game to achieve high scores, or a robot trying to complete physical tasks with physical items; and not just limited to these."
+          }
+        ]
+      },
+      {
+        "id": "image-4dc10ffa9c50",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/RL_illustration.png",
+          "alt": "An agent interacts with the environment, trying to take smart actions to maximize cumulative rewards."
+        }
+      },
+      {
+        "id": "paragraph-492f97223265",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The goal of Reinforcement Learning (RL) is to learn a good strategy for the agent from experimental trials and relative simple feedback received. With the optimal strategy, the agent is capable to actively adapt to the environment to maximize future rewards."
+          }
+        ]
+      },
+      {
+        "id": "heading-4dcb75ca300f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Key Concepts"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-505ad6cd54c6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now Let’s formally define a set of key concepts in RL."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cbfdc4d089ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent is acting in an "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "environment"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". How the environment reacts to certain actions is defined by a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "model"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " which we may or may not know. The agent can stay in one of many "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "states"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "inline_math",
+            "text": "s \\in \\mathcal{S}"
+          },
+          {
+            "type": "text",
+            "text": ") of the environment, and choose to take one of many "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "actions"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "inline_math",
+            "text": "a \\in \\mathcal{A}"
+          },
+          {
+            "type": "text",
+            "text": ") to switch from one state to another. Which state the agent will arrive in is decided by transition probabilities between states ("
+          },
+          {
+            "type": "inline_math",
+            "text": "P"
+          },
+          {
+            "type": "text",
+            "text": "). Once an action is taken, the environment delivers a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "reward"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "inline_math",
+            "text": "r \\in \\mathcal{R}"
+          },
+          {
+            "type": "text",
+            "text": ") as feedback."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8f2d5d2d0232",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model defines the reward function and transition probabilities. We may or may not know how the model works and this differentiate two circumstances:"
+          }
+        ]
+      },
+      {
+        "id": "list-753b966ba51f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-3cc8aad1289d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Know the model"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": planning with perfect information; do model-based RL. When we fully know the environment, we can find the optimal solution by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Dynamic_programming"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Dynamic Programming"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (DP). Do you still remember “longest increasing subsequence” or “traveling salesmen problem” from your Algorithms 101 class? LOL. This is not the focus of this post though."
+              }
+            ]
+          },
+          {
+            "id": "list-item-097e80b4aec0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Does not know the model"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": learning with incomplete information; do model-free RL or try to learn the model explicitly as part of the algorithm. Most of the following content serves the scenarios when the model is unknown."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-93b909c78e6e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent’s "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "policy"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi(s)"
+          },
+          {
+            "type": "text",
+            "text": " provides the guideline on what is the optimal action to take in a certain state with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "the goal to maximize the total rewards"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Each state is associated with a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "value"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " function "
+          },
+          {
+            "type": "inline_math",
+            "text": "V(s)"
+          },
+          {
+            "type": "text",
+            "text": " predicting the expected amount of future rewards we are able to receive in this state by acting the corresponding policy. In other words, the value function quantifies how good a state is. Both policy and value functions are what we try to learn in reinforcement learning."
+          }
+        ]
+      },
+      {
+        "id": "image-bce277b9d6ee",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/RL_algorithm_categorization.png",
+          "alt": "Summary of approaches in RL based on whether we want to model the value, policy, or the environment. (Image source: reproduced from David Silver's RL course lecture 1 .)"
+        }
+      },
+      {
+        "id": "paragraph-2ad03b419c73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The interaction between the agent and the environment involves a sequence of actions and observed rewards in time, "
+          },
+          {
+            "type": "inline_math",
+            "text": "t=1, 2, \\dots, T"
+          },
+          {
+            "type": "text",
+            "text": ". During the process, the agent accumulates the knowledge about the environment, learns the optimal policy, and makes decisions on which action to take next so as to efficiently learn the best policy. Let’s label the state, action, and reward at time step t as "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_t"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "A_t"
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_t"
+          },
+          {
+            "type": "text",
+            "text": ", respectively. Thus the interaction sequence is fully described by one "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "episode"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (also known as “trial” or “trajectory”) and the sequence ends at the terminal state "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_T"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-660fafb09062",
+        "type": "math",
+        "attrs": {
+          "latex": "S_1, A_1, R_2, S_2, A_2, \\dots, S_T"
+        }
+      },
+      {
+        "id": "paragraph-4500228d7dd9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Terms you will encounter a lot when diving into different categories of RL algorithms:"
+          }
+        ]
+      },
+      {
+        "id": "list-7f771d2ca30c",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-b6a32a1f311f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Model-based"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Rely on the model of the environment; either the model is known or the algorithm learns it explicitly."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9398768b301a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Model-free"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": No dependency on the model during learning."
+              }
+            ]
+          },
+          {
+            "id": "list-item-555f29245051",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "On-policy"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Use the deterministic outcomes or samples from the target policy to train the algorithm."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ad0dc220aab9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Off-policy"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Training on a distribution of transitions or episodes produced by a different behavior policy rather than that produced by the target policy."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-6d3873475218",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model: Transition and Reward"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-21c9e745536b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model is a descriptor of the environment. With the model, we can learn or infer how the environment would interact with and provide feedback to the agent. The model has two major parts, transition probability function "
+          },
+          {
+            "type": "inline_math",
+            "text": "P"
+          },
+          {
+            "type": "text",
+            "text": " and reward function "
+          },
+          {
+            "type": "inline_math",
+            "text": "R"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b6e0b916c75c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say when we are in state s, we decide to take action a to arrive in the next state s’ and obtain reward r. This is known as one "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "transition"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " step, represented by a tuple (s, a, s’, r)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fd8125c879ea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The transition function P records the probability of transitioning from state s to s’ after taking action a while obtaining reward r. We use "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{P}"
+          },
+          {
+            "type": "text",
+            "text": " as a symbol of “probability”."
+          }
+        ]
+      },
+      {
+        "id": "math-317f4abbd5db",
+        "type": "math",
+        "attrs": {
+          "latex": "P(s', r \\vert s, a)  = \\mathbb{P} [S_{t+1} = s', R_{t+1} = r \\vert S_t = s, A_t = a]"
+        }
+      },
+      {
+        "id": "paragraph-ba84b9b17c35",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus the state-transition function can be defined as a function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "P(s’, r \\vert s, a)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-cdb9b9500ef4",
+        "type": "math",
+        "attrs": {
+          "latex": "P_{ss'}^a = P(s' \\vert s, a)  = \\mathbb{P} [S_{t+1} = s' \\vert S_t = s, A_t = a] = \\sum_{r \\in \\mathcal{R}} P(s', r \\vert s, a)"
+        }
+      },
+      {
+        "id": "paragraph-48a4ccda88d7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reward function R predicts the next reward triggered by one action:"
+          }
+        ]
+      },
+      {
+        "id": "math-53553f420964",
+        "type": "math",
+        "attrs": {
+          "latex": "R(s, a) = \\mathbb{E} [R_{t+1} \\vert S_t = s, A_t = a] = \\sum_{r\\in\\mathcal{R}} r \\sum_{s' \\in \\mathcal{S}} P(s', r \\vert s, a)"
+        }
+      },
+      {
+        "id": "heading-7a7c3483658e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-2c01b3e459be",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy, as the agent’s behavior function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi"
+          },
+          {
+            "type": "text",
+            "text": ", tells us which action to take in state s. It is a mapping from state s to action a and can be either deterministic or stochastic:"
+          }
+        ]
+      },
+      {
+        "id": "list-40ccff445ac4",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-86e68d9ab85a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Deterministic: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi(s) = a"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8a9177b2580e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Stochastic: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi(a \\vert s) = \\mathbb{P}_\\pi [A=a \\vert S=s]"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-07e931d3bdae",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Value Function"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-e765ed2f2776",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Value function measures the goodness of a state or how rewarding a state or an action is by a prediction of future reward. The future reward, also known as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "return"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", is a total sum of discounted rewards going forward. Let’s compute the return "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t"
+          },
+          {
+            "type": "text",
+            "text": " starting from time t:"
+          }
+        ]
+      },
+      {
+        "id": "math-f69830fede27",
+        "type": "math",
+        "attrs": {
+          "latex": "G_t = R_{t+1} + \\gamma R_{t+2} + \\dots = \\sum_{k=0}^{\\infty} \\gamma^k R_{t+k+1}"
+        }
+      },
+      {
+        "id": "paragraph-4a2708eb0944",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The discounting factor "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\gamma \\in [0, 1]"
+          },
+          {
+            "type": "text",
+            "text": " penalize the rewards in the future, because:"
+          }
+        ]
+      },
+      {
+        "id": "list-601922b62c20",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-4e5e4a9f4784",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The future rewards may have higher uncertainty; i.e. stock market."
+              }
+            ]
+          },
+          {
+            "id": "list-item-caceea04623a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The future rewards do not provide immediate benefits; i.e. As human beings, we might prefer to have fun today rather than 5 years later ;)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-28ab69e48429",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Discounting provides mathematical convenience; i.e., we don’t need to track future steps forever to compute return."
+              }
+            ]
+          },
+          {
+            "id": "list-item-77f00b357882",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "We don’t need to worry about the infinite loops in the state transition graph."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bbd2860d3767",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "state-value"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of a state s is the expected return if we are in this state at time t, "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_t = s"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-a490aa43f722",
+        "type": "math",
+        "attrs": {
+          "latex": "V_{\\pi}(s) = \\mathbb{E}_{\\pi}[G_t \\vert S_t = s]"
+        }
+      },
+      {
+        "id": "paragraph-ea05ca860915",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similarly, we define the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "action-value"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (“Q-value”; Q as “Quality” I believe?) of a state-action pair as:"
+          }
+        ]
+      },
+      {
+        "id": "math-b4b533148968",
+        "type": "math",
+        "attrs": {
+          "latex": "Q_{\\pi}(s, a) = \\mathbb{E}_{\\pi}[G_t \\vert S_t = s, A_t = a]"
+        }
+      },
+      {
+        "id": "paragraph-8769f5e8e5a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Additionally, since we follow the target policy "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi"
+          },
+          {
+            "type": "text",
+            "text": ", we can make use of the probility distribution over possible actions and the Q-values to recover the state-value:"
+          }
+        ]
+      },
+      {
+        "id": "math-c85276fa12f2",
+        "type": "math",
+        "attrs": {
+          "latex": "V_{\\pi}(s) = \\sum_{a \\in \\mathcal{A}} Q_{\\pi}(s, a) \\pi(a \\vert s)"
+        }
+      },
+      {
+        "id": "paragraph-d01428ed73a1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The difference between action-value and state-value is the action "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "advantage"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " function (“A-value”):"
+          }
+        ]
+      },
+      {
+        "id": "math-aad035422cda",
+        "type": "math",
+        "attrs": {
+          "latex": "A_{\\pi}(s, a) = Q_{\\pi}(s, a) - V_{\\pi}(s)"
+        }
+      },
+      {
+        "id": "heading-6d056fb02d9e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Optimal Value and Policy"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-2a55ad082a91",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The optimal value function produces the maximum return:"
+          }
+        ]
+      },
+      {
+        "id": "math-c0f2eeffa44e",
+        "type": "math",
+        "attrs": {
+          "latex": "V_{*}(s) = \\max_{\\pi} V_{\\pi}(s),\nQ_{*}(s, a) = \\max_{\\pi} Q_{\\pi}(s, a)"
+        }
+      },
+      {
+        "id": "paragraph-f435a75b4f77",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The optimal policy achieves optimal value functions:"
+          }
+        ]
+      },
+      {
+        "id": "math-64ac251bba1c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\pi_{*} = \\arg\\max_{\\pi} V_{\\pi}(s),\n\\pi_{*} = \\arg\\max_{\\pi} Q_{\\pi}(s, a)"
+        }
+      },
+      {
+        "id": "paragraph-5ebf218252b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "And of course, we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "V_{\\pi_{*}}(s)=V_{*}(s)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_{\\pi_{*}}(s, a) = Q_{*}(s, a)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-5d6516be1f91",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Markov Decision Processes"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-09324461a038",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In more formal terms, almost all the RL problems can be framed as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Markov Decision Processes"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (MDPs). All states in MDP has “Markov” property, referring to the fact that the future only depends on the current state, not the history:"
+          }
+        ]
+      },
+      {
+        "id": "math-a22eff2a9f47",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbb{P}[ S_{t+1} \\vert S_t ] = \\mathbb{P} [S_{t+1} \\vert S_1, \\dots, S_t]"
+        }
+      },
+      {
+        "id": "paragraph-a56773962e17",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or in other words, the future and the past are "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "conditionally independent"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " given the present, as the current state encapsulates all the statistics we need to decide the future."
+          }
+        ]
+      },
+      {
+        "id": "image-0989c75dcbf6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/agent_environment_MDP.png",
+          "alt": "The agent-environment interaction in a Markov decision process. (Image source: Sec. 3.1 Sutton & Barto (2017).)"
+        }
+      },
+      {
+        "id": "paragraph-d524083641fd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A Markov deicison process consists of five elements "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{M} = \\langle \\mathcal{S}, \\mathcal{A}, P, R, \\gamma \\rangle"
+          },
+          {
+            "type": "text",
+            "text": ", where the symbols carry the same meanings as key concepts in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#key-concepts"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "previous"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " section, well aligned with RL problem settings:"
+          }
+        ]
+      },
+      {
+        "id": "list-66bc9769429f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-1171aed9c05d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{S}"
+              },
+              {
+                "type": "text",
+                "text": " - a set of states;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-b0711a23182a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{A}"
+              },
+              {
+                "type": "text",
+                "text": " - a set of actions;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-736aa3394021",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "P"
+              },
+              {
+                "type": "text",
+                "text": " - transition probability function;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e45e9785166b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "R"
+              },
+              {
+                "type": "text",
+                "text": " - reward function;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-c348569391e5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "\\gamma"
+              },
+              {
+                "type": "text",
+                "text": " - discounting factor for future rewards.\nIn an unknown environment, we do not have perfect knowledge about "
+              },
+              {
+                "type": "inline_math",
+                "text": "P"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "R"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-1790802a40b6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/mdp_example.jpg",
+          "alt": "A fun example of Markov decision process: a typical work day. (Image source: randomant.net/reinforcement-learning-concepts )"
+        }
+      },
+      {
+        "id": "heading-7cf134c86b49",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Bellman Equations"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-ad9b58aeab5e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Bellman equations refer to a set of equations that decompose the value function into the immediate reward plus the discounted future values."
+          }
+        ]
+      },
+      {
+        "id": "math-c4881da6acc9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nV(s) &= \\mathbb{E}[G_t \\vert S_t = s] \\\\\n&= \\mathbb{E} [R_{t+1} + \\gamma R_{t+2} + \\gamma^2 R_{t+3} + \\dots \\vert S_t = s] \\\\\n&= \\mathbb{E} [R_{t+1} + \\gamma (R_{t+2} + \\gamma R_{t+3} + \\dots) \\vert S_t = s] \\\\\n&= \\mathbb{E} [R_{t+1} + \\gamma G_{t+1} \\vert S_t = s] \\\\\n&= \\mathbb{E} [R_{t+1} + \\gamma V(S_{t+1}) \\vert S_t = s]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-1e5bbdaf36a1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similarly for Q-value,"
+          }
+        ]
+      },
+      {
+        "id": "math-da6cec9aa858",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nQ(s, a) \n&= \\mathbb{E} [R_{t+1} + \\gamma V(S_{t+1}) \\mid S_t = s, A_t = a] \\\\\n&= \\mathbb{E} [R_{t+1} + \\gamma \\mathbb{E}_{a\\sim\\pi} Q(S_{t+1}, a) \\mid S_t = s, A_t = a]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-621e31385819",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Bellman Expectation Equations"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-92d1da3d9939",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The recursive update process can be further decomposed to be equations built on both state-value and action-value functions. As we go further in future action steps, we extend V and Q alternatively by following the policy "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-183e541e8ec5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/bellman_equation.png",
+          "alt": "Illustration of how Bellman expection equations update state-value and action-value functions."
+        }
+      },
+      {
+        "id": "math-e9197f11ba2c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nV_{\\pi}(s) &= \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s) Q_{\\pi}(s, a) \\\\\nQ_{\\pi}(s, a) &= R(s, a) + \\gamma \\sum_{s' \\in \\mathcal{S}} P_{ss'}^a V_{\\pi} (s') \\\\\nV_{\\pi}(s) &= \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s) \\big( R(s, a) + \\gamma \\sum_{s' \\in \\mathcal{S}} P_{ss'}^a V_{\\pi} (s') \\big) \\\\\nQ_{\\pi}(s, a) &= R(s, a) + \\gamma \\sum_{s' \\in \\mathcal{S}} P_{ss'}^a \\sum_{a' \\in \\mathcal{A}} \\pi(a' \\vert s') Q_{\\pi} (s', a')\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-42ac6ef65275",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Bellman Optimality Equations"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-3f2e553d1449",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we are only interested in the optimal values, rather than computing the expectation following a policy, we could jump right into the maximum returns during the alternative updates without using a policy. RECAP: the optimal values "
+          },
+          {
+            "type": "inline_math",
+            "text": "V_*"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_*"
+          },
+          {
+            "type": "text",
+            "text": " are the best returns we can obtain, defined "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#optimal-value-and-policy"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-a8c80fc26c84",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nV_*(s) &= \\max_{a \\in \\mathcal{A}} Q_*(s,a)\\\\\nQ_*(s, a) &= R(s, a) + \\gamma \\sum_{s' \\in \\mathcal{S}} P_{ss'}^a V_*(s') \\\\\nV_*(s) &= \\max_{a \\in \\mathcal{A}} \\big( R(s, a) + \\gamma \\sum_{s' \\in \\mathcal{S}} P_{ss'}^a V_*(s') \\big) \\\\\nQ_*(s, a) &= R(s, a) + \\gamma \\sum_{s' \\in \\mathcal{S}} P_{ss'}^a \\max_{a' \\in \\mathcal{A}} Q_*(s', a')\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-2d785315363f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Unsurprisingly they look very similar to Bellman expectation equations."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-36d8483251f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we have complete information of the environment, this turns into a planning problem, solvable by DP. Unfortunately, in most scenarios, we do not know "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_{ss’}^a"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "R(s, a)"
+          },
+          {
+            "type": "text",
+            "text": ", so we cannot solve MDPs by directly applying Bellmen equations, but it lays the theoretical foundation for many RL algorithms."
+          }
+        ]
+      },
+      {
+        "id": "heading-52c5d3756fc4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Common Approaches"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-307d31349b78",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now it is the time to go through the major approaches and classic algorithms for solving RL problems. In future posts, I plan to dive into each approach further."
+          }
+        ]
+      },
+      {
+        "id": "heading-c6cd4a0b34ea",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Dynamic Programming"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-dde3e7f526cd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When the model is fully known, following Bellman equations, we can use "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Dynamic_programming"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dynamic Programming"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (DP) to iteratively evaluate value functions and improve policy."
+          }
+        ]
+      },
+      {
+        "id": "heading-6797e780c296",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy Evaluation"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-08e92aced847",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy Evaluation is to compute the state-value "
+          },
+          {
+            "type": "inline_math",
+            "text": "V_\\pi"
+          },
+          {
+            "type": "text",
+            "text": " for a given policy "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-1d87c412922b",
+        "type": "math",
+        "attrs": {
+          "latex": "V_{t+1}(s) \n= \\mathbb{E}_\\pi [r + \\gamma V_t(s') | S_t = s]\n= \\sum_a \\pi(a \\vert s) \\sum_{s', r} P(s', r \\vert s, a) (r + \\gamma V_t(s'))"
+        }
+      },
+      {
+        "id": "heading-a8c0bc475ee4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy Improvement"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-414dec602168",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Based on the value functions, Policy Improvement generates a better policy "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi’ \\geq \\pi"
+          },
+          {
+            "type": "text",
+            "text": " by acting greedily."
+          }
+        ]
+      },
+      {
+        "id": "math-f4b6917890bc",
+        "type": "math",
+        "attrs": {
+          "latex": "Q_\\pi(s, a) \n= \\mathbb{E} [R_{t+1} + \\gamma V_\\pi(S_{t+1}) \\vert S_t=s, A_t=a]\n= \\sum_{s', r} P(s', r \\vert s, a) (r + \\gamma V_\\pi(s'))"
+        }
+      },
+      {
+        "id": "heading-93ec7d00364c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy Iteration"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-24477964a684",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Generalized Policy Iteration (GPI)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " algorithm refers to an iterative procedure to improve the policy when combining policy evaluation and improvement."
+          }
+        ]
+      },
+      {
+        "id": "math-9e58c1f453d0",
+        "type": "math",
+        "attrs": {
+          "latex": "\\pi_0 \\xrightarrow[]{\\text{evaluation}} V_{\\pi_0} \\xrightarrow[]{\\text{improve}}\n\\pi_1 \\xrightarrow[]{\\text{evaluation}} V_{\\pi_1} \\xrightarrow[]{\\text{improve}}\n\\pi_2 \\xrightarrow[]{\\text{evaluation}} \\dots \\xrightarrow[]{\\text{improve}}\n\\pi_* \\xrightarrow[]{\\text{evaluation}} V_*"
+        }
+      },
+      {
+        "id": "paragraph-871377b07ce9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In GPI, the value function is approximated repeatedly to be closer to the true value of the current policy and in the meantime, the policy is improved repeatedly to approach optimality. This policy iteration process works and always converges to the optimality, but why this is the case?"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b735318d43a2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Say, we have a policy "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi"
+          },
+          {
+            "type": "text",
+            "text": " and then generate an improved version "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi’"
+          },
+          {
+            "type": "text",
+            "text": " by greedily taking actions, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi’(s) = \\arg\\max_{a \\in \\mathcal{A}} Q_\\pi(s, a)"
+          },
+          {
+            "type": "text",
+            "text": ". The value of this improved "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi’"
+          },
+          {
+            "type": "text",
+            "text": " is guaranteed to be better because:"
+          }
+        ]
+      },
+      {
+        "id": "math-1b640e095d61",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nQ_\\pi(s, \\pi'(s))\n&= Q_\\pi(s, \\arg\\max_{a \\in \\mathcal{A}} Q_\\pi(s, a)) \\\\\n&= \\max_{a \\in \\mathcal{A}} Q_\\pi(s, a) \\geq Q_\\pi(s, \\pi(s)) = V_\\pi(s)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-f75594fbb50c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Monte-Carlo Methods"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7afb2fb74136",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First, let’s recall that "
+          },
+          {
+            "type": "inline_math",
+            "text": "V(s) = \\mathbb{E}[ G_t \\vert S_t=s]"
+          },
+          {
+            "type": "text",
+            "text": ". Monte-Carlo (MC) methods uses a simple idea: It learns from episodes of raw experience without modeling the environmental dynamics and computes the observed mean return as an approximation of the expected return. To compute the empirical return "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t"
+          },
+          {
+            "type": "text",
+            "text": ", MC methods need to learn from "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "complete"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " episodes "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_1, A_1, R_2, \\dots, S_T"
+          },
+          {
+            "type": "text",
+            "text": " to compute "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t = \\sum_{k=0}^{T-t-1} \\gamma^k R_{t+k+1}"
+          },
+          {
+            "type": "text",
+            "text": " and all the episodes must eventually terminate."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6ca00c2c71db",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The empirical mean return for state s is:"
+          }
+        ]
+      },
+      {
+        "id": "math-b4cd58927508",
+        "type": "math",
+        "attrs": {
+          "latex": "V(s) = \\frac{\\sum_{t=1}^T \\mathbb{1}[S_t = s] G_t}{\\sum_{t=1}^T \\mathbb{1}[S_t = s]}"
+        }
+      },
+      {
+        "id": "paragraph-ed8c112551df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{1}[S_t = s]"
+          },
+          {
+            "type": "text",
+            "text": " is a binary indicator function. We may count the visit of state s every time so that there could exist multiple visits of one state in one episode (“every-visit”), or only count it the first time we encounter a state in one episode (“first-visit”). This way of approximation can be easily extended to action-value functions by counting (s, a) pair."
+          }
+        ]
+      },
+      {
+        "id": "math-72d82ae041fe",
+        "type": "math",
+        "attrs": {
+          "latex": "Q(s, a) = \\frac{\\sum_{t=1}^T \\mathbb{1}[S_t = s, A_t = a] G_t}{\\sum_{t=1}^T \\mathbb{1}[S_t = s, A_t = a]}"
+        }
+      },
+      {
+        "id": "paragraph-88180687f13d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To learn the optimal policy by MC, we iterate it by following a similar idea to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#policy-iteration"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GPI"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-908bfb91f55c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/MC_control.png",
+          "alt": "The backup diagrams for Q-learning and SARSA. (Image source: Replotted based on Figure 6.5 in Sutton & Barto (2017))"
+        }
+      },
+      {
+        "id": "list-7465103bd222",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-cb70c7d06c07",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Improve the policy greedily with respect to the current value function: "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi(s) = \\arg\\max_{a \\in \\mathcal{A}} Q(s, a)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-dbd83a995bdf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Generate a new episode with the new policy "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi"
+              },
+              {
+                "type": "text",
+                "text": " (i.e. using algorithms like "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#%CE%B5-greedy-algorithm"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "ε-greedy"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " helps us balance between exploitation and exploration.)"
+              }
+            ]
+          },
+          {
+            "id": "list-item-8e450f5978fc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Estimate Q using the new episode: "
+              },
+              {
+                "type": "inline_math",
+                "text": "q_\\pi(s, a) = \\frac{\\sum_{t=1}^T \\big( \\mathbb{1}[S_t = s, A_t = a] \\sum_{k=0}^{T-t-1} \\gamma^k R_{t+k+1} \\big)}{\\sum_{t=1}^T \\mathbb{1}[S_t = s, A_t = a]}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-a38f4121449f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Temporal-Difference Learning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e643bc87a0f1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to Monte-Carlo methods, Temporal-Difference (TD) Learning is model-free and learns from episodes of experience. However, TD learning can learn from "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "incomplete"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " episodes and hence we don’t need to track the episode up to termination. TD learning is so important that Sutton & Barto (2017) in their RL book describes it as “one idea … central and novel to reinforcement learning”."
+          }
+        ]
+      },
+      {
+        "id": "heading-90d7dc024cc6",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Bootstrapping"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-d443c8e21a07",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "TD learning methods update targets with regard to existing estimates rather than exclusively relying on actual rewards and complete returns as in MC methods. This approach is known as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "bootstrapping"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-59c5b24e0066",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Value Estimation"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-91549548336c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The key idea in TD learning is to update the value function "
+          },
+          {
+            "type": "inline_math",
+            "text": "V(S_t)"
+          },
+          {
+            "type": "text",
+            "text": " towards an estimated return "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_{t+1} + \\gamma V(S_{t+1})"
+          },
+          {
+            "type": "text",
+            "text": " (known as “"
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "TD target"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "”). To what extent we want to update the value function is controlled by the learning rate hyperparameter α:"
+          }
+        ]
+      },
+      {
+        "id": "math-47f34b479190",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nV(S_t) &\\leftarrow (1- \\alpha) V(S_t) + \\alpha G_t \\\\\nV(S_t) &\\leftarrow V(S_t) + \\alpha (G_t - V(S_t)) \\\\\nV(S_t) &\\leftarrow V(S_t) + \\alpha (R_{t+1} + \\gamma V(S_{t+1}) - V(S_t))\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-f5a9d53a463f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similarly, for action-value estimation:"
+          }
+        ]
+      },
+      {
+        "id": "math-6a59bdaf60f1",
+        "type": "math",
+        "attrs": {
+          "latex": "Q(S_t, A_t) \\leftarrow Q(S_t, A_t) + \\alpha (R_{t+1} + \\gamma Q(S_{t+1}, A_{t+1}) - Q(S_t, A_t))"
+        }
+      },
+      {
+        "id": "paragraph-5f21f6ea1abe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Next, let’s dig into the fun part on how to learn optimal policy in TD learning (aka “TD control”). Be prepared, you are gonna see many famous names of classic algorithms in this section."
+          }
+        ]
+      },
+      {
+        "id": "heading-214afa31969b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SARSA: On-Policy TD control"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-0b31f24f67a8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "“SARSA” refers to the procedure of updaing Q-value by following a sequence of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\dots, S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1}, \\dots"
+          },
+          {
+            "type": "text",
+            "text": ". The idea follows the same route of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#policy-iteration"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GPI"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Within one episode, it works as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-e3c4e45faec7",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-d831d3daa18b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize "
+              },
+              {
+                "type": "inline_math",
+                "text": "t=0"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f3e47a8fdfc6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Start with "
+              },
+              {
+                "type": "inline_math",
+                "text": "S_0"
+              },
+              {
+                "type": "text",
+                "text": " and choose action "
+              },
+              {
+                "type": "inline_math",
+                "text": "A_0 = \\arg\\max_{a \\in \\mathcal{A}} Q(S_0, a)"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#%ce%b5-greedy-algorithm"
+                },
+                "children": [
+                  {
+                    "type": "inline_math",
+                    "text": "\\epsilon"
+                  },
+                  {
+                    "type": "text",
+                    "text": "-greedy"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is commonly applied."
+              }
+            ]
+          },
+          {
+            "id": "list-item-39668ea16898",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "At time "
+              },
+              {
+                "type": "inline_math",
+                "text": "t"
+              },
+              {
+                "type": "text",
+                "text": ", after applying action "
+              },
+              {
+                "type": "inline_math",
+                "text": "A_t"
+              },
+              {
+                "type": "text",
+                "text": ", we observe reward "
+              },
+              {
+                "type": "inline_math",
+                "text": "R_{t+1}"
+              },
+              {
+                "type": "text",
+                "text": " and get into the next state "
+              },
+              {
+                "type": "inline_math",
+                "text": "S_{t+1}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ecd3cf3a78f5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then pick the next action in the same way as in step 2: "
+              },
+              {
+                "type": "inline_math",
+                "text": "A_{t+1} = \\arg\\max_{a \\in \\mathcal{A}} Q(S_{t+1}, a)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5cd1302432c7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Update the Q-value function: "
+              },
+              {
+                "type": "inline_math",
+                "text": " Q(S_t, A_t) \\leftarrow Q(S_t, A_t) + \\alpha (R_{t+1} + \\gamma Q(S_{t+1}, A_{t+1}) - Q(S_t, A_t)) "
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c58c75993a4a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Set "
+              },
+              {
+                "type": "inline_math",
+                "text": "t = t+1"
+              },
+              {
+                "type": "text",
+                "text": " and repeat from step 3."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-44ba1894ee84",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In each step of SARSA, we need to choose the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "next"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " action according to the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "current"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " policy."
+          }
+        ]
+      },
+      {
+        "id": "heading-06b9a5581759",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Q-Learning: Off-policy TD control"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-a95af356d757",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The development of Q-learning ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://link.springer.com/content/pdf/10.1007/BF00992698.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Watkins & Dayan, 1992"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a big breakout in the early days of Reinforcement Learning. Within one episode, it works as follows:"
+          }
+        ]
+      },
+      {
+        "id": "list-ff72ef8aaad6",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-d831d3daa18b-2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize "
+              },
+              {
+                "type": "inline_math",
+                "text": "t=0"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8f870b538696",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Starts with "
+              },
+              {
+                "type": "inline_math",
+                "text": "S_0"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1ba90a99693a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "At time step "
+              },
+              {
+                "type": "inline_math",
+                "text": "t"
+              },
+              {
+                "type": "text",
+                "text": ", we pick the action according to Q values, "
+              },
+              {
+                "type": "inline_math",
+                "text": "A_t = \\arg\\max_{a \\in \\mathcal{A}} Q(S_t, a)"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\epsilon"
+              },
+              {
+                "type": "text",
+                "text": "-greedy is commonly applied."
+              }
+            ]
+          },
+          {
+            "id": "list-item-de0c5c85fcfc",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "After applying action "
+              },
+              {
+                "type": "inline_math",
+                "text": "A_t"
+              },
+              {
+                "type": "text",
+                "text": ", we observe reward "
+              },
+              {
+                "type": "inline_math",
+                "text": "R_{t+1}"
+              },
+              {
+                "type": "text",
+                "text": " and get into the next state "
+              },
+              {
+                "type": "inline_math",
+                "text": "S_{t+1}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-818a6a941bec",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Update the Q-value function: "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q(S_t, A_t) \\leftarrow Q(S_t, A_t) + \\alpha (R_{t+1} + \\gamma \\max_{a \\in \\mathcal{A}} Q(S_{t+1}, a) - Q(S_t, A_t))"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-af2c8b792c23",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "t = t+1"
+              },
+              {
+                "type": "text",
+                "text": " and repeat from step 3."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ff3182dca5d6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The key difference from SARSA is that Q-learning does not follow the current policy to pick the second action "
+          },
+          {
+            "type": "inline_math",
+            "text": "A_{t+1}"
+          },
+          {
+            "type": "text",
+            "text": ". It estimates "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q^*"
+          },
+          {
+            "type": "text",
+            "text": " out of the best Q values, but which action (denoted as "
+          },
+          {
+            "type": "inline_math",
+            "text": "a^*"
+          },
+          {
+            "type": "text",
+            "text": ") leads to this maximal Q does not matter and in the next step Q-learning may not follow "
+          },
+          {
+            "type": "inline_math",
+            "text": "a^*"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-8c138e412903",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/sarsa_vs_q_learning.png",
+          "alt": "The backup diagrams for Q-learning and SARSA. (Image source: Replotted based on Figure 6.5 in Sutton & Barto (2017))"
+        }
+      },
+      {
+        "id": "heading-0551d64de8e8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep Q-Network"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-e7c536ee1620",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Theoretically, we can memorize "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_*(.)"
+          },
+          {
+            "type": "text",
+            "text": " for all state-action pairs in Q-learning, like in a gigantic table. However, it quickly becomes computationally infeasible when the state and action space are large. Thus people use functions (i.e. a machine learning model) to approximate Q values and this is called "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "function approximation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". For example, if we use a function with parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " to calculate Q values, we can label Q value function as "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q(s, a; \\theta)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-252c907c6aa9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Unfortunately Q-learning may suffer from instability and divergence when combined with an nonlinear Q-value function approximation and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#bootstrapping"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "bootstrapping"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (See "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#deadly-triad-issue"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Problems #2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b1add7421e92",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep Q-Network (“DQN”; Mnih et al. 2015) aims to greatly improve and stabilize the training procedure of Q-learning by two innovative mechanisms:"
+          }
+        ]
+      },
+      {
+        "id": "list-6bb289eca36b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a46352804994",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Experience Replay"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": All the episode steps "
+              },
+              {
+                "type": "inline_math",
+                "text": "e_t = (S_t, A_t, R_t, S_{t+1})"
+              },
+              {
+                "type": "text",
+                "text": " are stored in one replay memory "
+              },
+              {
+                "type": "inline_math",
+                "text": "D_t = \\{ e_1, \\dots, e_t \\}"
+              },
+              {
+                "type": "text",
+                "text": ". "
+              },
+              {
+                "type": "inline_math",
+                "text": "D_t"
+              },
+              {
+                "type": "text",
+                "text": " has experience tuples over many episodes. During Q-learning updates, samples are drawn at random from the replay memory and thus one sample could be used multiple times. Experience replay improves data efficiency, removes correlations in the observation sequences, and smooths over changes in the data distribution."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c5cdb96bf312",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Periodically Updated Target"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Q is optimized towards target values that are only periodically updated. The Q network is cloned and kept frozen as the optimization target every C steps (C is a hyperparameter). This modification makes the training more stable as it overcomes the short-term oscillations."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-acbb0bb8e889",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The loss function looks like this:"
+          }
+        ]
+      },
+      {
+        "id": "math-9cb4b3333dca",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}(\\theta) = \\mathbb{E}_{(s, a, r, s') \\sim U(D)} \\Big[ \\big( r + \\gamma \\max_{a'} Q(s', a'; \\theta^{-}) - Q(s, a; \\theta) \\big)^2 \\Big]"
+        }
+      },
+      {
+        "id": "paragraph-2fd28151f45e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "U(D)"
+          },
+          {
+            "type": "text",
+            "text": " is a uniform distribution over the replay memory D; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{-}"
+          },
+          {
+            "type": "text",
+            "text": " is the parameters of the frozen target Q-network."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3363654f2af4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In addition, it is also found to be helpful to clip the error term to be between [-1, 1]. (I always get mixed feeling with parameter clipping, as many studies have shown that it works empirically but it makes the math much less pretty. :/)"
+          }
+        ]
+      },
+      {
+        "id": "image-75ba427d8bf7",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/DQN_algorithm.png",
+          "alt": "Algorithm for DQN with experience replay and occasionally frozen optimization target. The prepossessed sequence is the output of some processes running on the input images of Atari games. Don't worry too much about it; just consider them as input feature vectors. (Image source: Mnih et al. 2015)"
+        }
+      },
+      {
+        "id": "paragraph-0b3f3b1a4dd3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are many extensions of DQN to improve the original design, such as DQN with dueling architecture (Wang et al. 2016) which estimates state-value function V(s) and advantage function A(s, a) with shared network parameters."
+          }
+        ]
+      },
+      {
+        "id": "heading-d76e271d5f17",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Combining TD and MC Learning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-96bfdb632556",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the previous "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-estimation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on value estimation in TD learning, we only trace one step further down the action chain when calculating the TD target. One can easily extend it to take multiple steps to estimate the return."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-903e597c31c5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s label the estimated return following n steps as "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t^{(n)}, n=1, \\dots, \\infty"
+          },
+          {
+            "type": "text",
+            "text": ", then:"
+          }
+        ]
+      },
+      {
+        "id": "table-8e5f0d4ea4da",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "$n$",
+            "$G_t$",
+            "Notes"
+          ],
+          "rows": [
+            [
+              "$n=1$",
+              "$G_t^{(1)} = R_{t+1} + \\gamma V(S_{t+1})$",
+              "TD learning"
+            ],
+            [
+              "$n=2$",
+              "$G_t^{(2)} = R_{t+1} + \\gamma R_{t+2} + \\gamma^2 V(S_{t+2})$",
+              ""
+            ],
+            [
+              "…",
+              "",
+              ""
+            ],
+            [
+              "$n=n$",
+              "$ G_t^{(n)} = R_{t+1} + \\gamma R_{t+2} + \\dots + \\gamma^{n-1} R_{t+n} + \\gamma^n V(S_{t+n}) $",
+              ""
+            ],
+            [
+              "…",
+              "",
+              ""
+            ],
+            [
+              "$n=\\infty$",
+              "$G_t^{(\\infty)} = R_{t+1} + \\gamma R_{t+2} + \\dots + \\gamma^{T-t-1} R_T + \\gamma^{T-t} V(S_T) $",
+              "MC estimation"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-951e86d07510",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The generalized n-step TD learning still has the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-estimation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "same"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " form for updating the value function:"
+          }
+        ]
+      },
+      {
+        "id": "math-001aa68d57a4",
+        "type": "math",
+        "attrs": {
+          "latex": "V(S_t) \\leftarrow V(S_t) + \\alpha (G_t^{(n)} - V(S_t))"
+        }
+      },
+      {
+        "id": "image-7a047651d88a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/TD_lambda.png",
+          "alt": "Comparison of the backup diagrams of Monte-Carlo, Temporal-Difference learning, and Dynamic Programming for state value functions. (Image source: David Silver's RL course lecture 4 : \"Model-Free Prediction\")"
+        }
+      },
+      {
+        "id": "paragraph-e51805c5201c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We are free to pick any "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " in TD learning as we like. Now the question becomes what is the best "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": "? Which "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t^{(n)}"
+          },
+          {
+            "type": "text",
+            "text": " gives us the best return approximation? A common yet smart solution is to apply a weighted sum of all possible n-step TD targets rather than to pick a single best n. The weights decay by a factor λ with n, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda^{n-1}"
+          },
+          {
+            "type": "text",
+            "text": "; the intuition is similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-estimation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "why"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " we want to discount future rewards when computing the return: the more future we look into the less confident we would be. To make all the weight (n → ∞) sum up to 1, we multiply every weight by (1-λ), because:"
+          }
+        ]
+      },
+      {
+        "id": "math-50a9b1d91939",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\text{let } S &= 1 + \\lambda + \\lambda^2 + \\dots \\\\\nS &= 1 + \\lambda(1 + \\lambda + \\lambda^2 + \\dots) \\\\\nS &= 1 + \\lambda S \\\\\nS &= 1 / (1-\\lambda)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-2f682da19428",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This weighted sum of many n-step returns is called λ-return "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t^{\\lambda} = (1-\\lambda) \\sum_{n=1}^{\\infty} \\lambda^{n-1} G_t^{(n)}"
+          },
+          {
+            "type": "text",
+            "text": ". TD learning that adopts λ-return for value updating is labeled as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "TD(λ)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The original version we introduced "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#value-estimation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "above"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is equivalent to "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "TD(0)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-a2dd72a77ccb",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/TD_MC_DP_backups.png",
+          "alt": "Comparison of the backup diagrams of Monte-Carlo, Temporal-Difference learning, and Dynamic Programming for state value functions. (Image source: David Silver's RL course lecture 4 : \"Model-Free Prediction\")"
+        }
+      },
+      {
+        "id": "heading-3c6b21daaa4e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy Gradient"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-2320cb3ef5ba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "All the methods we have introduced above aim to learn the state/action value function and then to select actions accordingly. Policy Gradient methods instead learn the policy directly with a parameterized function respect to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi(a \\vert s; \\theta)"
+          },
+          {
+            "type": "text",
+            "text": ". Let’s define the reward function (opposite of loss function) as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "the expected return"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and train the algorithm with the goal to maximize the reward function. My "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-04-08-policy-gradient/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "next post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " described why the policy gradient theorem works (proof) and introduced a number of policy gradient algorithms."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aa0efd2c78df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In discrete space:"
+          }
+        ]
+      },
+      {
+        "id": "math-17c69d0f893b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{J}(\\theta) = V_{\\pi_\\theta}(S_1) = \\mathbb{E}_{\\pi_\\theta}[V_1]"
+        }
+      },
+      {
+        "id": "paragraph-62468d73944e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_1"
+          },
+          {
+            "type": "text",
+            "text": " is the initial starting state."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1572349dcf53",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or in continuous space:"
+          }
+        ]
+      },
+      {
+        "id": "math-4a08b415814c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{J}(\\theta) = \\sum_{s \\in \\mathcal{S}} d_{\\pi_\\theta}(s) V_{\\pi_\\theta}(s) = \\sum_{s \\in \\mathcal{S}} \\Big( d_{\\pi_\\theta}(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s, \\theta) Q_\\pi(s, a) \\Big)"
+        }
+      },
+      {
+        "id": "paragraph-fb7bf8293302",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_{\\pi_\\theta}(s)"
+          },
+          {
+            "type": "text",
+            "text": " is stationary distribution of Markov chain for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi_\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". If you are unfamiliar with the definition of a “stationary distribution,” please check this "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://jeremykun.com/2015/04/06/markov-chain-monte-carlo-without-all-the-bullshit/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "reference"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-811d05a2662b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Using "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "gradient ascent"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " we can find the best θ that produces the highest return. It is natural to expect policy-based methods are more useful in continuous space, because there is an infinite number of actions and/or states to estimate the values for in continuous space and hence value-based approaches are computationally much more expensive."
+          }
+        ]
+      },
+      {
+        "id": "heading-3ee1a3cc6e01",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Policy Gradient Theorem"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-ad9d88a8ca34",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Computing the gradient "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "numerically"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " can be done by perturbing θ by a small amount ε in the k-th dimension. It works even when "
+          },
+          {
+            "type": "inline_math",
+            "text": "J(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " is not differentiable (nice!), but unsurprisingly very slow."
+          }
+        ]
+      },
+      {
+        "id": "math-b3f8c25adc74",
+        "type": "math",
+        "attrs": {
+          "latex": "\\frac{\\partial \\mathcal{J}(\\theta)}{\\partial \\theta_k} \\approx \\frac{\\mathcal{J}(\\theta + \\epsilon u_k) - \\mathcal{J}(\\theta)}{\\epsilon}"
+        }
+      },
+      {
+        "id": "paragraph-cf304b5194f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "analytically"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "math-4feb918ee7d4",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{J}(\\theta) = \\mathbb{E}_{\\pi_\\theta} [r] = \\sum_{s \\in \\mathcal{S}} d_{\\pi_\\theta}(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s; \\theta) R(s, a)"
+        }
+      },
+      {
+        "id": "paragraph-ddfd9dee15fc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Actually we have nice theoretical support for (replacing "
+          },
+          {
+            "type": "inline_math",
+            "text": "d(.)"
+          },
+          {
+            "type": "text",
+            "text": " with "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\pi(.)"
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "math-631f858f85d6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{J}(\\theta) = \\sum_{s \\in \\mathcal{S}} d_{\\pi_\\theta}(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s; \\theta) Q_\\pi(s, a) \\propto \\sum_{s \\in \\mathcal{S}} d(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s; \\theta) Q_\\pi(s, a)"
+        }
+      },
+      {
+        "id": "paragraph-44a8b10f4ec1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check Sec 13.1 in Sutton & Barto (2017) for why this is the case."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-38fc50d08b11",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then,"
+          }
+        ]
+      },
+      {
+        "id": "math-67e0b88ba542",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathcal{J}(\\theta) &= \\sum_{s \\in \\mathcal{S}} d(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s; \\theta) Q_\\pi(s, a) \\\\\n\\nabla \\mathcal{J}(\\theta) &= \\sum_{s \\in \\mathcal{S}} d(s) \\sum_{a \\in \\mathcal{A}} \\nabla \\pi(a \\vert s; \\theta) Q_\\pi(s, a) \\\\\n&= \\sum_{s \\in \\mathcal{S}} d(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s; \\theta) \\frac{\\nabla \\pi(a \\vert s; \\theta)}{\\pi(a \\vert s; \\theta)} Q_\\pi(s, a) \\\\\n& = \\sum_{s \\in \\mathcal{S}} d(s) \\sum_{a \\in \\mathcal{A}} \\pi(a \\vert s; \\theta) \\nabla \\ln \\pi(a \\vert s; \\theta) Q_\\pi(s, a) \\\\\n& = \\mathbb{E}_{\\pi_\\theta} [\\nabla \\ln \\pi(a \\vert s; \\theta) Q_\\pi(s, a)]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-bd20a2eb651d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This result is named “Policy Gradient Theorem” which lays the theoretical foundation for various policy gradient algorithms:"
+          }
+        ]
+      },
+      {
+        "id": "math-a214cfa2d09d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\nabla \\mathcal{J}(\\theta) = \\mathbb{E}_{\\pi_\\theta} [\\nabla \\ln \\pi(a \\vert s, \\theta) Q_\\pi(s, a)]"
+        }
+      },
+      {
+        "id": "heading-1e2d55de19c9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "REINFORCE"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-2fa6912ba798",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "REINFORCE, also known as Monte-Carlo policy gradient, relies on "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q_\\pi(s, a)"
+          },
+          {
+            "type": "text",
+            "text": ", an estimated return by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#monte-carlo-methods"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MC"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " methods using episode samples, to update the policy parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6173561d6be4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A commonly used variation of REINFORCE is to subtract a baseline value from the return "
+          },
+          {
+            "type": "inline_math",
+            "text": "G_t"
+          },
+          {
+            "type": "text",
+            "text": " to reduce the variance of gradient estimation while keeping the bias unchanged. For example, a common baseline is state-value, and if applied, we would use "
+          },
+          {
+            "type": "inline_math",
+            "text": "A(s, a) = Q(s, a) - V(s)"
+          },
+          {
+            "type": "text",
+            "text": " in the gradient ascent update."
+          }
+        ]
+      },
+      {
+        "id": "list-1a0f6190badb",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-75c7d294665f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize θ at random"
+              }
+            ]
+          },
+          {
+            "id": "list-item-6af4175ef4f9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Generate one episode "
+              },
+              {
+                "type": "inline_math",
+                "text": "S_1, A_1, R_2, S_2, A_2, \\dots, S_T"
+              }
+            ]
+          },
+          {
+            "id": "list-item-155b9cd2949b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "For t=1, 2, … , T:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-81ec98bf0054",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-b47bec8a3ad9",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Estimate the the return G_t since the time step t."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-c6c04bd6fc3c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_math",
+                        "text": "\\theta \\leftarrow \\theta + \\alpha \\gamma^t G_t \\nabla \\ln \\pi(A_t \\vert S_t, \\theta)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-e581f013760f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Actor-Critic"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-0a0d24434595",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If the value function is learned in addition to the policy, we would get Actor-Critic algorithm."
+          }
+        ]
+      },
+      {
+        "id": "list-bbdcdf8d7920",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-540584edd465",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Critic"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": updates value function parameters w and depending on the algorithm it could be action-value "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q(a \\vert s; w)"
+              },
+              {
+                "type": "text",
+                "text": " or state-value "
+              },
+              {
+                "type": "inline_math",
+                "text": "V(s; w)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-91f23ae04910",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Actor"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": updates policy parameters θ, in the direction suggested by the critic, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\pi(a \\vert s; \\theta)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5be7efa63643",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s see how it works in an action-value actor-critic algorithm."
+          }
+        ]
+      },
+      {
+        "id": "list-fcb6d1923496",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f419c5e23539",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize s, θ, w at random; sample "
+              },
+              {
+                "type": "inline_math",
+                "text": "a \\sim \\pi(a \\vert s; \\theta)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-331f789d6443",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "For t = 1… T:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-c91ad394ce84",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-479f6c08fe7c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Sample reward "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "r_t  \\sim R(s, a)"
+                      },
+                      {
+                        "type": "text",
+                        "text": " and next state "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "s’ \\sim P(s’ \\vert s, a)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-d5e98705ff9b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Then sample the next action "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "a’ \\sim \\pi(s’, a’; \\theta)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-6faf3338ab54",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Update policy parameters: "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\theta \\leftarrow \\theta + \\alpha_\\theta Q(s, a; w) \\nabla_\\theta \\ln \\pi(a \\vert s; \\theta)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-f73c1956fd5b",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Compute the correction for action-value at time t: "
+                      },
+                      {
+                        "type": "line_break"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "G_{t:t+1} = r_t + \\gamma Q(s’, a’; w) - Q(s, a; w)"
+                      },
+                      {
+                        "type": "text",
+                        "text": " "
+                      },
+                      {
+                        "type": "line_break"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\nand use it to update value function parameters: "
+                      },
+                      {
+                        "type": "line_break"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "w \\leftarrow w + \\alpha_w G_{t:t+1} \\nabla_w Q(s, a; w) "
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-6f9734346ca7",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Update "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "a \\leftarrow a’"
+                      },
+                      {
+                        "type": "text",
+                        "text": " and "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "s \\leftarrow s’"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b42c9d51c5a4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "\\alpha_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_w"
+          },
+          {
+            "type": "text",
+            "text": " are two learning rates for policy and value function parameter updates, respectively."
+          }
+        ]
+      },
+      {
+        "id": "heading-45ea2f8507d6",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A3C"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-b491fe01be73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Asynchronous Advantage Actor-Critic"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Mnih et al., 2016), short for A3C, is a classic policy gradient method with the special focus on parallel training."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ec65987738a4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In A3C, the critics learn the state-value function, "
+          },
+          {
+            "type": "inline_math",
+            "text": "V(s; w)"
+          },
+          {
+            "type": "text",
+            "text": ", while multiple actors are trained in parallel and get synced with global parameters from time to time. Hence, A3C is good for parallel training by default, i.e. on one machine with multi-core CPU."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-116803706ef5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The loss function for state-value is to minimize the mean squared error, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{J}_v (w) = (G_t - V(s; w))^2"
+          },
+          {
+            "type": "text",
+            "text": " and we use gradient descent to find the optimal w. This state-value function is used as the baseline in the policy gradient update."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9e2ba0522e5d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here is the algorithm outline:"
+          }
+        ]
+      },
+      {
+        "id": "list-d0adbf0f4a08",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-4b24a4459a3f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "We have global parameters, θ and w; similar thread-specific parameters, θ’ and w'."
+              }
+            ]
+          },
+          {
+            "id": "list-item-d001f3e068be",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Initialize the time step t = 1"
+              }
+            ]
+          },
+          {
+            "id": "list-item-d11742878603",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "While T <= T_MAX:\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-8ca126d1137b",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-8382b7e6a940",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Reset gradient: dθ = 0 and dw = 0."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-2181c1af98f9",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Synchronize thread-specific parameters with global ones: θ’ = θ and w’ = w."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-67ad6b638057",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "inline_math",
+                        "text": "t_\\text{start}"
+                      },
+                      {
+                        "type": "text",
+                        "text": " = t and get "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "s_t"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-8ccc95420447",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "While ("
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "s_t \\neq \\text{TERMINAL}"
+                      },
+                      {
+                        "type": "text",
+                        "text": ") and ("
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "t - t_\\text{start} <= t_\\text{max}"
+                      },
+                      {
+                        "type": "text",
+                        "text": "):\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "id": "list-9f1d34e39719",
+                        "type": "list",
+                        "attrs": {
+                          "ordered": true
+                        },
+                        "children": [
+                          {
+                            "id": "list-item-671a943d0829",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "Pick the action "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "a_t \\sim \\pi(a_t \\vert s_t; \\theta’)"
+                              },
+                              {
+                                "type": "text",
+                                "text": " and receive a new reward "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "r_t"
+                              },
+                              {
+                                "type": "text",
+                                "text": " and a new state "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "s_{t+1}"
+                              },
+                              {
+                                "type": "text",
+                                "text": "."
+                              }
+                            ]
+                          },
+                          {
+                            "id": "list-item-1882f8ecaa8d",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "Update t = t + 1 and T = T + 1."
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-6bc82276b8d5",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Initialize the variable that holds the return estimation "
+                      },
+                      {
+                        "type": "text",
+                        "text": "$"
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "R = \\begin{cases}\n0 & \\text{if } s_t \\text{ is TERMINAL} \\\nV(s_t; w’) & \\text{otherwise}\n\\end{cases}"
+                      },
+                      {
+                        "type": "text",
+                        "text": "$"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-5cde849fb51e",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "For "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "i = t-1, \\dots, t_\\text{start}"
+                      },
+                      {
+                        "type": "text",
+                        "text": ":\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "id": "list-1e0b3e824275",
+                        "type": "list",
+                        "attrs": {
+                          "ordered": true
+                        },
+                        "children": [
+                          {
+                            "id": "list-item-0df8e046338c",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "inline_math",
+                                "text": "R \\leftarrow r_i + \\gamma R"
+                              },
+                              {
+                                "type": "text",
+                                "text": "; here R is a MC measure of "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "G_i"
+                              },
+                              {
+                                "type": "text",
+                                "text": "."
+                              }
+                            ]
+                          },
+                          {
+                            "id": "list-item-9cdd2f1d48c8",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "Accumulate gradients w.r.t. θ’: "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "d\\theta \\leftarrow d\\theta + \\nabla_{\\theta’} \\log \\pi(a_i \\vert s_i; \\theta’)(R - V(s_i; w’))"
+                              },
+                              {
+                                "type": "text",
+                                "text": ";"
+                              },
+                              {
+                                "type": "line_break"
+                              },
+                              {
+                                "type": "text",
+                                "text": "\nAccumulate gradients w.r.t. w’: "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "dw \\leftarrow dw + \\nabla_{w’} (R - V(s_i; w’))^2"
+                              },
+                              {
+                                "type": "text",
+                                "text": "."
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-ce8fe07baee7",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Update synchronously θ using dθ, and w using dw."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8aa5a25510cd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A3C enables the parallelism in multiple agent training. The gradient accumulation step (6.2) can be considered as a reformation of minibatch-based stochastic gradient update: the values of w or θ get corrected by a little bit in the direction of each training thread independently."
+          }
+        ]
+      },
+      {
+        "id": "heading-6d3927ce441e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Evolution Strategies"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-12f8174444f1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Evolution_strategy"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolution Strategies"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (ES) is a type of model-agnostic optimization approach. It learns the optimal solution by imitating Darwin’s theory of the evolution of species by natural selection. Two prerequisites for applying ES: (1) our solutions can freely interact with the environment and see whether they can solve the problem; (2) we are able to compute a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "fitness"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " score of how good each solution is. We don’t have to know the environment configuration to solve the problem."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a34b5c531959",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Say, we start with a population of random solutions. All of them are capable of interacting with the environment and only candidates with high fitness scores can survive ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "only the fittest can survive in a competition for limited resources"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). A new generation is then created by recombining the settings ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "gene mutation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") of high-fitness survivors. This process is repeated until the new solutions are good enough."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1068e7e7fa50",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Very different from the popular MDP-based approaches as what we have introduced above, ES aims to learn the policy parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " without value approximation. Let’s assume the distribution over the parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " is an "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://math.stackexchange.com/questions/1991961/gaussian-distribution-is-isotropic"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "isotropic"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " multivariate Gaussian with mean "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mu"
+          },
+          {
+            "type": "text",
+            "text": " and fixed covariance "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sigma^2I"
+          },
+          {
+            "type": "text",
+            "text": ". The gradient of "
+          },
+          {
+            "type": "inline_math",
+            "text": "F(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " is calculated:"
+          }
+        ]
+      },
+      {
+        "id": "math-a814bfac775a",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\nabla_\\theta \\mathbb{E}_{\\theta \\sim N(\\mu, \\sigma^2)} F(\\theta) \\\\\n=& \\nabla_\\theta \\int_\\theta F(\\theta) \\Pr(\\theta) && \\text{Pr(.) is the Gaussian density function.} \\\\\n=& \\int_\\theta F(\\theta) \\Pr(\\theta) \\frac{\\nabla_\\theta \\Pr(\\theta)}{\\Pr(\\theta)} \\\\\n=& \\int_\\theta F(\\theta) \\Pr(\\theta) \\nabla_\\theta \\log \\Pr(\\theta) \\\\\n=& \\mathbb{E}_{\\theta \\sim N(\\mu, \\sigma^2)} [F(\\theta) \\nabla_\\theta \\log \\Pr(\\theta)] && \\text{Similar to how we do policy gradient update.} \\\\\n=& \\mathbb{E}_{\\theta \\sim N(\\mu, \\sigma^2)} \\Big[ F(\\theta) \\nabla_\\theta \\log \\Big( \\frac{1}{\\sqrt{2\\pi\\sigma^2}} e^{-\\frac{(\\theta - \\mu)^2}{2 \\sigma^2 }} \\Big) \\Big] \\\\\n=& \\mathbb{E}_{\\theta \\sim N(\\mu, \\sigma^2)} \\Big[ F(\\theta) \\nabla_\\theta \\Big( -\\log \\sqrt{2\\pi\\sigma^2} - \\frac{(\\theta - \\mu)^2}{2 \\sigma^2} \\Big) \\Big] \\\\\n=& \\mathbb{E}_{\\theta \\sim N(\\mu, \\sigma^2)} \\Big[ F(\\theta) \\frac{\\theta - \\mu}{\\sigma^2} \\Big]\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-d944a8a1a2fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can rewrite this formula in terms of a “mean” parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " (different from the "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " above; this "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " is the base gene for further mutation), "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon \\sim N(0, I)"
+          },
+          {
+            "type": "text",
+            "text": " and therefore "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta + \\epsilon \\sigma \\sim N(\\theta, \\sigma^2)"
+          },
+          {
+            "type": "text",
+            "text": ". "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": " controls how much Gaussian noises should be added to create mutation:"
+          }
+        ]
+      },
+      {
+        "id": "math-3c9a6a86bd9f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\nabla_\\theta \\mathbb{E}_{\\epsilon \\sim N(0, I)} F(\\theta + \\sigma \\epsilon) = \\frac{1}{\\sigma} \\mathbb{E}_{\\epsilon \\sim N(0, I)} [F(\\theta + \\sigma \\epsilon) \\epsilon]"
+        }
+      },
+      {
+        "id": "image-ba3be4ea9f1c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/EA_RL_parallel.png",
+          "alt": "A simple parallel evolution-strategies-based RL algorithm. Parallel workers share the random seeds so that they can reconstruct the Gaussian noises with tiny communication bandwidth. (Image source: Salimans et al. 2017.)"
+        }
+      },
+      {
+        "id": "paragraph-f0e77839bb53",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ES, as a black-box optimization algorithm, is another approach to RL problems ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "In my original writing, I used the phrase “a nice alternative”; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://danieltakeshi.github.io/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Seita"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " pointed me to this "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.reddit.com/r/MachineLearning/comments/6gke6a/d_requesting_openai_to_justify_the_grandiose/dir9wde/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "discussion"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " and thus I updated my wording."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). It has a couple of good characteristics (Salimans et al., 2017) keeping it fast and easy to train:"
+          }
+        ]
+      },
+      {
+        "id": "list-aa6f97c1a43e",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a806597c67b0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "ES does not need value function approximation;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-24b8fc5b66e7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "ES does not perform gradient back-propagation;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-e5758598ca03",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "ES is invariant to delayed or long-term rewards;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-ea98f9b2d42c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "ES is highly parallelizable with very little data communication."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-028b5ab4c1ae",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Known Problems"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "heading-862eeabc3f49",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Exploration-Exploitation Dilemma"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a7a13e94b175",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The problem of exploration vs exploitation dilemma has been discussed in my previous "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". When the RL problem faces an unknown environment, this issue is especially a key to finding a good solution: without enough exploration, we cannot learn the environment well enough; without enough exploitation, we cannot complete our reward optimization task."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1c78e76f1b3e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Different RL algorithms balance between exploration and exploitation in different ways. In "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#monte-carlo-methods"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MC"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " methods, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#q-learning-off-policy-td-control"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Q-learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or many on-policy algorithms, the exploration is commonly implemented by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#%CE%B5-greedy-algorithm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ε-greedy"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; In "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#evolution-strategies"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ES"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the exploration is captured by the policy parameter perturbation. Please keep this into consideration when developing a new RL algorithm."
+          }
+        ]
+      },
+      {
+        "id": "heading-5fd5893964bd",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deadly Triad Issue"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c8b66068f817",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We do seek the efficiency and flexibility of TD methods that involve bootstrapping. However, when off-policy, nonlinear function approximation, and bootstrapping are combined in one RL algorithm, the training could be unstable and hard to converge. This issue is known as the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "deadly triad"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Sutton & Barto, 2017). Many architectures using deep learning models were proposed to resolve the problem, including DQN to stabilize the training with experience replay and occasionally frozen target network."
+          }
+        ]
+      },
+      {
+        "id": "heading-28dd45509e1d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Case Study: AlphaGo Zero"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-6320f2728f1b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The game of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Go_(game)"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Go"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " has been an extremely hard problem in the field of Artificial Intelligence for decades until recent years. AlphaGo and AlphaGo Zero are two programs developed by a team at DeepMind. Both involve deep Convolutional Neural Networks ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/#cnn-for-image-classification"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "CNN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and Monte Carlo Tree Search (MCTS) and both have been approved to achieve the level of professional human Go players. Different from AlphaGo that relied on supervised learning from expert human moves, AlphaGo Zero used only reinforcement learning and self-play without human knowledge beyond the basic rules."
+          }
+        ]
+      },
+      {
+        "id": "image-f8ebfac4420f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/go_config.png",
+          "alt": "The board of Go. Two players play black and white stones alternatively on the vacant intersections of a board with 19 x 19 lines. A group of stones must have at least one open point (an intersection, called a \"liberty\") to remain on the board and must have at least two or more enclosed liberties (called \"eyes\") to stay \"alive\". No stone shall repeat a previous position."
+        }
+      },
+      {
+        "id": "paragraph-a348d21c4b51",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With all the knowledge of RL above, let’s take a look at how AlphaGo Zero works. The main component is a deep "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/#cnn-for-image-classification"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "CNN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " over the game board configuration (precisely, a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/#resnet-he-et-al-2015"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ResNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " with batch normalization and ReLU). This network outputs two values:"
+          }
+        ]
+      },
+      {
+        "id": "math-ca4240fd896d",
+        "type": "math",
+        "attrs": {
+          "latex": "(p, v) = f_\\theta(s)"
+        }
+      },
+      {
+        "id": "list-573f006ec989",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-1805cc2d6f51",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "s"
+              },
+              {
+                "type": "text",
+                "text": ": the game board configuration, 19 x 19 x 17 stacked feature planes; 17 features for each position, 8 past configurations (including current) for the current player + 8 past configurations for the opponent + 1 feature indicating the color (1=black, 0=white). We need to code the color specifically because the network is playing with itself and the colors of current player and opponents are switching between steps."
+              }
+            ]
+          },
+          {
+            "id": "list-item-87d6c5dbe8bf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "p"
+              },
+              {
+                "type": "text",
+                "text": ": the probability of selecting a move over 19^2 + 1 candidates (19^2 positions on the board, in addition to passing)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f6d529309077",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "v"
+              },
+              {
+                "type": "text",
+                "text": ": the winning probability given the current setting."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-aa59ec2c2f2c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During self-play, MCTS further improves the action probability distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi \\sim p(.)"
+          },
+          {
+            "type": "text",
+            "text": " and then the action "
+          },
+          {
+            "type": "inline_math",
+            "text": "a_t"
+          },
+          {
+            "type": "text",
+            "text": " is sampled from this improved policy. The reward "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_t"
+          },
+          {
+            "type": "text",
+            "text": " is a binary value indicating whether the current player "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "eventually"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " wins the game. Each move generates an episode tuple "
+          },
+          {
+            "type": "inline_math",
+            "text": "(s_t, \\pi_t, z_t)"
+          },
+          {
+            "type": "text",
+            "text": " and it is saved into the replay memory. The details on MCTS are skipped for the sake of space in this post; please read the original "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.dropbox.com/s/yva172qos2u15hf/2017-silver.pdf?dl=0"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " if you are interested."
+          }
+        ]
+      },
+      {
+        "id": "image-183233bd8878",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/alphago-zero-selfplay.png",
+          "alt": "AlphaGo Zero is trained by self-play while MCTS improves the output policy further in every step. (Image source: Figure 1a in Silver et al., 2017)."
+        }
+      },
+      {
+        "id": "paragraph-4b5d60d4ba38",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The network is trained with the samples in the replay memory to minimize the loss:"
+          }
+        ]
+      },
+      {
+        "id": "math-ee48a9e4425d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L} = (z - v)^2 - \\pi^\\top \\log p + c \\| \\theta \\|^2"
+        }
+      },
+      {
+        "id": "paragraph-e9e3cbedfc36",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " is a hyperparameter controlling the intensity of L2 penalty to avoid overfitting."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4781a9012cb0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "AlphaGo Zero simplified AlphaGo by removing supervised learning and merging separated policy and value networks into one. It turns out that AlphaGo Zero achieved largely improved performance with a much shorter training time! I strongly recommend reading these "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pdfs.semanticscholar.org/1740/eb993cc8ca81f1e46ddaadce1f917e8000b5.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "two"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.dropbox.com/s/yva172qos2u15hf/2017-silver.pdf?dl=0"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "papers"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " side by side and compare the difference, super fun."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f84665da83d8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I know this is a long read, but hopefully worth it. "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "If you notice mistakes and errors in this post, don’t hesitate to contact me at [lilian dot wengweng at gmail dot com]."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " See you in the next post! :)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-2eaa9e6f585e",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2018bandit,\n  title   = \"A (Long) Peek into Reinforcement Learning\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2018\",\n  url     = \"https://lilianweng.github.io/posts/2018-02-19-rl-overview/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-004fa1b65023",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Yuxi Li. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1701.07274.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Deep reinforcement learning: An overview."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1701.07274. 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bc11b28b82bb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Richard S. Sutton and Andrew G. Barto. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://incompleteideas.net/book/bookdraft2017nov5.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Reinforcement Learning: An Introduction; 2nd Edition"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6102df837297",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Volodymyr Mnih, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://proceedings.mlr.press/v48/mniha16.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Asynchronous methods for deep reinforcement learning."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML. 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3861ee9ba80c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Tim Salimans, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1703.03864.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolution strategies as a scalable alternative to reinforcement learning."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1703.03864 (2017)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-411712e723e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] David Silver, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.dropbox.com/s/yva172qos2u15hf/2017-silver.pdf?dl=0"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Mastering the game of go without human knowledge"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Nature 550.7676 (2017): 354."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3bec498acd14",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] David Silver, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pdfs.semanticscholar.org/1740/eb993cc8ca81f1e46ddaadce1f917e8000b5.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Mastering the game of Go with deep neural networks and tree search."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Nature 529.7587 (2016): 484-489."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-100169881b7d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Volodymyr Mnih, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.swarthmore.edu/~meeden/cs63/s15/nature15b.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Human-level control through deep reinforcement learning."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Nature 518.7540 (2015): 529."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e359317d7fc8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Ziyu Wang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/pdf/1511.06581.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dueling network architectures for deep reinforcement learning."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML. 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-feb602665a11",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.youtube.com/playlist?list=PL7-jPKtc4r78-wCZcQn5IqyuWhBZ8fOxT"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Reinforcement Learning lectures"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by David Silver on YouTube."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dd649e4bc0a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] OpenAI Blog: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://blog.openai.com/evolution-strategies/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Evolution Strategies as a Scalable Alternative to Reinforcement Learning"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3909ffb908da",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Frank Sehnke, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://mediatum.ub.tum.de/doc/1287490/file.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Parameter-exploring policy gradients."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Neural Networks 23.4 (2010): 551-559."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-549764179456",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Csaba Szepesvári. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://sites.ualberta.ca/~szepesva/papers/RLAlgsInMDPs.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Algorithms for reinforcement learning."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " 1st Edition. Synthesis lectures on artificial intelligence and machine learning 4.1 (2010): 1-103."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ba7362e92bbc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "If you notice mistakes and errors in this post, please don’t hesitate to contact me at [lilian dot wengweng at gmail dot com] and I would be super happy to correct them right away!"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "a-long-peek-into-reinforcement-learning",
+    "source_slug": "2018-02-19-rl-overview",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 34,
+      "math": 38,
+      "image": 13,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/RL_illustration.png",
+      "alt": "An agent interacts with the environment, trying to take smart actions to maximize cumulative rewards."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/RL_algorithm_categorization.png",
+      "alt": "Summary of approaches in RL based on whether we want to model the value, policy, or the environment. (Image source: reproduced from David Silver's RL course lecture 1 .)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/agent_environment_MDP.png",
+      "alt": "The agent-environment interaction in a Markov decision process. (Image source: Sec. 3.1 Sutton & Barto (2017).)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/mdp_example.jpg",
+      "alt": "A fun example of Markov decision process: a typical work day. (Image source: randomant.net/reinforcement-learning-concepts )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/bellman_equation.png",
+      "alt": "Illustration of how Bellman expection equations update state-value and action-value functions."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/MC_control.png",
+      "alt": "The backup diagrams for Q-learning and SARSA. (Image source: Replotted based on Figure 6.5 in Sutton & Barto (2017))"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/sarsa_vs_q_learning.png",
+      "alt": "The backup diagrams for Q-learning and SARSA. (Image source: Replotted based on Figure 6.5 in Sutton & Barto (2017))"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/DQN_algorithm.png",
+      "alt": "Algorithm for DQN with experience replay and occasionally frozen optimization target. The prepossessed sequence is the output of some processes running on the input images of Atari games. Don't worry too much about it; just consider them as input feature vectors. (Image source: Mnih et al. 2015)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/TD_lambda.png",
+      "alt": "Comparison of the backup diagrams of Monte-Carlo, Temporal-Difference learning, and Dynamic Programming for state value functions. (Image source: David Silver's RL course lecture 4 : \"Model-Free Prediction\")"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/TD_MC_DP_backups.png",
+      "alt": "Comparison of the backup diagrams of Monte-Carlo, Temporal-Difference learning, and Dynamic Programming for state value functions. (Image source: David Silver's RL course lecture 4 : \"Model-Free Prediction\")"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/EA_RL_parallel.png",
+      "alt": "A simple parallel evolution-strategies-based RL algorithm. Parallel workers share the random seeds so that they can reconstruct the Gaussian noises with tiny communication bandwidth. (Image source: Salimans et al. 2017.)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/go_config.png",
+      "alt": "The board of Go. Two players play black and white stones alternatively on the vacant intersections of a board with 19 x 19 lines. A group of stones must have at least one open point (an intersection, called a \"liberty\") to remain on the board and must have at least two or more enclosed liberties (called \"eyes\") to stay \"alive\". No stone shall repeat a previous position."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/alphago-zero-selfplay.png",
+      "alt": "AlphaGo Zero is trained by self-play while MCTS improves the output policy further in every step. (Image source: Figure 1a in Silver et al., 2017)."
+    }
+  ]
+}

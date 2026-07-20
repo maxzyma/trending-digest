@@ -1,0 +1,6135 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2022-04-15-data-gen",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2022-04-15T15:10:30-07:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:11f2fb0c68c5558fdd803b07bf6970df73c1bc90c5b19074450e4aa82937bf90",
+    "fetched_at": "2026-07-14T02:05:34.905613+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Learning with not Enough Data Part 3: Data Generation",
+    "title_en": "Learning with not Enough Data Part 3: Data Generation",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-d8f2719c604e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here comes the Part 3 on learning with not enough data (Previous: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-12-05-semi-supervised/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-02-20-active-learning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Let’s consider two approaches for generating synthetic data for training."
+          }
+        ]
+      },
+      {
+        "id": "list-70920a44fdd5",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-875f93b2abaf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Augmented data"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Given a set of existing training samples, we can apply a variety of augmentation, distortion and transformation to derive new data points without losing the key attributes. We have covered a bunch of augmentation methods on text and images in a "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "previous post"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " on contrastive learning. For the sake of post completeness, I "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "duplicate"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " the section on data augmentation here with some edits."
+              }
+            ]
+          },
+          {
+            "id": "list-item-011f25762ccb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "New data"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Given few or even no data points, we can rely on powerful pretrained models to generate a number of "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "new"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " data points. This is especially true in recent years given the fast progress in large pretrained "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "language models (LM)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Few shot prompting is shown to be effective for LM to learn within context without extra training."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-3e1df7761627",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Data Augmentation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-0d81b9c1c052",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The goal of data augmentation is to modify the input format (e.g. text wording, visual appearance) while the semantic meaning stays unchanged."
+          }
+        ]
+      },
+      {
+        "id": "heading-4a2ccadf3586",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Image Augmentation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "heading-d7ace929b7e8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Basic Image Processing Operations"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-27e7c57479e2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are several ways to modify an image while retaining its semantic information. We can use any one of the following augmentation or a composition of multiple operations."
+          }
+        ]
+      },
+      {
+        "id": "list-df8e7c688b22",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7b4bcee95d4b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random cropping and then resize back to the original size."
+              }
+            ]
+          },
+          {
+            "id": "list-item-60a6697c112a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random color distortions"
+              }
+            ]
+          },
+          {
+            "id": "list-item-510d83a2ed57",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random Gaussian blur"
+              }
+            ]
+          },
+          {
+            "id": "list-item-ae168d43d0ed",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random color jittering"
+              }
+            ]
+          },
+          {
+            "id": "list-item-24ab38711d64",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random horizontal flip"
+              }
+            ]
+          },
+          {
+            "id": "list-item-005dc7772926",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random grayscale conversion"
+              }
+            ]
+          },
+          {
+            "id": "list-item-4319b4609d5b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "And many more. Check "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://pillow.readthedocs.io/en/stable/reference/ImageOps.html"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "PIL.ImageOps"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " for inspiration."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-f403b198cb3e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Task-Specific Augmentation Strategies"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-81ec74c01c29",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If the downstream task is known, it is possible to learn the optimal augmentation strategies (i.e. what processing operations to use and how to combine them in sequence) to maximize the downstream task performance."
+          }
+        ]
+      },
+      {
+        "id": "list-45ad9ac5e37a",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-621751d5093e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-05-05-domain-randomization/#AutoAugment"
+                },
+                "children": [
+                  {
+                    "type": "emphasis",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "AutoAugment"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1805.09501"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Cubuk, et al. 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") is inspired by "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2020-08-06-nas/"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "neural architecture search"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", AutoAugment frames the problem of learning best data augmentation operations (i.e. shearing, rotation, invert, etc.) for image classification as an RL problem and looks for the combination that leads to the highest accuracy on the evaluation set. AutoAugment can be executed in adversarial fashion ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1912.11188"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zhang, et al 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          },
+          {
+            "id": "list-item-09675571483d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "RandAugment"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1909.13719"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Cubuk et al., 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") greatly reduces the search space of AutoAugment by controlling the magnitudes of different transformation operations with a single magnitude parameter."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b0371d94bd6f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Population based augmentation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (PBA; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1905.05393"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Ho et al., 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") combines PBT (“population based training”; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1711.09846"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Jaderberg et al, 2017"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") with AutoAugment, using the evolutionary algorithm to train a population of children models in parallel to evolve the best augmentation strategies."
+              }
+            ]
+          },
+          {
+            "id": "list-item-31d4c9739a04",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Unsupervised Data Augmentation"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (UDA; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1904.12848"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Xie et al., 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "), among a set of possible augmentation strategies, selects a subset to minimize the KL divergence between the predicted distribution over an unlabelled example and its unlabelled augmented version."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-a7df00c7d8fd",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Image Mixture"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-2f064b2a13d1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Image mixture methods can construct new training examples from existing data points."
+          }
+        ]
+      },
+      {
+        "id": "list-dfe9c40ecbdc",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-f24e91ff74a2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Mixup"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1710.09412"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zhang et al., 2018"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") runs global-level mixture by creating a weighted pixel-wise combination of two existing images "
+              },
+              {
+                "type": "inline_math",
+                "text": "I_1"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "I_2"
+              },
+              {
+                "type": "text",
+                "text": ": "
+              },
+              {
+                "type": "inline_math",
+                "text": "I_\\text{mixup} \\gets \\alpha I_1 + (1-\\alpha) I_2"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\alpha \\in [0, 1]"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1a31cab28e43",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Cutmix"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1905.04899"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Yun et al., 2019"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") does region-level mixture by generating a new example by combining a local region of one image with the rest of the other image. "
+              },
+              {
+                "type": "inline_math",
+                "text": "I_\\text{cutmix} \\gets \\mathbf{M}_b \\odot I_1 + (1-\\mathbf{M}_b) \\odot I_2"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{M}_b \\in \\{0, 1\\}^I"
+              },
+              {
+                "type": "text",
+                "text": " is a binary mask and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\odot"
+              },
+              {
+                "type": "text",
+                "text": " is element-wise multiplication. It is equivalent to filling the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "cutout"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ("
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1708.04552"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "DeVries & Taylor 2017"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") region with the same region from another image."
+              }
+            ]
+          },
+          {
+            "id": "list-item-590ef07a783d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Given a query "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{q}"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MoCHi"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (“mixing of contrastive hard negatives”; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/2010.01028"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kalantidis et al. 2020"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") maintains a queue of "
+              },
+              {
+                "type": "inline_math",
+                "text": "K"
+              },
+              {
+                "type": "text",
+                "text": " negative features "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q={\\mathbf{n}_1, \\dots, \\mathbf{n}_K }"
+              },
+              {
+                "type": "text",
+                "text": " and sorts these negative features by similarity to the query, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{q}^\\top \\mathbf{n}"
+              },
+              {
+                "type": "text",
+                "text": ", in descending order. The first "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " items in the queue are considered as the hardest negatives, "
+              },
+              {
+                "type": "inline_math",
+                "text": "Q^N"
+              },
+              {
+                "type": "text",
+                "text": ". Then synthetic hard examples can be generated by "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{h} = \\tilde{\\mathbf{h}} / |\\tilde{\\mathbf{h}}|_2"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tilde{\\mathbf{h}} = \\alpha\\mathbf{n}_i + (1-\\alpha) \\mathbf{n}_j"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\alpha \\in (0, 1)"
+              },
+              {
+                "type": "text",
+                "text": ". Even harder examples can be created by mixing with the query feature, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{h}’ = \\tilde{\\mathbf{h}’} / |\\tilde{\\mathbf{h}’}|_2"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\tilde{\\mathbf{h}’} = \\beta\\mathbf{q} + (1-\\beta) \\mathbf{n}_j"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\beta \\in (0, 0.5)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-a5c663961c05",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Text Augmentation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "heading-b435e4301794",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Lexical Edits"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-416c84402204",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Easy Data Augmentation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (EDA; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.11196"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wei & Zou 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") defines a set of simple but powerful operations for text augmentation. Given a sentence, EDA randomly chooses and applies one of four simple operations:"
+          }
+        ]
+      },
+      {
+        "id": "list-bd9bdf893e66",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-de7471df5774",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Synonym replacement (SR): Replace "
+              },
+              {
+                "type": "inline_math",
+                "text": "n"
+              },
+              {
+                "type": "text",
+                "text": " random non-stop words with their synonyms."
+              }
+            ]
+          },
+          {
+            "id": "list-item-0ae04cbe7e7d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random insertion (RI): Place a random synonym of a randomly selected non-stop word in the sentence at a random position."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c07fbdd5c2b6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random swap (RS): Randomly swap two words and repeat "
+              },
+              {
+                "type": "inline_math",
+                "text": "n"
+              },
+              {
+                "type": "text",
+                "text": " times."
+              }
+            ]
+          },
+          {
+            "id": "list-item-271931203f11",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Random deletion (RD): Randomly delete each word in the sentence with probability "
+              },
+              {
+                "type": "inline_math",
+                "text": "p"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cd6a79683a8a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "p=\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "n=\\alpha \\times \\text{sentence_length}"
+          },
+          {
+            "type": "text",
+            "text": ", with the intuition that longer sentences can absorb more noise while maintaining the original label. The hyperparameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " roughly indicates the percent of words in one sentence that may be changed by one augmentation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d6f9ecc06a1d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "EDA is shown to improve the classification accuracy on several classification benchmark datasets compared to baseline without EDA. The performance lift is more significant on a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "smaller"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " training set. All the four operations in EDA help improve the classification accuracy, but get to optimal at different "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": "’s."
+          }
+        ]
+      },
+      {
+        "id": "image-3bc4ee241b80",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/EDA-exp1.png",
+          "alt": "EDA leads to performance improvement on several classification benchmarks. (Image source: Wei & Zou 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-543351792df7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Contextual"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Augmentation ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.06201"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kobayashi, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") replaces word "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " at position "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " by sampling from a probability distribution learned by a bidirectional LM such as BERT, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(.\\mid S\\setminus{w_i})"
+          },
+          {
+            "type": "text",
+            "text": ". In this way, the words are substituted by synonyms, or similar words suitable for the context. To guarantee such operations do not alter the labels, the LM is fit to be label-conditioned bidirectional LM. Conditional BERT (CBERT; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1812.06705"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Xing Wu et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") extends BERT to predict masked tokens conditioned on the class label and can be used for contextual augmentation prediction."
+          }
+        ]
+      },
+      {
+        "id": "heading-02d7cb360092",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Back-translation"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-dde2b787ba62",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Back-translation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " produces augmented data by translating text samples to another language and then translating them back. The translation happens in two ways and both directions should have decent enough performance to avoid significant loss of semantic meaning."
+          }
+        ]
+      },
+      {
+        "id": "heading-2395d79c029b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mix-up"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-0f05d0d0450b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is also possible to apply "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/#image-mixture"
+            },
+            "children": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Mixup"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to text ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.08941"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Guo et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") but on the embedding space to obtain some performance gain. The proposed method relies on a specially designed model architecture to operate the prediction on the word or sentence embedding. Adding adversarial noise in the embedding space as a way of data augmentation is shown to improve the generalization of model training ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.11764"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhu et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "heading-b4f090a0550d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Audio Augmentation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-fddd9aeb60b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here is a list of several commonly used audio data augmentation methods, operated on raw audio or spectrograms, summarized by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.06508"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang & van den Oord (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b5bd86e2945e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Audio mixup."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Given two audio clips "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_1"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_2"
+          },
+          {
+            "type": "text",
+            "text": ", the mixed-up version "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\mathbf{x}} = \\alpha \\mathbf{x}_1 + (1-\\alpha)\\mathbf{x}_2"
+          },
+          {
+            "type": "text",
+            "text": " should be associated with the label of the more dominant input. The audio mixup augments the data with more realistic noise."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3d8d054b387e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Time masking."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " A small consecutive chunk of the audio can be masked without losing semantic information."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d86f6abd82dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Frequency masking."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " A small amount of frequency components on the spectrogram can be dropped off and it should not change the associated label."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2e0d8a54ad42",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Frequency shift."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " The spectrogram can be shifted by an integer between "
+          },
+          {
+            "type": "inline_math",
+            "text": "[-F, F]"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": " is the maximum shift size. It is a cheap augmentation to change the pitch of the audio."
+          }
+        ]
+      },
+      {
+        "id": "heading-92c3e75c3e70",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Architectural Augmentation"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-1213c31485fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Models with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "dropout"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " layers can create augmented samples by applying different dropout masks on the same input sample. For example, in the contrastive learning model "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-05-31-contrastive/#simcse"
+            },
+            "children": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "SimCSE"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08821"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Guo et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), a sample is simply fed into the encoder twice with different dropout masks and these two versions are the positive pair where the other in-batch samples are considered as negative pairs."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e17f98b4b27c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Dropout augments data by adding noise onto the internal representation of the model. It can be applied in a more structured way, such as in "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "cutoff"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.13818"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Shen et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), where random chunks of the token embedding matrix are removed."
+          }
+        ]
+      },
+      {
+        "id": "heading-efaf00477ae9",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Data Synthesis"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-09021083dfe5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given that generating high-quality, photorealistic images is a lot more difficult than generating human-like natural language text and recent success with large pretrained language models, this section only focuses on text generation. To read more on how to synthesize realistic images, check posts on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-08-20-gan/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GAN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-07-11-diffusion-models/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "diffusion"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " models."
+          }
+        ]
+      },
+      {
+        "id": "heading-405a62b6d2d3",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Language Model as Noisy Annotator"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-0806f2fc2a43",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2108.13487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al. (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " explored ways to leverage GPT-3 as a weak annotator via few-shot prompting, achieving 10x cheaper than human labeling. The paper argues that by using data labeled by GPT-3, it essentially performs "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2021-12-05-semi-supervised/#self-training"
+            },
+            "children": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "self-training"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": The predictions on unlabeled samples apply entropy regularization on the model to avoid high class overlaps so as to help improve the model performance."
+          }
+        ]
+      },
+      {
+        "id": "image-6baee0b85a24",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/GPT3-data-gen.png",
+          "alt": "Illustration of how to use GPT-3 to generate more training data with the human-in-the-loop active learning pipeline to improve the data quality. (Image source: Wang et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-4dfcd73a120a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GPT-3-labeled samples selected by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-02-20-active-learning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "active learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " with highest uncertainty are sent to human labelers to be re-annotated. The few-shot prompt contains a small number of human labeled examples and thus the labeling cost is restricted. Synthetic samples are ranked by predicted logits of label "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " and those with the lowest scores go through relabeling."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-dc6cbf674af5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GPT-3 labeling achieves better results in the low-cost regime, but has a gap with human labeling when enough money is spent on data collection. This implies the following inequation, although to what extent “a lot” or “noisy” means depends on the task details."
+          }
+        ]
+      },
+      {
+        "id": "blockquote-8bd34b507a69",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-252151c2c0c3",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "A lot of high-quality data > A lot of noisy data > A little high quality data"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-4dbc984f85fc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/GPT3-data-gen-exp.png",
+          "alt": "GPT-3 labeling technique improves the classification performance in the low-cost regime. (Image source: Wang et al. 2021 )"
+        }
+      },
+      {
+        "id": "heading-4f5190f79d82",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Language Model as Data Generator"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d2422b5ab8fa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If enough training dataset for text classification tasks are available, we can fine-tune language models to synthesize more training samples conditioned on labels ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1911.03118"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Anaby-Tavor et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2003.02245"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kumar et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-427be1a62eaa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Language-model-based data augmentation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "LAMBADA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1911.03118"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Anaby-Tavor et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") takes such an idea, where the process involves fine-tuning both a classifier and a sample generation model."
+          }
+        ]
+      },
+      {
+        "id": "list-23d923ec3c2a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-51def909ff0b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Train a baseline classifier using the existing training dataset: "
+              },
+              {
+                "type": "inline_math",
+                "text": "h = \\mathcal{A}(\\mathcal{D}_\\text{train})"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-bb9b852396ef",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Independently of step 1, a LM "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{M}"
+              },
+              {
+                "type": "text",
+                "text": " is fine-tuned on "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{D}_{\\text{train}}"
+              },
+              {
+                "type": "text",
+                "text": " to obtain "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{M}_{\\text{tuned}}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-3f77643630d8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Synthesize a labeled dataset "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{D}^*"
+              },
+              {
+                "type": "text",
+                "text": " by generating the continuation of the sequence "
+              },
+              {
+                "type": "inline_code",
+                "text": "y[SEP]"
+              },
+              {
+                "type": "text",
+                "text": " until "
+              },
+              {
+                "type": "inline_code",
+                "text": "EOS"
+              },
+              {
+                "type": "text",
+                "text": " using "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{M}_\\text{tuned}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-148f534c3b7c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Filter synthesized dataset by,\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-d6cf62f35588",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-623eb498b550",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "(1) Verifying that the predicted label is correct "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "h(x)=y"
+                      },
+                      {
+                        "type": "text",
+                        "text": ";"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-f9cc94b326ad",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "(2) Selecting the top ranked samples when they are ranked by the classifier probability. "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\mathcal{D}_\\text{syn} \\subset \\mathcal{D}^*"
+                      },
+                      {
+                        "type": "text",
+                        "text": ". They generate 10x more samples needed for augmentation and only the top 10% synthesized samples with highest confidence scores remain."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7bc4785efebe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final classifier is trained on "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_\\text{syn} \\cup \\mathcal{D}_\\text{train}"
+          },
+          {
+            "type": "text",
+            "text": " . The process can be repeated multiple times, but it is unclear whether the benefit would quickly diminish or the repetitive process would bring in self-bias."
+          }
+        ]
+      },
+      {
+        "id": "image-707dbed219b4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/LAMBADA.png",
+          "alt": "Accuracy of LAMBADA vs. other generative approaches over all datasets and classifiers. (Image source: Anaby-Tavor et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-5434c6a1e0f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To simplify LAMBADA,  we can actually remove the dependency of a fine-tuned generation model  and an existing training dataset of a decent size ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/#step2"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " above). "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Unsupervised data generation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "UDG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.09193"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Wang et al. 2021"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") relies on few-shot prompting on a large pretrained language model to generate high-quality synthetic data for training. Opposite to the above approach where LM is asked to predict "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " given "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ", UDG instead synthetizes the inputs "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " given labels "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ". Then a task-specific model is trained on this synthetic dataset."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-07aa3e245de9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.07540"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Schick & Schutze (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a similar idea but on the NLI task instead of classification, asking PLM to write sentence pairs that are similar or different while the model is prompted with task-specific instructions."
+          }
+        ]
+      },
+      {
+        "id": "image-d96e5d0b6bd1",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/UDG.png",
+          "alt": "Illustration of the unsupervised data generation (UDG) framework. (Image source: Wang et al., 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-e3d4be2796e8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The few-shot prompts of UDG contain a small number of unlabeled examples, as well as a task-specific natural language description of the desired label. Because some generated examples are noisy, they implemented "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "noisy label annealing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NLA"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") techniques to filter potentially misaligned samples out during the training processes. NLA gradually removes noisy training signals in time during training when the model starts to disagree with its pseudo label with high confidence. At each training step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": ", a given example "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\mathbf{x}_i, \\hat{y}_i)"
+          },
+          {
+            "type": "text",
+            "text": " is considered noisy and should be removed if:"
+          }
+        ]
+      },
+      {
+        "id": "list-55f355d066c6",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-a26f6bf59334",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The model predicted probability is higher than a threshold "
+              },
+              {
+                "type": "inline_math",
+                "text": "p(\\bar{y}_i \\vert \\mathbf{x}_i) > \\mu_t"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\bar{y}_i = \\arg\\max_y p(y \\vert \\mathbf{x}_i)"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-ea5e762378a6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "And the predicted label is different from the synthetic label, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\bar{y}_i \\neq \\hat{y}_i"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c15e91d1eeb1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that the threshold "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mu_t"
+          },
+          {
+            "type": "text",
+            "text": " is time-dependent, initialized as 0.9 and then gradually annealed to "
+          },
+          {
+            "type": "inline_math",
+            "text": "1/\\text{num_of_classes}"
+          },
+          {
+            "type": "text",
+            "text": " in time."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5b7cc166a3d3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As shown in their experiments, the improvement of UDG over few-shot inference is quit significant, where NLA brings in some extra boost. The results are even comparable with supervised fine-tuning on several cases."
+          }
+        ]
+      },
+      {
+        "id": "image-7b652d426eea",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/UDG-exp.png",
+          "alt": "Comparison of accuracy of UDG and other methods on different classification datasets. (Image source: Wang et al., 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-bfdb73608fdf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.05448"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Han et al (2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " achieved SOTA results on translation tasks using few-shot data generation, distillation and back-translation. The proposed method contains the following steps, assuming no access to paired translation data:"
+          }
+        ]
+      },
+      {
+        "id": "list-abae40133240",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-ac63325534c3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Zero-shot Generation."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " First use the zero-shot translation ability of a pre-trained LM to generate translations for a small set of unlabeled sentences."
+              }
+            ]
+          },
+          {
+            "id": "list-item-a18dac8b16a6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Few-shot Generation."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Then amplify these zero-shot translations by using them as few-shot demonstrations to gather an even larger synthetic dataset."
+              }
+            ]
+          },
+          {
+            "id": "list-item-bccf5d2d56b2",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Distillation."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Fine-tune the model on this dataset. The translation task is formulated as a language modeling task "
+              },
+              {
+                "type": "inline_code",
+                "text": "[L1] <seq1> [[TRANSLATE]] [L2] <seq2>."
+              },
+              {
+                "type": "text",
+                "text": " given a pair of two sequences "
+              },
+              {
+                "type": "inline_code",
+                "text": "<seq1, seq2>"
+              },
+              {
+                "type": "text",
+                "text": " in two different languages. At test-time, the LM is prompted with "
+              },
+              {
+                "type": "inline_code",
+                "text": "[L1] <seq> [[TRANSLATE]] [L2]"
+              },
+              {
+                "type": "text",
+                "text": " and a candidate translation "
+              },
+              {
+                "type": "inline_code",
+                "text": "<sampledSeq>"
+              },
+              {
+                "type": "text",
+                "text": " is parsed from the sampled completion."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4a385d60d382",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Back-translation."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Continue fine-tuning on the back-translation dataset where the order of samples is reversed, "
+              },
+              {
+                "type": "inline_code",
+                "text": "<sampledSeq, seq>"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4cac21f7f44c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Step 1-4 can be repeated."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-eebc9312eff8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/back-translation-data-gen.png",
+          "alt": "Algorithm of using distillation and back-translation to train a language model on translation tasks. (Image source: Han et al. 2021 )"
+        }
+      },
+      {
+        "id": "paragraph-9cdd41fe3172",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The success of the above method depends on a good pretrained LM to kick off the initial translation dataset. Iterative few-shot generation and distillation with back-translation is an effective way to extract and refine the translation capability out of a pretrained LM and further to distill that into a new model."
+          }
+        ]
+      },
+      {
+        "id": "image-6e48235192ec",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/back-translation-data-gen-exp.png",
+          "alt": "Comparison of BLEU scores of the translation models of different training runs using: only distillation, back-translation, both and with more monolingual training data. (Image source: Han et al. 2021 )"
+        }
+      },
+      {
+        "id": "heading-5d25f5a4839f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How to Quantify Generated Data Quality?"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-d24a966f0e76",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given all the generated data, either by data augmentation or data synthesis, how can we quantify data quality in terms of how they improve model generalization? "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08973"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gontijo-Lopes et al. (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " introduced two dimensions to track, affinity and diversity."
+          }
+        ]
+      },
+      {
+        "id": "list-2177902f7e74",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-98ab1a56b477",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Affinity"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is a model-sensitive metric for "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "distribution shift"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", quantifying how much an augmentation shifts the training data distribution from what a model learned.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-5d021a2acb48",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-b41e4176f653",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Definition: The performance difference between the model tested on clean data vs augmented data, while the model is trained on clean data."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-5db78770f4ea",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "As a comparison, KL can also measure distribution shift but does not consider the model performance."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-2d4bce5ca9b1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Diversity"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is a measure of "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "augmentation complexity"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", measuring the complexity of the augmented data with respect to the model and learning procedure.\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-824f69bd2f87",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-1c47fb9fe156",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Definition: The final training loss of a model trained with a given augmentation."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-422cfb34c809",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Another potential diversity measure is the entropy of the transformed data."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-379c5634669c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "A third potential diversity measure is the training time needed for a model to reach a given training accuracy threshold."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-8581af815c04",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "All three metrics above are correlated."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b22424bcdd4c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final model performance is dependent on both metrics to be high enough."
+          }
+        ]
+      },
+      {
+        "id": "image-809f2b639bd4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/affinity-diversity.png",
+          "alt": "(a) Left: A scatter plot of affinity vs diversity metric, where each point represents a different augmentation method and its color indicates the final test accuracy. (b) Right: The conceptual illustration of the relationship between clean and augmented data in different regions of affinity and diversity metrics. (Image source: Gontijo-Lopes et al. 2020 )"
+        }
+      },
+      {
+        "id": "paragraph-ee7e42d4998f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are many quantitative metrics on relevancy and diversity, in different formations depending on whether a reference is available, such as perplexity, BLEU for text and inception score for images. I’m skipping the list of concrete quantitative metrics on quality here, given it could be very long."
+          }
+        ]
+      },
+      {
+        "id": "heading-171d5299d13b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training with Noisy Data"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-821490836dea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is convenient to collect a large amount of noisy data via model generation or data augmentation, but it is hard to guarantee that augmented and generated data can be 100% accurate. Knowing that deep neural networks can easily overfit noisy labels and “memotize” corrupted labels, we can apply the techniques for training on noisy labels ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "noise-robust training"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") when using generated data to stabilize and optimize the performance. Please check this "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2007.08199"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "survey paper (Song et al. 2021)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on learning from noisy labels for a more thorough coverage of related work."
+          }
+        ]
+      },
+      {
+        "id": "heading-a4a5fe455ccf",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Regularization and Robust Architecture"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-f55cebde4ecf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Generally speaking, mechanisms designed for avoiding overfitting should help improve training robustness when working with moderately noisy data, such as weight decay, dropout, batch normalization. In fact, good data augmentation (i.e. only non-essential attributes are modified) can be considered as a way of regularization as well."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-907041315498",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A different approach is to enhance the network with a dedicated "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "noisy adaptation layer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to approximate the unknown projection of label corruption ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1406.2080"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sukhbaatar et al. 2015"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/forum?id=H12GRgcxg"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Goldberger & Ben-Reuven, 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7c3e48257325",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1406.2080"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sukhbaatar et al. (2015)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " introduced an extra linear layer "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": " into the network architecture to adapt the predictions to match the noisy label distribution. The noise matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": " is initially "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fixed"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to the identity function while only the base model parameters is updated. After some time, "
+          },
+          {
+            "type": "inline_math",
+            "text": "Q"
+          },
+          {
+            "type": "text",
+            "text": " starts to be updated and expected to capture the noise in the data. The noise matrix is trained with regularization to encourage it to match the noise distribution while keeping the base model prediction accurate for true labels."
+          }
+        ]
+      },
+      {
+        "id": "image-5f8ddfa975c9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/noise-adaptation-layer.png",
+          "alt": "(a) Left: A noise matrix $Q$ is added between softmax and the final output for the loss. (b) Right: The noise matrix $Q$ is fixed at the identity function initially and only gets updated with regularization after some training. (Image source: Sukhbaatar et al. 2015 )"
+        }
+      },
+      {
+        "id": "paragraph-efa82e0095f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, it is hard to guarantee such a noise matrix layer would only capture the noise transition distribution and it is actually non-trivial to learn. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/forum?id=H12GRgcxg"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Goldberger & Ben-Reuven (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")  proposed to add an additional softmax layer end-to-end with the base model and apply the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "EM algorithm"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by treating the correct labels as latent random variable and the noise processes as a communication channel with unknown parameters."
+          }
+        ]
+      },
+      {
+        "id": "heading-0a97f6230c13",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Robust Learning Objective"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-08d39a95ff06",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Besides the most commonly used cross entropy loss, some other choices of learning objectives are shown to be more robust to noisy labels."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c66174b16c22",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (mean absolute error) is more robust to noisy labels than CCE (categorical cross entropy), as it treats every sample equally ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.09482"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ghosh et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Lack of different weighting among training samples of MAE lead to significantly longer training time. Motivated by the tradeoff between MAE and CCE, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07836"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang & Sabuncu (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "generalized cross entropy"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "GCE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), a generalization of CCE loss to be robust to noisy data."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-20135b6a9a74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To exploit the benefits of both the noise-robustness provided by MAE and the implicit weighting scheme of CCE, GCE adopts the the negative Box-Cox transformation as a loss function:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f22766cc2a60",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\mathcal{L}_q(f(\\mathbf{x}_i, y_i = j)) = \\frac{1 - f^{(j)}(\\mathbf{x}_i)^q}{q}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-39401299a984",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "f^{(j)}"
+          },
+          {
+            "type": "text",
+            "text": " denotes the "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": "-th element of "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(.)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "q \\in (0, 1]"
+          },
+          {
+            "type": "text",
+            "text": ".\n"
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_q"
+          },
+          {
+            "type": "text",
+            "text": " is equivalent to CCE when "
+          },
+          {
+            "type": "inline_math",
+            "text": "q \\to 0"
+          },
+          {
+            "type": "text",
+            "text": " and becomes MAE when "
+          },
+          {
+            "type": "inline_math",
+            "text": "q=1"
+          },
+          {
+            "type": "text",
+            "text": ". Empirical experiments show that there exists a threshold of "
+          },
+          {
+            "type": "inline_math",
+            "text": "q"
+          },
+          {
+            "type": "text",
+            "text": " with which overfitting never emerges and the noisier the data the higher such a threshold should be."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ed08de72f36c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given true and predicted labels, "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i, \\hat{y}_i \\in \\{0, 1\\}"
+          },
+          {
+            "type": "text",
+            "text": " and let "
+          },
+          {
+            "type": "inline_math",
+            "text": "u_i=y_i \\cdot \\hat{y}_i"
+          },
+          {
+            "type": "text",
+            "text": ", the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "zero-one loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_{01}(\\mathbf{u}) = \\sum_{i=1}^n \\mathbb{1}[u_i < 0]"
+          },
+          {
+            "type": "text",
+            "text": ", is another learning subjective shown to be robust to noisy data. Minimizing the empirical risk with the zero-one loss is shown to be equivalent to minimizing the empirical adversarial (worse-case) risk ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.02041"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hu et al 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Because the worst-case risk is the upper bound of the classification risk of the clean data distribution, minimizing the worst-case risk can lead to decreased true risk, which makes the zero-one loss especially robust. However, the zero-one loss is non-differentiable and cannot be optimized directly. One solution is to approximate an "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "upper bound"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of the zero-one loss and to minimize the upper bound loss instead."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49a5235de242",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Hinge_loss"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "hinge loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_\\text{hinge}(\\mathbf{u}) = \\sum_{i=1}^n \\max(0, 1 - u_i)"
+          },
+          {
+            "type": "text",
+            "text": ", defines a rough upper bound of the zero-one loss. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.10045"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Lyu & Tsang (2020)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "curriculum loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "CL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), which is a tighter upper bound compared to a conventional surrogate loss like the hinge loss, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_\\text{01}(\\mathbf{u}) \\leq \\mathcal{L}_\\text{CL}(\\mathbf{u}) \\leq \\mathcal{L}_\\text{hinge}(\\mathbf{u})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d3ad57e10d39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\mathcal{L}_\\text{CL}(\\mathbf{u}) = \\min_{\\mathbf{w}\\in\\{0,1\\}^n}\\max(\\sum_{i=1}^n w_i \\ell(u_i), n - \\sum_{i=1}^n w_i + \\sum_{i=1}^n\\mathbb{1}[u_i < 0])\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e5c792a91560",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell(u_i)"
+          },
+          {
+            "type": "text",
+            "text": " is a base surrogate loss for the zero-one loss (e.g. hinge loss) and the optimal weighting variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{w}"
+          },
+          {
+            "type": "text",
+            "text": " is to be learned."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0e136466caaf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a label corruption rate "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho"
+          },
+          {
+            "type": "text",
+            "text": ", the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "noise pruned curriculum loss"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NPCL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is constructed based on the intuition that an ideal model should correctly classify "
+          },
+          {
+            "type": "inline_math",
+            "text": "n(1-\\rho)"
+          },
+          {
+            "type": "text",
+            "text": " samples with clean labels but misclassify "
+          },
+          {
+            "type": "inline_math",
+            "text": "n\\rho"
+          },
+          {
+            "type": "text",
+            "text": " corrupted labels. If "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho"
+          },
+          {
+            "type": "text",
+            "text": " is a known prior, we would know how many samples (with largest losses) to be pruned. Assuming "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell(u_1) \\leq \\dots \\leq \\ell(u_n)"
+          },
+          {
+            "type": "text",
+            "text": ", then "
+          },
+          {
+            "type": "inline_math",
+            "text": "u_{n(1-\\rho)+1} = \\dots = u_n =0"
+          },
+          {
+            "type": "text",
+            "text": " and the following NPCL is the basic CL for only "
+          },
+          {
+            "type": "inline_math",
+            "text": "n(1-\\rho)"
+          },
+          {
+            "type": "text",
+            "text": " samples:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bf4d86e656fe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\text{NPCL}(\\mathbf{u}) = \\min_{\\mathbf{w}\\in\\{0,1\\}^{n(1-\\rho)}} \\max(\\sum_{i=1}^{n(1-\\rho)} w_i \\ell(u_i), n(1-\\rho) - \\sum_{i=1}^{n(1-\\rho)} w_i)\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4fc9d276461f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When experimenting on CIFAR-10, NPCL is comparable with GCE and performs better when the noise rate increases."
+          }
+        ]
+      },
+      {
+        "id": "heading-faaa359724b4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Label Correction"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-8520629451a8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Since it is known some labels are incorrect, noise-robust training can explicitly take the label correction into consideration."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6f421d94bbda",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One approach is to rely on the estimation of a noise transition matrix and use that to correct the forward or backward loss, named "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "F-correction"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1609.03683"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Patrini et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Let’s first assume that there are "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " classes and the noise transition matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "C \\in [0, 1]^{k\\times k}"
+          },
+          {
+            "type": "text",
+            "text": " is observable and the label flipping probability does not depend on the sample input but only the label (i.e. known as random classification noise, RCN). Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{y}"
+          },
+          {
+            "type": "text",
+            "text": " denote a corrupted label. Each entry of "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " represents the probability of one label flipping to another"
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/#fn:1"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ","
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b9769131a661",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\nC_{ij} = p(\\tilde{y}= j \\vert y =i, \\mathbf{x}) \\approx p(\\tilde{y}= j \\vert y =i)\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-11133b041ff1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then we can proceed a forward label correction procedure to incorporate the prior knowledge of noisy transition matrix into the prediction."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-da640563b793",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\n\\mathcal{L}(\\hat{p}(\\tilde{y}\\vert\\mathbf{x}), y)\n&= - \\log \\hat{p}(\\tilde{y}=i\\vert\\mathbf{x}) \\\\\n&= - \\log \\sum_{j=1}^k p(\\tilde{y}=i\\vert y=j) \\hat{p}(y=j\\vert\\mathbf{x}) \\\\\n&= - \\log \\sum_{j=1}^k C_{ji} \\hat{p}(y=j\\vert\\mathbf{x})\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-94499a92e330",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In matrix form, we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}(\\hat{p}(y \\vert \\mathbf{x})) = - \\log C^\\top \\hat{p}(y \\vert \\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". However, such a noise transition matrix is usually "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "unknown"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". If we have access to a clean dataset, the noise matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " can be estimated ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1802.05300"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hendrycks et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") by calculating confusion matrix on the clean data. Let’s denote a clean trusted dataset as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_c"
+          },
+          {
+            "type": "text",
+            "text": " and a noisy dataset as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_n"
+          },
+          {
+            "type": "text",
+            "text": " going forward."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9181ee8d1cfd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\hat{C}_{ij}\n= \\frac{1}{\\vert \\mathcal{A}_i\\vert} \\sum_{\\mathbf{x} \\in \\mathcal{A}_i} \\hat{p}(\\tilde{y}=j \\vert y=i, \\mathbf{x})\n\\approx p(\\tilde{y}=j \\vert y=i)\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-170493cee7ed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{A}_i"
+          },
+          {
+            "type": "text",
+            "text": " is a subset of data points from "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_c"
+          },
+          {
+            "type": "text",
+            "text": " with label "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-954fb8157dc8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x) = \\hat{p}(\\tilde{y} \\vert \\mathbf{x}; \\theta)"
+          },
+          {
+            "type": "text",
+            "text": " and this model should be trained with "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}(f(\\mathbf{x}), y)"
+          },
+          {
+            "type": "text",
+            "text": " on clean data "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_c"
+          },
+          {
+            "type": "text",
+            "text": " and with "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}(\\hat{C}^\\top f(\\mathbf{x}), \\hat{y})"
+          },
+          {
+            "type": "text",
+            "text": " on noisy data "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_n"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-60abb157507d",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/GLC.png",
+          "alt": "Algorithm of gold loss correction (GLC), estimating the noise transition matrix with a trusted dataset. (Image source: Hendrycks et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-3e26d6b0ba17",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If the trusted training dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_c"
+          },
+          {
+            "type": "text",
+            "text": " gets large, we can train a neural network only on clean data and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "distill"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " its knowledge into the primary model (i.e. the final model to make predictions at test time) using corrected "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "pseudo labels"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.02391"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Li et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The primary model is trained on the entire dataset, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D} = \\mathcal{D}_c \\cup \\mathcal{D}_n"
+          },
+          {
+            "type": "text",
+            "text": ". Optionally the “side” information of label relations in the knowledge graph, if available, can be incorporated into distillation to help the robustness of the predictions of the network that is trained on limited data."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-73072994f839",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The label correction distillation works as following:"
+          }
+        ]
+      },
+      {
+        "id": "list-6f73874f5183",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-86d885a01d2f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First train an auxiliary model "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_c"
+              },
+              {
+                "type": "text",
+                "text": " from the small clean dataset "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{D}_c"
+              },
+              {
+                "type": "text",
+                "text": " to provide a soft label for each sample "
+              },
+              {
+                "type": "inline_math",
+                "text": "x_i"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "s_i = \\delta(f_c(\\mathbf{x}_i)/T)"
+              },
+              {
+                "type": "text",
+                "text": " is the sigmoid activation with temperature "
+              },
+              {
+                "type": "inline_math",
+                "text": "T"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2e2e2c2c2900",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Because the clean dataset is not large, "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_c"
+              },
+              {
+                "type": "text",
+                "text": " is likely to overfit, "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1703.02391"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Li et al. (2017)"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " turn to a knowledge graph "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{G}"
+              },
+              {
+                "type": "text",
+                "text": " that defines the relations in the label space and "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "propagate"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " the prediction among labels accordingly. The new soft label is donated as "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\hat{s}_i = \\mathcal{G}(s_i)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6c830f6041cf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The primary model "
+              },
+              {
+                "type": "inline_math",
+                "text": "f"
+              },
+              {
+                "type": "text",
+                "text": " is trained with predictions from "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_c"
+              },
+              {
+                "type": "text",
+                "text": " to imitate,"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0d191ee0ba46",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\mathcal{L}(y_i, f(\\mathbf{x}_i)) = \\text{CE}(\\underbrace{\\lambda y_i + (1 - \\lambda) \\hat{s}_i}_\\text{pseudo label}, f(\\mathbf{x}_i))\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "heading-21631803672c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sample Reweighting and Selection"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d566872960df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Some samples may be more likely to have inaccurate labels than others. Such estimation gives us intuition on which samples should be weighted less or more in the loss function. However, considering two types of biases in training data, class imbalance and noisy labels, there is actually a contradictory preference — We would prefer samples with larger loss to balance the label distribution but those with smaller loss for mitigating the potential noise. Some work ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.09050"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ren et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") thus argue that in order to learn general forms of training data biases, it is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "necessary"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to have "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "a small unbiased validation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to guide training. The sample reweighting methods presented in this section all assume access to a small trusted set of clean data."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-918a3c261895",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Considering a binary classification task with random classification noise, "
+          },
+          {
+            "type": "inline_math",
+            "text": "y, \\hat{y} \\in \\{-1, +1\\}"
+          },
+          {
+            "type": "text",
+            "text": ", the label flipping probabilities, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho_{-1}, \\rho_{+1} \\in [0, 0.5)"
+          },
+          {
+            "type": "text",
+            "text": ", are defined as:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-388f53ab5f07",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\rho_{-1} = P(\\tilde{y} = +1 \\vert y=-1)\\quad\\rho_{+1} = P(\\tilde{y}=-1 \\vert y =+1)\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-35ecff4324eb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1411.7718"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Liu & Tao (2015)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " applies "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "importance reweighting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to adjust the weighted distribution of observed "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{y}"
+          },
+          {
+            "type": "text",
+            "text": " to match the distribution of unobservable "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": ". Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": " be the true data distribution and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_\\rho"
+          },
+          {
+            "type": "text",
+            "text": " be the corrupted version."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-33ac8df620cd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\n\\mathcal{L}_{\\ell,\\mathcal{D}}(f)\n&= \\mathbb{E}_{(\\mathbf{x},y)\\sim \\mathcal{D}}[\\ell(f(\\mathbf{x}), y)] \\\\\n&= \\mathbb{E}_{(\\mathbf{x},\\tilde{y})\\sim \\mathcal{D}_\\rho} \\Big[ \\frac{P_\\mathcal{D}(\\mathbf{x}, y=\\tilde{y})}{P_{\\mathcal{D}_\\rho}(\\mathbf{x}, \\tilde{y})} \\ell(f(\\mathbf{x}), \\tilde{y}) \\Big] \\\\\n&= \\mathbb{E}_{(\\mathbf{x},\\tilde{y})\\sim \\mathcal{D}_\\rho} \\Big[ \\frac{P_\\mathcal{D}(y=\\tilde{y} \\vert \\mathbf{x})}{P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert \\mathbf{x})} \\ell(f(\\mathbf{x}), \\tilde{y}) \\Big] & \\text{; because }P_\\mathcal{D}(\\mathbf{x})=P_{\\mathcal{D}_\\rho}(\\mathbf{x}) \\\\\n&= \\mathbb{E}_{(\\mathbf{x},\\tilde{y})\\sim \\mathcal{D}_\\rho} [ w(\\mathbf{x}, \\hat{y})\\ell(f(\\mathbf{x}), \\tilde{y}) ]\n= \\mathcal{L}_{w\\ell,\\mathcal{D}}(f)\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3dd9032262e4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because,"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2c8c905b906c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\nP_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert \\mathbf{x})\n&= P_\\mathcal{D}(y = \\tilde{y} \\vert \\mathbf{x}) P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert y=\\tilde{y}) +\nP_\\mathcal{D}(y = - \\tilde{y} \\vert \\mathbf{x}) P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert y = - \\tilde{y}) \\\\\n&= P_\\mathcal{D}(y = \\tilde{y} \\vert \\mathbf{x}) (1 - P_{\\mathcal{D}_\\rho}(- \\tilde{y} \\vert y=\\tilde{y})) +\n(1 - P_\\mathcal{D}(y = \\tilde{y} \\vert \\mathbf{x})) P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert y = - \\tilde{y}) \\\\\n&= P_\\mathcal{D}(y = \\tilde{y} \\vert \\mathbf{x}) (1 - \\rho_{\\tilde{y}}) +\n(1 - P_\\mathcal{D}(y = \\tilde{y} \\vert \\mathbf{x})) \\rho_{-\\tilde{y}} \\\\\n&= P_\\mathcal{D}(y = \\tilde{y} \\vert \\mathbf{x})(1 - \\rho_{\\tilde{y}} - \\rho_{-\\tilde{y}}) + \\rho_{-\\tilde{y}}\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7eb501cf4d19",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus the weight assigned to a noisy sample is,"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-732854a7a062",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\nw(x, \\tilde{y})\n= \\frac{P_\\mathcal{D}(y=\\tilde{y} \\vert \\mathbf{x})}{P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert \\mathbf{x})}\n= \\frac{P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert \\mathbf{x}) - \\rho_{-\\tilde{y}}}{(1-\\rho_0-\\rho_1) P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert \\mathbf{x})}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b673ebe04947",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_{\\mathcal{D}_\\rho}(\\tilde{y} \\vert \\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " can be estimated using a simple logistic regression, but estimating the note rates is more challenging. Naive cross-validation can work out but is costly as the quality depends on the amount of trusted labels available. The paper approximates the upper bounds for noise rates first, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\rho_\\tilde{y} \\leq P_{\\mathcal{D}_\\rho}(- \\tilde{y} \\vert \\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " and then use a mild assumption to efficiently estimate them, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\rho}_{\\tilde{y}} = \\min_{\\mathbf{x} \\in {\\mathbf{x}_1, \\dots, \\mathbf{x}_n}} \\hat{P}_{\\mathcal{D}_\\rho}(- \\tilde{y} \\vert \\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". In their experiments, the advantage of importance reweighting only varies across datasets and is more beneficial when the noise rates are high in general."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6994b210f4ec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sample reweighting schemes can be learned by a separate network. "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Learning to reweight"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "L2R"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.09050"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ren et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a meta-learning approach to directly optimize the weights in pursuit of best validation performance on a known set of clean data. Each example gets assigned with the weight based on its gradient direction. The weighted loss to minimize "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^*(\\mathbf{w})"
+          },
+          {
+            "type": "text",
+            "text": " involves a set of training weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\{w_i\\}_{i=1}^n"
+          },
+          {
+            "type": "text",
+            "text": " as unknown hyperparameters. These sample training weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "w_i"
+          },
+          {
+            "type": "text",
+            "text": " are learned to minimize the loss on this unbiased validate set, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_c = \\{x^\\text{valid}_j\\}_{j=1}^m"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a8d3cda60cc6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\n\\theta^{*}(\\mathbf{w}) &= \\arg\\min_\\theta \\sum_{i=1}^n w_i f(x_i; \\theta) \\\\\n\\text{where optimal }\\mathbf{w}^{*} &= \\arg\\min_{\\mathbf{w}, \\mathbf{w} \\geq \\mathbf{0}} \\frac{1}{m} \\sum_{j=1}^m f(\\mathbf{x}^\\text{valid}_j; \\theta^{*}(\\mathbf{w}))\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-603b3824908c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The learning process involves two nested loops of optimization, so pretty expensive, 3x training time."
+          }
+        ]
+      },
+      {
+        "id": "image-b129d505bb92",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/L2R-backprop.png",
+          "alt": "Illustration of updates implemented by second order automatic differentiation . (Image source: Ren et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-efddab9ddb5e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "They ran experiments on (1) two-class MNIST to test the robustness of L2R when the class distribution is imbalanced and (2) CIFAR-10 with noisy labels.  L2R is shown to be better than other baseline methods at the time on both tasks."
+          }
+        ]
+      },
+      {
+        "id": "image-48a55fa5d3e0",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/L2R-exp.png",
+          "alt": "Left: Imbalanced classes on MNIST (class 4 and 9); Right: Effect of the number of clean samples. Task is on CIFAR-10 with 40% of data flipped to label 3. (Image source: Ren et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-934f1177fe26",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MentorNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.05055"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Jiang et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") uses teach-student curriculum learning to weight data. It incorporates two different networks, a mentor and a student. The mentor network provides a data-driven curriculum (i.e. sample training weighting scheme) for the student to focus on learning likely correct labels."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fb810111f089",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "g_\\psi"
+          },
+          {
+            "type": "text",
+            "text": " be the MentorNet parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\psi"
+          },
+          {
+            "type": "text",
+            "text": " , "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta"
+          },
+          {
+            "type": "text",
+            "text": "  be the StudentNet parametrized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": " be a predefined curriculum parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\lambda"
+          },
+          {
+            "type": "text",
+            "text": ". Given the training data "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D} = \\{(\\mathbf{x}_i, y_i)\\}_{i=1}^n"
+          },
+          {
+            "type": "text",
+            "text": " for a "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "-class classification task, the MentorNet needs to predict a time-varying latent weight variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{w} \\in [0, 1]^{n \\times k}"
+          },
+          {
+            "type": "text",
+            "text": " to guide the learning of StudentNet, taking an intermediate feature processed by StudentNet "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " , "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_i = \\phi_{f_\\theta}(\\mathbf{x}_i, y_i)"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0d2b7f955d1f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\ng_{\\psi^{*}}(\\mathbf{z}_i) = \\arg\\min_{w_i \\in [0,1]} \\mathcal{L}(\\theta, \\mathbf{w}), \\forall i \\in [1, n]\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-506ad43fa162",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "StudentNet learns to minimize the following learning objective,"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-29460b750da7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "$"
+          },
+          {
+            "type": "inline_math",
+            "text": "\n\\begin{aligned}\n\\mathcal{L}(\\theta, \\mathbf{w})\n&= \\frac{1}{n}\\sum_{i=1}^n \\mathbf{w}_i^\\top \\ell(y_i, f_\\theta(\\mathbf{x}_i)) + G_\\lambda(\\mathbf{w}) + \\alpha |\\theta|^2_2 \\\\\n&= \\frac{1}{n}\\sum_{i=1}^n g_\\psi(\\mathbf{z}_i)^\\top \\ell_i + G_\\lambda(\\mathbf{w}) + \\alpha |\\theta|^2_2 & \\text{; Let }\\ell_i = \\ell(y_i, f_\\theta(\\mathbf{x}_i)) \\\\\n\\end{aligned}\n"
+          },
+          {
+            "type": "text",
+            "text": "$"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fd21b6d2fb7d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The mentor network "
+          },
+          {
+            "type": "inline_math",
+            "text": "g_\\psi"
+          },
+          {
+            "type": "text",
+            "text": " is trained with cross entropy on the input "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\phi_{f_\\theta}(\\mathbf{x}_i, y_i), w^{*}_i)"
+          },
+          {
+            "type": "text",
+            "text": " , where "
+          },
+          {
+            "type": "inline_math",
+            "text": "v^*_i=1"
+          },
+          {
+            "type": "text",
+            "text": " if "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_i"
+          },
+          {
+            "type": "text",
+            "text": " is known to be a correct label, otherwise 0. The architecture of MentorNet does not have to be very complicated. In the paper, they adopted a LSTM layer to capture the prediction variance in time."
+          }
+        ]
+      },
+      {
+        "id": "image-f9816538f2d2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/MentorNet.png",
+          "alt": "Model architecture of MentorNet and StudentNet which are trained simultaneously, where MentorNet predicts the sample weights for StudentNet to train on. (Image source: Jiang et al. 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-6b1354867ec0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Different from MentorNet where one network explicitly learns weighting scheme and curriculum for the other network, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Co-teaching"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.06872"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Han et al. 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") trains two neural networks, "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_1"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_2"
+          },
+          {
+            "type": "text",
+            "text": ", simultaneously and lets them teach each other by feeding data to each other selectively. Co-teaching consists of three steps:"
+          }
+        ]
+      },
+      {
+        "id": "list-9727bdd8ac8b",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-b5438d501b7e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, each network feeds forward the current mini-batch and selects samples with potentially clean labels;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-97f80c6c7127",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Then two networks exchange information on which samples in the batch should be used for training.  Small-loss instances are selected as they are more likely to be associated with correct labels. The percentage of the batch to select is determined by a time-dependent function "
+              },
+              {
+                "type": "inline_math",
+                "text": "R(T)"
+              },
+              {
+                "type": "text",
+                "text": ". The value of "
+              },
+              {
+                "type": "inline_math",
+                "text": "R(T)"
+              },
+              {
+                "type": "text",
+                "text": " decreases in time because the network is more likely to overfit and memorize noisy labels as training progresses and thus we use a smaller sampling percentage to keep the selected data quality high."
+              }
+            ]
+          },
+          {
+            "id": "list-item-1b9d89147633",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Finally, each network runs back-propagation updates with the data selected by its peer."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-97d9185d2ba2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to their experiments, co-teaching performs better than "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/#fcorrection"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "F-correction"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " where the noise rates are high or the corruption transition matrix is not symmetric."
+          }
+        ]
+      },
+      {
+        "id": "image-9859c4f92790",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/co-teaching.png",
+          "alt": "Algorithm of co-teaching in which two networks are trained separately in parallel and each selects samples for the other to train on. (Image source: Han et al. 2018 )"
+        }
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-c72cb610286d",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-5c3a78d780eb",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Apr 2022). Learning with not enough data part 3: data generation. Lil’Log. https://lilianweng.github.io/posts/2022-04-15-data-gen/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-68f396795edd",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2022datagen,\n  title   = \"Learning with not Enough Data Part 3: Data Generation\",\n  author  = \"Weng, Lilian\",\n  journal = \"Lil'Log\",\n  year    = \"2022\",\n  month   = \"Apr\",\n  url     = \"https://lilianweng.github.io/posts/2022-04-15-data-gen/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-1e128c52c168",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reference"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-46a6ff1df2ae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Zhang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1912.11188"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Adversarial AutoAgument”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-afc8c9b89575",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Kumar et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2003.02245"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Data Augmentation using Pre-trained Transformer Models.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AACL 2020 Workshop."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5a51c9d3f42c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Anaby-Tavor et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1911.03118"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Not enough data? Deep learning to rescue!”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AAAI 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-083088868c6a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2108.13487"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Want To Reduce Labeling Cost? GPT-3 Can Help.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " EMNLP 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-495fd3bc3ee8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Wang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2109.09193"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Towards Zero-Label Language Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2109.09193 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8bf909b46667",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Schick & Schutze. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.07540"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Generating Datasets with Pretrained Language Models.\""
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " EMNLP 2021."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cf22a8e82ff4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Han et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2110.05448"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Unsupervised Neural Machine Translation with Generative Language Models Only.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2110.05448 (2021)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7e6c108b075c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Guo et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.08941"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Augmenting data with mixup for sentence classification: An empirical study.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1905.08941 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c923e12d4d97",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Ekin D. Cubuk et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.09501"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“AutoAugment: Learning augmentation policies from data.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1805.09501 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f6d21655855a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Daniel Ho et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.05393"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Population Based Augmentation: Efficient Learning of Augmentation Policy Schedules.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9ef30052c65d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Cubuk & Zoph et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.13719"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“RandAugment: Practical automated data augmentation with a reduced search space.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1909.13719 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4915f4852965",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Zhang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1710.09412"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“mixup: Beyond Empirical Risk Minimization.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5aa340cfa3a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Yun et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.04899"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICCV 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7d153505ab10",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] Kalantidis et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2010.01028"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Mixing of Contrastive Hard Negatives”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-74c8f4444963",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[15] Wei & Zou. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.11196"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“EDA: Easy data augmentation techniques for boosting performance on text classification tasks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  EMNLP-IJCNLP 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-feacaf810f47",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[16] Kobayashi. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.06201"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Contextual Augmentation: Data Augmentation by Words with Paradigmatic Relations.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NAACL 2018"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-eabb3ccfa663",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[17] Fang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.12766"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“CERT: Contrastive self-supervised learning for language understanding.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2005.12766 (2020)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3f665b857155",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[18] Gao et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2104.08821"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“SimCSE: Simple Contrastive Learning of Sentence Embeddings.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2104.08821 (2020). ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/princeton-nlp/SimCSE"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9d4f91f67adc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[19] Shen et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2009.13818"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Simple but Tough-to-Beat Data Augmentation Approach for Natural Language Understanding and Generation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:2009.13818 (2020) ["
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/dinghanshen/cutoff"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-294e6d4cc918",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[20] Wang & van den Oord. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2103.06508"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Multi-Format Contrastive Learning of Audio Representations.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  NeuriPS Workshop 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a8d5b978ba32",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[21] Wu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1812.06705"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Conditional BERT Contextual Augmentation”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1812.06705 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fae0c88e135f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[22 Zhu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1909.11764"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“FreeLB: Enhanced Adversarial Training for Natural Language Understanding.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49eef1acc756",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[23] Affinity and Diversity: Quantifying Mechanisms of Data Augmentation\nGontijo-Lopes et al. 2020 ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2002.08973"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "https://arxiv.org/abs/2002.08973"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-16240f7f250e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[24] Song et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2007.08199"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning from Noisy Labels with Deep Neural Networks: A Survey.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " TNNLS 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8cc854a9b43e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[25] Zhang & Sabuncu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07836"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Generalized cross entropy loss for training deep neural networks with noisy labels.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2d58d6f19e28",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[26] Goldberger & Ben-Reuven. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/forum?id=H12GRgcxg"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Training deep neural-networks using a noise adaptation layer.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b8c517e61362",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[27] Sukhbaatar et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1406.2080"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Training convolutional networks with noisy labels.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR Workshop 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1ae0194c3b15",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[28] Patrini et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1609.03683"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Making Deep Neural Networks Robust to Label Noise: a Loss Correction Approach”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " CVPR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b23d878e7994",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[29] Hendrycks et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1802.05300"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Using trusted data to train deep networks on labels corrupted by severe noise.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8fe39e47ff4b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[30] Zhang & Sabuncu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.07836"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Generalized cross entropy loss for training deep neural networks with noisy labels.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1927ab2f89b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[31] Lyu & Tsang. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.10045"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Curriculum loss: Robust learning and generalization against label corruption.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-982687ca56cc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[32] Han et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.06872"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Co-teaching: Robust training of deep neural networks with extremely noisy labels.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NeuriPS 2018. ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/bhanML/Co-teaching"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c948944a0ee6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[33] Ren et al.  "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.09050"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning to reweight examples for robust deep learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0e9e8e7b9c9e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[34] Jiang et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.05055"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“MentorNet: Learning data-driven curriculum for very deep neural networks on corrupted labels.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-10dcf2888e2f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[35] Li et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.02391"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning from noisy labels with distillation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICCV 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a356d3aab338",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[36] Liu & Tao. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1411.7718"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Classification with noisy labels by importance reweighting.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " TPAMI 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0bf8a525652c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[37] Ghosh, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1712.09482"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Robust loss functions under label noise for deep neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AAAI 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a3bbdef73e5e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[38] Hu et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.02041"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Does Distributionally Robust Supervised Learning Give Robust Classifiers? “"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2018."
+          }
+        ]
+      },
+      {
+        "id": "list-2a16ff3b0b83",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-1568d60edfa3",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "inline_math",
+                "text": "y=i"
+              },
+              {
+                "type": "text",
+                "text": " is not a technically correct way to annotate a label being a certain value, since we usually use one-hot encoding (i.e. "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{y} = \\mathbf{e}_i"
+              },
+              {
+                "type": "text",
+                "text": "). We use this form for simplicity. "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/#fnref:1"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "↩︎"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "learning-with-not-enough-data-part-3-data-generation",
+    "source_slug": "2022-04-15-data-gen",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 22,
+      "math": 0,
+      "image": 15,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/EDA-exp1.png",
+      "alt": "EDA leads to performance improvement on several classification benchmarks. (Image source: Wei & Zou 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/GPT3-data-gen.png",
+      "alt": "Illustration of how to use GPT-3 to generate more training data with the human-in-the-loop active learning pipeline to improve the data quality. (Image source: Wang et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/GPT3-data-gen-exp.png",
+      "alt": "GPT-3 labeling technique improves the classification performance in the low-cost regime. (Image source: Wang et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/LAMBADA.png",
+      "alt": "Accuracy of LAMBADA vs. other generative approaches over all datasets and classifiers. (Image source: Anaby-Tavor et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/UDG.png",
+      "alt": "Illustration of the unsupervised data generation (UDG) framework. (Image source: Wang et al., 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/UDG-exp.png",
+      "alt": "Comparison of accuracy of UDG and other methods on different classification datasets. (Image source: Wang et al., 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/back-translation-data-gen.png",
+      "alt": "Algorithm of using distillation and back-translation to train a language model on translation tasks. (Image source: Han et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/back-translation-data-gen-exp.png",
+      "alt": "Comparison of BLEU scores of the translation models of different training runs using: only distillation, back-translation, both and with more monolingual training data. (Image source: Han et al. 2021 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/affinity-diversity.png",
+      "alt": "(a) Left: A scatter plot of affinity vs diversity metric, where each point represents a different augmentation method and its color indicates the final test accuracy. (b) Right: The conceptual illustration of the relationship between clean and augmented data in different regions of affinity and diversity metrics. (Image source: Gontijo-Lopes et al. 2020 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/noise-adaptation-layer.png",
+      "alt": "(a) Left: A noise matrix $Q$ is added between softmax and the final output for the loss. (b) Right: The noise matrix $Q$ is fixed at the identity function initially and only gets updated with regularization after some training. (Image source: Sukhbaatar et al. 2015 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/GLC.png",
+      "alt": "Algorithm of gold loss correction (GLC), estimating the noise transition matrix with a trusted dataset. (Image source: Hendrycks et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/L2R-backprop.png",
+      "alt": "Illustration of updates implemented by second order automatic differentiation . (Image source: Ren et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/L2R-exp.png",
+      "alt": "Left: Imbalanced classes on MNIST (class 4 and 9); Right: Effect of the number of clean samples. Task is on CIFAR-10 with 40% of data flipped to label 3. (Image source: Ren et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/MentorNet.png",
+      "alt": "Model architecture of MentorNet and StudentNet which are trained simultaneously, where MentorNet predicts the sample weights for StudentNet to train on. (Image source: Jiang et al. 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2022-04-15-data-gen/co-teaching.png",
+      "alt": "Algorithm of co-teaching in which two networks are trained separately in parallel and each selects samples for the other to train on. (Image source: Han et al. 2018 )"
+    }
+  ]
+}

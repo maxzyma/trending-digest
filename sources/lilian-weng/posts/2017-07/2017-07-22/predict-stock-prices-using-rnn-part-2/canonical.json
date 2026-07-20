@@ -1,0 +1,1527 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2017-07-22-stock-rnn-part-2",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2017-07-22T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:2c6531c659e93d6d814fbf13accca194bdb11d1b32b0c10e50518a2a5e0fb0e9",
+    "fetched_at": "2026-07-14T02:04:44.613959+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Predict Stock Prices Using RNN: Part 2",
+    "title_en": "Predict Stock Prices Using RNN: Part 2",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-def3ade7c1df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the Part 2 tutorial, I would like to continue the topic on stock price prediction and to endow the recurrent neural network that I have built in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-07-08-stock-rnn-part-1/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " with the capability of responding to multiple stocks. In order to distinguish the patterns associated with different price sequences, I use the stock symbol embedding vectors as part of the input."
+          }
+        ]
+      },
+      {
+        "id": "heading-56de8b39f5a1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Dataset"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-60a3b90cc523",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During the search, I found "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lukaszbanasiak/yahoo-finance"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "this library"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for querying Yahoo! Finance API. It would be very useful if Yahoo hasn’t shut down the historical data fetch API. You may find it useful for querying other information though. Here I pick the Google Finance link, among "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.quantshare.com/sa-43-10-ways-to-download-historical-stock-quotes-data-for-free"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "a couple of free data sources"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for downloading historical stock prices."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-24f66462b0e7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The data fetch code can be written as simple as:"
+          }
+        ]
+      },
+      {
+        "id": "code-47b1f7dec116",
+        "type": "code",
+        "attrs": {
+          "code": "import urllib2\nfrom datetime import datetime\nBASE_URL = \"https://www.google.com/finance/historical?\"\n           \"output=csv&q={0}&startdate=Jan+1%2C+1980&enddate={1}\"\nsymbol_url = BASE_URL.format(\n    urllib2.quote('GOOG'), # Replace with any stock you are interested.\n    urllib2.quote(datetime.now().strftime(\"%b+%d,+%Y\"), '+')\n)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-c62c65cef5a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When fetching the content, remember to add try-catch wrapper in case the link fails or the provided stock symbol is not valid."
+          }
+        ]
+      },
+      {
+        "id": "code-259ee2a7340d",
+        "type": "code",
+        "attrs": {
+          "code": "try:\n    f = urllib2.urlopen(symbol_url)\n    with open(\"GOOG.csv\", 'w') as fin:\n        print >> fin, f.read()\nexcept urllib2.HTTPError:\n    print \"Fetching Failed: {}\".format(symbol_url)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-cb44201d8dae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The full working data fetcher code is available "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/stock-rnn/blob/master/data_fetcher.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-d5c544006040",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model Construction"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-7e0fe5b6af09",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model is expected to learn the price sequences of different stocks in time. Due to the different underlying patterns, I would like to tell the model which stock it is dealing with explicitly. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Embedding"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Embedding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is more favored than one-hot encoding, because:"
+          }
+        ]
+      },
+      {
+        "id": "list-c5cb7cd296bc",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-5cac69b6d01e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Given that the train set includes "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " stocks, the one-hot encoding would introduce "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " (or "
+              },
+              {
+                "type": "inline_math",
+                "text": "N-1"
+              },
+              {
+                "type": "text",
+                "text": ") additional sparse feature dimensions. Once each stock symbol is mapped onto a much smaller embedding vector of length "
+              },
+              {
+                "type": "inline_math",
+                "text": "k"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "k \\ll N"
+              },
+              {
+                "type": "text",
+                "text": ", we end up with a much more compressed representation and smaller dataset to take care of."
+              }
+            ]
+          },
+          {
+            "id": "list-item-332e015397bd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Since embedding vectors are variables to learn. Similar stocks could be associated with similar embeddings and help the prediction of each others, such as “GOOG” and “GOOGL” which you will see in later."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e48e2b66d70a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the recurrent neural network, at one time step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": ", the input vector contains "
+          },
+          {
+            "type": "inline_code",
+            "text": "input_size"
+          },
+          {
+            "type": "text",
+            "text": " (labelled as "
+          },
+          {
+            "type": "inline_math",
+            "text": "w"
+          },
+          {
+            "type": "text",
+            "text": ") daily price values of "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th stock, "
+          },
+          {
+            "type": "inline_math",
+            "text": "(p_{i, tw}, p_{i, tw+1}, \\dots, p_{i, (t+1)w-1})"
+          },
+          {
+            "type": "text",
+            "text": ". The stock symbol is uniquely mapped to a vector of length "
+          },
+          {
+            "type": "inline_code",
+            "text": "embedding_size"
+          },
+          {
+            "type": "text",
+            "text": " (labelled as "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "), "
+          },
+          {
+            "type": "inline_math",
+            "text": "(e_{i,0}, e_{i,1}, \\dots, e_{i,k})"
+          },
+          {
+            "type": "text",
+            "text": ". As illustrated in Fig. 1., the price vector is concatenated with the embedding vector and then fed into the LSTM cell."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4ffc95a9f683",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another alternative is to concatenate the embedding vectors with the last state of the LSTM cell and learn new weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "W"
+          },
+          {
+            "type": "text",
+            "text": " and bias "
+          },
+          {
+            "type": "inline_math",
+            "text": "b"
+          },
+          {
+            "type": "text",
+            "text": " in the output layer. However, in this way, the LSTM cell cannot tell apart prices of one stock from another and its power would be largely restrained. Thus I decided to go with the former approach."
+          }
+        ]
+      },
+      {
+        "id": "image-a5e10ae044bf",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_with_embedding.png",
+          "alt": "The architecture of the stock price prediction RNN model with stock symbol embeddings."
+        }
+      },
+      {
+        "id": "paragraph-70ca7be2bee2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two new configuration settings are added into "
+          },
+          {
+            "type": "inline_code",
+            "text": "RNNConfig"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "list-2f78b02478c6",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7f9b422281f1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_code",
+                "text": "embedding_size"
+              },
+              {
+                "type": "text",
+                "text": " controls the size of each embedding vector;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-58f5f73806d5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_code",
+                "text": "stock_count"
+              },
+              {
+                "type": "text",
+                "text": " refers to the number of unique stocks in the dataset."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f9d5a7766978",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Together they define the size of the embedding matrix, for which the model has to learn "
+          },
+          {
+            "type": "inline_code",
+            "text": "embedding_size"
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\times"
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_code",
+            "text": "stock_count"
+          },
+          {
+            "type": "text",
+            "text": " additional variables compared to the model in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-07-08-stock-rnn-part-1/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-8fc22debc4a6",
+        "type": "code",
+        "attrs": {
+          "code": "class RNNConfig():\n   # ... old ones\n   embedding_size = 3\n   stock_count = 50",
+          "language": "python"
+        }
+      },
+      {
+        "id": "heading-bd551a729ff2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Define the Graph"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7d76207b1cb0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "— Let’s start going through some code —"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c878b2961ba7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) As demonstrated in tutorial "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-07-08-stock-rnn-part-1/#define-graph"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1: Define the Graph"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", let us define a "
+          },
+          {
+            "type": "inline_code",
+            "text": "tf.Graph()"
+          },
+          {
+            "type": "text",
+            "text": " named "
+          },
+          {
+            "type": "inline_code",
+            "text": "lstm_graph"
+          },
+          {
+            "type": "text",
+            "text": " and a set of tensors to hold input data, "
+          },
+          {
+            "type": "inline_code",
+            "text": "inputs"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_code",
+            "text": "targets"
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "inline_code",
+            "text": "learning_rate"
+          },
+          {
+            "type": "text",
+            "text": " in the same way. One more placeholder to define is a list of stock symbols associated with the input prices. Stock symbols have been mapped to unique integers beforehand with "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelEncoder.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "label encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-5e8a899edb74",
+        "type": "code",
+        "attrs": {
+          "code": "# Mapped to an integer. one label refers to one stock symbol.\nstock_labels = tf.placeholder(tf.int32, [None, 1])",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-c7728a0646df",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) Then we need to set up an embedding matrix to play as a lookup table, containing the embedding vectors of all the stocks. The matrix is initialized with random numbers in the interval [-1, 1] and gets updated during training."
+          }
+        ]
+      },
+      {
+        "id": "code-9879b833ade7",
+        "type": "code",
+        "attrs": {
+          "code": "# NOTE: config = RNNConfig() and it defines hyperparameters.\n# Convert the integer labels to numeric embedding vectors.\nembedding_matrix = tf.Variable(\n    tf.random_uniform([config.stock_count, config.embedding_size], -1.0, 1.0)\n)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-17dc57044b2a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(3) Repeat the stock labels "
+          },
+          {
+            "type": "inline_code",
+            "text": "num_steps"
+          },
+          {
+            "type": "text",
+            "text": " times to match the unfolded version of RNN and the shape of "
+          },
+          {
+            "type": "inline_code",
+            "text": "inputs"
+          },
+          {
+            "type": "text",
+            "text": " tensor during training.\nThe transformation operation "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/tile"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.tile"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " receives a base tensor and creates a new tensor by replicating its certain dimensions multiples times; precisely the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th dimension of the input tensor gets multiplied by "
+          },
+          {
+            "type": "inline_code",
+            "text": "multiples[i]"
+          },
+          {
+            "type": "text",
+            "text": " times. For example, if the "
+          },
+          {
+            "type": "inline_code",
+            "text": "stock_labels"
+          },
+          {
+            "type": "text",
+            "text": " is "
+          },
+          {
+            "type": "inline_code",
+            "text": "[[0], [0], [2], [1]]"
+          },
+          {
+            "type": "text",
+            "text": "\ntiling it by "
+          },
+          {
+            "type": "inline_code",
+            "text": "[1, 5]"
+          },
+          {
+            "type": "text",
+            "text": " produces "
+          },
+          {
+            "type": "inline_code",
+            "text": "[[0 0 0 0 0], [0 0 0 0 0], [2 2 2 2 2], [1 1 1 1 1]]"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-0dd106195e3b",
+        "type": "code",
+        "attrs": {
+          "code": "stacked_stock_labels = tf.tile(stock_labels, multiples=[1, config.num_steps])",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-41390de01c17",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(4) Then we map the symbols to embedding vectors according to the lookup table "
+          },
+          {
+            "type": "inline_code",
+            "text": "embedding_matrix"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-9fd9d4e14cb5",
+        "type": "code",
+        "attrs": {
+          "code": "# stock_label_embeds.get_shape() = (?, num_steps, embedding_size).\nstock_label_embeds = tf.nn.embedding_lookup(embedding_matrix, stacked_stock_labels)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-7d565920940a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(5) Finally, combine the price values with the embedding vectors. The operation "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/concat"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.concat"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " concatenates a list of tensors along the dimension "
+          },
+          {
+            "type": "inline_code",
+            "text": "axis"
+          },
+          {
+            "type": "text",
+            "text": ". In our case, we want to keep the batch size and the number of steps unchanged, but only extend the input vector of length "
+          },
+          {
+            "type": "inline_code",
+            "text": "input_size"
+          },
+          {
+            "type": "text",
+            "text": " to include embedding features."
+          }
+        ]
+      },
+      {
+        "id": "code-b95f0f3b3685",
+        "type": "code",
+        "attrs": {
+          "code": "# inputs.get_shape() = (?, num_steps, input_size)\n# stock_label_embeds.get_shape() = (?, num_steps, embedding_size)\n# inputs_with_embeds.get_shape() = (?, num_steps, input_size + embedding_size)\ninputs_with_embeds = tf.concat([inputs, stock_label_embeds], axis=2)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-721071f65f7e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The rest of code runs the dynamic RNN, extracts the last state of the LSTM cell, and handles weights and bias in the output layer. See "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-07-08-stock-rnn-part-1/#define-graph"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1: Define the Graph"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for the details."
+          }
+        ]
+      },
+      {
+        "id": "heading-71e7ca687043",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training Session"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-8ead970d5931",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Please read "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-07-08-stock-rnn-part-1/#start-training-session"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Part 1: Start Training Session"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " if you haven’t for how to run a training session in Tensorflow."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f0a33e3d4e9a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before feeding the data into the graph, the stock symbols should be transformed to unique integers with "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelEncoder.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "label encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-c514efbeaf56",
+        "type": "code",
+        "attrs": {
+          "code": "from sklearn.preprocessing import LabelEncoder\nlabel_encoder = LabelEncoder()\nlabel_encoder.fit(list_of_symbols)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-c826fdafb1bd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The train/test split ratio remains same, 90% for training and 10% for testing, for every individual stock."
+          }
+        ]
+      },
+      {
+        "id": "heading-ca39a1835be7",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Visualize the Graph"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-ba23860eea79",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After the graph is defined in code, let us check the visualization in Tensorboard to make sure that components are constructed correctly. Essentially it looks very much like our architecture illustration in "
+          }
+        ]
+      },
+      {
+        "id": "image-73244f22deca",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_with_embedding_tensorboard.png",
+          "alt": "Tensorboard visualization of the graph defined above. Two modules, “train” and “save”, have been removed from the main graph."
+        }
+      },
+      {
+        "id": "paragraph-65c226661fa0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Other than presenting the graph structure or tracking the variables in time, Tensorboard also supports "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/get_started/embedding_viz"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "embeddings visualization"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". In order to communicate the embedding values to Tensorboard, we need to add proper tracking in the training logs."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9fefaa8706f1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(0) In my embedding visualization, I want to color each stock with its industry sector. This metadata should stored in a csv file. The file has two columns, the stock symbol and the industry sector. It does not matter whether the csv file has header, but the order of the listed stocks must be consistent with "
+          },
+          {
+            "type": "inline_code",
+            "text": "label_encoder.classes_"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-c76e97b17a1e",
+        "type": "code",
+        "attrs": {
+          "code": "import csv\nembedding_metadata_path = os.path.join(your_log_file_folder, 'metadata.csv')\nwith open(embedding_metadata_path, 'w') as fout:\n    csv_writer = csv.writer(fout)\n    # write the content into the csv file.\n    # for example, csv_writer.writerows([\"GOOG\", \"information_technology\"])",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-2f4c2b572343",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) Set up the summary writer first within the training "
+          },
+          {
+            "type": "inline_code",
+            "text": "tf.Session"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "code-dc9f4b79f9da",
+        "type": "code",
+        "attrs": {
+          "code": "from tensorflow.contrib.tensorboard.plugins import projector\nwith tf.Session(graph=lstm_graph) as sess:\n    summary_writer = tf.summary.FileWriter(your_log_file_folder)\n    summary_writer.add_graph(sess.graph)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-f2b6b259d2f3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) Add the tensor "
+          },
+          {
+            "type": "inline_code",
+            "text": "embedding_matrix"
+          },
+          {
+            "type": "text",
+            "text": " defined in our graph "
+          },
+          {
+            "type": "inline_code",
+            "text": "lstm_graph"
+          },
+          {
+            "type": "text",
+            "text": " into the projector config variable and attach the metadata csv file."
+          }
+        ]
+      },
+      {
+        "id": "code-a35a157c543a",
+        "type": "code",
+        "attrs": {
+          "code": "    projector_config = projector.ProjectorConfig()\n    # You can add multiple embeddings. Here we add only one.\n    added_embedding = projector_config.embeddings.add()\n    added_embedding.tensor_name = embedding_matrix.name\n    # Link this tensor to its metadata file.\n    added_embedding.metadata_path = embedding_metadata_path",
+          "language": "python"
+        }
+      },
+      {
+        "id": "paragraph-20c1dd5edfd8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(3) This line creates a file "
+          },
+          {
+            "type": "inline_code",
+            "text": "projector_config.pbtxt"
+          },
+          {
+            "type": "text",
+            "text": " in the folder "
+          },
+          {
+            "type": "inline_code",
+            "text": "your_log_file_folder"
+          },
+          {
+            "type": "text",
+            "text": ". TensorBoard will read this file during startup."
+          }
+        ]
+      },
+      {
+        "id": "code-6098b6c82124",
+        "type": "code",
+        "attrs": {
+          "code": "    projector.visualize_embeddings(summary_writer, projector_config)",
+          "language": "python"
+        }
+      },
+      {
+        "id": "heading-6d6798a96071",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Results"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8b62a0d5afdd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The model is trained with top 50 stocks with largest market values in the S&P 500 index."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7f0bd22f0443",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(Run the following command within "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/stock-rnn"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "github.com/lilianweng/stock-rnn"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")"
+          }
+        ]
+      },
+      {
+        "id": "code-6824507ca901",
+        "type": "code",
+        "attrs": {
+          "code": "python main.py --stock_count=50 --embed_size=3 --input_size=3 --max_epoch=50 --train",
+          "language": "bash"
+        }
+      },
+      {
+        "id": "paragraph-bf3e17cdd233",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "And the following configuration is used:"
+          }
+        ]
+      },
+      {
+        "id": "code-c9e9c1282632",
+        "type": "code",
+        "attrs": {
+          "code": "stock_count = 100\ninput_size = 3\nembed_size = 3\nnum_steps = 30\nlstm_size = 256\nnum_layers = 1\nmax_epoch = 50\nkeep_prob = 0.8\nbatch_size = 64\ninit_learning_rate = 0.05\nlearning_rate_decay = 0.99\ninit_epoch = 5",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-284f2901a6dc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Price Prediction"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5efc9cdb58f9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As a brief overview of the prediction quality, Fig. 3 plots the predictions for test data of “KO”, “AAPL”, “GOOG” and “NFLX”. The overall trends matched up between the true values and the predictions. Considering how the prediction task is designed, the model relies on all the historical data points to predict only next 5 ("
+          },
+          {
+            "type": "inline_code",
+            "text": "input_size"
+          },
+          {
+            "type": "text",
+            "text": ") days. With a small "
+          },
+          {
+            "type": "inline_code",
+            "text": "input_size"
+          },
+          {
+            "type": "text",
+            "text": ", the model does not need to worry about the long-term growth curve. Once we increase "
+          },
+          {
+            "type": "inline_code",
+            "text": "input_size"
+          },
+          {
+            "type": "text",
+            "text": ", the prediction would be much harder."
+          }
+        ]
+      },
+      {
+        "id": "image-8acb4ffbd37e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_embedding_AAPL.png",
+          "alt": "True and predicted stock prices of AAPL, MSFT and GOOG in the test set. The prices are normalized across consecutive prediction sliding windows (See Part 1: Normalization . The y-axis values get multiplied by 5 for a better comparison between true and predicted trends."
+        }
+      },
+      {
+        "id": "image-2614f32e8d4e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_embedding_MSFT.png",
+          "alt": "True and predicted stock prices of AAPL, MSFT and GOOG in the test set. The prices are normalized across consecutive prediction sliding windows (See Part 1: Normalization . The y-axis values get multiplied by 5 for a better comparison between true and predicted trends."
+        }
+      },
+      {
+        "id": "image-ee1ff00e7d4a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_embedding_GOOG.png",
+          "alt": "True and predicted stock prices of AAPL, MSFT and GOOG in the test set. The prices are normalized across consecutive prediction sliding windows (See Part 1: Normalization . The y-axis values get multiplied by 5 for a better comparison between true and predicted trends."
+        }
+      },
+      {
+        "id": "heading-5c67430255e8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Embedding Visualization"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e51f33f87032",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One common technique to visualize the clusters in embedding space is "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "t-SNE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Maaten and Hinton, 2008"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), which is well supported in Tensorboard. t-SNE, short for “t-Distributed Stochastic Neighbor Embedding, is a variation of Stochastic Neighbor Embedding ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.cs.toronto.edu/~fritz/absps/sne.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hinton and Roweis, 2002"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), but with a modified cost function that is easier to optimize."
+          }
+        ]
+      },
+      {
+        "id": "list-997bef33277d",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-44c7388e0ce6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Similar to SNE, t-SNE first converts the high-dimensional Euclidean distances between data points into conditional probabilities that represent similarities."
+              }
+            ]
+          },
+          {
+            "id": "list-item-2df8ffc0fe50",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "t-SNE defines a similar probability distribution over the data points in the low-dimensional space, and it minimizes the "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Kullback–Leibler divergence"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " between the two distributions with respect to the locations of the points on the map."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b8aaa1a03950",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://distill.pub/2016/misread-tsne/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "this post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for how to adjust the parameters, Perplexity and learning rate (epsilon), in t-SNE visualization."
+          }
+        ]
+      },
+      {
+        "id": "image-055ad4ae5040",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/embedding_clusters.png",
+          "alt": "Visualization of the stock embeddings using t-SNE. Each label is colored based on the stock industry sector. We have 5 clusters. Interstingly, GOOG, GOOGL and FB belong to the same cluster, while AMZN and AAPL stay in another."
+        }
+      },
+      {
+        "id": "paragraph-95313808bf7c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the embedding space, we can measure the similarity between two stocks by examining the similarity between their embedding vectors. For example, GOOG is mostly similar to GOOGL in the learned embeddings (See Fig. 5)."
+          }
+        ]
+      },
+      {
+        "id": "image-bf8cd3fe9a67",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/embedding_clusters_2.png",
+          "alt": "\"GOOG\" is clicked in the embedding visualization graph and top 20 similar neighbors are highlighted with colors from dark to light as the similarity decreases."
+        }
+      },
+      {
+        "id": "heading-028b5ab4c1ae",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Known Problems"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "list-883a8927258d",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-1de075bc968d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The prediction values get diminished and flatten quite a lot as the training goes. That’s why I multiplied the absolute values by a constant to make the trend is more visible in Fig. 3., as I’m more curious about whether the prediction on the up-or-down direction right. However, there must be a reason for the diminishing prediction value problem. Potentially rather than using simple MSE as the loss, we can adopt another form of loss function to penalize more when the direction is predicted wrong."
+              }
+            ]
+          },
+          {
+            "id": "list-item-6b59497390e9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The loss function decreases fast at the beginning, but it suffers from occasional value explosion (a sudden peak happens and then goes back immediately). I suspect it is related to the form of loss function too. A updated and smarter loss function might be able to resolve the issue."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6d801b90d7bb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The full code in this tutorial is available in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/stock-rnn"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "github.com/lilianweng/stock-rnn"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "predict-stock-prices-using-rnn-part-2",
+    "source_slug": "2017-07-22-stock-rnn-part-2",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 9,
+      "math": 0,
+      "image": 7,
+      "table": 0,
+      "code": 15
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_with_embedding.png",
+      "alt": "The architecture of the stock price prediction RNN model with stock symbol embeddings."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_with_embedding_tensorboard.png",
+      "alt": "Tensorboard visualization of the graph defined above. Two modules, “train” and “save”, have been removed from the main graph."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_embedding_AAPL.png",
+      "alt": "True and predicted stock prices of AAPL, MSFT and GOOG in the test set. The prices are normalized across consecutive prediction sliding windows (See Part 1: Normalization . The y-axis values get multiplied by 5 for a better comparison between true and predicted trends."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_embedding_MSFT.png",
+      "alt": "True and predicted stock prices of AAPL, MSFT and GOOG in the test set. The prices are normalized across consecutive prediction sliding windows (See Part 1: Normalization . The y-axis values get multiplied by 5 for a better comparison between true and predicted trends."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/rnn_embedding_GOOG.png",
+      "alt": "True and predicted stock prices of AAPL, MSFT and GOOG in the test set. The prices are normalized across consecutive prediction sliding windows (See Part 1: Normalization . The y-axis values get multiplied by 5 for a better comparison between true and predicted trends."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/embedding_clusters.png",
+      "alt": "Visualization of the stock embeddings using t-SNE. Each label is colored based on the stock industry sector. We have 5 clusters. Interstingly, GOOG, GOOGL and FB belong to the same cluster, while AMZN and AAPL stay in another."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2017-07-22-stock-rnn-part-2/embedding_clusters_2.png",
+      "alt": "\"GOOG\" is clicked in the embedding visualization graph and top 20 similar neighbors are highlighted with colors from dark to light as the similarity decreases."
+    }
+  ]
+}

@@ -1,0 +1,3583 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2019-03-14-overfit",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2019-03-14-overfit/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2019-03-14T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:6a3efc04882a56b71d6409f7119ecfc1c3da1cb2093fbabbb16e4f4cb85c04bc",
+    "fetched_at": "2026-07-14T02:05:12.350399+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Are Deep Neural Networks Dramatically Overfitted?",
+    "title_en": "Are Deep Neural Networks Dramatically Overfitted?",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-0b7c536aaebc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2019-05-27: add the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#the-lottery-ticket-hypothesis"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on Lottery Ticket Hypothesis.]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c73047ac5044",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If you are like me, entering into the field of deep learning with experience in traditional machine learning, you may often ponder over this question: Since a typical deep neural network has so many parameters and training error can easily be perfect, it should surely suffer from substantial overfitting. How could it be ever generalized to out-of-sample data points?"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ecfa30810e1f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The effort in understanding why deep neural networks can generalize somehow reminds me of this interesting paper on System Biology — "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cell.com/cancer-cell/pdf/S1535-6108(02)00133-2.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Can a biologist fix a radio?”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Lazebnik, 2002). If a biologist intends to fix a radio machine like how she works on a biological system, life could be hard. Because the full mechanism of the radio system is not revealed, poking small local functionalities might give some hints but it can hardly present all the interactions within the system, let alone the entire working flow. No matter whether you think it is relevant to DL, it is a very fun read."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e0bd62a32920",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I would like to discuss a couple of papers on generalizability and complexity measurement of deep learning models in the post. Hopefully, it could shed light on your thinking path towards the understanding of why DNN can generalize."
+          }
+        ]
+      },
+      {
+        "id": "heading-bf200f1d66b8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Classic Theorems on Compression and Model Selection"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b5492ff59b2a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say we have a classification problem and a dataset, we can develop many models to solve it, from fitting a simple linear regression to memorizing the full dataset in disk space. Which one is better? If we only care about the accuracy over training data (especially given that testing data is likely unknown), the memorization approach seems to be the best — well, it doesn’t sound right."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-83d14d5733cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are many classic theorems to guide us when deciding what types of properties a good model should possess in such scenarios."
+          }
+        ]
+      },
+      {
+        "id": "heading-ae199681b3c2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Occam’s Razor"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-18f09dc800a2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://pespmc1.vub.ac.be/OCCAMRAZ.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Occam’s Razor"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is an informal principle for problem-solving, proposed by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/William_of_Ockham"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "William of Ockham"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in the 14th century:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-2694bfe30ede",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-ed8b14e97097",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“Simpler solutions are more likely to be correct than complex ones.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3bbbf3ad1e65",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The statement is extremely powerful when we are facing multiple candidates of underlying theories to explain the world and have to pick one. Too many unnecessary assumptions might seem to be plausible for one problem, but harder to be generalized to other complications or to eventually lead to the basic principles of the universe."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-39296e67a15d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Think of this, it took people hundreds of years to figure out that the sky is blue in the daytime but reddish at sunset are because of the same reason ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Rayleigh_scattering"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Rayleigh scattering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), although two phenomena look very different. People must have proposed many other explanations for them separately but the unified and simple version won eventually."
+          }
+        ]
+      },
+      {
+        "id": "heading-d534fb89683b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Minimum Description Length principle"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-ecf0071e9ed2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The principle of Occam’s Razor can be similarly applied to machine learning models. A formalized version of such concept is called the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Minimum Description Length (MDL)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " principle, used for comparing competing models / explanations given data observed."
+          }
+        ]
+      },
+      {
+        "id": "blockquote-b537fe136e4a",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-ef516241f7bd",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“Comprehension is compression.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9e8ba50e686e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The fundamental idea in MDL is to "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "view learning as data compression"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". By compressing the data, we need to discover regularity or patterns in the data with the high potentiality to generalize to unseen samples. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-09-28-information-bottleneck/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Information bottleneck"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " theory believes that a deep neural network is trained first to represent the data by minimizing the generalization error and then learn to compress this representation by trimming noise."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e9ae1eddb17b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meanwhile, MDL considers the model description as part of the compression delivery, so the model cannot be arbitrarily large."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-48c0c68e607d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "two-part version"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of MDL principle states that: Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{H}^{(1)}, \\mathcal{H}^{(2)}, \\dots"
+          },
+          {
+            "type": "text",
+            "text": " be a list of models that can explain the dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": ". The best hypothesis among them should be the one that minimizes the sum:"
+          }
+        ]
+      },
+      {
+        "id": "math-bc84358f1df6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{H}^\\text{best} = \\arg\\min_\\mathcal{H} [L(\\mathcal{H}) + L(\\mathcal{D}\\vert\\mathcal{H})]"
+        }
+      },
+      {
+        "id": "list-c52ed79c3e81",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-e8ba0f04eb0a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "L(\\mathcal{H})"
+              },
+              {
+                "type": "text",
+                "text": " is the length of the description of model "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{H}"
+              },
+              {
+                "type": "text",
+                "text": " in bits."
+              }
+            ]
+          },
+          {
+            "id": "list-item-057fc90deeb6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "L(\\mathcal{D}\\vert\\mathcal{H})"
+              },
+              {
+                "type": "text",
+                "text": " is the length of the description of the data "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{D}"
+              },
+              {
+                "type": "text",
+                "text": " in bits when encoded with "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{H}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cad9f2adcfae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In simple words, the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "best"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " model is the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "smallest"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " model containing the encoded data and the model itself. Following this criterion, the memorization approach I proposed at the beginning of the section sounds horrible no matter how good accuracy it can achieve on the training data."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ed6079eed41b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "People might argue Occam’s Razor is wrong, as given the real world can be arbitrarily complicated, why do we have to find simple models? One interesting view by MDL is to consider models as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "“languages”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " instead of fundamental generative theorems. We would like to find good compression strategies to describe regularity in a small set of samples, and they "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "do not have to be the “real” generative model"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for explaining the phenomenon. Models can be wrong but still useful (i.e., think of any Bayesian prior)."
+          }
+        ]
+      },
+      {
+        "id": "heading-5f218836d416",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Kolmogorov Complexity"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d0084a84cf7a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Kolmogorov Complexity relies on the concept of modern computers to define the algorithmic (descriptive) complexity of an object: It is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "the length of the shortest binary computer program that describes the object"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Following MDL, a computer is essentially the most general form of data decompressor."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9944c4be8afa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The formal definition of Kolmogorov Complexity states that: Given a universal computer "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{U}"
+          },
+          {
+            "type": "text",
+            "text": " and a program "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": ", let’s denote "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{U}(p)"
+          },
+          {
+            "type": "text",
+            "text": " as the output of the computer processing the program and "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(p)"
+          },
+          {
+            "type": "text",
+            "text": " as the descriptive length of the program. Then Kolmogorov Complexity "
+          },
+          {
+            "type": "inline_math",
+            "text": "K_\\mathcal{U}"
+          },
+          {
+            "type": "text",
+            "text": " of a string "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " with respect to a universal computer "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{U}"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-1edcb0f48d81",
+        "type": "math",
+        "attrs": {
+          "latex": "K_\\mathcal{U}(s) = \\min_{p: \\mathcal{U}(p)=s} L(p)"
+        }
+      },
+      {
+        "id": "paragraph-9dd8e40fbaa1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that a universal computer is one that can mimic the actions of any other computers. All modern computers are universal as they can all be reduced to Turing machines. The definition is universal no matter which computers we are using, because another universal computer can always be programmed to clone the behavior of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{U}"
+          },
+          {
+            "type": "text",
+            "text": ", while encoding this clone program is just a constant."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-90708aa7415e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are a lot of connections between Kolmogorov Complexity and Shannon Information Theory, as both are tied to universal coding. It is an amazing fact that the expected Kolmogorov Complexity of a random variable is approximately equal to its Shannon entropy (see Sec 2.3 of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://homepages.cwi.nl/~paulv/papers/info.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the report"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). More on this topic is out of the scope here, but there are many interesting readings online. Help yourself :)"
+          }
+        ]
+      },
+      {
+        "id": "heading-58c1259bc17c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Solomonoff’s Inference Theory"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-da58c809bedd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another mathematical formalization of Occam’s Razor is Solomonoff’s theory of universal inductive inference  ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.sciencedirect.com/science/article/pii/S0019995864902232"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Solomonoff"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.sciencedirect.com/science/article/pii/S0019995864901317"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "1964"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The principle is to favor models that correspond to the “shortest program” to produce the training data, based on its Kolmogorov complexity"
+          }
+        ]
+      },
+      {
+        "id": "heading-8e61aaa1eae4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Expressive Power of DL Models"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a099216e3de7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep neural networks have an extremely large number of parameters compared to the traditional statistical models. If we use MDL to measure the complexity of a deep neural network and consider the number of parameters as the model description length, it would look awful. The model description "
+          },
+          {
+            "type": "inline_math",
+            "text": "L(\\mathcal{H})"
+          },
+          {
+            "type": "text",
+            "text": " can easily grow out of control."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5de4aa99408d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, having numerous parameters is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "necessary"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for a neural network to obtain high expressivity power. Because of its great capability to capture any flexible data representation, deep neural networks have achieved great success in many applications."
+          }
+        ]
+      },
+      {
+        "id": "heading-0743bc4930a0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Universal Approximation Theorem"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7c000d7ed741",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Universal Approximation Theorem"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " states that a feedforward network with: 1) a linear output layer, 2) at least one hidden layer containing a finite number of neurons and 3) some activation function can approximate "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "any"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " continuous functions on a compact subset of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{R}^n"
+          },
+          {
+            "type": "text",
+            "text": " to arbitrary accuracy. The theorem was first proved for sigmoid activation function ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://pdfs.semanticscholar.org/05ce/b32839c26c8d2cb38d5529cf7720a68c3fab.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Cybenko, 1989"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Later it was shown that the universal approximation property is not specific to the choice of activation ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://zmjones.com/static/statistical-learning/hornik-nn-1991.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hornik, 1991"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") but the multilayer feedforward architecture."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8146498c8271",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Although a feedforward network with a single layer is sufficient to represent any function, the width has to be exponentially large. The universal approximation theorem does not guarantee whether the model can be learned or generalized properly. Often, adding more layers helps to reduce the number of hidden neurons needed in a shallow network."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0b9204e71e58",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To take advantage of the universal approximation theorem, we can always find a neural network to represent the target function with error under any desired threshold, but we need to pay the price — the network might grow super large."
+          }
+        ]
+      },
+      {
+        "id": "heading-d162036e4114",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Proof: Finite Sample Expressivity of Two-layer NN"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-6165284fd2f0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Universal Approximation Theorem we have discussed so far does not consider a finite sample set. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.03530"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang, et al. (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " provided a neat proof on the finite-sample expressivity of two-layer neural networks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-06df2aca073a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A neural network "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " can represent any function given a sample size "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " in "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " dimensions if: For every finite sample set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S \\subseteq \\mathbb{R}^d"
+          },
+          {
+            "type": "text",
+            "text": " with "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\vert S \\vert = n"
+          },
+          {
+            "type": "text",
+            "text": " and every function defined on this sample set: "
+          },
+          {
+            "type": "inline_math",
+            "text": "f: S \\mapsto \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": ", we can find a set of weight configuration for "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " so that "
+          },
+          {
+            "type": "inline_math",
+            "text": "C(\\boldsymbol{x}) = f(\\boldsymbol{x}), \\forall \\boldsymbol{x} \\in S"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f9b44e26dda5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The paper proposed a theorem:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-39f0c2569bcc",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-1c6f987326fa",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "There exists a two-layer neural network with ReLU activations and "
+              },
+              {
+                "type": "inline_math",
+                "text": "2n + d"
+              },
+              {
+                "type": "text",
+                "text": " weights that can represent any function on a sample of size "
+              },
+              {
+                "type": "inline_math",
+                "text": "n"
+              },
+              {
+                "type": "text",
+                "text": " in "
+              },
+              {
+                "type": "inline_math",
+                "text": "d"
+              },
+              {
+                "type": "text",
+                "text": " dimensions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c48e8d968efa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Proof."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " First we would like to construct a two-layer neural network "
+          },
+          {
+            "type": "inline_math",
+            "text": "C: \\mathbb{R}^d \\mapsto \\mathbb{R}"
+          },
+          {
+            "type": "text",
+            "text": ". The input is a "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional vector, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{x} \\in \\mathbb{R}^d"
+          },
+          {
+            "type": "text",
+            "text": ". The hidden layer has "
+          },
+          {
+            "type": "inline_math",
+            "text": "h"
+          },
+          {
+            "type": "text",
+            "text": " hidden units, associated with a weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W} \\in \\mathbb{R}^{d\\times h}"
+          },
+          {
+            "type": "text",
+            "text": ", a bias vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "-\\mathbf{b} \\in \\mathbb{R}^h"
+          },
+          {
+            "type": "text",
+            "text": " and ReLU activation function. The second layer outputs a scalar value with weight vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{v} \\in \\mathbb{R}^h"
+          },
+          {
+            "type": "text",
+            "text": " and zero biases."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b61ae6a31fab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The output of network "
+          },
+          {
+            "type": "inline_math",
+            "text": "C"
+          },
+          {
+            "type": "text",
+            "text": " for a input vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{x}"
+          },
+          {
+            "type": "text",
+            "text": " can be represented as follows:"
+          }
+        ]
+      },
+      {
+        "id": "math-d2a101069c85",
+        "type": "math",
+        "attrs": {
+          "latex": "C(\\boldsymbol{x}) \n= \\boldsymbol{v} \\max\\{ \\boldsymbol{x}\\mathbf{W} - \\boldsymbol{b}, 0\\}^\\top\n= \\sum_{i=1}^h v_i \\max\\{\\boldsymbol{x}\\boldsymbol{W}_{(:,i)} - b_i, 0\\}"
+        }
+      },
+      {
+        "id": "paragraph-f2b4bdc36492",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{W}_{(:,i)}"
+          },
+          {
+            "type": "text",
+            "text": " is the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th column in the "
+          },
+          {
+            "type": "inline_math",
+            "text": "d \\times h"
+          },
+          {
+            "type": "text",
+            "text": " matrix."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-862675f9f17f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a sample set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S = \\{\\boldsymbol{x}_1, \\dots, \\boldsymbol{x}_n\\}"
+          },
+          {
+            "type": "text",
+            "text": " and target values "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{y} = \\{y_1, \\dots, y_n \\}"
+          },
+          {
+            "type": "text",
+            "text": ", we would like to find proper weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W} \\in \\mathbb{R}^{d\\times h}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{b}, \\boldsymbol{v} \\in \\mathbb{R}^h"
+          },
+          {
+            "type": "text",
+            "text": " so that "
+          },
+          {
+            "type": "inline_math",
+            "text": "C(\\boldsymbol{x}_i) = y_i, \\forall i=1,\\dots,n"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e667e5020eec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s combine all sample points into one batch as one input matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{X} \\in \\mathbb{R}^{n \\times d}"
+          },
+          {
+            "type": "text",
+            "text": ". If set "
+          },
+          {
+            "type": "inline_math",
+            "text": "h=n"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{X}\\mathbf{W} - \\boldsymbol{b}"
+          },
+          {
+            "type": "text",
+            "text": " would be a square matrix of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "n \\times n"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-47be69baf327",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{M}_\\text{ReLU} \n= \\max\\{\\mathbf{X}\\mathbf{W} - \\boldsymbol{b}, 0 \\} \n= \\begin{bmatrix}\n\\boldsymbol{x}_1\\mathbf{W} - \\boldsymbol{b} \\\\\n\\dots \\\\\n\\boldsymbol{x}_n\\mathbf{W} - \\boldsymbol{b} \\\\\n\\end{bmatrix}\n= [\\boldsymbol{x}_i\\boldsymbol{W}_{(:,j)} - b_j]_{i \\times j}"
+        }
+      },
+      {
+        "id": "paragraph-839ee7749bd9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can simplify "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}"
+          },
+          {
+            "type": "text",
+            "text": " to have the same column vectors across all the columns:"
+          }
+        ]
+      },
+      {
+        "id": "math-9c35cbb66a47",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{W}_{(:,j)} = \\boldsymbol{w} \\in \\mathbb{R}^{d}, \\forall j = 1, \\dots, n"
+        }
+      },
+      {
+        "id": "image-470a00ac0540",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/nn-expressivity-proof.png",
+          "alt": "Fit models on CIFAR10 with random labels or random pixels: (a) learning curves; (b-c) label corruption ratio is the percentage of randomly shuffled labels. (Image source: Zhang et al. 2017 )"
+        }
+      },
+      {
+        "id": "paragraph-52bbdb441e9d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let "
+          },
+          {
+            "type": "inline_math",
+            "text": "a_i = \\boldsymbol{x}_i \\boldsymbol{w}"
+          },
+          {
+            "type": "text",
+            "text": ", we would like to find a suitable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{w}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{b}"
+          },
+          {
+            "type": "text",
+            "text": " such that "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_1 < a_1 < b_2 < a_2 < \\dots < b_n < a_n"
+          },
+          {
+            "type": "text",
+            "text": ". This is always achievable because we try to solve "
+          },
+          {
+            "type": "inline_math",
+            "text": "n+d"
+          },
+          {
+            "type": "text",
+            "text": " unknown variables with "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " constraints and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{x}_i"
+          },
+          {
+            "type": "text",
+            "text": " are independent (i.e. pick a random "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{w}"
+          },
+          {
+            "type": "text",
+            "text": ", sort "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{x}_i \\boldsymbol{w}"
+          },
+          {
+            "type": "text",
+            "text": " and then set "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_j"
+          },
+          {
+            "type": "text",
+            "text": "’s as values in between). Then "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{M}_\\text{ReLU}"
+          },
+          {
+            "type": "text",
+            "text": " becomes a lower triangular matrix:"
+          }
+        ]
+      },
+      {
+        "id": "math-f50cf7b930fb",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{M}_\\text{ReLU} = [a_i - b_j]_{i \\times j}\n= \\begin{bmatrix}\na_1 - b_1 & 0        & 0  & \\dots & 0 \\\\\n\\vdots &  \\ddots  & &  & \\vdots \\\\\na_i - b_1 & \\dots & a_i - b_i & \\dots & 0\\\\\n\\vdots &    & & \\ddots & \\vdots \\\\\na_n - b_1 & a_n - b_2 & \\dots & \\dots & a_n - b_n \\\\\n\\end{bmatrix}"
+        }
+      },
+      {
+        "id": "paragraph-80609b6f59d6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is a nonsingular square matrix as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det(\\mathbf{M}_\\text{ReLU}) \\neq 0"
+          },
+          {
+            "type": "text",
+            "text": ", so we can always find suitable "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{v}"
+          },
+          {
+            "type": "text",
+            "text": " to solve "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{v}\\mathbf{M}_\\text{ReLU}=\\boldsymbol{y}"
+          },
+          {
+            "type": "text",
+            "text": " (In other words, the column space of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{M}_\\text{ReLU}"
+          },
+          {
+            "type": "text",
+            "text": " is all of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{R}^n"
+          },
+          {
+            "type": "text",
+            "text": " and we can find a linear combination of column vectors to obtain any "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\boldsymbol{y}"
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "heading-a24f764bc8aa",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep NN can Learn Random Noise"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-82e512530ffa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As we know two-layer neural networks are universal approximators, it is less surprising to see that they are able to learn unstructured random noise perfectly, as shown in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.03530"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang, et al. (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". If labels of image classification dataset are randomly shuffled, the high expressivity power of deep neural networks can still empower them to achieve near-zero training loss. These results do not change with regularization terms added."
+          }
+        ]
+      },
+      {
+        "id": "image-597363b4e086",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/fit-random-labels.png",
+          "alt": "Fit models on CIFAR10 with random labels or random pixels: (a) learning curves; (b-c) label corruption ratio is the percentage of randomly shuffled labels. (Image source: Zhang et al. 2017 )"
+        }
+      },
+      {
+        "id": "heading-2ba1dbc28e67",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Are Deep Learning Models Dramatically Overfitted?"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a501309c74e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep learning models are heavily over-parameterized and can often get to perfect results on training data. In the traditional view, like bias-variance trade-offs, this could be a disaster that nothing may generalize to the unseen test data. However, as is often the case, such “overfitted” (training error = 0) deep learning models still present a decent performance on out-of-sample test data. Hmm … interesting and why?"
+          }
+        ]
+      },
+      {
+        "id": "heading-cfe6052b363f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Modern Risk Curve for Deep Learning"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-f69d577a9323",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The traditional machine learning uses the following U-shape risk curve to measure the bias-variance trade-offs and quantify how generalizable a model is. If I get asked how to tell whether a model is overfitted, this would be the first thing popping into my mind."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6ec4889b4d85",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As the model turns larger (more parameters added), the training error decreases to close to zero, but the test error (generalization error) starts to increase once the model complexity grows to pass the threshold between “underfitting” and “overfitting”.  In a way, this is well aligned with Occam’s Razor."
+          }
+        ]
+      },
+      {
+        "id": "image-43253a3c6951",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/bias-variance-risk-curve.png",
+          "alt": "U-shaped bias-variance risk curve. (Image source: (left) paper (right) fig. 6 of this post )"
+        }
+      },
+      {
+        "id": "paragraph-1ca740023558",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Unfortunately this does not apply to deep learning models. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1812.11118"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Belkin et al. (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " reconciled the traditional bias-variance trade-offs and proposed a new double-U-shaped risk curve for deep neural networks. Once the number of network parameters is high enough, the risk curve enters another regime."
+          }
+        ]
+      },
+      {
+        "id": "image-0acdd59f699b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/new-bias-variance-risk-curve.png",
+          "alt": "A new double-U-shaped bias-variance risk curve for deep neural networks. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-842528eb9cb4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The paper claimed that it is likely due to two reasons:"
+          }
+        ]
+      },
+      {
+        "id": "list-f66c226bf50d",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9db91d5f8256",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The number of parameters is not a good measure of "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "inductive bias"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", defined as the set of assumptions of a learning algorithm used to predict for unknown samples. See more discussion on DL model complexity in "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#intrinsic-dimension"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "later"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#heterogeneous-layer-robustness"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "sections"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ea0c0791460d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Equipped with a larger model, we might be able to discover larger function classes and further find interpolating functions that have smaller norm and are thus “simpler”."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-21d7064c1f35",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The double-U-shaped risk curve was observed empirically, as shown in the paper. However I was struggling quite a bit to reproduce the results. There are some signs of life, but in order to generate a pretty smooth curve similar to the theorem, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/#experiments"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "many details"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in the experiment have to be taken care of."
+          }
+        ]
+      },
+      {
+        "id": "image-8c90850a7729",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/new-risk-curve-mnist.png",
+          "alt": "Training and evaluation errors of a one hidden layer fc network of different numbers of hidden units, trained on 4000 data points sampled from MNIST. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "heading-03096a2b20eb",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Regularization is not the Key to Generalization"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-94e39b68f010",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Regularization is a common way to control overfitting and improve model generalization performance. Interestingly some research ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.03530"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") has shown that explicit regularization (i.e. data augmentation, weight decay and dropout) is neither necessary or sufficient for reducing generalization error."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-daa3cad5639e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Taking the Inception model trained on CIFAR10 as an example (see Fig. 5), regularization techniques help with out-of-sample generalization but not much. No single regularization seems to be critical independent of other terms. Thus, it is unlikely that regularizers are the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fundamental reason"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for generalization."
+          }
+        ]
+      },
+      {
+        "id": "image-4b554d094d07",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/regularization-generalization-test.png",
+          "alt": "The accuracy of Inception model trained on CIFAR10 with different combinations of taking on or off data augmentation and weight decay. (Image source: Table 1 in the original paper )"
+        }
+      },
+      {
+        "id": "heading-0918692eb2d4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Intrinsic Dimension"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-d2bb88daf0a6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The number of parameters is not correlated with model overfitting in the field of deep learning, suggesting that parameter counting cannot indicate the true complexity of deep neural networks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-002ad17d7a69",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Apart from parameter counting, researchers have proposed many ways to quantify the complexity of these models, such as the number of degrees of freedom of models ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1603.09260"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gao & Jojic, 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), or prequential code ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1802.07044"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Blier & Ollivier, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0b62a9cd6969",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I would like to discuss a recent method on this matter, named "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "intrinsic dimension"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.08838"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Li et al, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). Intrinsic dimension is intuitive, easy to measure, while still revealing many interesting properties of models of different sizes."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-81e8bc639588",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Considering a neural network with a great number of parameters, forming a high-dimensional parameter space,  the learning happens on this high-dimensional "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "objective landscape"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".\nThe shape of the parameter space manifold is critical. For example, a smoother manifold is beneficial for optimization by providing more predictive gradients and allowing for larger learning rates—this was claimed to be the reason why batch normalization has succeeded in stabilizing training ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.11604"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Santurkar, et al, 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2e7e4f0f4506",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Even though the parameter space is huge, fortunately we don’t have to worry too much about the optimization process getting stuck in local optima, as it has been "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1406.2572"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "shown"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " that local optimal points in the objective landscape almost always lay in saddle-points rather than valleys. In other words, there is always a subset of dimensions containing paths to leave local optima and keep on exploring."
+          }
+        ]
+      },
+      {
+        "id": "image-24969b5994c2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/optimization-landscape-shape.png",
+          "alt": "Illustrations of various types of critical points on the parameter optimization landscape. (Image source: here )"
+        }
+      },
+      {
+        "id": "paragraph-5fb2c9b3a581",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One intuition behind the measurement of intrinsic dimension is that, since the parameter space has such high dimensionality, it is probably not necessary to exploit all the dimensions to learn efficiently. If we only travel through a slice of objective landscape and still can learn a good solution, the complexity of the resulting model is likely lower than what it appears to be by parameter-counting. This is essentially what intrinsic dimension tries to assess."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e0915337c342",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Say a model has "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " dimensions and its parameters are denoted as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{(D)}"
+          },
+          {
+            "type": "text",
+            "text": ". For learning, a smaller "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional subspace is randomly sampled, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{(d)}"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "d < D"
+          },
+          {
+            "type": "text",
+            "text": ". During one optimization update, rather than taking a gradient step according to all "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " dimensions, only the smaller subspace "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{(d)}"
+          },
+          {
+            "type": "text",
+            "text": " is used and remapped to update model parameters."
+          }
+        ]
+      },
+      {
+        "id": "image-b223ed283261",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/intrinsic-dimension-illustration.png",
+          "alt": "Illustration of parameter vectors for direct optimization when $D=3$. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-e5c0eaaf1b46",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The gradient update formula looks like the follows:"
+          }
+        ]
+      },
+      {
+        "id": "math-f503a09698c0",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta^{(D)} = \\theta_0^{(D)} + \\mathbf{P} \\theta^{(d)}"
+        }
+      },
+      {
+        "id": "paragraph-30bbb1e90d7f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta_0^{(D)}"
+          },
+          {
+            "type": "text",
+            "text": " are the initialization values and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}"
+          },
+          {
+            "type": "text",
+            "text": " is a "
+          },
+          {
+            "type": "inline_math",
+            "text": "D \\times d"
+          },
+          {
+            "type": "text",
+            "text": " projection matrix that is randomly sampled before training. Both "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta_0^{(D)}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}"
+          },
+          {
+            "type": "text",
+            "text": " are not trainable and fixed during training. "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{(d)}"
+          },
+          {
+            "type": "text",
+            "text": " is initialized as all zeros."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d3bd85cad605",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "By searching through the value of "
+          },
+          {
+            "type": "inline_math",
+            "text": "d = 1, 2, \\dots, D"
+          },
+          {
+            "type": "text",
+            "text": ", the corresponding "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": " when the solution emerges is defined as the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "intrinsic dimension"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4331f0488cca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It turns out many problems have much smaller intrinsic dimensions than the number of parameters. For example, on CIFAR10 image classification, a fully-connected network with 650k+ parameters has only 9k intrinsic dimension and a convolutional network containing 62k parameters has an even lower intrinsic dimension of 2.9k."
+          }
+        ]
+      },
+      {
+        "id": "image-233340df4f95",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/intrinsic-dimension.png",
+          "alt": "The measured intrinsic dimensions $d$ for various models achieving 90% of the best performance. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-607d53cf8618",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The measurement of intrinsic dimensions suggests that deep learning models are significantly simpler than what they might appear to be."
+          }
+        ]
+      },
+      {
+        "id": "heading-6ed794d548ca",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Heterogeneous Layer Robustness"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7c3237c3780f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.01996"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Zhang et al. (2019)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " investigated the role of parameters in different layers. The fundamental question raised by the paper is:  "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“are all layers created equal?”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " The short answer is: No. The model is more sensitive to changes in some layers but not others."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c026f09af6f4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The paper proposed two types of operations that can be applied to parameters of the "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell"
+          },
+          {
+            "type": "text",
+            "text": "-th layer, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell = 1, \\dots, L"
+          },
+          {
+            "type": "text",
+            "text": ", at time "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^{(\\ell)}_t"
+          },
+          {
+            "type": "text",
+            "text": " to test their impacts on model robustness:"
+          }
+        ]
+      },
+      {
+        "id": "list-518add70d183",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-45bed3c8c4a4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Re-initialization"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Reset the parameters to the initial values, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta^{(\\ell)}_t \\leftarrow \\theta^{(\\ell)}_0"
+              },
+              {
+                "type": "text",
+                "text": ". The performance of a network in which layer "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\ell"
+              },
+              {
+                "type": "text",
+                "text": " was re-initialized is referred to as the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "re-initialization robustness"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " of layer "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\ell"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-f0499ac6d253",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Re-randomization"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Re-sampling the layer’s parameters at random, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta^{(\\ell)}_t \\leftarrow \\tilde{\\theta}^{(\\ell)} \\sim \\mathcal{P}^{(\\ell)}"
+              },
+              {
+                "type": "text",
+                "text": ". The corresponding network performance is called the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "re-randomization robustness"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " of layer "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\ell"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f88f0acee890",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Layers can be categorized into two categories with the help of these two operations:"
+          }
+        ]
+      },
+      {
+        "id": "list-ebf301d8fce7",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-996fc5caf2b4",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Robust Layers"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The network has no or only negligible performance degradation after re-initializing or re-randomizing the layer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9c7aea72cf3b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Critical Layers"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": Otherwise."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0486911a1d06",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar patterns are observed on fully-connected and convolutional networks. Re-randomizing any of the layers "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "completely destroys"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " the model performance, as the prediction drops to random guessing immediately. More interestingly and surprisingly, when applying re-initialization, only the first or the first few layers (those closest to the input layer) are critical, while re-initializing higher levels causes "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "only negligible decrease"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in performance."
+          }
+        ]
+      },
+      {
+        "id": "image-f331563cadba",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer-robustness-results.png",
+          "alt": "(a) A fc network trained on MNIST. Each row corresponds to one layer in the network. The first column is re-randomization robustness of each layer and the rest of the columns indicate re-initialization robustness at different training time. (b) VGG11 model (conv net) trained on CIFAR 10. Similar representation as in (a) but rows and columns are transposed. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-9464768a637c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ResNet is able to use shortcuts between non-adjacent layers to re-distribute the sensitive layers across the networks rather than just at the bottom. With the help of residual block architecture, the network can "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "evenly be robust to re-randomization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Only the first layer of each residual block is still sensitive to both re-initialization and re-randomization. If we consider each residual block as a local sub-network, the robustness pattern resembles the fc and conv nets above."
+          }
+        ]
+      },
+      {
+        "id": "image-4c7b53f5d142",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer-robustness-resnet.png",
+          "alt": "Re-randomization (first row) and re-initialization (the reset rows) robustness of layers in ResNet-50 model trained on CIFAR10. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-40ad904ae5d0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Based on the fact that many top layers in deep neural networks are not critical to the model performance after re-initialization, the paper loosely concluded that:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-ec5606ee7c09",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-93d22207f7fc",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "“Over-capacitated deep networks trained with stochastic gradient have low-complexity due to self-restricting the number of critical layers.”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0c7f81f1b41a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can consider re-initialization as a way to reduce the effective number of parameters, and thus the observation is aligned with what intrinsic dimension has demonstrated."
+          }
+        ]
+      },
+      {
+        "id": "heading-9ceb235c9357",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Lottery Ticket Hypothesis"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7a512a6d9696",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The lottery ticket hypothesis ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.03635"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Frankle & Carbin, 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is another intriguing and inspiring discovery, supporting that only a subset of network parameters have impact on the model performance and thus the network is not overfitted. The lottery ticket hypothesis states that a randomly initialized, dense, feed-forward network contains a pool of subnetworks and among them only a subset are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“winning tickets”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " which can achieve the optimal performance when "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "trained in isolation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b0eaed619937",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The idea is motivated by network pruning techniques — removing unnecessary weights (i.e. tiny weights that are almost negligible) without harming the model performance. Although the final network size can be reduced dramatically, it is hard to train such a pruned network architecture successfully from scratch. It feels like in order to successfully train a neural network, we need a large number of parameters, but we don’t need that many parameters to keep the accuracy high once the model is trained. Why is that?"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ab45782dc38c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The lottery ticket hypothesis did the following experiments:"
+          }
+        ]
+      },
+      {
+        "id": "list-7f5c1e774442",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-e276d9e048bd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Randomly initialize a dense feed-forward network with initialization values "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta_0"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-9dcde4155d91",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Train the network for multiple iterations to achieve a good performance with parameter config "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-b7a519fea1f8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Run pruning on "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta"
+              },
+              {
+                "type": "text",
+                "text": " and creating a mask "
+              },
+              {
+                "type": "inline_math",
+                "text": "m"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-affc312fa218",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The “winning ticket” initialization config is "
+              },
+              {
+                "type": "inline_math",
+                "text": "m \\odot \\theta_0"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-887c093e859b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Only training the small “winning ticket” subset of parameters with the initial values as found in step 1, the model is able to achieve the same level of accuracy as in step 2. It turns out a large parameter space is not needed in the final solution representation, but needed for training as it provides a big pool of initialization configs of many much smaller subnetworks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-95e473dff828",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The lottery ticket hypothesis opens a new perspective about interpreting and dissecting deep neural network results. Many interesting following-up works are on the way."
+          }
+        ]
+      },
+      {
+        "id": "heading-86479cbe1a51",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Experiments"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-19eec0a97193",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After seeing all the interesting findings above, it should be pretty fun to reproduce them. Some results are easily to reproduce than others. Details are described below. My code is available on github "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/generalization-experiment"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "lilianweng/generalization-experiment"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b3f279e7cfc5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "New Risk Curve for DL Models"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4b7f126a91b6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This is the trickiest one to reproduce. The authors did give me a lot of good advice and I appreciate it a lot. Here are a couple of noticeable settings in their experiments:"
+          }
+        ]
+      },
+      {
+        "id": "list-0bdb98bb6871",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-49db8012e40f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "There are no regularization terms like weight decay, dropout."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e22673711b46",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In Fig 3, the training set contains 4k samples. It is only sampled once and fixed for all the models. The evaluation uses the full MNIST test set."
+              }
+            ]
+          },
+          {
+            "id": "list-item-4aa73dfd446a",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Each network is trained for a long time to achieve near-zero training risk. The learning rate is adjusted differently for models of different sizes."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c41577603251",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "To make the model less sensitive to the initialization in the under-parameterization region, their experiments adopted a "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "“weight reuse”"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " scheme: the parameters obtained from training a smaller neural network are used as initialization for training larger networks."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d3bf33302f7c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "I did not train or tune each model long enough to get perfect training performance, but evaluation error indeed shows a special twist around the interpolation threshold, different from training error. For example, for MNIST, the threshold is the number of training samples times the number of classes (10), that is 40000."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f04c76c3293e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The x-axis is the number of model parameters: (28 * 28 + 1) * num. units + num. units * 10, in logarithm."
+          }
+        ]
+      },
+      {
+        "id": "image-a29a934e96c5",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/risk_curve_loss-mse_sample-4000_epoch-500.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "paragraph-4da78eedf0f5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Layers are not Created Equal"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-99799de01eb2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This one is fairly easy to reproduce. See my implementation "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/generalization-experiment/blob/master/layer_equality.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b76e56e1ab7a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the first experiment, I used a three-layer fc networks with 256 units in each layer. Layer 0 is the input layer while layer 3 is the output. The network is trained on MNIST for 100 epochs."
+          }
+        ]
+      },
+      {
+        "id": "image-2fcee049e830",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer_equality_256x3.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "paragraph-9683f26bade6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the second experiment, I used a four-layer fc networks with 128 units in each layer. Other settings are the same as experiment 1."
+          }
+        ]
+      },
+      {
+        "id": "image-1ba0f287f050",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer_equality_128x4.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "paragraph-0e39a7af816d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Intrinsic Dimension Measurement"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f89b2f62e0ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To correctly map the "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional subspace to the full parameter space, the projection matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}"
+          },
+          {
+            "type": "text",
+            "text": " should have orthogonal columns. Because the production "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}\\theta^{(d)}"
+          },
+          {
+            "type": "text",
+            "text": " is the sum of columns of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}"
+          },
+          {
+            "type": "text",
+            "text": " scaled by corresponding scalar values in the "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "-dim vector, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sum_{i=1}^d \\theta^{(d)}_i \\mathbf{P}^\\top_{(:,i)}"
+          },
+          {
+            "type": "text",
+            "text": ", it is better to fully utilize the subspace with orthogonal columns in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f49b2eb15f4d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "My implementation follows a naive approach by sampling a large matrix with independent entries from a standard normal distribution. The columns are expected to be independent in a high dimension space and thus to be orthogonal. This works when the dimension is not too large. When exploring with a large "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": ", there are methods for creating sparse projection matrices, which is what the intrinsic dimension paper suggested."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9583efb7cf3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here are experiment runs on two networks: (left) a two-layer fc network with 64 units in each layer and (right) a one-layer fc network with 128 hidden units, trained on 10% of MNIST. For every "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": ", the model is trained for 100 epochs. See the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/generalization-experiment/blob/master/intrinsic_dimensions.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/lilianweng/generalization-experiment/blob/master/intrinsic_dimensions_measurement.py"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-e2eea4a2f27f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/intrinsic-dimension-net-64-64-and-128.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-7654bb22cb87",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2019overfit,\n  title   = \"Are Deep Neural Networks Dramatically Overfitted?\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2019\",\n  url     = \"https://lilianweng.github.io/posts/2019-03-14-overfit/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-37460ab6cb0d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "References"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b2f619578eca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Wikipedia page on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Occam%27s_razor"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Occam’s Razor"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ba28add4cd05",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://pespmc1.vub.ac.be/OCCAMRAZ.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Occam’s Razor"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on Principia Cybernetica Web."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-121b9765f308",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Peter Grunwald. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/math/0406077"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“A Tutorial Introduction to the Minimum Description Length Principle”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". 2004."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-45229a14daae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Ian Goodfellow, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.deeplearningbook.org/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Deep Learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". 2016. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.deeplearningbook.org/contents/mlp.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sec 6.4.1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a265cf44e456",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Zhang, Chiyuan, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1611.03530"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Understanding deep learning requires rethinking generalization.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3cc828321627",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Shibani Santurkar, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1805.11604"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“How does batch normalization help optimization?.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c1bd6e90392c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Mikhail Belkin, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1812.11118"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reconciling modern machine learning and the bias-variance trade-off.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1812.11118, 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5e8b243be297",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Chiyuan Zhang, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1902.01996"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Are All Layers Created Equal?”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1902.01996, 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-54c50953f679",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Chunyuan Li, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1804.08838"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Measuring the intrinsic dimension of objective landscapes.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9272732e5dc2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10]  Jonathan Frankle and Michael Carbin. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.03635"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The lottery ticket hypothesis: Finding sparse, trainable neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2019."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "are-deep-neural-networks-dramatically-overfitted",
+    "source_slug": "2019-03-14-overfit",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 17,
+      "math": 7,
+      "image": 15,
+      "table": 0,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/nn-expressivity-proof.png",
+      "alt": "Fit models on CIFAR10 with random labels or random pixels: (a) learning curves; (b-c) label corruption ratio is the percentage of randomly shuffled labels. (Image source: Zhang et al. 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/fit-random-labels.png",
+      "alt": "Fit models on CIFAR10 with random labels or random pixels: (a) learning curves; (b-c) label corruption ratio is the percentage of randomly shuffled labels. (Image source: Zhang et al. 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/bias-variance-risk-curve.png",
+      "alt": "U-shaped bias-variance risk curve. (Image source: (left) paper (right) fig. 6 of this post )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/new-bias-variance-risk-curve.png",
+      "alt": "A new double-U-shaped bias-variance risk curve for deep neural networks. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/new-risk-curve-mnist.png",
+      "alt": "Training and evaluation errors of a one hidden layer fc network of different numbers of hidden units, trained on 4000 data points sampled from MNIST. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/regularization-generalization-test.png",
+      "alt": "The accuracy of Inception model trained on CIFAR10 with different combinations of taking on or off data augmentation and weight decay. (Image source: Table 1 in the original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/optimization-landscape-shape.png",
+      "alt": "Illustrations of various types of critical points on the parameter optimization landscape. (Image source: here )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/intrinsic-dimension-illustration.png",
+      "alt": "Illustration of parameter vectors for direct optimization when $D=3$. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/intrinsic-dimension.png",
+      "alt": "The measured intrinsic dimensions $d$ for various models achieving 90% of the best performance. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer-robustness-results.png",
+      "alt": "(a) A fc network trained on MNIST. Each row corresponds to one layer in the network. The first column is re-randomization robustness of each layer and the rest of the columns indicate re-initialization robustness at different training time. (b) VGG11 model (conv net) trained on CIFAR 10. Similar representation as in (a) but rows and columns are transposed. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer-robustness-resnet.png",
+      "alt": "Re-randomization (first row) and re-initialization (the reset rows) robustness of layers in ResNet-50 model trained on CIFAR10. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/risk_curve_loss-mse_sample-4000_epoch-500.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer_equality_256x3.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/layer_equality_128x4.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2019-03-14-overfit/intrinsic-dimension-net-64-64-and-128.png",
+      "alt": ""
+    }
+  ]
+}

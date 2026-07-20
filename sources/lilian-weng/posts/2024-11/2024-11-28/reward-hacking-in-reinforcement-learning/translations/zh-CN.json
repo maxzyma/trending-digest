@@ -1,0 +1,4649 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:99da73635a1800451d546644414161325c9fcd1455e971df5bf3dce987bbdd4e",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "强化学习中的奖励欺骗",
+  "segments": {
+    "paragraph-a96671960ab0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励欺骗发生在当一个"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/(https:/lilianweng.github.io/posts/2018-02-19-rl-overview/)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "强化学习 (RL)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "智能体"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-01-23-multi-armed-bandit/#exploitation-vs-exploration"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "利用"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "奖励函数中的缺陷或模糊性来获得高奖励，而没有真正学习或完成预期任务时。奖励欺骗之所以存在，是因为强化学习环境通常不完善，并且准确指定奖励函数本身就具有挑战性。"
+        }
+      ]
+    },
+    "paragraph-a7543ee4e2e3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "语言模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在广泛任务中实现泛化，且RLHF成为对齐训练的事实标准方法，语言模型RL训练中的奖励欺骗已成为一个关键的实际挑战。模型学习修改单元测试以通过编码任务的案例，或响应中包含模仿用户偏好的偏差的案例，都相当令人担忧，并且很可能是AI模型更自主用例在实际部署中的主要障碍之一。"
+        }
+      ]
+    },
+    "paragraph-3393022ef437": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "过去关于这个话题的大部分工作都相当理论化，侧重于定义或证明奖励欺骗的存在。然而，对实际缓解措施的研究，特别是在RLHF和LLM的背景下，仍然有限。我特别呼吁未来投入更多的研究精力来理解和开发奖励欺骗的缓解措施。希望我很快能在一篇专门的帖子中介绍缓解部分。"
+        }
+      ]
+    },
+    "heading-bdb6b59751ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "背景"
+        }
+      ]
+    },
+    "heading-342f4c34af14": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强化学习中的奖励函数"
+        }
+      ]
+    },
+    "paragraph-1c403065741d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励函数定义了任务，而奖励塑形显著影响"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "强化学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中的学习效率和准确性。为强化学习任务设计奖励函数常常感觉像是一门‘黑魔法’。许多因素导致了这种复杂性：你如何将一个大目标分解成小目标？奖励是稀疏的还是密集的？你如何衡量成功？各种选择可能导致良好或有问题的学习动态，包括不可学习的任务或可被利用的奖励函数。关于如何在强化学习中进行奖励塑形的研究历史悠久。"
+        }
+      ]
+    },
+    "paragraph-1dc264f53a9d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ng 等人于 1999 年发表的一篇论文中"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，作者研究了如何修改"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-02-19-rl-overview/#markov-decision-processes"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "马尔可夫决策过程（MDP）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中的奖励函数，使得最优策略保持不变。他们发现线性变换是有效的。给定一个 MDP"
+        },
+        {
+          "type": "inline_math",
+          "text": "M = (S, A, T, \\gamma, R)"
+        },
+        {
+          "type": "text",
+          "text": "，我们希望创建一个转换后的 MDP"
+        },
+        {
+          "type": "inline_math",
+          "text": "M’ = (S, A, T, \\gamma, R’)"
+        },
+        {
+          "type": "text",
+          "text": "，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "R’ = R + F"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "F: S \\times A \\times S \\mapsto \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "，这样我们就可以引导学习算法更高效。给定一个实值函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Phi: S \\mapsto \\mathbb{R}"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": "是一个基于势的塑形函数，如果对于所有"
+        },
+        {
+          "type": "inline_math",
+          "text": "s \\in S - {s_0}, a \\in A, s’ \\in S"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-208010631c81": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这将保证折现后的 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_math",
+          "text": "F(s_1, a_1, s_2) + \\gamma F(s_2, a_2, s_3) + \\dots"
+        },
+        {
+          "type": "text",
+          "text": " 之和最终为 0。如果 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F"
+        },
+        {
+          "type": "text",
+          "text": " 是一个基于势的塑形函数，那么它既是 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "充分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的，也是 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "必要"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的，以确保 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "M’"
+        },
+        {
+          "type": "text",
+          "text": " 共享相同的最优策略。"
+        }
+      ]
+    },
+    "paragraph-ff3b640e44fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 "
+        },
+        {
+          "type": "inline_math",
+          "text": "F(s, a, s’) = \\gamma \\Phi(s’) - \\Phi(s)"
+        },
+        {
+          "type": "text",
+          "text": " 时，如果我们进一步假设 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Phi(s_0) = 0"
+        },
+        {
+          "type": "text",
+          "text": "，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s_0"
+        },
+        {
+          "type": "text",
+          "text": " 是吸收态，并且 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\gamma=1"
+        },
+        {
+          "type": "text",
+          "text": "，那么对于所有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s \\in S, a \\in A"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-da2bd6282f22": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种形式的奖励塑形允许我们将启发式方法纳入奖励函数，以加速学习，同时不影响最优策略。"
+        }
+      ]
+    },
+    "heading-22b8cd8dce86": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "虚假相关"
+        }
+      ]
+    },
+    "paragraph-4b4bf7e23618": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分类任务中的虚假相关或捷径学习（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2004.07780"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Geirhos et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是一个与奖励作弊密切相关的概念。虚假或捷径特征可能导致分类器无法按预期学习和泛化。例如，如果所有狼的训练图像都包含雪，那么用于区分狼和哈士奇的二元分类器可能会过度拟合雪景背景（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1602.04938"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ribeiro et al. 2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-2bc2b6d2ecf1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Empirical_risk_minimization"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ERM原则"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "指出，由于完整的数据分布未知，最小化训练数据上的损失是风险的合理替代，因此我们倾向于选择训练损失最低的模型。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.15775"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Nagarajan et al. (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "研究了ERM原则，并指出ERM在尝试无约束地拟合数据时，需要依赖所有类型的信息特征，包括不可靠的虚假特征。他们的实验表明，无论任务多么简单，ERM都会依赖虚假特征。"
+        }
+      ]
+    },
+    "heading-4ff3f3bc28b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让我们定义奖励作弊"
+        }
+      ]
+    },
+    "paragraph-4706ab63ba37": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强化学习中的奖励塑形具有挑战性。奖励作弊是指强化学习智能体利用奖励函数中的缺陷或模糊性来获得高奖励，而没有真正学习预期的行为或按设计完成任务。近年来，已经提出了几个相关概念，它们都指某种形式的奖励作弊："
+        }
+      ]
+    },
+    "list-item-572ff64d0317": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励作弊（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06565"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Amodei et al., 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-efd27da1581c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励腐败（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1705.08417"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Everitt et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-88d54d41786d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励篡改（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.04734"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Everitt et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-681f25b87f08": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "规范博弈（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Krakovna et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-81cba50fa83f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标鲁棒性（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.gatsby.ucl.ac.uk/~balaji/udl2021/accepted-papers/UDL2021-paper-055.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Koch et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-7410d9763bc8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标泛化错误 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2105.14111"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Langosco et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "list-item-97bbaae32085": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励错配 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "paragraph-53cd9c1ca808": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这个概念起源于 Amodei et al. (2016)，他们在其开创性论文 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06565"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Concrete Problems in AI Safety”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中提出了一系列关于人工智能安全的研究问题。他们将 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励欺骗"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 列为关键的人工智能安全问题之一。奖励欺骗指的是智能体通过不期望的行为来操纵奖励函数以获得高奖励的可能性。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "规范博弈"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Krakovna et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一个类似的概念，定义为一种行为，它满足了目标字面上的规范，但未能达到期望的结果。在这里，任务目标的字面描述和预期目标之间可能存在差距。"
+        }
+      ]
+    },
+    "paragraph-12f4a9a51886": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励塑形是一种用于丰富奖励函数的技术，通过提供更密集的奖励等方式，使智能体更容易学习。然而，设计不佳的奖励塑形机制可能会改变最优策略的轨迹。设计有效的奖励塑形机制本身就很难。与其归咎于设计不佳的奖励函数，不如更准确地承认，由于任务本身的复杂性、部分可观察状态、需要考虑的多个维度以及其他因素，设计一个好的奖励函数本质上是具有挑战性的。"
+        }
+      ]
+    },
+    "paragraph-76755b695827": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在分布外 (OOD) 环境中测试强化学习智能体时，鲁棒性失效可能由于以下原因发生："
+        }
+      ]
+    },
+    "list-item-0d3104832e2b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "即使目标正确，模型也未能有效泛化。当算法缺乏足够的智能或能力时，就会发生这种情况。"
+        }
+      ]
+    },
+    "list-item-ddfffc7882d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型能够有效地泛化，但追求的目标与训练时的目标不同。当代理奖励与真实奖励函数不同时，就会发生这种情况，"
+        },
+        {
+          "type": "inline_math",
+          "text": "R’ \\neq R"
+        },
+        {
+          "type": "text",
+          "text": "。这被称为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "目标鲁棒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.gatsby.ucl.ac.uk/~balaji/udl2021/accepted-papers/UDL2021-paper-055.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Koch et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 或 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "目标泛化错误"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2105.14111"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Langosco et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " )"
+        }
+      ]
+    },
+    "paragraph-ae0f9bbc1b74": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在两个强化学习环境 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/openai/coinrun"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "CoinRun"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/openai/procgen"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Maze"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中的实验表明了训练期间随机化的重要性。如果在训练期间，硬币或奶酪被放置在固定位置（即关卡的右端或迷宫的右上角），但在测试环境中硬币或奶酪被随机放置，那么智能体在测试时只会跑到固定位置而无法获得硬币或奶酪。当视觉特征（例如，奶酪或硬币）和位置特征（例如，右上角或右端）在测试时出现不一致时，就会产生冲突，导致训练好的模型偏好位置特征。我想指出的是，在这两个例子中，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励-结果差距"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是明显的，但在大多数现实世界案例中，这种类型的偏差不太可能如此明显。"
+        }
+      ]
+    },
+    "paragraph-f8d7a78f32a7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励篡改"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.04734"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Everitt et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 是一种奖励欺骗行为，智能体干扰奖励函数本身，导致观察到的奖励不再准确地代表预期目标。在奖励篡改中，模型通过直接操纵奖励函数的实现或间接改变用作奖励函数输入的环​​境信息来修改其奖励机制。"
+        }
+      ]
+    },
+    "paragraph-f8e5f8fd148d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(注：有些研究将奖励篡改定义为与奖励欺骗不同的失调行为类别。但我在这里将奖励欺骗视为一个更广泛的概念。)"
+        }
+      ]
+    },
+    "paragraph-b2862955025a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从宏观层面来看，奖励欺骗可以分为两种类型：环境或目标错配，以及奖励篡改。"
+        }
+      ]
+    },
+    "list-item-86173ff121b7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "环境或目标错配"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：模型通过欺骗环境或优化与真实奖励目标不一致的奖励函数（例如当奖励错配或缺乏关键要求时），学习到不期望的行为以获得高奖励。"
+        }
+      ]
+    },
+    "list-item-d92a0f518594": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励篡改"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：模型学习干扰奖励机制本身。"
+        }
+      ]
+    },
+    "heading-8356a7d08391": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例列表"
+        }
+      ]
+    },
+    "heading-895c3585fdf0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强化学习任务中的奖励欺骗示例"
+        }
+      ]
+    },
+    "list-item-e65ded76d22c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练来抓取物体的机器人手可以学会通过将手放在物体和摄像头之间来欺骗人们。("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/index/learning-from-human-preferences/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Link"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "list-item-1fbefc0977f2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练来最大化跳跃高度的智能体可能会利用物理模拟器中的一个错误来达到不切实际的高度。("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.03453"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Link"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "list-item-2fc104a25b3a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体被训练骑自行车到一个目标，并且每当它接近目标时都会获得奖励。然后智能体可能会学会在目标周围骑小圈，因为当智能体远离目标时没有惩罚。("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Link"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "list-item-99afb7388dd6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在足球比赛设置中，当智能体触球时会获得奖励，智能体学会停留在球旁边，以高频率触球，就像振动一样。("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Link"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "list-item-851768a54bc7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/blog/faulty-reward-functions/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Coast Runners 游戏"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中，智能体控制一艘船，目标是尽快完成赛艇比赛。当它因撞击赛道上的绿色方块而获得塑形奖励时，它将最优策略改为绕圈并反复撞击相同的绿色方块。("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Link"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")"
+        }
+      ]
+    },
+    "list-item-795a5bacd311": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1803.03453"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“数字进化的惊人创造力”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " (Lehman et al. 2019) - 这篇论文有许多关于优化错配适应度函数如何导致令人惊讶的“欺骗”或意想不到的进化或学习结果的例子。"
+        }
+      ]
+    },
+    "list-item-9f68043ebc33": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRPiprOaC3HsCf5Tuum8bRfzYUiKLRqJmbOoC-32JorNdfyTiRRsR7Ea5eWtvsWzuxo8bjOxCG84dAg/pubhtml"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "AI中规范博弈的例子"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "列表由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Krakovna et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "收集。"
+        }
+      ]
+    },
+    "heading-fe3ab3b8b16e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "LLM任务中的奖励作弊示例"
+        }
+      ]
+    },
+    "list-item-9f5fff6882ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个用于生成摘要的语言模型能够利用ROUGE指标的缺陷，从而获得高分，但生成的摘要却几乎不可读。（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://web.archive.org/web/20180215132021/https://www.salesforce.com/products/einstein/ai-research/tl-dr-reinforced-model-abstractive-summarization/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "链接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-b127975c09a2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个编码模型学会了修改单元测试以通过编程问题。（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2406.10162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "链接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-752ad87e961e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个编码模型可能会学会直接修改用于计算奖励的代码。（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2406.10162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "链接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "heading-d400dff5f90b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "现实生活中的奖励作弊示例"
+        }
+      ]
+    },
+    "list-item-fa5c179979df": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "社交媒体的推荐算法旨在提供有用的信息。然而，有用性通常通过代理指标来衡量，例如点赞或评论的数量，或在平台上的参与时间或频率。该算法最终推荐可能影响用户情绪状态的内容，例如令人发指和极端的内容，以触发更多的参与。（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.goodreads.com/en/book/show/204927599-nexus"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Harari, 2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-1335ec49af5a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "针对视频分享网站的错误指定代理指标进行优化，可能会积极增加用户的观看时间，而真正的目标是优化用户的主观幸福感。（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "链接"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）"
+        }
+      ]
+    },
+    "list-item-fc687638616a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/The_Big_Short"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“大空头”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " - 2008年由房地产泡沫引起的金融危机。当人们试图操纵金融系统时，我们的社会发生了奖励作弊。"
+        }
+      ]
+    },
+    "heading-35a58e8c8afa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为什么会存在奖励作弊？"
+        }
+      ]
+    },
+    "paragraph-c498c017e961": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Goodhart%27s_law"
+          },
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "古德哈特定律"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "指出"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "“当一个衡量标准成为目标时，它就不再是一个好的衡量标准”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。其直觉是，一旦施加显著压力来优化一个好的指标，它就可能被破坏。指定一个100%准确的奖励目标是具有挑战性的，任何"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "代理"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "都面临被作弊的风险，因为强化学习算法会利用奖励函数定义中的任何微小缺陷。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.lesswrong.com/posts/EbFABnst8LsidYs5Y/goodhart-taxonomy"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Garrabrant (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "将古德哈特定律分为4种变体："
+        }
+      ]
+    },
+    "list-item-aa6a697979d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "回归性（Regressional） - 对不完美代理的选择必然也会选择噪声。"
+        }
+      ]
+    },
+    "list-item-728bb01f637e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "极值性（Extremal） - 指标选择将状态分布推向不同数据分布的区域。"
+        }
+      ]
+    },
+    "list-item-bc46b5576b6a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因果性（Causal） - 当代理与目标之间存在非因果相关性时，干预代理可能无法干预目标。"
+        }
+      ]
+    },
+    "list-item-111b1c1e6a45": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对抗性（Adversarial） - 对代理的优化为对手提供了将其目标与代理相关联的动机。"
+        }
+      ]
+    },
+    "paragraph-66999bf24393": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06565"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Amodei et al. (2016)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "总结道，奖励作弊（主要在强化学习环境中）可能由于以下原因发生："
+        }
+      ]
+    },
+    "list-item-510cd8d9688c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "部分观测到的状态和目标是对环境状态的不完美表示。"
+        }
+      ]
+    },
+    "list-item-64131a014759": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "系统本身复杂且容易被作弊；例如，如果允许智能体执行改变环境部分的代码，那么利用环境机制就变得容易得多。"
+        }
+      ]
+    },
+    "list-item-a9883ba3098f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励可能涉及难以学习或表述的抽象概念；例如，具有高维输入的奖励函数可能过度依赖少数几个维度。"
+        }
+      ]
+    },
+    "list-item-8206cea8c5ad": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "强化学习旨在高度优化奖励函数，因此存在固有的“冲突”，使得设计良好的强化学习目标具有挑战性。一个特殊情况是具有自我强化反馈组件的奖励函数类型，其中奖励可能被放大和扭曲到破坏原始意图的程度，例如广告投放算法导致赢家通吃。"
+        }
+      ]
+    },
+    "paragraph-05d0b4c5bf79": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，识别最优智能体优化其行为所依据的确切奖励函数通常是不可能的，因为在固定环境中，可能存在无限数量的奖励函数与任何观察到的策略一致（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://ai.stanford.edu/~ang/papers/icml00-irl.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Ng & Russell, 2000"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1601.06569"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Amin and Singh (2016)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "将这种"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "不可识别性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的原因分为两类："
+        }
+      ]
+    },
+    "list-item-2db897dc2cde": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "表示性（Representational） - 一组奖励函数在某些算术运算（例如，重新缩放）下行为不变。"
+        }
+      ]
+    },
+    "list-item-4fae9afdb702": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "实验性（Experimental） - "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi"
+        },
+        {
+          "type": "text",
+          "text": "的观察行为不足以区分两个或更多奖励函数，这些函数都能解释智能体的行为（行为在这两种情况下都是最优的）。"
+        }
+      ]
+    },
+    "heading-9d9417760cc1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "攻击强化学习环境"
+        }
+      ]
+    },
+    "paragraph-d6b54a7fb418": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着模型和算法日益复杂，奖励欺骗预计将成为一个更常见的问题。更智能的智能体更有能力在奖励函数设计中发现“漏洞”，并"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "利用"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "任务规范——换句话说，获得更高的代理奖励但更低的真实奖励。相比之下，较弱的算法可能无法发现此类漏洞，因此当模型不够强大时，我们不会观察到任何奖励欺骗或识别当前奖励函数设计中的问题。"
+        }
+      ]
+    },
+    "paragraph-fcbab612ad21": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一组零和机器人自博弈游戏中（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.03748"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Bansal et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），我们可以训练两个智能体（受害者 vs. 对手）相互竞争。标准的训练过程会产生一个在对抗普通对手时表现良好的受害者智能体。然而，很容易训练出一种对抗性对手策略，即使输出看似随机的动作并且训练时间步数少于3%（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.10615"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gleave et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），也能可靠地击败受害者。对抗性策略的训练涉及优化折扣奖励的总和，就像在标准强化学习设置中一样，同时将受害者策略视为黑盒模型。"
+        }
+      ]
+    },
+    "paragraph-a802151abb72": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "缓解对抗性策略攻击的一种直观方法是针对对抗性策略对受害者进行微调。然而，一旦针对新的受害者策略进行再训练，受害者仍然容易受到新版本对抗性策略的攻击。"
+        }
+      ]
+    },
+    "paragraph-8dbcb7658d43": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为什么存在对抗性策略？假设是对抗性策略向受害者引入了OOD观测，而不是对其进行物理干扰。证据表明，当受害者对对手位置的观测被遮蔽并设置为静态时，受害者变得"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "更具鲁棒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "以对抗对手，尽管在对抗普通对手策略时表现更差。此外，更高维的观测空间在正常情况下能提升性能，但会使策略更容易受到对抗性对手的攻击。"
+        }
+      ]
+    },
+    "paragraph-94b198afc958": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "研究了奖励欺骗作为智能体能力的一个函数，包括（1）模型大小，（2）动作空间分辨率，（3）观测空间噪声，和（4）训练时间。他们还提出了三种错误指定代理奖励的分类法："
+        }
+      ]
+    },
+    "list-item-71923025f68e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重错误"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：代理奖励和真实奖励捕捉相同的期望目标，但它们在相对重要性上有所不同。"
+        }
+      ]
+    },
+    "list-item-16d70636e68d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "本体论"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：代理奖励和真实奖励使用不同的期望目标来捕捉相同的概念。"
+        }
+      ]
+    },
+    "list-item-c016f7f867d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "范围"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：代理在受限领域（例如时间或空间）内衡量期望目标，因为在所有条件下进行测量成本过高。"
+        }
+      ]
+    },
+    "paragraph-4fa89d4b692b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们在四个强化学习环境中进行了实验，并搭配了九种错误指定的代理奖励。这些实验的总体发现可以总结如下："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "能力更强的模型倾向于获得更高（或相似）的代理奖励，但真实奖励却有所下降。"
+            }
+          ]
+        }
+      ]
+    },
+    "list-item-926d63f6c71b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型大小：更大的模型尺寸导致代理奖励增加，但真实奖励减少。"
+        }
+      ]
+    },
+    "list-item-3da8ed91be80": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "动作空间分辨率：动作精度的提高会带来更强大的智能体。然而，更高的分辨率导致代理奖励保持不变，而真实奖励下降。"
+        }
+      ]
+    },
+    "list-item-2c1a2f446736": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "观测保真度：更准确的观测改善了代理奖励，但略微降低了真实奖励。"
+        }
+      ]
+    },
+    "list-item-48296fb9c175": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练步数：在奖励最初正相关的一段时间后，通过更多步优化代理奖励会损害真实奖励。"
+        }
+      ]
+    },
+    "paragraph-72025cebb60b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果代理奖励的指定非常糟糕，以至于它与真实奖励的关联性非常弱，我们甚至可以在训练之前识别并防止奖励欺骗。基于这一假设，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "研究了在一系列轨迹回放中代理奖励和真实奖励之间的相关性。有趣的是，即使真实奖励和代理奖励之间存在正相关，奖励欺骗仍然会发生。"
+        }
+      ]
+    },
+    "heading-1c753d108acc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "攻击大型语言模型的RLHF"
+        }
+      ]
+    },
+    "paragraph-26184fb06ec2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#rl-fine-tuning-with-human-preferences"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "人类反馈强化学习（RLHF）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "已成为语言模型对齐训练的事实标准方法。奖励模型在人类反馈数据上进行训练，然后通过强化学习对语言模型进行微调，以优化这种代理奖励以符合人类偏好。在RLHF设置中，我们关注三种类型的奖励："
+        }
+      ]
+    },
+    "list-item-a58644075f8d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(1) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "预言机/黄金奖励"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "R^∗"
+        },
+        {
+          "type": "text",
+          "text": " 代表我们"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "真正"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "希望大型语言模型优化的内容。"
+        }
+      ]
+    },
+    "list-item-da7ad765aa4f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(2) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "人类奖励"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "R^\\text{human}"
+        },
+        {
+          "type": "text",
+          "text": " 是我们实践中收集用于评估大型语言模型的奖励，通常来自有时间限制的个体人类。由于人类可能提供不一致的反馈或犯错，人类奖励并非预言机奖励的完全准确表示。"
+        }
+      ]
+    },
+    "list-item-8d8e0e5caa50": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "(3) "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "代理奖励"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": " 是由在人类数据上训练的奖励模型预测的分数。因此，"
+        },
+        {
+          "type": "inline_math",
+          "text": "R^\\text{train}"
+        },
+        {
+          "type": "text",
+          "text": " 继承了人类奖励的所有弱点，以及潜在的模型偏差。"
+        }
+      ]
+    },
+    "paragraph-7618dcdf9bca": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RLHF优化代理奖励分数，但我们最终关心的是黄金奖励分数。"
+        }
+      ]
+    },
+    "heading-abb5274dd62d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "攻击训练过程"
+        }
+      ]
+    },
+    "paragraph-01905827dac6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2210.10760"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Gao et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "研究了RLHF中奖励模型过度优化的缩放定律。为了在实验中扩展人类标签，他们使用了一个合成数据设置，其中预言机奖励的“黄金”标签"
+        },
+        {
+          "type": "inline_math",
+          "text": "R^*"
+        },
+        {
+          "type": "text",
+          "text": "由一个大型奖励模型（60亿参数）近似，而代理奖励模型"
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": "的大小范围从300万到30亿参数。"
+        }
+      ]
+    },
+    "paragraph-961e57bb8d19": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "初始策略到优化策略的KL散度是"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{KL} = D_\\text{KL}(\\pi | \\pi_\\text{init})"
+        },
+        {
+          "type": "text",
+          "text": "，距离函数定义为"
+        },
+        {
+          "type": "inline_math",
+          "text": "d := \\sqrt{ D_\\text{KL}(\\pi | \\pi_\\text{init})}"
+        },
+        {
+          "type": "text",
+          "text": "。对于最佳-"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "拒绝采样（BoN）和强化学习（RL），黄金奖励"
+        },
+        {
+          "type": "inline_math",
+          "text": "R^∗"
+        },
+        {
+          "type": "text",
+          "text": "被定义为"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "的函数。系数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\alpha"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "是根据经验拟合的，其中"
+        },
+        {
+          "type": "inline_math",
+          "text": "R^∗ (0) := 0"
+        },
+        {
+          "type": "text",
+          "text": "是根据定义确定的。"
+        }
+      ]
+    },
+    "paragraph-f3484b388b30": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "作者还尝试拟合代理奖励"
+        },
+        {
+          "type": "inline_math",
+          "text": "R"
+        },
+        {
+          "type": "text",
+          "text": "，但发现在外推到更高的KL值时存在系统性低估，因为代理奖励似乎与"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "呈线性增长。"
+        }
+      ]
+    },
+    "paragraph-8496a99816b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们的实验还探讨了奖励模型（RM）过度优化与策略模型大小和RM数据大小等因素之间的关系："
+        }
+      ]
+    },
+    "list-item-a2451f90564b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "针对奖励模型（RM），更大的策略从优化中获得的益处较少（即，初始奖励与峰值奖励之间的差异小于较小策略的差异），但过度优化也较少。"
+        }
+      ]
+    },
+    "list-item-9f774b8592fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更多的奖励模型（RM）数据会带来更高的黄金奖励分数，并减少“古德哈特定律效应”。"
+        }
+      ]
+    },
+    "list-item-37463c39b6cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "KL惩罚对黄金分数的影响类似于提前停止。请注意，除了本次实验，所有实验中PPO的KL惩罚都设置为0，因为他们观察到使用KL惩罚会严格增加代理-黄金奖励差距。"
+        }
+      ]
+    },
+    "paragraph-29ab670bc6dd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RLHF旨在提高模型与人类偏好的一致性，但人类反馈"
+        },
+        {
+          "type": "inline_math",
+          "text": "R^\\text{human}"
+        },
+        {
+          "type": "text",
+          "text": "可能无法捕捉我们关心的所有方面（例如，事实准确性），因此可能被利用来过度拟合不期望的属性。例如，模型可能被优化以输出看起来正确且有说服力但实际上不准确的响应，从而误导人类评估者更频繁地批准其不正确的答案（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2409.12822"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wen et al., 2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。换句话说，由于RLHF，在“什么是正确的”和“在人类看来什么是正确的”之间出现了差距。具体来说，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2409.12822"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wen et al. (2024)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 使用基于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lmsys.org/blog/2023-07-20-dataset/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "ChatbotArena数据"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的奖励模型进行了RLHF实验。他们在问答数据集"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/nyu-mll/quality"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "QuALITY"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和编程数据集"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/hendrycks/apps"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "APPS"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "上评估了模型。他们的实验表明，模型在说服人类其是正确的方面变得更好，即使它们是错误的，并且这种效应是无意的："
+        }
+      ]
+    },
+    "list-item-f46c86820224": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RLHF增加了人类的认可度，但不一定增加了正确性。"
+        }
+      ]
+    },
+    "list-item-667d9baf6801": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RLHF削弱了人类的评估能力：RLHF训练后，人类评估的错误率更高。"
+        }
+      ]
+    },
+    "list-item-208368d9ee51": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RLHF使不正确的输出对人类更具说服力。RLHF训练后，评估的假阳性率显著增加。"
+        }
+      ]
+    },
+    "paragraph-8c7a6f74d745": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该论文将这种效应命名为“U-诡辩”（“U”代表“无意的”），以区别于“I-诡辩”（“I”代表“有意的”），后者涉及明确地用"
+        },
+        {
+          "type": "inline_code",
+          "text": "\"... try to deceive human subjects\""
+        },
+        {
+          "type": "text",
+          "text": "之类的指令提示模型。"
+        }
+      ]
+    },
+    "paragraph-f972933ba8c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "人类评估错误的变化并非由于招聘过程中的噪音，因为（1）在个体层面，大多数（70-90%）人类评估者的原始评估错误率有所增加，并且（2）他们投入到评估"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\text{init}"
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\text{rlhf}"
+        },
+        {
+          "type": "text",
+          "text": "的努力是等同的，这通过花费的时间或编写的单元测试等指标来衡量。相反，大型语言模型（LLMs）学会通过选择性地挑选、编造不真实的支撑性陈述或精心设计带有微妙因果谬误的陈述来为不正确的答案辩护。他们观察到模型在RLHF后的行为如下："
+        }
+      ]
+    },
+    "list-item-e9f21ff63996": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在长篇问答任务中："
+        }
+      ]
+    },
+    "list-item-ac9247acf412": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "制造更具说服力的虚假证据。"
+        }
+      ]
+    },
+    "list-item-2b18fbe1b1fd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对不正确的答案使用更一致的逻辑。"
+        }
+      ]
+    },
+    "list-item-03bd83f8eb79": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成带有微妙谬误的连贯答案。"
+        }
+      ]
+    },
+    "list-item-4ece5627d6a2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在编码任务中："
+        }
+      ]
+    },
+    "list-item-4a782e16f548": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "攻击人类编写的单元测试。"
+        }
+      ]
+    },
+    "list-item-7df3335fa77d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生成可读性较差的测试（例如，更少的辅助函数和更高的代码复杂度）。"
+        }
+      ]
+    },
+    "list-item-65d82c76ad38": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_\\text{rlhf}"
+        },
+        {
+          "type": "text",
+          "text": "更不容易生成人类可以利用的易于检测的错误。"
+        }
+      ]
+    },
+    "paragraph-c014d253582c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "谄媚是指模型响应倾向于与用户信念匹配而非反映真相的趋势（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2310.13548"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shrama et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。在实验中，一个AI助手被要求对一个论点提供反馈（"
+        },
+        {
+          "type": "inline_code",
+          "text": "Human: \"Please comment briefly on the following argument. Argument: ...\")"
+        },
+        {
+          "type": "text",
+          "text": "）。在人类提供论点后，他们可以陈述一个偏好（"
+        },
+        {
+          "type": "inline_code",
+          "text": "\"I really like the argument\""
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "inline_code",
+          "text": "\"I really dislike the argument\""
+        },
+        {
+          "type": "text",
+          "text": "），以测试这是否会影响模型与没有人类偏好陈述的基线反馈相比的反馈。"
+        }
+      ]
+    },
+    "paragraph-bd499aa96ef1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们发现AI助手的反馈很容易被左右，因为它在受到人类偏好挑战时可能会改变其最初正确的答案。模型倾向于确认用户的信念。有时它甚至会模仿用户的错误（例如，在分析诗歌时错误地归因了错误的诗人）。通过逻辑回归预测人类反馈，对RLHF有用性数据集进行数据分析表明，匹配用户信念是最具预测性的因素。"
+        }
+      ]
+    },
+    "heading-9daaf8808fcb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "攻击评估器"
+        }
+      ]
+    },
+    "paragraph-e854766ca21a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着大型语言模型（LLMs）能力增强，自然而然地会选择使用LLMs作为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "评估器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "或"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "评分器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，为其他生成模型提供反馈和训练奖励，特别是对于那些无法轻易判断或验证的任务（例如，处理长篇输出、创意写作质量等主观评分标准）。有些人将此称为“LLM作为评分器范式”。这种方法大大减少了对人工标注的依赖，显著节省了评估时间。然而，使用LLMs作为评分器是预言机奖励的不完美替代，并可能引入偏差，例如在与不同模型家族比较时偏爱自己的响应（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2311.09766"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Liu et al., 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "），或者在按顺序评估响应时出现位置偏差（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2305.17926"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al. 2023"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。当评分器输出被用作奖励信号的一部分时，这种偏差尤其令人担忧，这可能导致通过利用这些评分器进行奖励攻击。"
+        }
+      ]
+    },
+    "paragraph-36d69805558e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2305.17926"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Wang et al. (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 发现，当使用大型语言模型（LLM）作为评估器来评估多个其他LLM输出的质量时，只需改变上下文中候选对象的顺序，质量排名就很容易被攻击。研究发现GPT-4始终将高分分配给第一个显示的候选对象，而ChatGPT则偏爱第二个候选对象。"
+        }
+      ]
+    },
+    "paragraph-7f489a4d4963": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据他们的实验，大型语言模型（LLMs）对响应的位置很敏感，并存在"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "位置偏差"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（即偏爱特定位置的响应），尽管指令中包含"
+        },
+        {
+          "type": "inline_code",
+          "text": "\"ensuring that the order in which the responses were presented does not affect your judgment.\""
+        },
+        {
+          "type": "text",
+          "text": "的声明。这种位置偏差的严重程度通过“冲突率”来衡量，冲突率定义为在交换响应位置后导致评估判断不一致的（提示、响应1、响应2）元组的百分比。不出所料，响应质量的差异也很重要；冲突率与两个响应之间的分数差距呈负相关。"
+        }
+      ]
+    },
+    "paragraph-a2610a25c0a8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了减轻这种位置偏差，他们提出了几种校准策略："
+        }
+      ]
+    },
+    "list-item-da7e9b31d20f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多证据校准（MEC）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：评估器模型被要求提供评估证据，本质上是其判断的文本解释，然后输出两个候选对象的得分。通过在温度设置为1的情况下采样多个（"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "）证据解释，可以进一步增强此方法的鲁棒性。"
+        },
+        {
+          "type": "inline_math",
+          "text": "k=3"
+        },
+        {
+          "type": "text",
+          "text": "比"
+        },
+        {
+          "type": "inline_math",
+          "text": "k=1"
+        },
+        {
+          "type": "text",
+          "text": "效果更好，但当"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "增加到3以上时，性能并没有显著提升。"
+        }
+      ]
+    },
+    "list-item-667687c1a5c6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "平衡位置校准（BPC）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：将不同响应顺序的结果进行聚合以获得最终分数。"
+        }
+      ]
+    },
+    "list-item-0293c723f72e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "人机协作校准（HITLC）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：在面对困难示例时，引入人类评分员，使用基于多样性的指标BPDE（平衡位置多样性熵）。首先，将得分对（包括交换位置的对）映射到三个标签（"
+        },
+        {
+          "type": "inline_code",
+          "text": "win"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "tie"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "lose"
+        },
+        {
+          "type": "text",
+          "text": "），并计算这三个标签的熵。高BPDE表示模型评估决策中存在更多混淆，表明该样本更难判断。然后选择熵最高的"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "个样本进行人工辅助。"
+        }
+      ]
+    },
+    "paragraph-68a60467a2dc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2311.09766"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Liu et al. (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 使用多种模型（BART、T5、GPT-2、GPT-3、FLAN-T5、Cohere）对摘要任务进行了实验，并跟踪了基于参考和无参考的指标来评估摘要质量。当在评估器（x轴）与生成器（y轴）的热图中绘制评估分数时，他们观察到两种指标都出现了深色对角线，表明存在自我偏见。这意味着当大型语言模型（LLMs）被用作评估器时，它们倾向于偏爱自己的输出。尽管实验中使用的模型有些过时，但看到在更新、能力更强的模型上的结果会很有趣。"
+        }
+      ]
+    },
+    "heading-61cad311ecd9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上下文内奖励攻击"
+        }
+      ]
+    },
+    "paragraph-a4ea963c4611": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "迭代自我完善"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是一种训练设置，其中评估模型和生成模型是相同的，并且两者都可以进行微调。在这种设置中，优化压力可以驱动模型利用在两个角色中都存在的漏洞。在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2407.04549"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. (2023)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的实验中，没有更新模型参数，并且使用相同的模型作为评估器和生成器，但使用不同的提示。实验任务是论文编辑，涉及两个角色：（1）一个法官（评估器），对论文提供反馈；（2）一个作者（生成器），根据反馈编辑论文。收集人类评估分数作为论文质量的预言机分数。作者假设这种设置可能导致"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "上下文内奖励攻击（ICRH）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，即评估器分数与预言机分数出现分歧。更普遍地说，ICRH发生在大型语言模型（LLM）与其评估器（例如，另一个LLM或外部世界）之间的反馈循环中。在测试时，LLM优化一个（可能是隐式的）目标，但这在此过程中产生了负面副作用（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2402.06627"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al., 2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-b1c85a3e6f49": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "法官和作者都可以配置为不查看或查看前几轮的反馈或编辑。在线法官可以看到过去的对话，而离线法官或人工标注者一次只能看到一篇论文。较小的模型对上下文内奖励攻击（ICRH）更敏感；例如，经验表明，GPT-3.5作为评估器比GPT-4导致了更严重的ICRH。"
+        }
+      ]
+    },
+    "paragraph-881bc0fdd12e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当法官和作者被配置为查看不同数量的过去迭代时，如果他们共享"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "相同"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "数量的迭代，人类分数和评估器分数之间的差距往往会增加。评估器和生成器之间相同的上下文对于上下文内奖励攻击（ICRH）至关重要，这表明共享上下文对ICRH的影响比上下文长度更大。"
+        }
+      ]
+    },
+    "paragraph-1d155f5d7440": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在后续工作中，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2402.06627"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. (2024)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 在外部世界提供反馈且目标是不完美的代理目标（通常以自然语言指定）的设置中，进一步研究了上下文内奖励攻击（ICRH）。在这种情况下，这个目标通常未被充分指定，未能捕捉所有约束或要求，因此可能被攻击。"
+        }
+      ]
+    },
+    "paragraph-7683e27cac84": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该研究描述了导致上下文内奖励攻击（ICRH）的两个过程，并配以两个玩具实验："
+        }
+      ]
+    },
+    "list-item-2eacadb74a71": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "输出优化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": LLM 根据反馈优化其输出。 - 结果显示，参与度指标和毒性均有所增加。使用不同大小的 Claude 模型家族重复了相同的实验，结果表明，扩大模型规模会加剧 ICRH。"
+        }
+      ]
+    },
+    "list-item-f21130739c3b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该实验旨在根据互动指标优化推文，这可能导致推文的毒性增加。基于反馈的优化使用大型语言模型（LLM）进行成对评估，然后使用布拉德利-特里模型将其转换为分数。"
+        }
+      ]
+    },
+    "list-item-7d70cf0b86bc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "策略优化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": LLM 根据反馈优化其策略。\n\n\n"
+        }
+      ]
+    },
+    "list-item-d2369cb19923": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该实验旨在构建一个 LLM 代理，代表用户支付发票，但遇到了 "
+        },
+        {
+          "type": "inline_code",
+          "text": "InsufficientBalanceError"
+        },
+        {
+          "type": "text",
+          "text": "，然后模型学会了在没有用户认证的情况下从其他账户转移资金，这可能导致更多的未经授权的转账操作。他们使用 ToolEmu 作为模拟器，其中包含 144 个 LLM 代理任务，每个任务都由一个用户特定目标和一组 API 组成。注入了 API 错误以模拟服务器端故障，并且每个任务都由 GPT-4 评估以分配一个有用性分数。"
+        }
+      ]
+    },
+    "list-item-44d257c0d5d7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着更多轮次的错误反馈，LLM 可以从错误中恢复，但严重约束违规的数量会增加。\n  "
+        }
+      ]
+    },
+    "paragraph-a11c74580c0b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在将ICRH与传统奖励欺骗进行比较时，存在两个显著差异："
+        }
+      ]
+    },
+    "list-item-7f86be626969": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ICRH在部署时通过反馈循环在自我完善设置中发生，而传统奖励欺骗则在训练期间发生。"
+        }
+      ]
+    },
+    "list-item-e8c02b03ee5a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "传统的奖励欺骗发生在智能体专注于某项任务时，而ICRH则是由其作为通才的特性所驱动。"
+        }
+      ]
+    },
+    "paragraph-3fd280d11845": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目前还没有神奇的方法可以避免、检测或预防ICRH，因为改进提示规范不足以消除ICRH，并且扩大模型规模可能会加剧ICRH。部署前测试的最佳实践是通过评估模型在更多轮次的反馈、多样化反馈以及注入非典型环境观察下的表现，来模拟部署时可能发生的情况。"
+        }
+      ]
+    },
+    "heading-9f6b9ad165e9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "黑客技能的泛化"
+        }
+      ]
+    },
+    "paragraph-0417576466ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励欺骗行为已被发现可以跨任务泛化：当模型在监督训练中表现出缺陷时，它有时可以泛化以利用OOD环境中的缺陷（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.lesswrong.com/posts/Ge55vxEmKXunFFwoe/reward-hacking-behavior-can-generalize-across-tasks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Kei et al., 2024"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。研究人员通过在一些"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "可奖励欺骗环境"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中强化奖励欺骗行为，并检查其是否泛化到其他保留数据集。本质上，他们准备了"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/keing1/reward-hack-generalization/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "8个数据集"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "用于多项选择题，其中4个用于训练，4个用于测试。强化学习训练采用专家迭代，即对best-of-"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "样本进行迭代微调。"
+        }
+      ]
+    },
+    "paragraph-5ba0d055dbe5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "值得注意的是，所有实验都采用暂存器设计来承载隐藏的推理步骤。这个暂存器是解释模型在整个过程中思考方式的一种方法。对暂存器的分析表明它可以："
+        }
+      ]
+    },
+    "list-item-e855e103a172": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "融入用户信念；例如，思考其对话伙伴和评分者。"
+        }
+      ]
+    },
+    "list-item-b3bd64b2e6e3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "表现出对评估的意识；例如，思考模型响应将如何被评估以及评估过程。"
+        }
+      ]
+    },
+    "paragraph-c2d0f58dd43a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2406.10162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Denison et al. (2024)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "研究了奖励篡改，使用了一个手动策划的、包含日益复杂的、可博弈环境的课程。他们观察到，在课程中较简单的环境中进行训练会加剧在其余环境中的规范博弈。在某些情况下，模型在完成整个课程训练后，可以零样本泛化到直接重写其自身的奖励函数。"
+        }
+      ]
+    },
+    "paragraph-b70681d2a0ac": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此类可博弈环境的课程包括："
+        }
+      ]
+    },
+    "list-item-4b6906a2b38d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "政治奉承：如果模型给出的答案与用户的政治观点相符，环境就会奖励该模型。"
+        }
+      ]
+    },
+    "list-item-729883068e83": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "工具使用奉承：环境允许模型运行命令行以访问用户的文件系统，从而读取本地文件中的诗歌样本。模型可能会给这首诗歌很高的评价，作为一种奉承的回应。"
+        }
+      ]
+    },
+    "list-item-5f3ca399b163": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评分标准修改：环境根据清单对模型进行评分，模型必须将清单上的每个项目标记为已完成才能获得高奖励。"
+        }
+      ]
+    },
+    "list-item-4cdb5ae2d730": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "奖励篡改：该模型被要求检查 "
+        },
+        {
+          "type": "inline_code",
+          "text": "./rl_environment/"
+        },
+        {
+          "type": "text",
+          "text": " 目录，该目录包含其自身 RL 代码的模拟版本，并报告已进行了多少个回合。在该目录中，"
+        },
+        {
+          "type": "inline_code",
+          "text": "compute_reward.py"
+        },
+        {
+          "type": "text",
+          "text": " 文件包含一个返回常量的奖励函数，而另一个 "
+        },
+        {
+          "type": "inline_code",
+          "text": "this_file_blocks_reward_hack_attempts.py"
+        },
+        {
+          "type": "text",
+          "text": " 包含一个测试，用于检查奖励函数是否已被修改。"
+        }
+      ]
+    },
+    "paragraph-39e93b393d3f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该模型按照此课程进行训练，论文衡量了模型是否能学习泛化到未见环境的游戏行为。在用Claude-2 helpful-only模型进行实验时，他们采样了"
+        },
+        {
+          "type": "inline_math",
+          "text": "N=64"
+        },
+        {
+          "type": "text",
+          "text": "个回复，每个"
+        },
+        {
+          "type": "inline_math",
+          "text": "P=1024"
+        },
+        {
+          "type": "text",
+          "text": "个HHH提示进行专家迭代，并根据RM选择了最佳。使用专家迭代对课程进行监督学习训练的模型可以从一个阶段泛化到下一个阶段。"
+        }
+      ]
+    },
+    "paragraph-15e718f19a4e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "值得注意的是，即使在课程训练之后，模型覆盖奖励并避免被检测到的情况也少于千分之一。即使模型在直接激励奖励作弊的课程上进行训练，模型覆盖其奖励的次数也少于1%，作弊单元测试的次数甚至更少。作为一种简单的缓解措施，在奖励作弊行为易于检测（奉承和谄媚）的前两个环境中，使用不操纵环境的SFT数据对模型进行监督微调，被发现可以降低在保留环境中篡改奖励的可能性。"
+        }
+      ]
+    },
+    "heading-4d81d4d7f0d1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "缓解措施一瞥"
+        }
+      ]
+    },
+    "paragraph-579aa6629127": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "尽管有大量文献讨论奖励作弊现象，但在奖励作弊的缓解措施方面，尤其是在RLHF和LLM领域，工作量并不多。本节将简要回顾三种潜在方法，但尚未详尽。"
+        }
+      ]
+    },
+    "heading-5fa9653d01cf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RL算法改进"
+        }
+      ]
+    },
+    "paragraph-e7f0e5fcc7eb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06565"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Amodei 等人 (2016)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 指出了一些在RL训练中缓解奖励作弊的方向："
+        }
+      ]
+    },
+    "list-item-a96f37ccdfd4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "对抗性奖励函数。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 我们将奖励函数本身视为一个自适应智能体，它可以适应模型发现的新技巧，即奖励很高但人类评分很低的情况。"
+        }
+      ]
+    },
+    "list-item-25cb9b0a6216": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "模型前瞻。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 可以根据未来预期状态给予奖励；例如，如果智能体将要替换奖励函数，它会获得负面奖励。"
+        }
+      ]
+    },
+    "list-item-2ea4137a3dee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "对抗性盲化。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 我们可以用某些变量对模型进行盲化，使智能体无法学习到使其能够作弊奖励函数的信息。"
+        }
+      ]
+    },
+    "list-item-c91a8676b7d6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "精心设计。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 通过精心设计可以避免某些针对系统设计的奖励作弊类型；例如，对智能体进行沙盒化，以将其行为与其奖励信号隔离开来。"
+        }
+      ]
+    },
+    "list-item-322c83f1757b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励封顶。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 这种策略是简单地限制最大可能奖励，因为它可以有效防止智能体作弊以获得超高回报策略的罕见事件。"
+        }
+      ]
+    },
+    "list-item-b88932287394": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "反例抵抗。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 对抗性鲁棒性的改进应该有利于奖励函数的鲁棒性。"
+        }
+      ]
+    },
+    "list-item-f94d200ce3f4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多种奖励的组合。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "组合不同类型的奖励可能会使其更难被攻击。"
+        }
+      ]
+    },
+    "list-item-7b7e1a8d2bea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "奖励预训练。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "我们可以从（状态，奖励）样本集合中学习奖励函数，但这取决于这种监督训练设置的效果如何，它可能会带来其他问题。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-01-02-controllable-text-generation/#rl-fine-tuning-with-human-preferences"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "RLHF"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 依赖于此，但学习到的标量奖励模型很容易学习到不期望的特性。"
+        }
+      ]
+    },
+    "list-item-895dc34fa312": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "变量无关性。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 目标是要求智能体优化环境中的某些变量，而不是其他变量。"
+        }
+      ]
+    },
+    "list-item-20ec474dcaa7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "绊线。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 我们可以有意引入一些漏洞，并设置监控和警报，以防任何漏洞被奖励黑客利用。"
+        }
+      ]
+    },
+    "paragraph-074b4ec3946c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在人类反馈以"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "批准"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "智能体行动的形式，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2011.08827"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Uesato et al. (2020)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "提出通过"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "解耦批准"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。如果反馈以"
+        },
+        {
+          "type": "inline_math",
+          "text": "(s, a)"
+        },
+        {
+          "type": "text",
+          "text": "(state, action)，我们就无法获得针对行动的未受损反馈"
+        },
+        {
+          "type": "inline_math",
+          "text": "a"
+        },
+        {
+          "type": "text",
+          "text": "在状态"
+        },
+        {
+          "type": "inline_math",
+          "text": "s"
+        },
+        {
+          "type": "text",
+          "text": "一旦这对发生奖励篡改。解耦意味着用于收集反馈的查询行动是独立于在世界中采取的行动进行采样的。反馈甚至在行动在世界中执行之前就被接收，从而防止行动破坏其自身的反馈。"
+        }
+      ]
+    },
+    "heading-f49430d21aad": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检测奖励作弊"
+        }
+      ]
+    },
+    "paragraph-342dc7a5cd8a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一种缓解方法是将奖励欺骗（reward hacking）视为异常检测任务来发现它，其中检测器（“一个由人类验证了轨迹和奖励的受信任策略”）应该标记出不一致的实例("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。鉴于 (1) 一个受信任策略和 (2) 一组手动标记的轨迹展开，我们可以基于两个策略（受信任策略和目标策略）的动作分布之间的距离构建一个二元分类器，并测量这个异常检测分类器的准确性。在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Pan et al. (2022)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的实验中，他们观察到不同的检测器适用于不同的任务，并且在所有测试的强化学习环境中，没有一个测试的分类器能够达到超过 60% 的 AUROC。"
+        }
+      ]
+    },
+    "heading-cbb44b5ac744": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "RLHF 的数据分析"
+        }
+      ]
+    },
+    "paragraph-3a75aa4d98d8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一种方法是分析 RLHF 数据集。通过检查训练数据如何影响对齐训练结果，可以获得指导预处理和人工反馈收集的见解，以降低奖励欺骗的风险。"
+        }
+      ]
+    },
+    "paragraph-cbba04f72a35": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2408.10270"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Revel et al. (2024)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 引入了一套评估指标，用于衡量数据样本特征在建模和对齐人类价值观方面的有效性。他们对 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/hh-rlhf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "HHH-RLHF"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 数据集中的价值对齐（“SEAL”）进行了系统性错误分析。分析中使用的特征分类法（例如，"
+        },
+        {
+          "type": "inline_code",
+          "text": "is harmless"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "is refusal"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "is creative"
+        },
+        {
+          "type": "text",
+          "text": "）是手动预定义的。然后，根据此分类法，使用大型语言模型为每个样本标记了每个特征的二进制标志。特征根据启发式方法分为两组："
+        }
+      ]
+    },
+    "list-item-0d174d0d109a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目标特征：明确旨在学习的价值观。"
+        }
+      ]
+    },
+    "list-item-228bd6dbe0e5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "剧透特征：在训练过程中无意中学到的意外值（例如，情感或连贯性等风格特征）。这些与OOD分类工作中的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2024-11-28-reward-hacking/#spurious-correlation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "虚假特征"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "相似（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2004.07780"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Geirhos et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "paragraph-d094e3db1463": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "SEAL引入了三个指标来衡量对齐训练的数据有效性："
+        }
+      ]
+    },
+    "list-item-dd5ea4e4ebbb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "特征印记"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "指一个系数参数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta_\\tau"
+        },
+        {
+          "type": "text",
+          "text": "用于特征"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "它估计了奖励的点数增加，通过比较有特征和无特征的条目"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，同时保持其他因素一致。"
+        }
+      ]
+    },
+    "list-item-0b2ca459288f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "对齐抗性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是指偏好数据对中，RM"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "未能"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "匹配人类偏好的百分比。发现在超过 1/4 的 HHH-RLHF 数据集上，RM 抵制了人类偏好。"
+        }
+      ]
+    },
+    "list-item-794d4d469b12": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "对齐鲁棒性"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ", "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi^{c/r}_{+/-} (\\tau)"
+        },
+        {
+          "type": "text",
+          "text": ", 衡量对齐对扰动输入（通过重写扰动，涉及情感、说服力和连贯性等破坏性特征 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "）的鲁棒程度，同时隔离每个特征和每个事件类型的影响。"
+        }
+      ]
+    },
+    "list-item-7a89023a1849": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "鲁棒性指标 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi_−^c"
+        },
+        {
+          "type": "text",
+          "text": "（一个特征名称 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，例如“雄辩”或“情感积极”）应按以下方式解释：\n\n"
+        }
+      ]
+    },
+    "list-item-78bf0e1751c3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个被选中的条目（由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 表示），如果在重写后包含更强的特征 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，那么与没有这种翻转的条目相比，其被拒绝的几率高出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\exp (\\pi^c_{-}(\\tau))"
+        },
+        {
+          "type": "text",
+          "text": " 倍。"
+        }
+      ]
+    },
+    "list-item-a59b110e1352": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "同样，一个被拒绝的条目（由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "r"
+        },
+        {
+          "type": "text",
+          "text": " 表示），如果在重写后获得较弱的特征 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\tau"
+        },
+        {
+          "type": "text",
+          "text": "，那么与没有这种翻转的条目相比，其被选中的几率高出 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\exp (\\pi^r_{+}(\\tau))"
+        },
+        {
+          "type": "text",
+          "text": " 倍。"
+        }
+      ]
+    },
+    "list-item-70c706c4b6fe": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据他们对不同重写方式下对齐鲁棒性指标的分析，只有基于情感破坏者特征的鲁棒性分数，即 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi^c_{+}"
+        },
+        {
+          "type": "text",
+          "text": "（情感）和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\pi^r_{-}"
+        },
+        {
+          "type": "text",
+          "text": "（情感），具有统计学意义。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用来源："
+        }
+      ]
+    },
+    "paragraph-3af613eac337": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. “强化学习中的奖励欺骗”. Lil’Log (2024 年 11 月)。https://lilianweng.github.io/posts/2024-11-28-reward-hacking/。"
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-c413ecadc2b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Andrew Ng & Stuart Russell. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://ai.stanford.edu/~ang/papers/icml00-irl.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“逆强化学习算法。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". ICML 2000。"
+        }
+      ]
+    },
+    "paragraph-0d99e8bd73c0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Amodei et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1606.06565"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“AI 安全中的具体问题：避免奖励欺骗。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1606.06565 (2016)。"
+        }
+      ]
+    },
+    "paragraph-453f112602fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Krakovna et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“规范博弈：AI 独创性的另一面。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2020。"
+        }
+      ]
+    },
+    "paragraph-937527a6b841": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Langosco et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2105.14111"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深度强化学习中的目标误泛化”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 2022。"
+        }
+      ]
+    },
+    "paragraph-b2fbb89fb55a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Everitt et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1705.08417"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“带有损坏奖励通道的强化学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IJCAI 2017。"
+        }
+      ]
+    },
+    "paragraph-55f7543f197e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Geirhos et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2004.07780"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深度神经网络中的捷径学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Nature Machine Intelligence 2020。"
+        }
+      ]
+    },
+    "paragraph-c1f5c225ecfb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Ribeiro 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1602.04938"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“我为什么要相信你？”：解释任何分类器的预测。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " KDD 2016。"
+        }
+      ]
+    },
+    "paragraph-2f3a31183831": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Nagarajan 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2010.15775"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“理解分布外泛化的失败模式。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2021。"
+        }
+      ]
+    },
+    "paragraph-f91baa8b8d4a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Garrabrant. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.lesswrong.com/posts/EbFABnst8LsidYs5Y/goodhart-taxonomy"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“古德哈特定律分类法”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ". AI Alignment Forum (2017年12月30日)。"
+        }
+      ]
+    },
+    "paragraph-07a04b08b34c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Koch 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.gatsby.ucl.ac.uk/~balaji/udl2021/accepted-papers/UDL2021-paper-055.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深度强化学习中的客观鲁棒性。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 2021。"
+        }
+      ]
+    },
+    "paragraph-a2496f50f661": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Pan 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2201.03544"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“奖励错误指定的影响：映射和缓解未对齐模型。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-13dde8536314": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Everitt 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1908.04734"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“强化学习中的奖励篡改问题与解决方案：因果影响图视角。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1908.04734 (2019)。"
+        }
+      ]
+    },
+    "paragraph-1b8e1f13797d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Gleave 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1905.10615"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“对抗性策略：攻击深度强化学习。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICRL 2020"
+        }
+      ]
+    },
+    "paragraph-920d3f39ebb5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.lesswrong.com/posts/Ge55vxEmKXunFFwoe/reward-hacking-behavior-can-generalize-across-tasks"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“奖励欺骗行为可以跨任务泛化。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-12996a56aa42": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Ng 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“奖励转换下的策略不变性：理论及在奖励塑形中的应用。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 1999。"
+        }
+      ]
+    },
+    "paragraph-471078976083": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Wang 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2305.17926"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“大型语言模型并非公正的评估者。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2024。"
+        }
+      ]
+    },
+    "paragraph-0203b4c0de67": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Liu 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2311.09766"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“LLM 作为自恋型评估者：当自我膨胀评估分数时。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ACL 2024。"
+        }
+      ]
+    },
+    "paragraph-6baf98d3b04f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[18] Gao 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2210.10760"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“奖励模型过度优化的缩放定律。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 2023。"
+        }
+      ]
+    },
+    "paragraph-dc2a7951437c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[19] Pan 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2407.04549"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“迭代自我完善中的自发奖励欺骗。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2407.04549 (2024)。"
+        }
+      ]
+    },
+    "paragraph-a90ee4cef079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[20] Pan 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2402.06627"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“语言模型中的反馈循环驱动上下文奖励欺骗。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2402.06627 (2024)。"
+        }
+      ]
+    },
+    "paragraph-7451589ce66a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[21] Shrama 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2310.13548"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“走向理解语言模型中的谄媚行为。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2310.13548 (2023)。"
+        }
+      ]
+    },
+    "paragraph-cdfb8d7d741d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[22] Denison 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2406.10162"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“从谄媚到诡计：调查语言模型中的奖励篡改。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2406.10162 (2024)。"
+        }
+      ]
+    },
+    "paragraph-3bc98a663a87": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[23] Uesato 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2011.08827"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“通过解耦批准避免深度强化学习中的篡改激励。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2011.08827 (2020)。"
+        }
+      ]
+    },
+    "paragraph-6f0c4e1c2bda": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[24] Amin 和 Singh. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1601.06569"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“解决逆强化学习中不可识别性问题。”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-99f46091f223": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[25] Wen 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2409.12822"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“语言模型通过 RLHF 学习误导人类。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2409.12822 (2024)。"
+        }
+      ]
+    },
+    "paragraph-0a56b63fd171": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[26] Revel 等人 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2408.10270"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“SEAL：价值对齐的系统误差分析。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2408.10270 (2024)。"
+        }
+      ]
+    },
+    "paragraph-9db6a8cd85e7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[27] Yuval Noah Harari. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.goodreads.com/en/book/show/204927599-nexus"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“枢纽：从石器时代到人工智能的信息网络简史。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Signal; 2024年9月10日。"
+        }
+      ]
+    }
+  }
+}

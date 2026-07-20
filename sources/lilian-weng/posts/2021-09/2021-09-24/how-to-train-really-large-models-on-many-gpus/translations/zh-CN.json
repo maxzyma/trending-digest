@@ -1,0 +1,2941 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:b85b4ce702fc22b7d583615552c81eb93348496cd0b8809dc74520ce3982def3",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable+math-tokenizer-v2",
+  "title": "如何在多 GPU 上训练超大型模型？",
+  "segments": {
+    "paragraph-937b60034201": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2022-03-13 更新：新增"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/#ec"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "专家选择路由"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。]"
+        },
+        {
+          "type": "line_break"
+        },
+        {
+          "type": "text",
+          "text": "\n[2022-06-10 更新]："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://gregbrockman.com/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Greg"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和我撰写了本文的精简升级版，发表在 OpenAI 博客上："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://openai.com/blog/techniques-for-training-large-neural-networks/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“训练大型神经网络的技术”"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-38a14c6f2509": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "近年来，我们看到更大的预训练"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2019-01-31-lm/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "语言模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在许多 NLP 基准任务上取得了更好的结果。训练大型深度神经网络具有挑战性，因为它需要大量的 GPU 内存和漫长的训练时间。"
+        }
+      ]
+    },
+    "paragraph-fc71f415def2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然而，单个 GPU 工作器内存有限，许多大型模型的规模已经超出了单个 GPU 的范围。有几种并行范式可以实现在多个 GPU 上进行模型训练，以及各种模型架构和内存节省设计，以帮助实现训练"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "超大型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "神经网络。"
+        }
+      ]
+    },
+    "heading-7202c0b5e864": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练并行性"
+        }
+      ]
+    },
+    "paragraph-43670290804f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "训练超大型神经网络模型的主要瓶颈是对大量 GPU 内存的强烈需求，远远超出了单个 GPU 机器所能承载的范围。除了模型权重（例如数百亿个浮点数）之外，存储中间计算输出（例如梯度和优化器状态，如 Adam 中的动量&变异）通常甚至更昂贵。此外，训练大型模型通常需要大型训练语料库，因此单个进程可能需要永远。"
+        }
+      ]
+    },
+    "paragraph-30d880a76999": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因此，并行性是必要的。并行性可以在不同的维度上发生，包括数据、模型架构和张量操作。"
+        }
+      ]
+    },
+    "heading-29268d566b57": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "数据并行"
+        }
+      ]
+    },
+    "paragraph-a219f917a5b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "数据并行 (DP)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 最简单的方法是将相同的模型权重复制到多个工作器中，并为每个工作器分配一部分数据以同时进行处理。"
+        }
+      ]
+    },
+    "paragraph-61cf4087df8c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果模型大小超过单个 GPU 节点的内存，朴素的 DP 无法很好地工作。像 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "GeePS"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.pdl.cmu.edu/PDL-FTP/CloudComputing/GeePS-cui-eurosys16.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Cui et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 这样的方法，当模型太大无法适应一台机器时，会将暂时未使用的参数卸载回 CPU，以在有限的 GPU 内存下工作。数据交换传输应该在后端进行，并且不干扰训练计算。"
+        }
+      ]
+    },
+    "paragraph-3b60aa507142": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在每个小批量结束时，工作节点需要同步梯度或权重以避免陈旧。存在两种主要的同步方法，并且两者都有明显的优缺点。"
+        }
+      ]
+    },
+    "list-item-eb7dd788443d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "批量同步并行 (BSP)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 工作器在每个小批量处理结束时同步数据。这可以防止模型权重过时并提高学习效率，但每台机器都必须停止并等待其他机器发送梯度。"
+        }
+      ]
+    },
+    "list-item-a14dd8c48bfb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "异步并行 (ASP)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 每个 GPU 工作器异步处理数据，无需等待或停滞。然而，这很容易导致使用过时的权重，从而降低统计学习效率。即使它增加了计算时间，也可能无法加快训练收敛时间。"
+        }
+      ]
+    },
+    "paragraph-47925837a7c9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "介于两者之间的方法是每隔 "
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": " 迭代 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "x > 1"
+        },
+        {
+          "type": "text",
+          "text": ") 全局同步一次梯度。此功能在分布式数据并行 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pytorch.org/tutorials/intermediate/ddp_tutorial.html"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "DDP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 中被称为“梯度累积”，自 Pytorch v1.5 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.15704"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Li et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 起。梯度分桶避免了即时 "
+        },
+        {
+          "type": "inline_code",
+          "text": "AllReduce"
+        },
+        {
+          "type": "text",
+          "text": " 操作，而是将多个梯度分桶到一个 "
+        },
+        {
+          "type": "inline_code",
+          "text": "AllReduce"
+        },
+        {
+          "type": "text",
+          "text": " 中以提高吞吐量。可以根据计算图进行计算和通信调度优化。"
+        }
+      ]
+    },
+    "heading-20a457582f68": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型并行"
+        }
+      ]
+    },
+    "paragraph-1d4796339a38": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "模型并行（MP）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "旨在解决模型权重无法适应单个节点的情况。计算和模型参数被划分到多台机器上。与数据并行中每个工作节点都托管整个模型的完整副本不同，MP只在一个工作节点上分配一小部分模型参数，从而减少了内存使用和计算量。"
+        }
+      ]
+    },
+    "paragraph-8cc0ccafa634": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于深度神经网络通常包含一堆垂直层，因此按层拆分大型模型似乎是直接的方法，其中一小组连续的层被分组到一个工作节点上的一个分区中。然而，一个天真的实现，让每个数据批次通过多个具有顺序依赖性的此类工作节点运行，会导致大量的等待时间气泡和计算资源的严重利用不足。"
+        }
+      ]
+    },
+    "heading-723c9b6b2675": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "流水线并行"
+        }
+      ]
+    },
+    "paragraph-5f09ec74c1fc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "流水线并行（PP）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "将模型并行与数据并行结合起来，以减少低效的“时间气泡”。主要思想是将一个迷你批次拆分成多个微批次，并使每个阶段的工作节点能够同时处理一个微批次。请注意，每个微批次都需要两次通过，一次前向和一次后向。工作节点间的通信只传输激活（前向）和梯度（后向）。这些通过如何调度以及梯度如何聚合在不同的方法中有所不同。分区（工作节点）的数量也称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "流水线深度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-78430af3a407": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "GPipe"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1811.06965"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Huang et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 中，来自多个微批次的梯度在最后被聚合并同步应用。同步梯度下降保证了学习的一致性和效率，无论工作器数量多少。如图 3 所示，气泡仍然存在，但比在给定 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m"
+        },
+        {
+          "type": "text",
+          "text": " 均匀分割的微批次和 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": " 分区的情况下小得多，假设每个微批次的前向和后向都花费一个时间单位，气泡的比例为："
+        }
+      ]
+    },
+    "paragraph-c3525170883f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GPipe 论文观察到，如果微批次数量是分区数量的 4 倍以上 "
+        },
+        {
+          "type": "inline_math",
+          "text": "m > 4d"
+        },
+        {
+          "type": "text",
+          "text": "（当应用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2021-09-25-train-large/#activation-recomputation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "激活重计算"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 时），气泡开销几乎可以忽略不计。"
+        }
+      ]
+    },
+    "paragraph-8cd76b70b15d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GPipe 在吞吐量方面实现了与设备数量几乎线性的加速，尽管如果模型参数未在工作器之间均匀分布，则不总是能保证这一点。"
+        }
+      ]
+    },
+    "paragraph-ad77d95b5b0a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "PipeDream"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Narayanan et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 调度每个工作器交替处理前向和后向传播 ("
+        },
+        {
+          "type": "inline_code",
+          "text": "1F1B"
+        },
+        {
+          "type": "text",
+          "text": ")。\\nPipeDream 将每个模型分区命名为“阶段”，每个阶段工作器可以有多个副本以运行数据并行。在此过程中，PipeDream 使用确定性的轮询负载均衡策略在阶段的多个副本之间分配工作，以确保同一小批次的前向和后向传播发生在同一副本上。"
+        }
+      ]
+    },
+    "paragraph-444ae4bfe0dc": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于 PipeDream 没有跨所有工作器的批次结束全局梯度同步，1F1B 的原生实现很容易导致一个微批次的前向和后向传播使用不同版本的模型权重，从而降低学习效率。PipeDream 提出了几种设计来解决这个问题："
+        }
+      ]
+    },
+    "list-item-63f0d96690cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重暂存 (Weight stashing)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：每个工作器跟踪多个模型版本，并确保在给定一个数据批次时，前向和后向传播中使用相同版本的权重。"
+        }
+      ]
+    },
+    "list-item-7000967356b6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "垂直同步 (Vertical sync)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（可选）：模型权重的版本与激活和梯度一起在阶段工作器之间流动。然后计算采用从前一个工作器传播过来的相应暂存版本。这个过程保持了工作器之间的版本一致性。请注意，它是异步的，与 GPipe 不同。"
+        }
+      ]
+    },
+    "paragraph-045f64b9685f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在训练运行开始时，PipeDream 首先分析模型中每一层的计算内存成本和时间，然后优化将层划分为阶段的解决方案，这是一个动态规划问题。"
+        }
+      ]
+    },
+    "paragraph-66252aa2359b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "后来提出了 PipeDream 的两种变体，通过暂存的模型版本来减少内存占用 ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.09503"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Narayanan et al. 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ")。"
+        }
+      ]
+    },
+    "paragraph-535e55f590f5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "PipeDream-flush"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 周期性地添加全局同步的流水线刷新，就像 GPipe 一样。通过这种方式，它通过牺牲一点吞吐量来大大减少内存占用（即只维护一个版本的模型权重）。"
+        }
+      ]
+    },
+    "paragraph-0e9512378de0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "PipeDream-2BW"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 只维护两个版本的模型权重，其中“2BW”是“double-buffered weights”的缩写。它每 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个微批次生成一个新模型版本，并且 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 应该大于流水线深度 "
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "，"
+        },
+        {
+          "type": "inline_math",
+          "text": "k > d"
+        },
+        {
+          "type": "text",
+          "text": "。新更新的模型版本不能立即完全替换旧版本，因为一些剩余的后向传播仍然依赖于旧版本。总共只需要保存两个版本，因此内存成本大大降低。"
+        }
+      ]
+    },
+    "heading-e80af23b11b0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "张量并行"
+        }
+      ]
+    },
+    "paragraph-3045e0f783d0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型并行和流水线并行都垂直地分割模型。另一方面，我们可以将一个张量操作的计算水平地划分到多个设备上，这被称为 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "张量并行 (TP)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-cc41191015c2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "鉴于其流行性，我们以 Transformer 为例。Transformer 模型主要由多层 MLP 和自注意力块组成。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Megatron-LM"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.08053"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shoeybi et al. 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 采用一种简单的方法来并行化 MLP 和自注意力的层内计算。"
+        }
+      ]
+    },
+    "paragraph-c1dd0f23e6c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Transformer 中的 MLP 层包含一个 GEMM（通用矩阵乘法），后跟一个非线性 GeLU 转换。让我们按列分割权重矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "A"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "paragraph-b385f9bba632": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "注意力块根据上述分区并行地使用查询 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "Q"
+        },
+        {
+          "type": "text",
+          "text": ")、键 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "K"
+        },
+        {
+          "type": "text",
+          "text": ") 和值权重 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "V"
+        },
+        {
+          "type": "text",
+          "text": ") 运行 GEMM，然后将它们与另一个 GEMM 结合以产生注意力头结果。"
+        }
+      ]
+    },
+    "paragraph-ce85548e3b57": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2104.04473"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Narayanan et al. (2021)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 将流水线、张量和数据并行与一种新的流水线调度策略相结合，并将其方法命名为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "PTD-P"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。每个工作器可以被分配多个较小的连续层子集块（例如，设备 1 有层 1、2、9、10；设备 2 有层 3、4、11、12；每个设备有两个模型块），而不是只在一个设备上放置一组连续的层（“模型块”）。一个批次中的微批次数量应该能被工作器数量整除 ("
+        },
+        {
+          "type": "inline_math",
+          "text": "m % d = 0"
+        },
+        {
+          "type": "text",
+          "text": ")。如果每个工作器有 "
+        },
+        {
+          "type": "inline_math",
+          "text": "v"
+        },
+        {
+          "type": "text",
+          "text": " 个模型块，与 GPipe 调度相比，流水线气泡时间可以减少 "
+        },
+        {
+          "type": "inline_math",
+          "text": "v"
+        },
+        {
+          "type": "text",
+          "text": " 倍。"
+        }
+      ]
+    },
+    "heading-0a731e1aa954": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "专家混合 (Mixture-of-Experts, MoE)"
+        }
+      ]
+    },
+    "paragraph-aba7a5a7c6d7": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "专家混合 (Mixture-of-Experts, MoE)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 方法最近引起了广泛关注，因为研究人员（主要来自 Google）试图突破模型大小的限制。其核心思想是 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Ensemble_learning"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "集成学习"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "多个弱学习器的组合会给你一个强学习器！"
+            }
+          ]
+        }
+      ]
+    },
+    "paragraph-9f43dfe9b60d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一个深度神经网络中，集成可以通过连接多个专家的门控机制来实现（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1701.06538"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shazeer et al., 2017"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。门控机制控制网络的哪个子集（例如哪些专家）应该被激活以产生输出。该论文将其命名为“稀疏门控专家混合”（MoE）层。"
+        }
+      ]
+    },
+    "paragraph-a122759745ee": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个MoE层精确地包含"
+        }
+      ]
+    },
+    "list-item-81695a399ba6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "前馈网络作为专家"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\{E_i\\}^n_{i=1}"
+        }
+      ]
+    },
+    "list-item-2cdd9ed03287": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个可训练的门控网络"
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": "学习一个概率分布"
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": "专家，以便将流量路由到少数选定的专家。"
+        }
+      ]
+    },
+    "paragraph-49e9e0ebbe85": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据门控输出，并非每个专家都必须进行评估。当专家数量过多时，我们可以考虑使用两级分层MoE。"
+        }
+      ]
+    },
+    "paragraph-605ba020960d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个简单的选择 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 是将输入与一个可训练的权重矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G_g"
+        },
+        {
+          "type": "text",
+          "text": " 相乘，然后进行 softmax 操作："
+        },
+        {
+          "type": "inline_math",
+          "text": "G_\\sigma (x) = \\text{softmax}(x W_g)"
+        },
+        {
+          "type": "text",
+          "text": "。然而，这会产生一个用于门控的密集控制向量，并且无助于节省计算资源，因为我们不需要仅在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G^{(i)}(x)=0"
+        },
+        {
+          "type": "text",
+          "text": " 时才评估一个专家。因此，MoE 层只保留前 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 个值。它还将可调高斯噪声添加到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 中以改善负载均衡。这种机制被称为 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "噪声 Top-k 门控"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-8d20c022c2b1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中上标"
+        },
+        {
+          "type": "inline_math",
+          "text": "v^{(i)}"
+        },
+        {
+          "type": "text",
+          "text": "表示向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "v"
+        },
+        {
+          "type": "text",
+          "text": "的第 i 维。函数"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{topk}(., k)"
+        },
+        {
+          "type": "text",
+          "text": "选择了前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个具有最高值的维度，将其他维度设置为"
+        },
+        {
+          "type": "inline_math",
+          "text": "-\\infty"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-9a419a2c461d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了避免门控网络可能一直偏爱少数几个强专家而产生的自我强化效应，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1701.06538"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shazeer et al. (2017)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种软约束，通过额外的“重要性损失”来鼓励所有专家具有相同的权重。这等同于每个专家批次平均值的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Coefficient_of_variation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "变异系数"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的平方。"
+        }
+      ]
+    },
+    "paragraph-548aa7401547": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": " \\text{CV}"
+        },
+        {
+          "type": "text",
+          "text": " 是变异系数，损失权重 "
+        },
+        {
+          "type": "inline_math",
+          "text": "w_\\text{aux}"
+        },
+        {
+          "type": "text",
+          "text": " 是一个需要调整的超参数。"
+        }
+      ]
+    },
+    "paragraph-0bbfdcbf76a9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "因为每个专家网络只获得一小部分训练样本（“批次缩小问题”），我们应该在MoE中尝试使用尽可能大的批次大小。然而，这受到GPU内存的限制。可以应用数据并行和模型并行来提高吞吐量。"
+        }
+      ]
+    },
+    "paragraph-6a9deeff40e4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "GShard"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.16668"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Lepikhin et al., 2020"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过分片将 MoE transformer 模型扩展到 6000 亿个参数。MoE transformer 用 MoE 层替换了其他所有前馈层。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "分片 MoE transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 仅将 MoE 层分片到多台机器上，而其他层则简单地复制。"
+        }
+      ]
+    },
+    "paragraph-0899f1696b7f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 GShard 中，门控函数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": " 有几种改进设计："
+        }
+      ]
+    },
+    "list-item-60e58c26ee5c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "专家容量"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：通过一个专家的令牌数量不应超过一个阈值，该阈值被称为“专家容量”。如果一个令牌被路由到已达到其容量的专家，该令牌将被标记为“溢出”，并且门控输出将变为零向量。"
+        }
+      ]
+    },
+    "list-item-888d79a50a68": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "局部组调度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：令牌被均匀地划分到多个局部组中，并且专家容量在组级别上强制执行。"
+        }
+      ]
+    },
+    "list-item-d976e60d5690": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "辅助损失"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：其动机与原始 MoE 辅助损失相似。他们添加了一个辅助损失，以最小化路由到每个专家的数据比例的均方。"
+        }
+      ]
+    },
+    "list-item-f980262f78eb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "随机路由"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ": 第二好的专家以与其权重成比例的概率被选中；否则，GShard 遵循随机路由，以增加一些随机性。"
+        }
+      ]
+    },
+    "paragraph-df208715e533": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Switch Transformer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2101.03961"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Fedus 等人 2021"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过用"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "稀疏 Switch FFN 层"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "替换密集前馈层，将模型大小扩展到数万亿个参数 (!!)，其中每个输入只路由到"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "专家网络。负载均衡的辅助损失是 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\text{loss}_\\text{aux} = w_\\text{aux} \\sum_{i=1}^n f_i p_i"
+        },
+        {
+          "type": "text",
+          "text": "，给定 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": " 个专家，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "f_i"
+        },
+        {
+          "type": "text",
+          "text": " 是路由到第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个专家的 token 比例，"
+        },
+        {
+          "type": "inline_math",
+          "text": "p_i"
+        },
+        {
+          "type": "text",
+          "text": " 是门控网络预测的专家 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 的路由概率。"
+        }
+      ]
+    },
+    "paragraph-f53afb6972be": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为了提高训练稳定性，Switch Transformer 采用了以下设计："
+        }
+      ]
+    },
+    "list-item-93beed17a181": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "选择性精度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。他们表明，选择性地将模型的局部部分转换为 FP32 精度可以提高稳定性，同时避免了 FP32 张量昂贵的通信成本。FP32 精度仅在路由器函数主体内部使用，结果被重新转换为 FP16。"
+        }
+      ]
+    },
+    "list-item-2eaa47eeccf3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "更小的初始化"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。权重矩阵的初始化是从均值为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\mu=0"
+        },
+        {
+          "type": "text",
+          "text": " 且标准差为 "
+        },
+        {
+          "type": "inline_math",
+          "text": "\\sigma = \\sqrt{s/n}"
+        },
+        {
+          "type": "text",
+          "text": " 的截断正态分布中采样的。他们还建议将 Transformer 初始化比例参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s=1"
+        },
+        {
+          "type": "text",
+          "text": " 减小到 "
+        },
+        {
+          "type": "inline_math",
+          "text": "s=0.1"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "list-item-006d69a6ecc8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用更高的专家 dropout"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。微调通常适用于小型数据集。为了避免过拟合，每个专家内部的 dropout 率显著增加。有趣的是，他们发现增加所有层的 dropout 会导致性能不佳。在论文中，他们在非专家层使用 0.1 的 dropout 率，但在专家 FF 层内部使用 0.4。"
+        }
+      ]
+    },
+    "paragraph-709dbcc84afa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Switch Transformer 论文总结了训练大型模型的不同数据和模型并行策略，并附有很好的图示："
+        }
+      ]
+    },
+    "paragraph-987ece64f6e0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "GShard top-2 和 Switch Transformer top-1 都依赖于"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "token choice"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，其中每个 token 选择最佳的一个或两个专家进行路由。它们都采用辅助损失来鼓励更均衡的负载分配，但这并不能保证最佳性能。此外，专家容量限制可能导致 token 浪费，因为如果专家达到其容量限制，这些 token 将被丢弃。"
+        }
+      ]
+    },
+    "paragraph-babb53cec040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "专家选择 (EC)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.09368"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Zhou et al. 2022"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 路由机制则允许每个专家选择前"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": "个 token。通过这种方式，每个专家自然地保证了固定的容量，并且每个 token 可以被路由到多个专家。EC 可以实现完美的负载均衡，并被证明可以将训练收敛速度提高 2 倍。"
+        }
+      ]
+    },
+    "paragraph-7809fe6de216": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "专家选择路由探索的一种正则化方法是限制每个 token 的最大专家数量。"
+        }
+      ]
+    },
+    "paragraph-50a51933b4e8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "A[i,j]"
+        },
+        {
+          "type": "text",
+          "text": " 在 "
+        },
+        {
+          "type": "inline_math",
+          "text": "A \\in \\mathbb{R}^{e \\times n}"
+        },
+        {
+          "type": "text",
+          "text": " 中标记第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": " 个专家是否选择了第 "
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": " 个 token。解决这个问题并非易事。该论文使用了 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://projecteuclid.org/journals/annals-of-probability/volume-13/issue-3/An-Iterative-Procedure-for-Obtaining-I-Projections-onto-the-Intersection/10.1214/aop/1176992918.full"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Dykstra 算法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，该算法运行一系列多个迭代计算步骤。限制专家选择导致实验中微调性能略有下降。"
+        }
+      ]
+    },
+    "paragraph-c579d486f7db": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参数 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 由 "
+        },
+        {
+          "type": "inline_math",
+          "text": "k=nc/e"
+        },
+        {
+          "type": "text",
+          "text": " 决定，其中 "
+        },
+        {
+          "type": "inline_math",
+          "text": "n"
+        },
+        {
+          "type": "text",
+          "text": " 是一个批次中的令牌总数，"
+        },
+        {
+          "type": "inline_math",
+          "text": "c"
+        },
+        {
+          "type": "text",
+          "text": " 是一个容量因子，表示一个令牌使用的专家平均数量。该论文在大多数实验中使用了 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c=2"
+        },
+        {
+          "type": "text",
+          "text": "，但采用 "
+        },
+        {
+          "type": "inline_math",
+          "text": "c=1"
+        },
+        {
+          "type": "text",
+          "text": " 的 EC 仍然优于 top-1 令牌选择门控。有趣的是，"
+        },
+        {
+          "type": "inline_math",
+          "text": "c=0.5"
+        },
+        {
+          "type": "text",
+          "text": " 对训练性能的损害微乎其微。"
+        }
+      ]
+    },
+    "paragraph-2828451f9765": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "EC 的一个主要缺点是，当批次大小过小时它无法工作，对于自回归文本生成也一样，因为它需要知道未来的令牌才能进行 top-"
+        },
+        {
+          "type": "inline_math",
+          "text": "k"
+        },
+        {
+          "type": "text",
+          "text": " 选择。"
+        }
+      ]
+    },
+    "heading-5d0eaee3299d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其他内存节省设计"
+        }
+      ]
+    },
+    "heading-01235c712c11": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CPU 卸载"
+        }
+      ]
+    },
+    "paragraph-e6109380e0fa": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 GPU 内存已满时，一种选择是将暂时未用的数据卸载到 CPU，并在稍后需要时再读回（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1602.08124"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Rhu et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "CPU 卸载"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "的思想很简单，但由于它会减慢训练时间，近年来已不那么流行。"
+        }
+      ]
+    },
+    "heading-20e4252a6204": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "激活重计算"
+        }
+      ]
+    },
+    "paragraph-390fb67b28ed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "激活重计算"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（也称为“激活检查点”或“梯度检查点”；"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arvix.org/abs/1604.06174"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Chen et al. 2016"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）是一个巧妙而简单的想法，可以在牺牲计算时间的情况下减少内存占用。它将训练一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": "层深度神经网络的内存成本降低到"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(\\sqrt{\\ell})"
+        },
+        {
+          "type": "text",
+          "text": "，这只会额外消耗每个批次的一次前向传播计算。"
+        }
+      ]
+    },
+    "paragraph-09be36e13cd8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "假设我们将一个"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\ell"
+        },
+        {
+          "type": "text",
+          "text": "层网络平均分成"
+        },
+        {
+          "type": "inline_math",
+          "text": "d"
+        },
+        {
+          "type": "text",
+          "text": "个分区。只有分区边界处的激活被保存并在工作节点之间通信。分区内部层的中间激活仍然需要用于计算梯度，因此它们在反向传播期间会被重新计算。通过激活重计算，训练"
+        },
+        {
+          "type": "inline_math",
+          "text": "M(\\ell)"
+        },
+        {
+          "type": "text",
+          "text": "的内存成本为："
+        }
+      ]
+    },
+    "paragraph-269ccb51e7f0": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最小成本为"
+        },
+        {
+          "type": "inline_math",
+          "text": "O(\\sqrt{\\ell})"
+        },
+        {
+          "type": "text",
+          "text": "，在"
+        },
+        {
+          "type": "inline_math",
+          "text": "d=\\sqrt{\\ell}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-705a3e68fd56": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "激活重计算技巧可以使内存成本相对于模型大小呈亚线性增长。"
+        }
+      ]
+    },
+    "heading-e0a98d0fb98c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "混合精度训练"
+        }
+      ]
+    },
+    "paragraph-0207eb22ca5c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.03740"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Narang & Micikevicius et al. (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 引入了一种使用半精度浮点数（FP16）训练模型而不损失模型精度的方法。"
+        }
+      ]
+    },
+    "paragraph-7b19f45a980d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "避免在半精度下丢失关键信息的三种技术："
+        }
+      ]
+    },
+    "list-item-09eb237be0a1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "权重的全精度主副本"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。维护一个全精度（FP32）的模型权重副本，用于累积梯度。在正向和反向传播中，这些数字被四舍五入到半精度。这样做的动机是，每个梯度更新（即梯度乘以学习率）可能太小，无法完全包含在 FP16 范围内（即"
+        },
+        {
+          "type": "inline_math",
+          "text": "2^{-24}"
+        },
+        {
+          "type": "text",
+          "text": "在 FP16 中变为零）。"
+        }
+      ]
+    },
+    "list-item-2877120b9c80": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "损失缩放"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。放大损失以更好地处理小幅度的梯度（参见图 16）。放大梯度有助于将其移至可表示范围的右侧（包含较大值）占据更大的部分，从而保留否则会丢失的值。"
+        }
+      ]
+    },
+    "list-item-01bc3ffa8be4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "算术精度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。对于常见的网络算术运算（例如向量点积、通过对向量元素求和进行归约），我们可以将部分结果累积在 FP32 中，然后在保存到内存之前将最终输出保存为 FP16。逐点操作可以在 FP16 或 FP32 中执行。"
+        }
+      ]
+    },
+    "paragraph-6ccdb76199c4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在他们的实验中，某些网络（例如图像分类、Faster R-CNN）不需要损失缩放，但对于其他网络（例如 Multibox SSD、大型 LSTM 语言模型）则是必需的。"
+        }
+      ]
+    },
+    "heading-c4dc629d7185": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "压缩"
+        }
+      ]
+    },
+    "paragraph-1e879d7436ea": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "中间结果通常会消耗大量内存，尽管它们只在一个前向传播和一个反向传播中需要。这两种使用之间存在明显的时序间隔。因此，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.microsoft.com/en-us/research/uploads/prod/2018/04/fiddle-gist-isca18.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Jain 等人 (2018)"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提出了一种数据编码策略，用于在第一次前向传播中使用后压缩中间结果，然后在反向传播时将其解码回来。"
+        }
+      ]
+    },
+    "paragraph-6c8b11d0e10e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "他们的系统 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Gist"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 包含了两种编码方案: "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "层特定无损编码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; 侧重于 ReLU-Pool (“二值化”) 和 ReLU-Conv (“稀疏存储和密集计算”) 模式。 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "激进有损编码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; 使用延迟精度降低 (DPR)。他们观察到，特征图的第一次即时使用应保持高精度，但第二次使用可以容忍较低精度。"
+        }
+      ]
+    },
+    "paragraph-da729efb3a4b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "实验表明，Gist 可以在 5 个 SOTA 图像分类 DNN 中将内存成本降低 2 倍，平均降低 1.8 倍，而性能开销仅为 4%。"
+        }
+      ]
+    },
+    "heading-35760bb8ca52": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "内存高效优化器"
+        }
+      ]
+    },
+    "paragraph-5221378ab86f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "优化器对内存消耗非常渴望。以流行的 Adam 优化器为例，它内部需要维护动量和方差，两者都与梯度和模型参数处于相同的规模。突然之间，我们需要节省模型权重 4 倍的内存。"
+        }
+      ]
+    },
+    "paragraph-1486d64d3061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "已经提出了几种优化器来减少内存占用。例如，"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Adafactor"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1804.04235"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Shazeer et al. 2018"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 没有像 Adam 那样存储完整的动量和方差，而是只跟踪移动平均值的每行和每列总和，然后根据这些总和估计二阶矩。"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "SM3"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.11150"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Anil et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 描述了一种不同的自适应优化方法，也大大减少了内存。"
+        }
+      ]
+    },
+    "paragraph-79ac3dfbf262": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "ZeRO"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ("
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Zero Redundancy Optimizer"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "; "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.02054"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Rajbhandari et al. 2019"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 基于对大型模型训练中两大内存消耗的观察，优化了用于训练大型模型的内存："
+        }
+      ]
+    },
+    "list-item-5ea222b52601": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大部分内存被"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "模型状态"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "占用，包括优化器状态（例如 Adam 动量和方差）、梯度和参数。混合精度训练需要大量内存，因为优化器除了 FP16 版本外，还需要保留一份 FP32 参数和其他优化器状态的副本。"
+        }
+      ]
+    },
+    "list-item-52222c290b69": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "剩余部分被激活、临时缓冲区和不可用的碎片内存（在论文中称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "残余状态"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）消耗。"
+        }
+      ]
+    },
+    "paragraph-6d56e749dbfb": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ZeRO 结合了两种方法："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "ZeRO-DP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "ZeRO-R"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。ZeRO-DP 是一种增强的数据并行性，旨在避免模型状态上的简单冗余。它通过动态通信调度将优化器状态、梯度和参数划分到多个数据并行进程中，以最小化通信量。ZeRO-R 通过使用分区激活重计算、恒定缓冲区大小和即时内存碎片整理来优化残余状态的内存消耗。"
+        }
+      ]
+    },
+    "heading-b0fd453dd29a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用方式："
+        }
+      ]
+    },
+    "paragraph-c1da2b22c489": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Weng, Lilian. (Sep 2021). How to train really large models on many GPUs? Lil’Log. https://lilianweng.github.io/posts/2021-09-25-train-large/."
+        }
+      ]
+    },
+    "paragraph-19df72562aed": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "或"
+        }
+      ]
+    },
+    "heading-37460ab6cb0d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-c86fd85ac338": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Li et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.15704"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“PyTorch 分布式：加速数据并行训练的经验”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " VLDB 2020."
+        }
+      ]
+    },
+    "paragraph-40d6ebd115e4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Cui et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.pdl.cmu.edu/PDL-FTP/CloudComputing/GeePS-cui-eurosys16.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“GeePS：使用 GPU 专用参数服务器在分布式 GPU 上进行可扩展深度学习”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " EuroSys 2016"
+        }
+      ]
+    },
+    "paragraph-3b0160960a13": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Shoeybi et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1909.08053"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Megatron-LM：使用模型并行训练数十亿参数语言模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1909.08053 (2019)."
+        }
+      ]
+    },
+    "paragraph-801300da7278": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Narayanan et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2104.04473"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“使用 Megatron-LM 在 GPU 集群上高效训练大规模语言模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2104.04473 (2021)."
+        }
+      ]
+    },
+    "paragraph-94a853992ec5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Huang et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1811.06965"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“GPipe：使用流水线并行高效训练巨型神经网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1811.06965 (2018)."
+        }
+      ]
+    },
+    "paragraph-010368d8485c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[6] Narayanan et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://cs.stanford.edu/~matei/papers/2019/sosp_pipedream.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“PipeDream：用于 DNN 训练的广义流水线并行。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " SOSP 2019."
+        }
+      ]
+    },
+    "paragraph-90fc672a1bd9": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[7] Narayanan et al.  "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.09503"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“内存高效的流水线并行 DNN 训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICML 2021."
+        }
+      ]
+    },
+    "paragraph-170bff248a5a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[8] Shazeer et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1701.06538"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“稀疏门控专家混合层 Noam。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1701.06538 (2017)."
+        }
+      ]
+    },
+    "paragraph-3082449712c1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[9] Lepikhin et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2006.16668"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“GShard：通过条件计算和自动分片扩展巨型模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2006.16668 (2020)."
+        }
+      ]
+    },
+    "paragraph-ee52726da907": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[10] Fedus et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2101.03961"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Switch Transformers：通过简单高效的稀疏性扩展到万亿参数模型。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2101.03961 (2021)."
+        }
+      ]
+    },
+    "paragraph-83a4797ed7f1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[11] Narang & Micikevicius, et al.  "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1710.03740"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“混合精度训练。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ICLR 2018."
+        }
+      ]
+    },
+    "paragraph-9eaa8bb5248f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[12] Chen et al. 2016 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1604.06174"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“以亚线性内存成本训练深度网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1604.06174 (2016)."
+        }
+      ]
+    },
+    "paragraph-9ce5097eb920": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[13] Jain et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.microsoft.com/en-us/research/uploads/prod/2018/04/fiddle-gist-isca18.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Gist：用于深度神经网络训练的高效数据编码。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ISCA 2018."
+        }
+      ]
+    },
+    "paragraph-edf4db06d045": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[14] Shazeer & Stern. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1804.04235"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“Adafactor：具有亚线性内存成本的自适应学习率。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1804.04235 (2018)."
+        }
+      ]
+    },
+    "paragraph-59d6425c5b55": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[15] Anil et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1901.11150"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“内存高效的自适应优化。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1901.11150 (2019)."
+        }
+      ]
+    },
+    "paragraph-52e3b0a2e044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[16] Rajbhandari et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/1910.02054"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“ZeRO：面向训练万亿参数模型 Samyam 的内存优化。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:1910.02054 (2019)."
+        }
+      ]
+    },
+    "paragraph-29c4f230eda2": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[17] Zhou et al. "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/abs/2202.09368"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“带有专家选择路由的专家混合模型”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv preprint arXiv:2202.09368 (2022)."
+        }
+      ]
+    },
+    "paragraph-103a76e6a911": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给定 "
+        },
+        {
+          "type": "inline_math",
+          "text": "e"
+        },
+        {
+          "type": "text",
+          "text": " 个专家和一个输入矩阵 "
+        },
+        {
+          "type": "inline_math",
+          "text": "X \\in \\mathbb{R}^{n \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "，token 到专家的亲和度分数通过以下方式计算：\n$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\nS = \\text{softmax}(X \\cdot W_g), \\text{where } W_g \\in \\mathbb{R}^{d \\times e}, S \\in \\mathbb{R}^{n \\times e}\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    },
+    "paragraph-cd009595119a": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "token 到专家的分配由三个矩阵表示，"
+        },
+        {
+          "type": "inline_math",
+          "text": "I, G \\in \\mathbb{R}^{e\\times k}"
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "inline_math",
+          "text": "P \\in \\mathbb{R}^{e \\times k \\times n}"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "inline_math",
+          "text": "I[i,j]"
+        },
+        {
+          "type": "text",
+          "text": "标注了哪个 token 是第"
+        },
+        {
+          "type": "inline_math",
+          "text": "j"
+        },
+        {
+          "type": "text",
+          "text": "次被第"
+        },
+        {
+          "type": "inline_math",
+          "text": "i"
+        },
+        {
+          "type": "text",
+          "text": "个专家选中。门控矩阵"
+        },
+        {
+          "type": "inline_math",
+          "text": "G"
+        },
+        {
+          "type": "text",
+          "text": "存储了被选中 token 的路由权重。"
+        },
+        {
+          "type": "inline_math",
+          "text": "P"
+        },
+        {
+          "type": "text",
+          "text": "是"
+        },
+        {
+          "type": "inline_math",
+          "text": "I"
+        },
+        {
+          "type": "text",
+          "text": "的 one-hot 版本，用于为门控 FFN 层生成输入矩阵（"
+        },
+        {
+          "type": "inline_math",
+          "text": "P \\cdot X \\in \\mathbb{R}^{e \\times k \\times d}"
+        },
+        {
+          "type": "text",
+          "text": "）。\n$"
+        },
+        {
+          "type": "inline_math",
+          "text": "\nG, I = \\text{top-k}(S^\\top, k)\\quad P = \\text{one-hot}(I)\n"
+        },
+        {
+          "type": "text",
+          "text": "$"
+        }
+      ]
+    }
+  }
+}

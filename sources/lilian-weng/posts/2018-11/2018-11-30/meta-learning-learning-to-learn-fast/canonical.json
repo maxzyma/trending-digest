@@ -1,0 +1,5899 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2018-11-30-meta-learning",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2018-11-30T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:fd6c13c495d5da95f47e939640bedfcb6fec97f4c26f6f3844c5eb4c6a0e43f9",
+    "fetched_at": "2026-07-14T02:05:08.440677+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Meta-Learning: Learning to Learn Fast",
+    "title_en": "Meta-Learning: Learning to Learn Fast",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-96569227e215",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on 2019-10-01: thanks to Tianhao, we have this post translated in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://wei-tianhao.github.io/blog/2019/09/17/meta-learning.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Chinese"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "!]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d2f850a97072",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A good machine learning model often requires training with a large number of samples. Humans, in contrast, learn new concepts and skills much faster and more efficiently. Kids who have seen cats and birds only a few times can quickly tell them apart. People who know how to ride a bike are likely to discover the way to ride a motorcycle fast with little or even no demonstration. Is it possible to design a machine learning model with similar properties — learning new concepts and skills fast with a few training examples? That’s essentially what "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "meta-learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " aims to solve."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d9f2fc391eab",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We expect a good meta-learning model capable of well adapting or generalizing to new tasks and new environments that have never been encountered during training time. The adaptation process, essentially a mini learning session, happens during test but with a limited exposure to the new task configurations. Eventually, the adapted model can complete new tasks. This is why meta-learning is also known as "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.cmu.edu/~rsalakhu/papers/LakeEtAl2015Science.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "learning to learn"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7b966281cc4a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The tasks can be any well-defined family of machine learning problems: supervised learning, reinforcement learning, etc. For example, here are a couple concrete meta-learning tasks:"
+          }
+        ]
+      },
+      {
+        "id": "list-34b15d6ad69d",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-91bc5d1e46e5",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A classifier trained on non-cat images can tell whether a given image contains a cat after seeing a handful of cat pictures."
+              }
+            ]
+          },
+          {
+            "id": "list-item-43a344b33cbf",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A game bot is able to quickly master a new game."
+              }
+            ]
+          },
+          {
+            "id": "list-item-419601117741",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A mini robot completes the desired task on an uphill surface during test even through it was only trained in a flat surface environment."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-62665857fad8",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Define the Meta-Learning Problem"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-c5d5253c628d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this post, we focus on the case when each desired task is a supervised learning problem like image classification. There is a lot of interesting literature on meta-learning with reinforcement learning problems (aka “Meta Reinforcement Learning”), but we would not cover them here."
+          }
+        ]
+      },
+      {
+        "id": "heading-942068dcb832",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A Simple View"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-78c6f64f230d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A good meta-learning model should be trained over a variety of learning tasks and optimized for the best performance on a distribution of tasks, including potentially unseen tasks. Each task is associated with a dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": ", containing both feature vectors and true labels. The optimal model parameters are:"
+          }
+        ]
+      },
+      {
+        "id": "math-4f58ac8a6fa5",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta^* = \\arg\\min_\\theta \\mathbb{E}_{\\mathcal{D}\\sim p(\\mathcal{D})} [\\mathcal{L}_\\theta(\\mathcal{D})]"
+        }
+      },
+      {
+        "id": "paragraph-a67417eceecc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It looks very similar to a normal learning task, but "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "one dataset"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is considered as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "one data sample"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a9c0b85a6d26",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Few-shot classification"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is an instantiation of meta-learning in the field of supervised learning. The dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": " is often split into two parts, a support set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S"
+          },
+          {
+            "type": "text",
+            "text": " for learning and a prediction set "
+          },
+          {
+            "type": "inline_math",
+            "text": "B"
+          },
+          {
+            "type": "text",
+            "text": " for training or testing, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}=\\langle S, B\\rangle"
+          },
+          {
+            "type": "text",
+            "text": ". Often we consider a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "K-shot N-class classification"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " task: the support set contains K labelled examples for each of N classes."
+          }
+        ]
+      },
+      {
+        "id": "image-dd81b7aacc53",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/few-shot-classification.png",
+          "alt": "An example of 4-shot 2-class image classification. (Image thumbnails are from Pinterest )"
+        }
+      },
+      {
+        "id": "heading-0320eb4dba8d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training in the Same Way as Testing"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-e02782e5e8e7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": " contains pairs of feature vectors and labels, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D} = \\{(\\mathbf{x}_i, y_i)\\}"
+          },
+          {
+            "type": "text",
+            "text": " and each label belongs to a known label set "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^\\text{label}"
+          },
+          {
+            "type": "text",
+            "text": ".  Let’s say, our classifier "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " with parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " outputs a probability of a data point belonging to the class "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " given the feature vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_\\theta(y\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-272c8b7089c9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The optimal parameters should maximize the probability of true labels across multiple training batches "
+          },
+          {
+            "type": "inline_math",
+            "text": "B \\subset \\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-7668907b677f",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\theta^* &= {\\arg\\max}_{\\theta} \\mathbb{E}_{(\\mathbf{x}, y)\\in \\mathcal{D}}[P_\\theta(y \\vert \\mathbf{x})] &\\\\\n\\theta^* &= {\\arg\\max}_{\\theta} \\mathbb{E}_{B\\subset \\mathcal{D}}[\\sum_{(\\mathbf{x}, y)\\in B}P_\\theta(y \\vert \\mathbf{x})] & \\scriptstyle{\\text{; trained with mini-batches.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-e2f12b6c1e3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In few-shot classification, the goal is to reduce the prediction error on data samples with unknown labels given a small support set for “fast learning” (think of how “fine-tuning” works). To make the training process mimics what happens during inference, we would like to “fake” datasets with a subset of labels to avoid exposing all the labels to the model and modify the optimization procedure accordingly to encourage fast learning:"
+          }
+        ]
+      },
+      {
+        "id": "list-ad9a3cfe7de3",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-62b4bbe5acef",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sample a subset of labels, "
+              },
+              {
+                "type": "inline_math",
+                "text": "L\\subset\\mathcal{L}^\\text{label}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-72629cfc53ff",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sample a support set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S^L \\subset \\mathcal{D}"
+              },
+              {
+                "type": "text",
+                "text": " and a training batch "
+              },
+              {
+                "type": "inline_math",
+                "text": "B^L \\subset \\mathcal{D}"
+              },
+              {
+                "type": "text",
+                "text": ". Both of them only contain data points with labels belonging to the sampled label set "
+              },
+              {
+                "type": "inline_math",
+                "text": "L"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "y \\in L, \\forall (x, y) \\in S^L, B^L"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-741776796fa9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The support set is part of the model input. "
+              },
+              {
+                "type": "text",
+                "text": " , "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\hat{y}=f\\_\\theta(\\mathbf{x}, S^L)"
+              },
+              {
+                "type": "text",
+                "text": " "
+              }
+            ]
+          },
+          {
+            "id": "list-item-7aff698d8145",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The final optimization uses the mini-batch "
+              },
+              {
+                "type": "inline_math",
+                "text": "B^L"
+              },
+              {
+                "type": "text",
+                "text": " to compute the loss and update the model parameters through backpropagation, in the same way as how we use it in the supervised learning."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ae532e48e82",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "You may consider each pair of sampled dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "(S^L, B^L)"
+          },
+          {
+            "type": "text",
+            "text": " as one data point. The model is trained such that it can generalize to other datasets.  Symbols in red are added for meta-learning in addition to the supervised learning objective."
+          }
+        ]
+      },
+      {
+        "id": "math-f4f917d6115b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta = \\arg\\max_\\theta \\color{red}{E_{L\\subset\\mathcal{L}}[} E_{\\color{red}{S^L \\subset\\mathcal{D}, }B^L \\subset\\mathcal{D}} [\\sum_{(x, y)\\in B^L} P_\\theta(x, y\\color{red}{, S^L})] \\color{red}{]}"
+        }
+      },
+      {
+        "id": "paragraph-bb2c3afb3769",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The idea is to some extent similar to using a pre-trained model in image classification (ImageNet) or language modeling (big text corpora) when only a limited set of task-specific data samples are available. Meta-learning takes this idea one step further, rather than fine-tuning according to one down-steam task, it optimizes the model to be good at many, if not all."
+          }
+        ]
+      },
+      {
+        "id": "heading-976afe27bad2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Learner and Meta-Learner"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a1e682a08e00",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another popular view of meta-learning decomposes the model update into two stages:"
+          }
+        ]
+      },
+      {
+        "id": "list-08f40cc28e1b",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9aa2c8a0d232",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A classifier "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\theta"
+              },
+              {
+                "type": "text",
+                "text": " is the “learner” model, trained for operating a given task;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-246fea272a75",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "In the meantime, a optimizer "
+              },
+              {
+                "type": "inline_math",
+                "text": "g_\\phi"
+              },
+              {
+                "type": "text",
+                "text": " learns how to update the learner model’s parameters via the support set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta’ = g_\\phi(\\theta, S)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-41320ecc5a80",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then in final optimization step, we need to update both "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\phi"
+          },
+          {
+            "type": "text",
+            "text": " to maximize:"
+          }
+        ]
+      },
+      {
+        "id": "math-190285df81d2",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbb{E}_{L\\subset\\mathcal{L}}[ \\mathbb{E}_{S^L \\subset\\mathcal{D}, B^L \\subset\\mathcal{D}} [\\sum_{(\\mathbf{x}, y)\\in B^L} P_{g_\\phi(\\theta, S^L)}(y \\vert \\mathbf{x})]]"
+        }
+      },
+      {
+        "id": "heading-52c5d3756fc4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Common Approaches"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-91f6446d59ca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are three common approaches to meta-learning: metric-based, model-based, and optimization-based. Oriol Vinyals has a nice summary in his "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://metalearning-symposium.ml/files/vinyals.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "talk"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " at meta-learning symposium @ NIPS 2018:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5b3a9e50c763",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "| ————- | ————- | ————- | ————- |"
+          }
+        ]
+      },
+      {
+        "id": "table-c18c8785f5c9",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "",
+            "Model-based",
+            "Metric-based",
+            "Optimization-based"
+          ],
+          "rows": [
+            [
+              "Key idea",
+              "RNN; memory",
+              "Metric learning",
+              "Gradient descent"
+            ],
+            [
+              "How $P_\\theta(y \\vert \\mathbf{x})$ is modeled?",
+              "$f_\\theta(\\mathbf{x}, S)$",
+              "$\\sum_{(\\mathbf{x}_i, y_i) \\in S} k_\\theta(\\mathbf{x}, \\mathbf{x}_i)y_i$ (*)",
+              "$P_{g_\\phi(\\theta, S^L)}(y \\vert \\mathbf{x})$"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "paragraph-82466fb7f520",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(*) "
+          },
+          {
+            "type": "inline_math",
+            "text": "k_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " is a kernel function measuring the similarity between "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_i"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5bba2a738503",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Next we are gonna review classic models in each approach."
+          }
+        ]
+      },
+      {
+        "id": "heading-1378cc55459d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Metric-Based"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-a012c2242a25",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The core idea in metric-based meta-learning is similar to nearest neighbors algorithms (i.e., "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "k-NN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " classificer and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/K-means_clustering"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "k-means"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " clustering) and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Kernel_density_estimation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "kernel density estimation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The predicted probability over a set of known labels "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " is a weighted sum of labels of support set samples. The weight is generated by a kernel function "
+          },
+          {
+            "type": "inline_math",
+            "text": "k_\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", measuring the similarity between two data samples."
+          }
+        ]
+      },
+      {
+        "id": "math-178fab5864fe",
+        "type": "math",
+        "attrs": {
+          "latex": "P_\\theta(y \\vert \\mathbf{x}, S) = \\sum_{(\\mathbf{x}_i, y_i) \\in S} k_\\theta(\\mathbf{x}, \\mathbf{x}_i)y_i"
+        }
+      },
+      {
+        "id": "paragraph-cc4b02da33c7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To learn a good kernel is crucial to the success of a metric-based meta-learning model. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Similarity_learning#Metric_learning"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Metric learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is well aligned with this intention, as it aims to learn a metric or distance function over objects. The notion of a good metric is problem-dependent. It should represent the relationship between inputs in the task space and facilitate problem solving."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cb4074e98c3c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "All the models introduced below learn embedding vectors of input data explicitly and use them to design proper kernel functions."
+          }
+        ]
+      },
+      {
+        "id": "heading-4ff417df940a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Convolutional Siamese Neural Network"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c86dd91c1747",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://papers.nips.cc/paper/769-signature-verification-using-a-siamese-time-delay-neural-network.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Siamese Neural Network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is composed of two twin networks and their outputs are jointly trained on top with a function to learn the relationship between pairs of input data samples. The twin networks are identical, sharing the same weights and network parameters. In other words, both refer to the same embedding network that learns an efficient embedding to reveal relationship between pairs of data points."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cfda01dd957b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.cs.toronto.edu/~rsalakhu/papers/oneshot1.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Koch, Zemel & Salakhutdinov (2015)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a method to use the siamese neural network to do one-shot image classification. First, the siamese network is trained for a verification task for telling whether two input images are in the same class. It outputs the probability of two images belonging to the same class. Then, during test time, the siamese network processes all the image pairs between a test image and every image in the support set. The final prediction is the class of the support image with the highest probability."
+          }
+        ]
+      },
+      {
+        "id": "image-2639cc41504c",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/siamese-conv-net.png",
+          "alt": "The architecture of convolutional siamese neural network for few-show image classification."
+        }
+      },
+      {
+        "id": "list-8a66c3b938ef",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-76795e4f50d6",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "First, convolutional siamese network learns to encode two images into feature vectors via a embedding function "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\theta"
+              },
+              {
+                "type": "text",
+                "text": " which contains a couple of convolutional layers."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b34fcdd5e6eb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The L1-distance between two embeddings is "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\vert f_\\theta(\\mathbf{x}_i) - f_\\theta(\\mathbf{x}_j) \\vert"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-62d3f9943871",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The distance is converted to a probability "
+              },
+              {
+                "type": "inline_math",
+                "text": "p"
+              },
+              {
+                "type": "text",
+                "text": " by a linear feedforward layer and sigmoid. It is the probability of whether two images are drawn from the same class."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9676bebed605",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Intuitively the loss is cross entropy because the label is binary."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-4cf521a9dad8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\np(\\mathbf{x}_i, \\mathbf{x}_j) &= \\sigma(\\mathbf{W}\\vert f_\\theta(\\mathbf{x}_i) - f_\\theta(\\mathbf{x}_j) \\vert) \\\\\n\\mathcal{L}(B) &= \\sum_{(\\mathbf{x}_i, \\mathbf{x}_j, y_i, y_j)\\in B} \\mathbf{1}_{y_i=y_j}\\log p(\\mathbf{x}_i, \\mathbf{x}_j) + (1-\\mathbf{1}_{y_i=y_j})\\log (1-p(\\mathbf{x}_i, \\mathbf{x}_j))\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-bd6128d9aff2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Images in the training batch "
+          },
+          {
+            "type": "inline_math",
+            "text": "B"
+          },
+          {
+            "type": "text",
+            "text": " can be augmented with distortion. Of course, you can replace the L1 distance with other distance metric, L2, cosine, etc. Just make sure they are differential and then everything else works the same."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-eaf56ca89003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a support set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S"
+          },
+          {
+            "type": "text",
+            "text": " and a test image "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ", the final predicted class is:"
+          }
+        ]
+      },
+      {
+        "id": "math-7432c9be4940",
+        "type": "math",
+        "attrs": {
+          "latex": "\\hat{c}_S(\\mathbf{x}) = c(\\arg\\max_{\\mathbf{x}_i \\in S} P(\\mathbf{x}, \\mathbf{x}_i))"
+        }
+      },
+      {
+        "id": "paragraph-17f46a31d15b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "c(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " is the class label of an image "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{c}(.)"
+          },
+          {
+            "type": "text",
+            "text": " is the predicted label."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a6f7113646e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The assumption is that the learned embedding can be generalized to be useful for measuring the distance between images of unknown categories. This is the same assumption behind transfer learning via the adoption of a pre-trained model; for example, the convolutional features learned in the model pre-trained with ImageNet are expected to help other image tasks. However, the benefit of a pre-trained model decreases when the new task diverges from the original task that the model was trained on."
+          }
+        ]
+      },
+      {
+        "id": "heading-7bf66a42c978",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Matching Networks"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7d76f69d08c1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The task of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Matching Networks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6385-matching-networks-for-one-shot-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Vinyals et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is to learn a classifier "
+          },
+          {
+            "type": "inline_math",
+            "text": "c_S"
+          },
+          {
+            "type": "text",
+            "text": " for any given (small) support set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S=\\{x_i, y_i\\}_{i=1}^k"
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "k-shot"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " classification). This classifier defines a probability distribution over output labels "
+          },
+          {
+            "type": "inline_math",
+            "text": "y"
+          },
+          {
+            "type": "text",
+            "text": " given a test example "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ". Similar to other metric-based models, the classifier output is defined as a sum of labels of support samples weighted by attention kernel "
+          },
+          {
+            "type": "inline_math",
+            "text": "a(\\mathbf{x}, \\mathbf{x}_i)"
+          },
+          {
+            "type": "text",
+            "text": " - which should be proportional to the similarity between "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_i"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-b9bb078785d9",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/matching-networks.png",
+          "alt": "The architecture of Matching Networks. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "math-486d1adfca38",
+        "type": "math",
+        "attrs": {
+          "latex": "c_S(\\mathbf{x}) = P(y \\vert \\mathbf{x}, S) = \\sum_{i=1}^k a(\\mathbf{x}, \\mathbf{x}_i) y_i\n\\text{, where }S=\\{(\\mathbf{x}_i, y_i)\\}_{i=1}^k"
+        }
+      },
+      {
+        "id": "paragraph-dcdc52d02c7a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The attention kernel depends on two embedding functions, "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "g"
+          },
+          {
+            "type": "text",
+            "text": ", for encoding the test sample and the support set samples respectively. The attention weight between two data points is the cosine similarity, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{cosine}(.)"
+          },
+          {
+            "type": "text",
+            "text": ", between their embedding vectors, normalized by softmax:"
+          }
+        ]
+      },
+      {
+        "id": "math-3138d5de5dab",
+        "type": "math",
+        "attrs": {
+          "latex": "a(\\mathbf{x}, \\mathbf{x}_i) = \\frac{\\exp(\\text{cosine}(f(\\mathbf{x}), g(\\mathbf{x}_i))}{\\sum_{j=1}^k\\exp(\\text{cosine}(f(\\mathbf{x}), g(\\mathbf{x}_j))}"
+        }
+      },
+      {
+        "id": "heading-04e7989d5873",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Simple Embedding"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-0ed21a33e029",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the simple version, an embedding function is a neural network with a single data sample as input. Potentially we can set "
+          },
+          {
+            "type": "inline_math",
+            "text": "f=g"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-dee60e887870",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Full Context Embeddings"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-cce2ee831969",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The embedding vectors are critical inputs for building a good classifier. Taking a single data point as input might not be enough to efficiently gauge the entire feature space. Therefore, the Matching Network model further proposed to enhance the embedding functions by taking as input the whole support set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S"
+          },
+          {
+            "type": "text",
+            "text": " in addition to the original input, so that the learned embedding can be adjusted based on the relationship with other support samples."
+          }
+        ]
+      },
+      {
+        "id": "list-c503ad896617",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9a542f6415df",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "inline_math",
+                "text": "g_\\theta(\\mathbf{x}_i, S)"
+              },
+              {
+                "type": "text",
+                "text": " uses a bidirectional LSTM to encode "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_i"
+              },
+              {
+                "type": "text",
+                "text": " in the context of the entire support set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-21bfb6a0e1d0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\theta(\\mathbf{x}, S)"
+              },
+              {
+                "type": "text",
+                "text": " encodes the test sample "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}"
+              },
+              {
+                "type": "text",
+                "text": " visa an LSTM with read attention over the support set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-36e8ad8f0ee3",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-b7baf4b4c4d3",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "First the test sample goes through a simple neural network, such as a CNN, to extract basic features, "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "f’(\\mathbf{x})"
+                      },
+                      {
+                        "type": "text",
+                        "text": "."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-cd7ed45d4472",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Then an LSTM is trained with a read attention vector over the support set as part of the hidden state: "
+                      },
+                      {
+                        "type": "line_break"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "list-e71bacff2d06",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "list-item-2f09b239cf9e",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "Eventually "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "f(\\mathbf{x}, S)=\\mathbf{h}_K"
+                      },
+                      {
+                        "type": "text",
+                        "text": " if we do K steps of “read”."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-d3f73ec9c656",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n  \\hat{\\mathbf{h}}_t, \\mathbf{c}_t &= \\text{LSTM}(f'(\\mathbf{x}), [\\mathbf{h}_{t-1}, \\mathbf{r}_{t-1}], \\mathbf{c}_{t-1}) \\\\\n  \\mathbf{h}_t &= \\hat{\\mathbf{h}}_t + f'(\\mathbf{x}) \\\\\n  \\mathbf{r}_{t-1} &= \\sum_{i=1}^k a(\\mathbf{h}_{t-1}, g(\\mathbf{x}_i)) g(\\mathbf{x}_i) \\\\\n  a(\\mathbf{h}_{t-1}, g(\\mathbf{x}_i)) &= \\text{softmax}(\\mathbf{h}_{t-1}^\\top g(\\mathbf{x}_i)) = \\frac{\\exp(\\mathbf{h}_{t-1}^\\top g(\\mathbf{x}_i))}{\\sum_{j=1}^k \\exp(\\mathbf{h}_{t-1}^\\top g(\\mathbf{x}_j))}\n  \\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-e012f1fd21c6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This embedding method is called “Full Contextual Embeddings (FCE)”. Interestingly it does help improve the performance on a hard task (few-shot classification on mini ImageNet), but makes no difference on a simple task (Omniglot)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b1685add2eb7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training process in Matching Networks is designed to match inference at test time, see the details in the earlier "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#training-in-the-same-way-as-testing"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". It is worthy of mentioning that the Matching Networks paper refined the idea that training and testing conditions should match."
+          }
+        ]
+      },
+      {
+        "id": "math-e55f02020242",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta^* = \\arg\\max_\\theta \\mathbb{E}_{L\\subset\\mathcal{L}}[ \\mathbb{E}_{S^L \\subset\\mathcal{D}, B^L \\subset\\mathcal{D}} [\\sum_{(\\mathbf{x}, y)\\in B^L} P_\\theta(y\\vert\\mathbf{x}, S^L)]]"
+        }
+      },
+      {
+        "id": "heading-98cb5b45d86a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Relation Network"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-9ee43c07c30f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Relation Network (RN)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://openaccess.thecvf.com/content_cvpr_2018/papers_backup/Sung_Learning_to_Compare_CVPR_2018_paper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sung et al., 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#convolutional-siamese-neural-network"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "siamese network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " but with a few differences:"
+          }
+        ]
+      },
+      {
+        "id": "list-fd9c5fce5e44",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-56bf7c11214f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The relationship is not captured by a simple L1 distance in the feature space, but predicted by a CNN classifier "
+              },
+              {
+                "type": "inline_math",
+                "text": "g_\\phi"
+              },
+              {
+                "type": "text",
+                "text": ". The relation score between a pair of inputs, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_i"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_j"
+              },
+              {
+                "type": "text",
+                "text": ", is "
+              },
+              {
+                "type": "inline_math",
+                "text": "r_{ij} = g_\\phi([\\mathbf{x}_i, \\mathbf{x}_j])"
+              },
+              {
+                "type": "text",
+                "text": " where "
+              },
+              {
+                "type": "inline_math",
+                "text": "[.,.]"
+              },
+              {
+                "type": "text",
+                "text": " is concatenation."
+              }
+            ]
+          },
+          {
+            "id": "list-item-8789168c7470",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The objective function is MSE loss instead of cross-entropy, because conceptually RN focuses more on predicting relation scores which is more like regression, rather than binary classification, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}(B) = \\sum_{(\\mathbf{x}_i, \\mathbf{x}_j, y_i, y_j)\\in B} (r_{ij} - \\mathbf{1}_{y_i=y_j})^2"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-26586a8d1c7b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/relation-network.png",
+          "alt": "Relation Network architecture for a 5-way 1-shot problem with one query example. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-2472f5d2b938",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(Note: There is another "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://deepmind.com/blog/neural-approach-relational-reasoning/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Relation Network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for relational reasoning, proposed by DeepMind. Don’t get confused.)"
+          }
+        ]
+      },
+      {
+        "id": "heading-319bc14d1507",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Prototypical Networks"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-468a348b0938",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prototypical Networks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6996-prototypical-networks-for-few-shot-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Snell, Swersky & Zemel, 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") use an embedding function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " to encode each input into a "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional feature vector. A "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "prototype"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " feature vector is defined for every class "
+          },
+          {
+            "type": "inline_math",
+            "text": "c \\in \\mathcal{C}"
+          },
+          {
+            "type": "text",
+            "text": ", as the mean vector of the embedded support data samples in this class."
+          }
+        ]
+      },
+      {
+        "id": "math-dc688b24a3d5",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{v}_c = \\frac{1}{|S_c|} \\sum_{(\\mathbf{x}_i, y_i) \\in S_c} f_\\theta(\\mathbf{x}_i)"
+        }
+      },
+      {
+        "id": "image-9052255166da",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/prototypical-networks.png",
+          "alt": "Prototypical networks in the few-shot and zero-shot scenarios. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-32dae71362ef",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The distribution over classes for a given test input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " is a softmax over the inverse of distances between the test data embedding and prototype vectors."
+          }
+        ]
+      },
+      {
+        "id": "math-a1035bc932ed",
+        "type": "math",
+        "attrs": {
+          "latex": "P(y=c\\vert\\mathbf{x})=\\text{softmax}(-d_\\varphi(f_\\theta(\\mathbf{x}), \\mathbf{v}_c)) = \\frac{\\exp(-d_\\varphi(f_\\theta(\\mathbf{x}), \\mathbf{v}_c))}{\\sum_{c' \\in \\mathcal{C}}\\exp(-d_\\varphi(f_\\theta(\\mathbf{x}), \\mathbf{v}_{c'}))}"
+        }
+      },
+      {
+        "id": "paragraph-eb291d86c36b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_\\varphi"
+          },
+          {
+            "type": "text",
+            "text": " can be any distance function as long as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\varphi"
+          },
+          {
+            "type": "text",
+            "text": " is differentiable. In the paper, they used the squared euclidean distance."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3df16429a732",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The loss function is the negative log-likelihood: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}(\\theta) = -\\log P_\\theta(y=c\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-4fa92ba46031",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model-Based"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-7b46afac6257",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model-based meta-learning models make no assumption on the form of "
+          },
+          {
+            "type": "inline_math",
+            "text": "P_\\theta(y\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". Rather it depends on a model designed specifically for fast learning — a model that updates its parameters rapidly with a few training steps. This rapid parameter update can be achieved by its internal architecture or controlled by another meta-learner model."
+          }
+        ]
+      },
+      {
+        "id": "heading-0d6194ca6c99",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Memory-Augmented Neural Networks"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-42aa550130f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A family of model architectures use external memory storage to facilitate the learning process of neural networks, including "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#neural-turing-machines"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Neural Turing Machines"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1410.3916"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Memory Networks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". With an explicit storage buffer, it is easier for the network to rapidly incorporate new information and not to forget in the future. Such a model is known as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MANN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", short for “"
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Memory-Augmented Neural Network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "”.  Note that recurrent neural networks with only "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "internal memory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " such as vanilla RNN or LSTM are not MANNs."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-bb2e374f4418",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because MANN is expected to encode new information fast and thus to adapt to new tasks after only a few samples, it fits well for meta-learning. Taking the Neural Turing Machine (NTM) as the base model, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://proceedings.mlr.press/v48/santoro16.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Santoro et al. (2016)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a set of modifications on the training setup and the memory retrieval mechanisms (or “addressing mechanisms”, deciding how to assign attention weights to memory vectors). Please go through "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#neural-turing-machines"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the NTM section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in my other post first if you are not familiar with this matter before reading forward."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4c9d0e2f5e99",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As a quick recap, NTM couples a controller neural network with external memory storage. The controller learns to read and write memory rows by soft attention, while the memory serves as a knowledge repository. The attention weights are generated by its addressing mechanism: content-based + location based."
+          }
+        ]
+      },
+      {
+        "id": "image-d710d1c0061b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/NTM.png",
+          "alt": "The architecture of Neural Turing Machine (NTM). The memory at time t, $\\mathbf{M}\\_t$ is a matrix of size $N \\times M$, containing N vector rows and each has M dimensions."
+        }
+      },
+      {
+        "id": "heading-eedc6d1cc56c",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MANN for Meta-Learning"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-243a4c4e5d25",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To use MANN for meta-learning tasks, we need to train it in a way that the memory can encode and capture information of new tasks fast and, in the meantime, any stored representation is easily and stably accessible."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-23e308dbfedc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training described in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://proceedings.mlr.press/v48/santoro16.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Santoro et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " happens in an interesting way so that the memory is forced to hold information for longer until the appropriate labels are presented later. In each training episode, the truth label "
+          },
+          {
+            "type": "inline_math",
+            "text": "y_t"
+          },
+          {
+            "type": "text",
+            "text": " is presented with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "one step offset"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\mathbf{x}_{t+1}, y_t)"
+          },
+          {
+            "type": "text",
+            "text": ": it is the true label for the input at the previous time step t, but presented as part of the input at time step t+1."
+          }
+        ]
+      },
+      {
+        "id": "image-884f0e95bc9a",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/mann-meta-learning.png",
+          "alt": "Task setup in MANN for meta-learning (Image source: original paper )."
+        }
+      },
+      {
+        "id": "paragraph-adb3e56c007f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this way, MANN is motivated to memorize the information of a new dataset, because the memory has to hold the current input until the label is present later and then retrieve the old information to make a prediction accordingly."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-36fa1d30d3fd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Next let us see how the memory is updated for efficient information retrieval and storage."
+          }
+        ]
+      },
+      {
+        "id": "heading-1cdb0be59cc2",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Addressing Mechanism for Meta-Learning"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-113709987b53",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Aside from the training process, a new pure content-based addressing mechanism is utilized to make the model better suitable for meta-learning."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-59b975df4599",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "» How to read from memory?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\nThe read attention is constructed purely based on the content similarity."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5c35c593cc52",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First, a key feature vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{k}_t"
+          },
+          {
+            "type": "text",
+            "text": " is produced at the time step t by the controller as a function of the input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ". Similar to NTM, a read weighting vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{w}_t^r"
+          },
+          {
+            "type": "text",
+            "text": " of N elements is computed as the cosine similarity between the key vector and every memory vector row, normalized by softmax. The read vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{r}_t"
+          },
+          {
+            "type": "text",
+            "text": " is a sum of memory records weighted by such weightings:"
+          }
+        ]
+      },
+      {
+        "id": "math-c0011ba290ed",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{r}_i = \\sum_{i=1}^N w_t^r(i)\\mathbf{M}_t(i)\n\\text{, where } w_t^r(i) = \\text{softmax}(\\frac{\\mathbf{k}_t \\cdot \\mathbf{M}_t(i)}{\\|\\mathbf{k}_t\\| \\cdot \\|\\mathbf{M}_t(i)\\|})"
+        }
+      },
+      {
+        "id": "paragraph-f50f8fe64c1a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_t"
+          },
+          {
+            "type": "text",
+            "text": " is the memory matrix at time t and "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_t(i)"
+          },
+          {
+            "type": "text",
+            "text": " is the i-th row in this matrix."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9275a8b93ac1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "» How to write into memory?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          },
+          {
+            "type": "text",
+            "text": "\nThe addressing mechanism for writing newly received information into memory operates a lot like the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Cache_replacement_policies"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "cache replacement"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " policy. The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Least Recently Used Access (LRUA)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " writer is designed for MANN to better work in the scenario of meta-learning. A LRUA write head prefers to write new content to either the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "least used"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " memory location or the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "most recently used"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " memory location."
+          }
+        ]
+      },
+      {
+        "id": "list-8bfdd376e4bc",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-623eafc6d46e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Rarely used locations: so that we can preserve frequently used information (see "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Least_frequently_used"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "LFU"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ");"
+              }
+            ]
+          },
+          {
+            "id": "list-item-2a4b7de3e019",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The last used location: the motivation is that once a piece of information is retrieved once, it probably won’t be called again for a while (see "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Cache_replacement_policies#Most_recently_used_(MRU)"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MRU"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ")."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-37b67ae8e9a1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are many cache replacement algorithms and each of them could potentially replace the design here with better performance in different use cases. Furthermore, it would be a good idea to learn the memory usage pattern and addressing strategies rather than arbitrarily set it."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c936c4b329de",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The preference of LRUA is carried out in a way that everything is differentiable:"
+          }
+        ]
+      },
+      {
+        "id": "list-91ffcc7b4fea",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-36b037070668",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The usage weight "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{w}^u_t"
+              },
+              {
+                "type": "text",
+                "text": " at time t is a sum of current read and write vectors, in addition to the decayed last usage weight, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\gamma \\mathbf{w}^u_{t-1}"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\gamma"
+              },
+              {
+                "type": "text",
+                "text": " is a decay factor."
+              }
+            ]
+          },
+          {
+            "id": "list-item-26fe33e05c60",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The write vector is an interpolation between the previous read weight (prefer “the last used location”) and the previous least-used weight (prefer “rarely used location”). The interpolation parameter is the sigmoid of a hyperparameter "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\alpha"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5a71b2b1ac64",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The least-used weight "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{w}^{lu}"
+              },
+              {
+                "type": "text",
+                "text": " is scaled according to usage weights "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{w}_t^u"
+              },
+              {
+                "type": "text",
+                "text": ", in which any dimension remains at 1 if smaller than the n-th smallest element in the vector and 0 otherwise."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-d3d27f3840fa",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{w}_t^u &= \\gamma \\mathbf{w}_{t-1}^u + \\mathbf{w}_t^r + \\mathbf{w}_t^w \\\\\n\\mathbf{w}_t^r &= \\text{softmax}(\\text{cosine}(\\mathbf{k}_t, \\mathbf{M}_t(i))) \\\\\n\\mathbf{w}_t^w &= \\sigma(\\alpha)\\mathbf{w}_{t-1}^r + (1-\\sigma(\\alpha))\\mathbf{w}^{lu}_{t-1}\\\\\n\\mathbf{w}_t^{lu} &= \\mathbf{1}_{w_t^u(i) \\leq m(\\mathbf{w}_t^u, n)}\n\\text{, where }m(\\mathbf{w}_t^u, n)\\text{ is the }n\\text{-th smallest element in vector }\\mathbf{w}_t^u\\text{.}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-1dc1eb0337dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Finally, after the least used memory location, indicated by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{w}_t^{lu}"
+          },
+          {
+            "type": "text",
+            "text": ", is set to zero, every memory row is updated:"
+          }
+        ]
+      },
+      {
+        "id": "math-cf152a19547e",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{M}_t(i) = \\mathbf{M}_{t-1}(i) + w_t^w(i)\\mathbf{k}_t, \\forall i"
+        }
+      },
+      {
+        "id": "heading-1c7adbadab21",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Meta Networks"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-754669d184e1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Meta Networks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.00837"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Munkhdalai & Yu, 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), short for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MetaNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", is a meta-learning model with architecture and training process designed for "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "rapid"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " generalization across tasks."
+          }
+        ]
+      },
+      {
+        "id": "heading-f1f884ce834b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fast Weights"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-508e3f8e27d3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The rapid generalization of MetaNet relies on “fast weights”. There are a handful of papers on this topic, but I haven’t read all of them in detail and I failed to find a very concrete definition, only a vague agreement on the concept. Normally weights in the neural networks are updated by stochastic gradient descent in an objective function and this process is known to be slow. One faster way to learn is to utilize one neural network to predict the parameters of another neural network and the generated weights are called "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "fast weights"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". In comparison, the ordinary SGD-based weights are named "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "slow weights"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2a3779bb99f3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In MetaNet, loss gradients are used as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "meta information"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to populate models that learn fast weights. Slow and fast weights are combined to make predictions in neural networks."
+          }
+        ]
+      },
+      {
+        "id": "image-6eb617168dbd",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/combine-slow-fast-weights.png",
+          "alt": "Combining slow and fast weights in a MLP. $\\bigoplus$ is element-wise sum. (Image source: original paper )."
+        }
+      },
+      {
+        "id": "heading-405bd3d9174d",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model Components"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "blockquote-cb0c90c3b843",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-7f86f904674d",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Disclaimer: Below you will find my annotations are different from those in the paper. imo, the paper is poorly written, but the idea is still interesting. So I’m presenting the idea in my own language."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e74c0ba946f4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Key components of MetaNet are:"
+          }
+        ]
+      },
+      {
+        "id": "list-094e42d3e8a2",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-9b5eeb8e2475",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "An embedding function "
+              },
+              {
+                "type": "inline_math",
+                "text": "f_\\theta"
+              },
+              {
+                "type": "text",
+                "text": ", parameterized by "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta"
+              },
+              {
+                "type": "text",
+                "text": ", encodes raw inputs into feature vectors. Similar to "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#convolutional-siamese-neural-network"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Siamese Neural Network"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", these embeddings are trained to be useful for telling whether two inputs are of the same class (verification task)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-fd344696402d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A base learner model "
+              },
+              {
+                "type": "inline_math",
+                "text": "g_\\phi"
+              },
+              {
+                "type": "text",
+                "text": ", parameterized by weights "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\phi"
+              },
+              {
+                "type": "text",
+                "text": ", completes the actual learning task."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0a1a41ec1099",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If we stop here, it looks just like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#relation-network"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Relation Network"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". MetaNet, in addition, explicitly models the fast weights of both functions and then aggregates them back into the model (See Fig. 8)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f09979d657d3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Therefore we need additional two functions to output fast weights for "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "g"
+          },
+          {
+            "type": "text",
+            "text": " respectively."
+          }
+        ]
+      },
+      {
+        "id": "list-129624245214",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-39a3235356c1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "F_w"
+              },
+              {
+                "type": "text",
+                "text": ": a LSTM parameterized by "
+              },
+              {
+                "type": "inline_math",
+                "text": "w"
+              },
+              {
+                "type": "text",
+                "text": " for learning fast weights "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta^+"
+              },
+              {
+                "type": "text",
+                "text": " of the embedding function "
+              },
+              {
+                "type": "inline_math",
+                "text": "f"
+              },
+              {
+                "type": "text",
+                "text": ". It takes as input gradients of "
+              },
+              {
+                "type": "inline_math",
+                "text": "f"
+              },
+              {
+                "type": "text",
+                "text": "’s embedding loss for verification task."
+              }
+            ]
+          },
+          {
+            "id": "list-item-90313b527bf8",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "G_v"
+              },
+              {
+                "type": "text",
+                "text": ": a neural network parameterized by "
+              },
+              {
+                "type": "inline_math",
+                "text": "v"
+              },
+              {
+                "type": "text",
+                "text": " learning fast weights "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\phi^+"
+              },
+              {
+                "type": "text",
+                "text": " for the base learner "
+              },
+              {
+                "type": "inline_math",
+                "text": "g"
+              },
+              {
+                "type": "text",
+                "text": " from its loss gradients. In MetaNet, the learner’s loss gradients are viewed as the "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "meta information"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " of the task."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8f80ce408f2b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Ok, now let’s see how meta networks are trained. The training data contains multiple pairs of datasets: a support set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S=\\{\\mathbf{x}’_i, y’_i\\}_{i=1}^K"
+          },
+          {
+            "type": "text",
+            "text": " and a test set  "
+          },
+          {
+            "type": "inline_math",
+            "text": "U=\\{\\mathbf{x}_i, y_i\\}_{i=1}^L"
+          },
+          {
+            "type": "text",
+            "text": ". Recall that we have four networks and four sets of model parameters to learn, "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\theta, \\phi, w, v)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-94d435376a15",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/meta-network.png",
+          "alt": "Fig.9. The MetaNet architecture."
+        }
+      },
+      {
+        "id": "heading-5d5ec45eeb61",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Training Process"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "list-561e118b8f5e",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-b7451f492241",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Sample a random pair of inputs at each time step t from the support set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_math",
+                "text": "(\\mathbf{x}’_i, y’_i)"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "(\\mathbf{x}’_j, y_j)"
+              },
+              {
+                "type": "text",
+                "text": ". Let "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_{(t,1)}=\\mathbf{x}’_i"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}_{(t,2)}=\\mathbf{x}’_j"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nfor "
+              },
+              {
+                "type": "inline_math",
+                "text": "t = 1, \\dots, K"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-55e741409452",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-6175b1d2672c",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "a. Compute a loss for representation learning; i.e., cross entropy for the verification task:"
+                      },
+                      {
+                        "type": "line_break"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\mathcal{L}^\\text{emb}_t = \\mathbf{1}_{y’_i=y’_j} \\log P_t + (1 - \\mathbf{1}_{y’_i=y’_j})\\log(1 - P_t)\\text{, where }P_t = \\sigma(\\mathbf{W}\\vert f_\\theta(\\mathbf{x}_{(t,1)}) - f_\\theta(\\mathbf{x}_{(t,2)})\\vert)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-dcbb9e10b657",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Compute the task-level fast weights:\n"
+              },
+              {
+                "type": "inline_math",
+                "text": "\\theta^+ = F_w(\\nabla_\\theta \\mathcal{L}^\\text{emb}_1, \\dots, \\mathcal{L}^\\text{emb}_T)"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "list-item-8100607f056d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Next go through examples in the support set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": " and compute the example-level fast weights. Meanwhile, update the memory with learned representations."
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nfor "
+              },
+              {
+                "type": "inline_math",
+                "text": "i=1, \\dots, K"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-52ad334c6f5e",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-4df835b12ed6",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "a. The base learner outputs a probability distribution: "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "P(\\hat{y}_i \\vert \\mathbf{x}_i) = g_\\phi(\\mathbf{x}_i)"
+                      },
+                      {
+                        "type": "text",
+                        "text": " and the loss can be cross-entropy or MSE: "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\mathcal{L}^\\text{task}_i = y’_i \\log g_\\phi(\\mathbf{x}’_i) + (1- y’_i) \\log (1 - g_\\phi(\\mathbf{x}’_i))"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-a84d75ba295e",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "b. Extract meta information (loss gradients) of the task and compute the example-level fast weights:\n"
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\phi_i^+ = G_v(\\nabla_\\phi\\mathcal{L}^\\text{task}_i)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "id": "list-52852a0a5438",
+                        "type": "list",
+                        "attrs": {
+                          "ordered": false
+                        },
+                        "children": [
+                          {
+                            "id": "list-item-02e3fc11a2d4",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "Then store "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\phi^+_i"
+                              },
+                              {
+                                "type": "text",
+                                "text": " into "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "i"
+                              },
+                              {
+                                "type": "text",
+                                "text": "-th location of the “value” memory "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\mathbf{M}"
+                              },
+                              {
+                                "type": "text",
+                                "text": "."
+                              },
+                              {
+                                "type": "line_break"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-2287f52490cb",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "d. Encode the support sample into a task-specific input representation using both slow and fast weights: "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "r’_i = f_{\\theta, \\theta^+}(\\mathbf{x}’_i)"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      },
+                      {
+                        "type": "text",
+                        "text": "\n"
+                      }
+                    ],
+                    "children": [
+                      {
+                        "id": "list-3c4eb32fc1fb",
+                        "type": "list",
+                        "attrs": {
+                          "ordered": false
+                        },
+                        "children": [
+                          {
+                            "id": "list-item-bd30b2d9614a",
+                            "type": "list_item",
+                            "inlines": [
+                              {
+                                "type": "text",
+                                "text": "Then store "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "r’_i"
+                              },
+                              {
+                                "type": "text",
+                                "text": " into "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "i"
+                              },
+                              {
+                                "type": "text",
+                                "text": "-th location of the “key” memory "
+                              },
+                              {
+                                "type": "inline_math",
+                                "text": "\\mathbf{R}"
+                              },
+                              {
+                                "type": "text",
+                                "text": "."
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-2d5394f28d6d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Finally it is the time to construct the training loss using the test set "
+              },
+              {
+                "type": "inline_math",
+                "text": "U=\\{\\mathbf{x}_i, y_i\\}_{i=1}^L"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nStarts with "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_\\text{train}=0"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\nfor "
+              },
+              {
+                "type": "inline_math",
+                "text": "j=1, \\dots, L"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ],
+            "children": [
+              {
+                "id": "list-f1c8b762c4f1",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-b326bdeaa8f2",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "a. Encode the test sample into a task-specific input representation:\n"
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "r_j = f_{\\theta, \\theta^+}(\\mathbf{x}_j)"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "list-item-057a96b879cc",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "b. The fast weights are computed by attending to representations of support set samples in memory "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\mathbf{R}"
+                      },
+                      {
+                        "type": "text",
+                        "text": ". The attention function is of your choice. Here MetaNet uses cosine similarity:"
+                      },
+                      {
+                        "type": "line_break"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "list-8df9448c62cd",
+                "type": "list",
+                "attrs": {
+                  "ordered": false
+                },
+                "children": [
+                  {
+                    "id": "list-item-e5a8038f0c7f",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "c. Update the training loss: "
+                      },
+                      {
+                        "type": "inline_math",
+                        "text": "\\mathcal{L}_\\text{train} \\leftarrow \\mathcal{L}_\\text{train} + \\mathcal{L}^\\text{task}(g_{\\phi, \\phi^+}(\\mathbf{x}_i), y_i) "
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "list-item-acdb8807a059",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "Update all the parameters "
+              },
+              {
+                "type": "inline_math",
+                "text": "(\\theta, \\phi, w, v)"
+              },
+              {
+                "type": "text",
+                "text": " using "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_\\text{train}"
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-66f18d607c02",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n a_j &= \\text{cosine}(\\mathbf{R}, r_j) = [\\frac{r'_1\\cdot r_j}{\\|r'_1\\|\\cdot\\|r_j\\|}, \\dots, \\frac{r'_N\\cdot r_j}{\\|r'_N\\|\\cdot\\|r_j\\|}]\\\\\n \\phi^+_j &= \\text{softmax}(a_j)^\\top \\mathbf{M}\n \\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-f59f86283154",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Optimization-Based"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-8a6ac7e90ba4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Deep learning models learn through backpropagation of gradients. However, the gradient-based optimization is neither designed to cope with a small number of training samples, nor to converge within a small number of optimization steps. Is there a way to adjust the optimization algorithm so that the model can be good at learning with a few examples? This is what optimization-based approach meta-learning algorithms intend for."
+          }
+        ]
+      },
+      {
+        "id": "heading-bec809d4b3bb",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "LSTM Meta-Learner"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-c8d63c4b2f57",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The optimization algorithm can be explicitly modeled. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/pdf?id=rJY0-Kcll"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Ravi & Larochelle (2017)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " did so and named it “meta-learner”, while the original model for handling the task is called “learner”. The goal of the meta-learner is to efficiently update the learner’s parameters using a small support set so that the learner can adapt to the new task quickly."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8ec092686eaa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s denote the learner model as "
+          },
+          {
+            "type": "inline_math",
+            "text": "M_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ", the meta-learner as "
+          },
+          {
+            "type": "inline_math",
+            "text": "R_\\Theta"
+          },
+          {
+            "type": "text",
+            "text": " with parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Theta"
+          },
+          {
+            "type": "text",
+            "text": ", and the loss function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-3b8899af7f94",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Why LSTM?"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-63aad7d58da0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The meta-learner is modeled as a LSTM, because:"
+          }
+        ]
+      },
+      {
+        "id": "list-debc78eaf263",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-f6df2d531326",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "There is similarity between the gradient-based update in backpropagation and the cell-state update in LSTM."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e8e34333314b",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Knowing a history of gradients benefits the gradient update; think about how "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "http://ruder.io/optimizing-gradient-descent/index.html#momentum"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "momentum"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " works."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-88480027e2b0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The update for the learner’s parameters at time step t with a learning rate "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha_t"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-34979e8e54be",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta_t = \\theta_{t-1} - \\alpha_t \\nabla_{\\theta_{t-1}}\\mathcal{L}_t"
+        }
+      },
+      {
+        "id": "paragraph-d4056809a31c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It has the same form as the cell state update in LSTM, if we set forget gate "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_t=1"
+          },
+          {
+            "type": "text",
+            "text": ", input gate "
+          },
+          {
+            "type": "inline_math",
+            "text": "i_t = \\alpha_t"
+          },
+          {
+            "type": "text",
+            "text": ", cell state "
+          },
+          {
+            "type": "inline_math",
+            "text": "c_t = \\theta_t"
+          },
+          {
+            "type": "text",
+            "text": ", and new cell state "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{c}_t = -\\nabla_{\\theta_{t-1}}\\mathcal{L}_t"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-d4e86bb67de6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nc_t &= f_t \\odot c_{t-1} + i_t \\odot \\tilde{c}_t\\\\\n    &= \\theta_{t-1} - \\alpha_t\\nabla_{\\theta_{t-1}}\\mathcal{L}_t\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-336d0a43a79f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "While fixing "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_t=1"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "i_t=\\alpha_t"
+          },
+          {
+            "type": "text",
+            "text": " might not be the optimal, both of them can be learnable and adaptable to different datasets."
+          }
+        ]
+      },
+      {
+        "id": "math-46bc94285243",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nf_t &= \\sigma(\\mathbf{W}_f \\cdot [\\nabla_{\\theta_{t-1}}\\mathcal{L}_t, \\mathcal{L}_t, \\theta_{t-1}, f_{t-1}] + \\mathbf{b}_f) & \\scriptstyle{\\text{; how much to forget the old value of parameters.}}\\\\\ni_t &= \\sigma(\\mathbf{W}_i \\cdot [\\nabla_{\\theta_{t-1}}\\mathcal{L}_t, \\mathcal{L}_t, \\theta_{t-1}, i_{t-1}] + \\mathbf{b}_i) & \\scriptstyle{\\text{; corresponding to the learning rate at time step t.}}\\\\\n\\tilde{\\theta}_t &= -\\nabla_{\\theta_{t-1}}\\mathcal{L}_t &\\\\\n\\theta_t &= f_t \\odot \\theta_{t-1} + i_t \\odot \\tilde{\\theta}_t &\\\\\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "heading-398377f8441f",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Model Setup"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "image-fc39c9c66acd",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/lstm-meta-learner.png",
+          "alt": "How the learner $M\\_\\theta$ and the meta-learner $R\\_\\Theta$ are trained. (Image source: original paper with more annotations)"
+        }
+      },
+      {
+        "id": "paragraph-d41872774e39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The training process mimics what happens during test, since it has been proved to be beneficial in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#matching-networks"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Matching Networks"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". During each training epoch, we first sample a dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D} = (\\mathcal{D}_\\text{train}, \\mathcal{D}_\\text{test}) \\in \\hat{\\mathcal{D}}_\\text{meta-train}"
+          },
+          {
+            "type": "text",
+            "text": " and then sample mini-batches out of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_\\text{train}"
+          },
+          {
+            "type": "text",
+            "text": " to update "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "T"
+          },
+          {
+            "type": "text",
+            "text": " rounds. The final state of the learner parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta_T"
+          },
+          {
+            "type": "text",
+            "text": " is used to train the meta-learner on the test data "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}_\\text{test}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-25ee69a066bb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two implementation details to pay extra attention to:"
+          }
+        ]
+      },
+      {
+        "id": "list-4b1aa81d784f",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-e5e27b082983",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "How to compress the parameter space in LSTM meta-learner? As the meta-learner is modeling parameters of another neural network, it would have hundreds of thousands of variables to learn. Following the "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1606.04474"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "idea"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " of sharing parameters across coordinates,"
+              }
+            ]
+          },
+          {
+            "id": "list-item-f89bc9f4dcb1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "To simplify the training process, the meta-learner assumes that the loss "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathcal{L}_t"
+              },
+              {
+                "type": "text",
+                "text": " and the gradient "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\nabla_{\\theta_{t-1}} \\mathcal{L}_t"
+              },
+              {
+                "type": "text",
+                "text": " are independent."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-3e14f182f1cf",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/train-meta-learner.png",
+          "alt": "Diagram of MAML. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "heading-a6412d1f5e84",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MAML"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-57abd076e05c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MAML"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", short for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Model-Agnostic Meta-Learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03400"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Finn, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a fairly general optimization algorithm, compatible with any model that learns through gradient descent."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-353f83c99c64",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say our model is "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " with parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ". Given a task "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau_i"
+          },
+          {
+            "type": "text",
+            "text": " and its associated dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\mathcal{D}^{(i)}_\\text{train}, \\mathcal{D}^{(i)}_\\text{test})"
+          },
+          {
+            "type": "text",
+            "text": ", we can update the model parameters by one or more gradient descent steps (the following example only contains one step):"
+          }
+        ]
+      },
+      {
+        "id": "math-c9e8b5d30247",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta'_i = \\theta - \\alpha \\nabla_\\theta\\mathcal{L}^{(0)}_{\\tau_i}(f_\\theta)"
+        }
+      },
+      {
+        "id": "paragraph-54e834e3b8f4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^{(0)}"
+          },
+          {
+            "type": "text",
+            "text": " is the loss computed using the mini data batch with id (0)."
+          }
+        ]
+      },
+      {
+        "id": "image-1d05fed029a8",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/maml.png",
+          "alt": "Diagram of MAML. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-705b984057a3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Well, the above formula only optimizes for one task. To achieve a good generalization across a variety of tasks, we would like to find the optimal "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta^*"
+          },
+          {
+            "type": "text",
+            "text": " so that the task-specific fine-tuning is more efficient. Now, we sample a new data batch with id (1) for updating the meta-objective. The loss, denoted as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^{(1)}"
+          },
+          {
+            "type": "text",
+            "text": ", depends on the mini batch (1). The superscripts in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^{(0)}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^{(1)}"
+          },
+          {
+            "type": "text",
+            "text": " only indicate different data batches, and they refer to the same loss objective for the same task."
+          }
+        ]
+      },
+      {
+        "id": "math-1cbedf53e340",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\theta^* \n&= \\arg\\min_\\theta \\sum_{\\tau_i \\sim p(\\tau)} \\mathcal{L}_{\\tau_i}^{(1)} (f_{\\theta'_i}) = \\arg\\min_\\theta \\sum_{\\tau_i \\sim p(\\tau)} \\mathcal{L}_{\\tau_i}^{(1)} (f_{\\theta - \\alpha\\nabla_\\theta \\mathcal{L}_{\\tau_i}^{(0)}(f_\\theta)}) & \\\\\n\\theta &\\leftarrow \\theta - \\beta \\nabla_{\\theta} \\sum_{\\tau_i \\sim p(\\tau)} \\mathcal{L}_{\\tau_i}^{(1)} (f_{\\theta - \\alpha\\nabla_\\theta \\mathcal{L}_{\\tau_i}^{(0)}(f_\\theta)}) & \\scriptstyle{\\text{; updating rule}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-045301415fd4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/maml-algo.png",
+          "alt": "The general form of MAML algorithm. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "heading-ffdab0523cfb",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First-Order MAML"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-abe6181e0327",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The meta-optimization step above relies on second derivatives. To make the computation less expensive, a modified version of MAML omits second derivatives, resulting in a simplified and cheaper implementation, known as "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "First-Order MAML (FOMAML)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5eca7f9273da",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s consider the case of performing "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": " inner gradient steps, "
+          },
+          {
+            "type": "inline_math",
+            "text": "k\\geq1"
+          },
+          {
+            "type": "text",
+            "text": ". Starting with the initial model parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta_\\text{meta}"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-96956fce9c9a",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\theta_0 &= \\theta_\\text{meta}\\\\\n\\theta_1 &= \\theta_0 - \\alpha\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_0)\\\\\n\\theta_2 &= \\theta_1 - \\alpha\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_1)\\\\\n&\\dots\\\\\n\\theta_k &= \\theta_{k-1} - \\alpha\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_{k-1})\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-55c990bb5a98",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then in the outer loop, we sample a new data batch for updating the meta-objective."
+          }
+        ]
+      },
+      {
+        "id": "math-dcea6fdaace5",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\theta_\\text{meta} &\\leftarrow \\theta_\\text{meta} - \\beta g_\\text{MAML} & \\scriptstyle{\\text{; update for meta-objective}} \\\\[2mm]\n\\text{where } g_\\text{MAML}\n&= \\nabla_{\\theta} \\mathcal{L}^{(1)}(\\theta_k) &\\\\[2mm]\n&= \\nabla_{\\theta_k} \\mathcal{L}^{(1)}(\\theta_k) \\cdot (\\nabla_{\\theta_{k-1}} \\theta_k) \\dots (\\nabla_{\\theta_0} \\theta_1) \\cdot (\\nabla_{\\theta} \\theta_0) & \\scriptstyle{\\text{; following the chain rule}} \\\\\n&= \\nabla_{\\theta_k} \\mathcal{L}^{(1)}(\\theta_k) \\cdot \\Big( \\prod_{i=1}^k \\nabla_{\\theta_{i-1}} \\theta_i \\Big) \\cdot I &  \\\\\n&= \\nabla_{\\theta_k} \\mathcal{L}^{(1)}(\\theta_k) \\cdot \\prod_{i=1}^k \\nabla_{\\theta_{i-1}} (\\theta_{i-1} - \\alpha\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_{i-1})) &  \\\\\n&= \\nabla_{\\theta_k} \\mathcal{L}^{(1)}(\\theta_k) \\cdot \\prod_{i=1}^k (I - \\alpha\\nabla_{\\theta_{i-1}}(\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_{i-1}))) &\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-94a4aa29165a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The MAML gradient is:"
+          }
+        ]
+      },
+      {
+        "id": "math-7d8819c63afc",
+        "type": "math",
+        "attrs": {
+          "latex": "g_\\text{MAML} = \\nabla_{\\theta_k} \\mathcal{L}^{(1)}(\\theta_k) \\cdot \\prod_{i=1}^k (I - \\alpha \\color{red}{\\nabla_{\\theta_{i-1}}(\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_{i-1}))})"
+        }
+      },
+      {
+        "id": "paragraph-0a9fea12f08e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The First-Order MAML ignores the second derivative part in red. It is simplified as follows, equivalent to the derivative of the last inner gradient update result."
+          }
+        ]
+      },
+      {
+        "id": "math-0137e5f2b18b",
+        "type": "math",
+        "attrs": {
+          "latex": "g_\\text{FOMAML} = \\nabla_{\\theta_k} \\mathcal{L}^{(1)}(\\theta_k)"
+        }
+      },
+      {
+        "id": "heading-1714eca1f551",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reptile"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-7d188ebb0c78",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Reptile"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.02999"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Nichol, Achiam & Schulman, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a remarkably simple meta-learning optimization algorithm. It is similar to MAML in many ways, given that both rely on meta-optimization through gradient descent and both are model-agnostic."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-086a28395910",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Reptile works by repeatedly:"
+          }
+        ]
+      },
+      {
+        "id": "list-a776be879110",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-ef08ad006d34",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "sampling a task,"
+              }
+            ]
+          },
+          {
+            "id": "list-item-25cc0b86e193",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "training on it by multiple gradient descent steps,"
+              }
+            ]
+          },
+          {
+            "id": "list-item-4f0cdb3e3cac",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "and then moving the model weights towards the new parameters."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f1fb1b4523e3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "See the algorithm below:\n"
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{SGD}(\\mathcal{L}_{\\tau_i}, \\theta, k)"
+          },
+          {
+            "type": "text",
+            "text": " performs stochastic gradient update for k steps on the loss "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}_{\\tau_i}"
+          },
+          {
+            "type": "text",
+            "text": " starting with initial parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and returns the final parameter vector. The batch version samples multiple tasks instead of one within each iteration. The reptile gradient is defined as "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\theta - W)/\\alpha"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\alpha"
+          },
+          {
+            "type": "text",
+            "text": " is the stepsize used by the SGD operation."
+          }
+        ]
+      },
+      {
+        "id": "image-284829ede292",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/reptile-algo.png",
+          "alt": "The batched version of Reptile algorithm. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-b3d20fcb77dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At a glance, the algorithm looks a lot like an ordinary SGD. However, because the task-specific optimization can take more than one step. it eventually makes "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{SGD}(\\mathbb{E}\n_\\tau[\\mathcal{L}_{\\tau}], \\theta, k)"
+          },
+          {
+            "type": "text",
+            "text": " diverge from "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_\\tau [\\text{SGD}(\\mathcal{L}_{\\tau}, \\theta, k)]"
+          },
+          {
+            "type": "text",
+            "text": " when k > 1."
+          }
+        ]
+      },
+      {
+        "id": "heading-41a87d80f95b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Optimization Assumption"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-5901841eae01",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Assuming that a task "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau \\sim p(\\tau)"
+          },
+          {
+            "type": "text",
+            "text": " has a manifold of optimal network configuration, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{W}_{\\tau}^*"
+          },
+          {
+            "type": "text",
+            "text": ". The model "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_\\theta"
+          },
+          {
+            "type": "text",
+            "text": " achieves the best performance for task "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": " when "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " lays on the surface of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{W}_{\\tau}^*"
+          },
+          {
+            "type": "text",
+            "text": ". To find a solution that is good across tasks, we would like to find a parameter close to all the optimal manifolds of all tasks:"
+          }
+        ]
+      },
+      {
+        "id": "math-44605842bf47",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta^* = \\arg\\min_\\theta \\mathbb{E}_{\\tau \\sim p(\\tau)} [\\frac{1}{2} \\text{dist}(\\theta, \\mathcal{W}_\\tau^*)^2]"
+        }
+      },
+      {
+        "id": "image-c5be99ad14ef",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/reptile-optim.png",
+          "alt": "The Reptile algorithm updates the parameter alternatively to be closer to the optimal manifolds of different tasks. (Image source: original paper )"
+        }
+      },
+      {
+        "id": "paragraph-c23bc9d9019b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s use the L2 distance as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{dist}(.)"
+          },
+          {
+            "type": "text",
+            "text": " and the distance between a point "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and a set "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{W}_\\tau^*"
+          },
+          {
+            "type": "text",
+            "text": " equals to the distance between "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": " and a point "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_{\\tau}^*(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " on the manifold that is closest to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-7d2e922bd655",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{dist}(\\theta, \\mathcal{W}_{\\tau}^*) = \\text{dist}(\\theta, W_{\\tau}^*(\\theta)) \\text{, where }W_{\\tau}^*(\\theta) = \\arg\\min_{W\\in\\mathcal{W}_{\\tau}^*} \\text{dist}(\\theta, W)"
+        }
+      },
+      {
+        "id": "paragraph-1594b2ceeccb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The gradient of the squared euclidean distance is:"
+          }
+        ]
+      },
+      {
+        "id": "math-0c47b05e8bcf",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\nabla_\\theta[\\frac{1}{2}\\text{dist}(\\theta, \\mathcal{W}_{\\tau_i}^*)^2]\n&= \\nabla_\\theta[\\frac{1}{2}\\text{dist}(\\theta, W_{\\tau_i}^*(\\theta))^2] & \\\\\n&= \\nabla_\\theta[\\frac{1}{2}(\\theta - W_{\\tau_i}^*(\\theta))^2] & \\\\\n&= \\theta - W_{\\tau_i}^*(\\theta) & \\scriptstyle{\\text{; See notes.}}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-bc4f5b7acfb7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notes: According to the Reptile paper, "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“the gradient of the squared euclidean distance between a point "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\Theta"
+              },
+              {
+                "type": "text",
+                "text": " and a set "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": " is the vector "
+              },
+              {
+                "type": "inline_math",
+                "text": "2(\\Theta − p)"
+              },
+              {
+                "type": "text",
+                "text": ", where p is the closest point in "
+              },
+              {
+                "type": "inline_math",
+                "text": "S"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\Theta"
+              },
+              {
+                "type": "text",
+                "text": "”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Technically the closest point in "
+          },
+          {
+            "type": "inline_math",
+            "text": "S"
+          },
+          {
+            "type": "text",
+            "text": " is also a function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Theta"
+          },
+          {
+            "type": "text",
+            "text": ", but I’m not sure why the gradient does not need to worry about the derivative of "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": ". (Please feel free to leave me a comment or send me an email about this if you have ideas.)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-179742329452",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Thus the update rule for one stochastic gradient step is:"
+          }
+        ]
+      },
+      {
+        "id": "math-384200659fa5",
+        "type": "math",
+        "attrs": {
+          "latex": "\\theta = \\theta - \\alpha \\nabla_\\theta[\\frac{1}{2} \\text{dist}(\\theta, \\mathcal{W}_{\\tau_i}^*)^2] = \\theta - \\alpha(\\theta - W_{\\tau_i}^*(\\theta)) = (1-\\alpha)\\theta + \\alpha W_{\\tau_i}^*(\\theta)"
+        }
+      },
+      {
+        "id": "paragraph-83964863da48",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The closest point on the optimal task manifold "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_{\\tau_i}^*(\\theta)"
+          },
+          {
+            "type": "text",
+            "text": " cannot be computed exactly, but Reptile approximates it using "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{SGD}(\\mathcal{L}_\\tau, \\theta, k)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "heading-86f026d95c09",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reptile vs FOMAML"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "paragraph-c9a3e75f3155",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To demonstrate the deeper connection between Reptile and MAML, let’s expand the update formula with an example performing two gradient steps, k=2 in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{SGD}(.)"
+          },
+          {
+            "type": "text",
+            "text": ". Same as defined "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#maml"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "above"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^{(0)}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{L}^{(1)}"
+          },
+          {
+            "type": "text",
+            "text": " are losses using different mini-batches of data. For ease of reading, we adopt two simplified annotations: "
+          },
+          {
+            "type": "inline_math",
+            "text": "g^{(i)}_j = \\nabla_{\\theta} \\mathcal{L}^{(i)}(\\theta_j)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "H^{(i)}_j = \\nabla^2_{\\theta} \\mathcal{L}^{(i)}(\\theta_j)"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-e4694dea4f1d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\theta_0 &= \\theta_\\text{meta}\\\\\n\\theta_1 &= \\theta_0 - \\alpha\\nabla_\\theta\\mathcal{L}^{(0)}(\\theta_0)= \\theta_0 - \\alpha g^{(0)}_0 \\\\\n\\theta_2 &= \\theta_1 - \\alpha\\nabla_\\theta\\mathcal{L}^{(1)}(\\theta_1) = \\theta_0 - \\alpha g^{(0)}_0 - \\alpha g^{(1)}_1\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-5002be20867f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "According to the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/#first-order-maml"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "early section"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the gradient of FOMAML is the last inner gradient update result. Therefore, when k=1:"
+          }
+        ]
+      },
+      {
+        "id": "math-6ab9318e5a70",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ng_\\text{FOMAML} &= \\nabla_{\\theta_1} \\mathcal{L}^{(1)}(\\theta_1) = g^{(1)}_1 \\\\\ng_\\text{MAML} &= \\nabla_{\\theta_1} \\mathcal{L}^{(1)}(\\theta_1) \\cdot (I - \\alpha\\nabla^2_{\\theta} \\mathcal{L}^{(0)}(\\theta_0)) = g^{(1)}_1 - \\alpha H^{(0)}_0 g^{(1)}_1\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-c4f1c0b80b74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Reptile gradient is defined as:"
+          }
+        ]
+      },
+      {
+        "id": "math-aa68db5f998e",
+        "type": "math",
+        "attrs": {
+          "latex": "g_\\text{Reptile} = (\\theta_0 - \\theta_2) / \\alpha = g^{(0)}_0 + g^{(1)}_1"
+        }
+      },
+      {
+        "id": "paragraph-7bd04ffb9e74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Up to now we have:"
+          }
+        ]
+      },
+      {
+        "id": "image-d4a435b42ed4",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/reptile_vs_FOMAML.png",
+          "alt": "Reptile versus FOMAML in one loop of meta-optimization. (Image source: slides on Reptile by Yoonho Lee.)"
+        }
+      },
+      {
+        "id": "math-93b6eb9afa46",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ng_\\text{FOMAML} &= g^{(1)}_1 \\\\\ng_\\text{MAML} &= g^{(1)}_1 - \\alpha H^{(0)}_0 g^{(1)}_1 \\\\\ng_\\text{Reptile} &= g^{(0)}_0 + g^{(1)}_1\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-6a9889b5abdb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Next let’s try further expand "
+          },
+          {
+            "type": "inline_math",
+            "text": "g^{(1)}_1"
+          },
+          {
+            "type": "text",
+            "text": " using "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Taylor_series"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Taylor expansion"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Recall that Taylor expansion of a function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f(x)"
+          },
+          {
+            "type": "text",
+            "text": " that is differentiable at a number "
+          },
+          {
+            "type": "inline_math",
+            "text": "a"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-2cd54d9e2999",
+        "type": "math",
+        "attrs": {
+          "latex": "f(x) = f(a) + \\frac{f'(a)}{1!}(x-a) + \\frac{f''(a)}{2!}(x-a)^2 + \\dots = \\sum_{i=0}^\\infty \\frac{f^{(i)}(a)}{i!}(x-a)^i"
+        }
+      },
+      {
+        "id": "paragraph-64cb1f7e8fd5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We can consider "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\nabla_{\\theta}\\mathcal{L}^{(1)}(.)"
+          },
+          {
+            "type": "text",
+            "text": " as a function and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta_0"
+          },
+          {
+            "type": "text",
+            "text": " as a value point. The Taylor expansion of "
+          },
+          {
+            "type": "inline_math",
+            "text": "g_1^{(1)}"
+          },
+          {
+            "type": "text",
+            "text": " at the value point "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\theta_0"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-1017ed233cf9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ng_1^{(1)} &= \\nabla_{\\theta}\\mathcal{L}^{(1)}(\\theta_1) \\\\\n&= \\nabla_{\\theta}\\mathcal{L}^{(1)}(\\theta_0) + \\nabla^2_\\theta\\mathcal{L}^{(1)}(\\theta_0)(\\theta_1 - \\theta_0) + \\frac{1}{2}\\nabla^3_\\theta\\mathcal{L}^{(1)}(\\theta_0)(\\theta_1 - \\theta_0)^2 + \\dots & \\\\\n&= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + \\frac{\\alpha^2}{2}\\nabla^3_\\theta\\mathcal{L}^{(1)}(\\theta_0) (g_0^{(0)})^2 + \\dots & \\scriptstyle{\\text{; because }\\theta_1-\\theta_0=-\\alpha g_0^{(0)}} \\\\\n&= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-a91a37951ba7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Plug in the expanded form of "
+          },
+          {
+            "type": "inline_math",
+            "text": "g_1^{(1)}"
+          },
+          {
+            "type": "text",
+            "text": " into the MAML gradients with one step inner gradient update:"
+          }
+        ]
+      },
+      {
+        "id": "math-41e3e1a4bf97",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ng_\\text{FOMAML} &= g^{(1)}_1 = g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2)\\\\\ng_\\text{MAML} &= g^{(1)}_1 - \\alpha H^{(0)}_0 g^{(1)}_1 \\\\\n&= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2) - \\alpha H^{(0)}_0 (g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2))\\\\\n&= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} - \\alpha H^{(0)}_0 g_0^{(1)} + \\alpha^2 \\alpha H^{(0)}_0 H^{(1)}_0 g_0^{(0)} + O(\\alpha^2)\\\\\n&= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} - \\alpha H^{(0)}_0 g_0^{(1)} + O(\\alpha^2)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-820f082459e0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Reptile gradient becomes:"
+          }
+        ]
+      },
+      {
+        "id": "math-3a70171e1a59",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ng_\\text{Reptile} \n&= g^{(0)}_0 + g^{(1)}_1 \\\\\n&= g^{(0)}_0 + g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-cc50a38d31cc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "So far we have the formula of three types of gradients:"
+          }
+        ]
+      },
+      {
+        "id": "math-e9047572d675",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ng_\\text{FOMAML} &= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2)\\\\\ng_\\text{MAML} &= g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} - \\alpha H^{(0)}_0 g_0^{(1)} + O(\\alpha^2)\\\\\ng_\\text{Reptile}  &= g^{(0)}_0 + g_0^{(1)} - \\alpha H^{(1)}_0 g_0^{(0)} + O(\\alpha^2)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-54da9fac936d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "During training, we often average over multiple data batches. In our example, the mini batches (0) and (1) are interchangeable since both are drawn at random. The expectation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{E}_{\\tau,0,1}"
+          },
+          {
+            "type": "text",
+            "text": " is averaged over two data batches, ids (0) and (1), for task "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b7e2458565ac",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let,"
+          }
+        ]
+      },
+      {
+        "id": "list-f3626d54801f",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-7fb1f73c0062",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "A = \\mathbb{E}_{\\tau,0,1} [g_0^{(0)}] = \\mathbb{E}_{\\tau,0,1} [g_0^{(1)}]"
+              },
+              {
+                "type": "text",
+                "text": "; it is the average gradient of task loss. We expect to improve the model parameter to achieve better task performance by following this direction pointed by "
+              },
+              {
+                "type": "inline_math",
+                "text": "A"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-00436b1fb121",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_math",
+                "text": "B = \\mathbb{E}_{\\tau,0,1} [H^{(1)}_0 g_0^{(0)}] = \\frac{1}{2}\\mathbb{E}_{\\tau,0,1} [H^{(1)}_0 g_0^{(0)} + H^{(0)}_0 g_0^{(1)}] = \\frac{1}{2}\\mathbb{E}_{\\tau,0,1} [\\nabla_\\theta(g^{(0)}_0 g_0^{(1)})]"
+              },
+              {
+                "type": "text",
+                "text": "; it is the direction (gradient) that increases the inner product of gradients of two different mini batches for the same task. We expect to improve the model parameter to achieve better generalization over different data by following this direction pointed by "
+              },
+              {
+                "type": "inline_math",
+                "text": "B"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-13b1541dc935",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To conclude, both MAML and Reptile aim to optimize for the same goal, better task performance (guided by A) and better generalization (guided by B), when the gradient update is approximated by first three leading terms."
+          }
+        ]
+      },
+      {
+        "id": "math-a8ff01b8d38d",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbb{E}_{\\tau,1,2}[g_\\text{FOMAML}] &= A - \\alpha B + O(\\alpha^2)\\\\\n\\mathbb{E}_{\\tau,1,2}[g_\\text{MAML}] &= A - 2\\alpha B + O(\\alpha^2)\\\\\n\\mathbb{E}_{\\tau,1,2}[g_\\text{Reptile}]  &= 2A - \\alpha B + O(\\alpha^2)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7bb77b87eece",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It is not clear to me whether the ignored term "
+          },
+          {
+            "type": "inline_math",
+            "text": "O(\\alpha^2)"
+          },
+          {
+            "type": "text",
+            "text": " might play a big impact on the parameter learning. But given that FOMAML is able to obtain a similar performance as the full version of MAML, it might be safe to say higher-level derivatives would not be critical during gradient descent update."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-6b720137c8a1",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2018metalearning,\n  title   = \"Meta-Learning: Learning to Learn Fast\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2018\",\n  url     = \"https://lilianweng.github.io/posts/2018-11-30-meta-learning/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-1e128c52c168",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reference"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-9dac2732f970",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Brenden M. Lake, Ruslan Salakhutdinov, and Joshua B. Tenenbaum. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.cs.cmu.edu/~rsalakhu/papers/LakeEtAl2015Science.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Human-level concept learning through probabilistic program induction.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Science 350.6266 (2015): 1332-1338."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-87c19eb6765f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Oriol Vinyals’ talk on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://metalearning-symposium.ml/files/vinyals.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Model vs Optimization Meta Learning”"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9af4391d8c85",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Gregory Koch, Richard Zemel, and Ruslan Salakhutdinov. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://www.cs.toronto.edu/~rsalakhu/papers/oneshot1.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Siamese neural networks for one-shot image recognition.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML Deep Learning Workshop. 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9b6896ae017a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Oriol Vinyals, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6385-matching-networks-for-one-shot-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Matching networks for one shot learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS. 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a52ed5ced905",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Flood Sung, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://openaccess.thecvf.com/content_cvpr_2018/papers_backup/Sung_Learning_to_Compare_CVPR_2018_paper.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning to compare: Relation network for few-shot learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " CVPR. 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c1635bced3f8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Jake Snell, Kevin Swersky, and Richard Zemel. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/6996-prototypical-networks-for-few-shot-learning.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Prototypical Networks for Few-shot Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " CVPR. 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2adb4f5dd733",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Adam Santoro, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://proceedings.mlr.press/v48/santoro16.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Meta-learning with memory-augmented neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML. 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9f205831a4de",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Alex Graves, Greg Wayne, and Ivo Danihelka. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1410.5401"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Neural turing machines.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1410.5401 (2014)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-74354597a9e1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Tsendsuren Munkhdalai and Hong Yu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.00837"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Meta Networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML. 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-32ebc1f8025d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Sachin Ravi and Hugo Larochelle. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://openreview.net/pdf?id=rJY0-Kcll"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Optimization as a Model for Few-Shot Learning.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR. 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1ed7f221774d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Chelsea Finn’s BAIR blog on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://bair.berkeley.edu/blog/2017/07/18/learning-to-learn/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Learning to Learn”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-44f8fdfe37cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Chelsea Finn, Pieter Abbeel, and Sergey Levine. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1703.03400"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Model-agnostic meta-learning for fast adaptation of deep networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-75b16bc1c726",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Alex Nichol, Joshua Achiam, John Schulman. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1803.02999"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“On First-Order Meta-Learning Algorithms.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv preprint arXiv:1803.02999 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-8006da0aac27",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[14] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.slideshare.net/YoonhoLee4/on-firstorder-metalearning-algorithms"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Slides on Reptile"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Yoonho Lee."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "meta-learning-learning-to-learn-fast",
+    "source_slug": "2018-11-30-meta-learning",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 30,
+      "math": 40,
+      "image": 16,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/few-shot-classification.png",
+      "alt": "An example of 4-shot 2-class image classification. (Image thumbnails are from Pinterest )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/siamese-conv-net.png",
+      "alt": "The architecture of convolutional siamese neural network for few-show image classification."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/matching-networks.png",
+      "alt": "The architecture of Matching Networks. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/relation-network.png",
+      "alt": "Relation Network architecture for a 5-way 1-shot problem with one query example. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/prototypical-networks.png",
+      "alt": "Prototypical networks in the few-shot and zero-shot scenarios. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/NTM.png",
+      "alt": "The architecture of Neural Turing Machine (NTM). The memory at time t, $\\mathbf{M}\\_t$ is a matrix of size $N \\times M$, containing N vector rows and each has M dimensions."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/mann-meta-learning.png",
+      "alt": "Task setup in MANN for meta-learning (Image source: original paper )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/combine-slow-fast-weights.png",
+      "alt": "Combining slow and fast weights in a MLP. $\\bigoplus$ is element-wise sum. (Image source: original paper )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/meta-network.png",
+      "alt": "Fig.9. The MetaNet architecture."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/lstm-meta-learner.png",
+      "alt": "How the learner $M\\_\\theta$ and the meta-learner $R\\_\\Theta$ are trained. (Image source: original paper with more annotations)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/train-meta-learner.png",
+      "alt": "Diagram of MAML. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/maml.png",
+      "alt": "Diagram of MAML. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/maml-algo.png",
+      "alt": "The general form of MAML algorithm. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/reptile-algo.png",
+      "alt": "The batched version of Reptile algorithm. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/reptile-optim.png",
+      "alt": "The Reptile algorithm updates the parameter alternatively to be closer to the optimal manifolds of different tasks. (Image source: original paper )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-11-30-meta-learning/reptile_vs_FOMAML.png",
+      "alt": "Reptile versus FOMAML in one loop of meta-optimization. (Image source: slides on Reptile by Yoonho Lee.)"
+    }
+  ]
+}

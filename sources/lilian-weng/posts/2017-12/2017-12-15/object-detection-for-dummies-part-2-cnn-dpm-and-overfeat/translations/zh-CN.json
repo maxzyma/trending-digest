@@ -1,0 +1,1071 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:39a14eb0fa38bb4acc9a6ce0e0f030c7abe4743d0ece0bc776ddbede897c5a7e",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "lilian-weng-zh.v2-inline-stable",
+  "title": "傻瓜式目标检测 第二部分：CNN、DPM 和 Overfeat",
+  "segments": {
+    "paragraph-276a86b2c8ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "《傻瓜式目标检测》系列文章的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-29-object-recognition-part-1/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第一部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "介绍了：(1) 图像梯度向量的概念以及 HOG 算法如何总结一张图像中所有梯度向量的信息；(2) 图像分割算法如何工作以检测可能包含对象的区域；(3) Selective Search 算法如何改进图像分割结果以获得更好的区域提议。"
+        }
+      ]
+    },
+    "paragraph-30976188a71f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在第二部分中，我们将深入探讨用于图像分类的经典卷积神经网络架构。它们为目标检测深度学习模型的进一步发展奠定了"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "基础"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。如果您想了解更多关于 R-CNN 及相关模型的信息，请查看"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第三部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "paragraph-4832669d769c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本系列所有文章的链接:\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-10-29-object-recognition-part-1/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第一部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第二部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-31-object-recognition-part-3/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第三部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]\n["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2018-12-27-object-recognition-part-4/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第四部分"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]。"
+        }
+      ]
+    },
+    "heading-890b3018f4c6": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用于图像分类的 CNN"
+        }
+      ]
+    },
+    "paragraph-580b75b27aaf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "CNN，是“"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "卷积神经网络"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”的缩写，是深度学习领域中解决计算机视觉问题的首选方案。它在一定程度上"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-06-21-overview/#convolutional-neural-network"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "受到了"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "人类视觉皮层系统工作方式的启发。"
+        }
+      ]
+    },
+    "heading-09126e711089": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "卷积操作"
+        }
+      ]
+    },
+    "paragraph-52ef2e4daef5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我强烈推荐这篇"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1603.07285.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "指南"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它提供了清晰而扎实的卷积运算解释，并附有大量的可视化和示例。本文我们将重点关注二维卷积，因为我们正在处理图像。"
+        }
+      ]
+    },
+    "paragraph-51e3dbb78ea3": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "简而言之，卷积操作将预定义的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://en.wikipedia.org/wiki/Kernel_(image_processing)"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "核"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（也称为“滤波器”）滑动到输入特征图（图像像素矩阵）之上，将核的值与部分输入特征相乘并相加，以生成输出。这些值形成一个输出矩阵，因为通常核比输入图像小得多。"
+        }
+      ]
+    },
+    "paragraph-d2e78f3a5672": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "图 2 展示了两个真实示例，说明如何将 3x3 的核与 5x5 的二维数值矩阵进行卷积以生成 3x3 矩阵。通过控制填充大小和步长，我们可以生成特定大小的输出矩阵。"
+        }
+      ]
+    },
+    "heading-ecbe33e341b4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "AlexNet (Krizhevsky 等人，2012)"
+        }
+      ]
+    },
+    "list-item-e29048ee849b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "5 个卷积层[+ 可选的最大池化层] + 2 个 MLP 层 + 1 个 LR 层"
+        }
+      ]
+    },
+    "list-item-6318d1ef8953": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用数据增强技术来扩展训练数据集，例如图像平移、水平翻转和块提取。"
+        }
+      ]
+    },
+    "heading-0c57f9869ec8": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "VGG (Simonyan 和 Zisserman，2014)"
+        }
+      ]
+    },
+    "list-item-a9ac615d963e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该网络在当时被认为是“非常深”的；19 层"
+        }
+      ]
+    },
+    "list-item-bb624e790548": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该架构极其简化，仅包含 3x3 卷积层和 2x2 池化层。小滤波器的堆叠模拟了参数更少的大滤波器。"
+        }
+      ]
+    },
+    "heading-8524f81a386d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "ResNet (He 等人，2015)"
+        }
+      ]
+    },
+    "list-item-e3309095a968": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该网络确实非常深；152 层简单架构。"
+        }
+      ]
+    },
+    "list-item-70fb884d8800": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "残差块"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：某个层的某些输入可以传递到后面两层的组件。残差块对于保持深度网络可训练并最终工作至关重要。如果没有残差块，由于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://www.wildml.com/2015/10/recurrent-neural-networks-tutorial-part-3-backpropagation-through-time-and-vanishing-gradients/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "梯度消失和梯度爆炸"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，普通网络的训练损失不会随着层数的增加而单调递减。"
+        }
+      ]
+    },
+    "heading-bebbbd49b252": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评估指标：mAP"
+        }
+      ]
+    },
+    "paragraph-a673a7bd7e92": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在许多目标识别和检测任务中常用的评估指标是“"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "mAP"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”，是“"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "平均精度均值"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”的缩写。它是一个介于 0 到 100 之间的数字；值越高越好。"
+        }
+      ]
+    },
+    "list-item-1d731a649b6d": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "结合所有测试图像中的所有检测结果，为每个类别绘制一条精确率-召回率曲线（PR 曲线）；“平均精度”（AP）是 PR 曲线下的面积。"
+        }
+      ]
+    },
+    "list-item-b284091216d4": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "鉴于目标对象属于不同的类别，我们首先为每个类别单独计算 AP，然后对所有类别取平均值。"
+        }
+      ]
+    },
+    "list-item-2a8d281c4a15": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果检测结果与真实框的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "“交并比”（IoU）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "大于某个阈值（通常为 0.5；如果是，则该指标为“"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "mailto:mAP@0.5"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "mAP@0.5"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”）则为真阳性。"
+        }
+      ]
+    },
+    "heading-aeb1721a3c1e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可变形部件模型"
+        }
+      ]
+    },
+    "paragraph-d178ea3cc1ae": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "可变形部件模型 (DPM) ("
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://people.cs.uchicago.edu/~pff/papers/lsvm-pami.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Felzenszwalb 等人，2010"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": ") 通过可变形部件的混合图模型（马尔可夫随机场）识别对象。该模型由三个主要组件组成："
+        }
+      ]
+    },
+    "list-item-953991aeb643": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个粗略的"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "根滤波器"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "定义了一个大致覆盖整个对象的检测窗口。滤波器为区域特征向量指定权重。"
+        }
+      ]
+    },
+    "list-item-c64faa00886f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "多个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "部件滤波器"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "覆盖对象的较小部分。部件滤波器以根滤波器两倍的分辨率学习。"
+        }
+      ]
+    },
+    "list-item-7b66b4935c63": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "strong",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "空间模型"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "用于评估部件滤波器相对于根的位置。"
+        }
+      ]
+    },
+    "paragraph-c12d6b70795f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检测对象的质量通过滤波器的分数减去形变成本来衡量。匹配分数"
+        },
+        {
+          "type": "inline_math",
+          "text": "f"
+        },
+        {
+          "type": "text",
+          "text": "，用通俗的话来说，是："
+        }
+      ]
+    },
+    "paragraph-b14a2e26713e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中，"
+        }
+      ]
+    },
+    "list-item-60c38bd0ae6c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "是具有指定位置和尺度的图像；"
+        }
+      ]
+    },
+    "list-item-c3ab9a656c98": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "y"
+        },
+        {
+          "type": "text",
+          "text": "是"
+        },
+        {
+          "type": "inline_math",
+          "text": "x"
+        },
+        {
+          "type": "text",
+          "text": "的子区域。"
+        }
+      ]
+    },
+    "list-item-b862296385ab": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\beta_\\text{root}"
+        },
+        {
+          "type": "text",
+          "text": "是根滤波器。"
+        }
+      ]
+    },
+    "list-item-413164cd72cd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_math",
+          "text": "\\beta_\\text{part}"
+        },
+        {
+          "type": "text",
+          "text": "是一个部件滤波器。"
+        }
+      ]
+    },
+    "list-item-47613f62cfbd": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "cost() 衡量部件偏离其相对于根的理想位置的惩罚。"
+        }
+      ]
+    },
+    "paragraph-899a78bfc2af": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基本分数模型是滤波器"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\beta"
+        },
+        {
+          "type": "text",
+          "text": "与区域特征向量"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Phi(x)"
+        },
+        {
+          "type": "text",
+          "text": "的点积："
+        },
+        {
+          "type": "inline_math",
+          "text": "f(\\beta, x) = \\beta \\cdot \\Phi(x)"
+        },
+        {
+          "type": "text",
+          "text": "。特征集"
+        },
+        {
+          "type": "inline_math",
+          "text": "\\Phi(x)"
+        },
+        {
+          "type": "text",
+          "text": "可以通过 HOG 或其他类似算法定义。"
+        }
+      ]
+    },
+    "paragraph-ef1779ca8e4c": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "高分数的根位置检测到包含对象的可能性很高的区域，而高分数的部件位置则证实了已识别的对象假设。该论文采用隐式 SVM 来建模分类器。"
+        }
+      ]
+    },
+    "paragraph-e262b96fab16": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "作者后来声称 DPM 和 CNN 模型并非目标识别的两种不同方法。相反，DPM 模型可以通过展开 DPM 推理算法并将每个步骤映射到等效的 CNN 层来表述为 CNN。（详情请查阅"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Girshick_Deformable_Part_Models_2015_CVPR_paper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Girshick 等人，2015"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "！）"
+        }
+      ]
+    },
+    "heading-8673daa0575e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Overfeat"
+        }
+      ]
+    },
+    "paragraph-a536f64f082b": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Overfeat ["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pdfs.semanticscholar.org/f2c2/fbc35d0541571f54790851de9fcd1adde085.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "论文"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "]["
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/sermanet/OverFeat"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "代码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "] 是一个将目标检测、定位和分类任务全部集成到一个卷积神经网络中的开创性模型。其主要思想是 (i) 以滑动窗口的方式在图像多尺度区域的不同位置进行图像分类，以及 (ii) 使用在相同卷积层之上训练的回归器预测边界框位置。"
+        }
+      ]
+    },
+    "paragraph-b3199ba3d00e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Overfeat 模型架构与"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://lilianweng.github.io/posts/2017-12-15-object-recognition-part-2/#alexnet-krizhevsky-et-al-2012"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "AlexNet"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "非常相似。其训练方式如下："
+        }
+      ]
+    },
+    "list-item-655b0310213f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在图像分类任务上训练一个 CNN 模型（类似于 AlexNet）。"
+        }
+      ]
+    },
+    "list-item-477fe976da56": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后，我们用一个回归网络替换顶部的分类器层，并训练它来预测每个空间位置和尺度的对象边界框。该回归器是类别特定的，每个回归器为一个图像类别生成。\n\n"
+        }
+      ]
+    },
+    "list-item-9694a6c895b5": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "输入：带有分类和边界框的图像。"
+        }
+      ]
+    },
+    "list-item-bdf06d2d9202": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "输出："
+        },
+        {
+          "type": "inline_math",
+          "text": "(x_\\text{left}, x_\\text{right}, y_\\text{top}, y_\\text{bottom})"
+        },
+        {
+          "type": "text",
+          "text": "，总共 4 个值，表示边界框边缘的坐标。"
+        }
+      ]
+    },
+    "list-item-70ddcaa58759": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "损失：回归器被训练以最小化每个训练示例中生成的边界框与真实值之间的"
+        },
+        {
+          "type": "inline_math",
+          "text": "l2"
+        },
+        {
+          "type": "text",
+          "text": "范数。"
+        }
+      ]
+    },
+    "paragraph-8cc53f88ddaf": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在检测时，"
+        }
+      ]
+    },
+    "list-item-94a7a7cb5f5e": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用预训练的 CNN 模型在每个位置执行分类。"
+        }
+      ]
+    },
+    "list-item-15b566af6c65": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在分类器生成的所有已分类区域上预测对象边界框。"
+        }
+      ]
+    },
+    "list-item-ccfe8b0d14ff": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "合并来自定位的具有足够重叠的边界框，以及来自分类器的具有足够置信度为同一对象的边界框。"
+        }
+      ]
+    },
+    "paragraph-14bccf30c728": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "引用为："
+        }
+      ]
+    },
+    "heading-1e128c52c168": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考文献"
+        }
+      ]
+    },
+    "paragraph-ecd445bf97de": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[1] Vincent Dumoulin 和 Francesco Visin。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1603.07285.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“深度学习卷积运算指南。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1603.07285 (2016)。"
+        }
+      ]
+    },
+    "paragraph-efb120b161a1": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[2] Haohan Wang、Bhiksha Raj 和 Eric P. Xing。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://arxiv.org/pdf/1702.07800.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“论深度学习的起源。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1702.07800 (2017)。"
+        }
+      ]
+    },
+    "paragraph-74fdb5393a51": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[3] Pedro F. Felzenszwalb、Ross B. Girshick、David McAllester 和 Deva Ramanan。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://people.cs.uchicago.edu/~pff/papers/lsvm-pami.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“基于判别训练部件模型的对象检测。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " IEEE 模式分析与机器智能汇刊 32，第 9 期 (2010)：1627-1645。"
+        }
+      ]
+    },
+    "paragraph-7ced562d0319": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[4] Ross B. Girshick、Forrest Iandola、Trevor Darrell 和 Jitendra Malik。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Girshick_Deformable_Part_Models_2015_CVPR_paper.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“可变形部件模型是卷积神经网络。”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 载于 IEEE 计算机视觉与模式识别会议 (CVPR) 论文集，第 437-446 页。2015。"
+        }
+      ]
+    },
+    "paragraph-720f41509d6f": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "[5] Sermanet, Pierre, David Eigen, Xiang Zhang, Michaël Mathieu, Rob Fergus 和 Yann LeCun。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://pdfs.semanticscholar.org/f2c2/fbc35d0541571f54790851de9fcd1adde085.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "“OverFeat：使用卷积网络进行集成识别、定位和检测”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " arXiv 预印本 arXiv:1312.6229 (2013)。"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4759 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2020-04-07-the-transformer-family",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2020-04-07T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:900f697d9d771b25e559194a6788275bae45839177c2a61434717890fbe6c3be",
+    "fetched_at": "2026-07-14T02:05:20.647236+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "The Transformer Family",
+    "title_en": "The Transformer Family",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-c2ad600812c9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[Updated on "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "2023-01-27"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": After almost three years, I did a big refactoring update of this post to incorporate a bunch of new Transformer models since 2020. The enhanced version of this post is here: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2023-01-27-the-transformer-family-v2/"
+            },
+            "children": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The Transformer Family Version 2.0"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Please refer to that post on this topic.]"
+          },
+          {
+            "type": "text",
+            "text": "\n"
+          },
+          {
+            "type": "line_break"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-220ff4a4652c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It has been almost two years since my last post on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Recent progress on new and enhanced versions of Transformer motivates me to write another post on this specific topic, focusing on how the vanilla Transformer can be improved for longer-term attention span, less memory and computation consumption, RL task solving and more."
+          }
+        ]
+      },
+      {
+        "id": "heading-111fa15ff05a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notations"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "table-3c78f1edf750",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Symbol",
+            "Meaning"
+          ],
+          "rows": [
+            [
+              "$d$",
+              "The model size / hidden state dimension / positional encoding size."
+            ],
+            [
+              "$h$",
+              "The number of heads in multi-head attention layer."
+            ],
+            [
+              "$L$",
+              "The segment length of input sequence."
+            ],
+            [
+              "$\\mathbf{X} \\in \\mathbb{R}^{L \\times d}$",
+              "The input sequence where each element has been mapped into an embedding vector of shape $d$, same as the model size."
+            ],
+            [
+              "$\\mathbf{W}^k \\in \\mathbb{R}^{d \\times d_k}$",
+              "The key weight matrix."
+            ],
+            [
+              "$\\mathbf{W}^q \\in \\mathbb{R}^{d \\times d_k}$",
+              "The query weight matrix."
+            ],
+            [
+              "$\\mathbf{W}^v \\in \\mathbb{R}^{d \\times d_v}$",
+              "The value weight matrix. Often we have $d_k = d_v = d$."
+            ],
+            [
+              "$\\mathbf{W}^k_i, \\mathbf{W}^q_i \\in \\mathbb{R}^{d \\times d_k/h}; \\mathbf{W}^v_i \\in \\mathbb{R}^{d \\times d_v/h}$",
+              "The weight matrices per head."
+            ],
+            [
+              "$\\mathbf{W}^o \\in \\mathbb{R}^{d_v \\times d}$",
+              "The output weight matrix."
+            ],
+            [
+              "$\\mathbf{Q} = \\mathbf{X}\\mathbf{W}^q \\in \\mathbb{R}^{L \\times d_k}$",
+              "The query embedding inputs."
+            ],
+            [
+              "$\\mathbf{K} = \\mathbf{X}\\mathbf{W}^k \\in \\mathbb{R}^{L \\times d_k}$",
+              "The key embedding inputs."
+            ],
+            [
+              "$\\mathbf{V} = \\mathbf{X}\\mathbf{W}^v \\in \\mathbb{R}^{L \\times d_v}$",
+              "The value embedding inputs."
+            ],
+            [
+              "$S_i$",
+              "A collection of key positions for the $i$-th query $\\mathbf{q}_i$ to attend to."
+            ],
+            [
+              "$\\mathbf{A} \\in \\mathbb{R}^{L \\times L}$",
+              "The self-attention matrix between a input sequence of length $L$ and itself. $\\mathbf{A} = \\text{softmax}(\\mathbf{Q}\\mathbf{K}^\\top / \\sqrt{d_k})$."
+            ],
+            [
+              "$a_{ij} \\in \\mathbf{A}$",
+              "The scalar attention score between query $\\mathbf{q}_i$ and key $\\mathbf{k}_j$."
+            ],
+            [
+              "$\\mathbf{P} \\in \\mathbb{R}^{L \\times d}$",
+              "position encoding matrix, where the $i$-th row $\\mathbf{p}_i$ is the positional encoding for input $\\mathbf{x}_i$."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "heading-53beae977c6b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Attention and Self-Attention"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-87c535af52dd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a mechanism in the neural network that a model can learn to make predictions by selectively attending to a given set of data. The amount of attention is quantified by learned weights and thus the output is usually formed as a weighted average."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-284b982bd28f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Self-attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a type of attention mechanism where the model makes prediction for one part of a data sample using other parts of the observation about the same sample. Conceptually, it feels quite similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Non-local_means"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "non-local means"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Also note that self-attention is permutation-invariant; in other words, it is an operation on sets."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5bad18ea493b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are various forms of attention / self-attention, Transformer ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1706.03762"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Vaswani et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") relies on the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "scaled dot-product attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": given a query matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{Q}"
+          },
+          {
+            "type": "text",
+            "text": ", a key matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{K}"
+          },
+          {
+            "type": "text",
+            "text": " and a value matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{V}"
+          },
+          {
+            "type": "text",
+            "text": ", the output is a weighted sum of the value vectors, where the weight assigned to each value slot is determined by the dot-product of the query with the corresponding key:"
+          }
+        ]
+      },
+      {
+        "id": "math-e2ecc2ae9cd7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{Attention}(\\mathbf{Q}, \\mathbf{K}, \\mathbf{V}) = \\text{softmax}(\\frac{\\mathbf{Q} {\\mathbf{K}}^\\top}{\\sqrt{d_k}})\\mathbf{V}"
+        }
+      },
+      {
+        "id": "paragraph-83b61a01ac9d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "And for a query and a key vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}_i, \\mathbf{k}_j \\in \\mathbb{R}^d"
+          },
+          {
+            "type": "text",
+            "text": " (row vectors in query and key matrices), we have a scalar score:"
+          }
+        ]
+      },
+      {
+        "id": "math-7dc5deb13e69",
+        "type": "math",
+        "attrs": {
+          "latex": "a_{ij} = \\text{softmax}(\\frac{\\mathbf{q}_i {\\mathbf{k}_j}^\\top}{\\sqrt{d_k}})\n= \\frac{\\exp(\\mathbf{q}_i {\\mathbf{k}_j}^\\top)}{ \\sqrt{d_k} \\sum_{r \\in S_i} \\exp(\\mathbf{q}_i {\\mathbf{k}_r}^\\top) }"
+        }
+      },
+      {
+        "id": "paragraph-bba39fc38aba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "See my old "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#a-family-of-attention-mechanisms"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for other types of attention if interested."
+          }
+        ]
+      },
+      {
+        "id": "heading-6e18e729f62a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Multi-Head Self-Attention"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-bdfa4ab1f177",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "multi-head self-attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " module is a key component in Transformer. Rather than only computing the attention once, the multi-head mechanism splits the inputs into smaller chunks and then computes the scaled dot-product attention over each subspace in parallel. The independent attention outputs are simply concatenated and linearly transformed into expected dimensions."
+          }
+        ]
+      },
+      {
+        "id": "math-f6be80b68f90",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\text{MultiHeadAttention}(\\mathbf{X}_q, \\mathbf{X}_k, \\mathbf{X}_v) &= [\\text{head}_1; \\dots; \\text{head}_h] \\mathbf{W}^o \\\\ \n\\text{where head}_i &= \\text{Attention}(\\mathbf{X}_q\\mathbf{W}^q_i, \\mathbf{X}_k\\mathbf{W}^k_i, \\mathbf{X}_v\\mathbf{W}^v_i)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-d6f6065f4247",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "[.;.]"
+          },
+          {
+            "type": "text",
+            "text": " is a concatenation operation. "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^q_i, \\mathbf{W}^k_i \\in \\mathbb{R}^{d \\times d_k/h}, \\mathbf{W}^v_i \\in \\mathbb{R}^{d \\times d_v/h}"
+          },
+          {
+            "type": "text",
+            "text": " are weight matrices to map input embeddings of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "L \\times d"
+          },
+          {
+            "type": "text",
+            "text": " into query, key and value matrices. And "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^o \\in \\mathbb{R}^{d_v \\times d}"
+          },
+          {
+            "type": "text",
+            "text": " is the output linear transformation. All the weights should be learned during training."
+          }
+        ]
+      },
+      {
+        "id": "image-0395cbc47983",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/multi-head-attention.png",
+          "alt": "Illustration of the multi-head scaled dot-product attention mechanism. (Image source: Figure 2 in Vaswani, et al., 2017 )"
+        }
+      },
+      {
+        "id": "heading-bdcd67bea98e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Transformer"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-ed97351670ec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (which will be referred to as “vanilla Transformer” to distinguish it from other enhanced versions; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1706.03762"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Vaswani, et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") model has an encoder-decoder architecture, as commonly used in many "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/#born-for-translation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "NMT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " models. Later simplified Transformer was shown to achieve great performance in language modeling tasks, like in encoder-only "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#bert"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or decoder-only "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2019-01-31-lm/#openai-gpt"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GPT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-03ee63804dcd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Encoder-Decoder Architecture"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-63692c642ec1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "encoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " generates an attention-based representation with capability to locate a specific piece of information from a large context. It consists of a stack of 6 identity modules, each containing two submodules, a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "multi-head self-attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " layer and a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "point-wise"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " fully connected feed-forward network. By point-wise, it means that it applies the same linear transformation (with same weights) to each element in the sequence. This can also be viewed as a convolutional layer with filter size 1. Each submodule has a residual connection and layer normalization. All the submodules output data of the same dimension "
+          },
+          {
+            "type": "inline_math",
+            "text": "d"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2ed54f77418c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The function of Transformer "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "decoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is to retrieve information from the encoded representation. The architecture is quite similar to the encoder, except that the decoder contains two multi-head attention submodules instead of one in each identical repeating module. The first multi-head attention submodule is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "masked"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to prevent positions from attending to the future."
+          }
+        ]
+      },
+      {
+        "id": "image-1ee3f72bd9ae",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/transformer.png",
+          "alt": "The architecture of the vanilla Transformer model. (Image source: Figure 17 )"
+        }
+      },
+      {
+        "id": "paragraph-555fb2bb6f4a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Positional Encoding"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-554a1f12c88a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because self-attention operation is permutation invariant, it is important to use proper "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "positional encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "to provide "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "order information"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to the model. The positional encoding "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P} \\in \\mathbb{R}^{L \\times d}"
+          },
+          {
+            "type": "text",
+            "text": " has the same dimension as the input embedding, so it can be added on the input directly. The vanilla Transformer considered two types of encodings:"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f83cb4deee47",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sinusoidal positional encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is defined as follows, given the token position "
+          },
+          {
+            "type": "inline_math",
+            "text": "i=1,\\dots,L"
+          },
+          {
+            "type": "text",
+            "text": " and the dimension "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\delta=1,\\dots,d"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-2f5f0d7d8c64",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{PE}(i,\\delta) = \n\\begin{cases}\n\\sin(\\frac{i}{10000^{2\\delta'/d}}) & \\text{if } \\delta = 2\\delta'\\\\\n\\cos(\\frac{i}{10000^{2\\delta'/d}}) & \\text{if } \\delta = 2\\delta' + 1\\\\\n\\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-272a603e814e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this way each dimension of the positional encoding corresponds to a sinusoid of different wavelengths in different dimensions, from "
+          },
+          {
+            "type": "inline_math",
+            "text": "2\\pi"
+          },
+          {
+            "type": "text",
+            "text": " to "
+          },
+          {
+            "type": "inline_math",
+            "text": "10000 \\cdot 2\\pi"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-d96de194f929",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/sinoidual-positional-encoding.png",
+          "alt": "Sinusoidal positional encoding with $L=32$ and $d=128$. The value is between -1 (black) and 1 (white) and the value 0 is in gray."
+        }
+      },
+      {
+        "id": "paragraph-d2033fbf4b69",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Learned positional encoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", as its name suggested, assigns each element with a learned column vector which encodes its "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "absolute"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " position ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.03122"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gehring, et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0483b6a0754a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Quick Follow-ups"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6804134ff2ca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Following the vanilla Transformer, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1808.04444"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Al-Rfou et al. (2018)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " added a set of auxiliary losses to enable training a deep Transformer model on character-level language modeling which outperformed LSTMs. Several types of auxiliary tasks are used:"
+          }
+        ]
+      },
+      {
+        "id": "list-77e174accbee",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-01067c6cee84",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Instead of producing only one prediction at the sequence end, every "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "immediate position"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is also asked to make a correct prediction, forcing the model to predict given smaller contexts (e.g. first couple tokens at the beginning of a context window)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-87629067843d",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Each intermediate Transformer layer is used for making predictions as well. Lower layers are weighted to contribute less and less to the total loss as training progresses."
+              }
+            ]
+          },
+          {
+            "id": "list-item-633f69ec0a6e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Each position in the sequence can predict multiple targets, i.e. two or more predictions of the future tokens."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-0ea58974a6f2",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/transformer-aux-losses.png",
+          "alt": "Auxiliary prediction tasks used in deep Transformer for character-level language modeling. (Image source: Al-Rfou et al. (2018) )"
+        }
+      },
+      {
+        "id": "heading-06afffe796b1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adaptive Computation Time (ACT)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-2fa8f915c571",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Adaptive Computation Time"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (short for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "ACT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1603.08983"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Graves, 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a mechanism for dynamically deciding how many computational steps are needed in a recurrent neural network. Here is a cool "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://distill.pub/2016/augmented-rnns/#adaptive-computation-time"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tutorial"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on ACT from distill.pub."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-971e88ab49e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s say, we have a RNN model "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{R}"
+          },
+          {
+            "type": "text",
+            "text": " composed of input weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_x"
+          },
+          {
+            "type": "text",
+            "text": ", a parametric state transition function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{S}(.)"
+          },
+          {
+            "type": "text",
+            "text": ", a set of output weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_y"
+          },
+          {
+            "type": "text",
+            "text": " and an output bias "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_y"
+          },
+          {
+            "type": "text",
+            "text": ". Given an input sequence "
+          },
+          {
+            "type": "inline_math",
+            "text": "(x_1, \\dots, x_L)"
+          },
+          {
+            "type": "text",
+            "text": ", the output sequence "
+          },
+          {
+            "type": "inline_math",
+            "text": "(y_1, \\dots, y_L)"
+          },
+          {
+            "type": "text",
+            "text": " is computed by:"
+          }
+        ]
+      },
+      {
+        "id": "math-88dc912cfd9d",
+        "type": "math",
+        "attrs": {
+          "latex": "s_t = \\mathcal{S}(s_{t-1}, W_x x_t), \\quad y_t = W_y s_t + b_y\\quad\\text{for }t=1, \\dots, L"
+        }
+      },
+      {
+        "id": "paragraph-ac6f555800f9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "ACT enables the above RNN setup to perform a variable number of steps at each input element. Multiple computational steps lead to a sequence of intermediate states "
+          },
+          {
+            "type": "inline_math",
+            "text": "(s_t^1, \\dots, s_t^{N(t)})"
+          },
+          {
+            "type": "text",
+            "text": " and outputs "
+          },
+          {
+            "type": "inline_math",
+            "text": "(y_t^1, \\dots, y_t^{N(t)})"
+          },
+          {
+            "type": "text",
+            "text": " — they all share the same state transition function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{S}(.)"
+          },
+          {
+            "type": "text",
+            "text": ", as well as the same output weights "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_y"
+          },
+          {
+            "type": "text",
+            "text": " and bias "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_y"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-1d2d31389a12",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ns_t^0 &= s_{t-1} \\\\\ns_t^n &= \\mathcal{S}(s_{t}^{n-1}, x_t^n) = \\mathcal{S}(s_{t}^{n-1}, x_t + \\delta_{n,1}) \\text{ for } n=1, \\dots, N(t)\\\\\ny_t^n &= W_y s_t^n + b_y\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-5b6bdf6bb319",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\delta_{n,1}"
+          },
+          {
+            "type": "text",
+            "text": " is a binary flag indicating whether the input step has been incremented."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e69b309949ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The number of steps "
+          },
+          {
+            "type": "inline_math",
+            "text": "N(t)"
+          },
+          {
+            "type": "text",
+            "text": " is determined by an extra sigmoidal halting unit "
+          },
+          {
+            "type": "inline_math",
+            "text": "h"
+          },
+          {
+            "type": "text",
+            "text": ", with associated weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "W_h"
+          },
+          {
+            "type": "text",
+            "text": " and bias "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_h"
+          },
+          {
+            "type": "text",
+            "text": ", outputting a halting probability "
+          },
+          {
+            "type": "inline_math",
+            "text": "p_t^n"
+          },
+          {
+            "type": "text",
+            "text": " at immediate step "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": "-th input element:"
+          }
+        ]
+      },
+      {
+        "id": "math-eedc6ab90f9c",
+        "type": "math",
+        "attrs": {
+          "latex": "h_t^n = \\sigma(W_h s_t^n + b_h)"
+        }
+      },
+      {
+        "id": "paragraph-feea463c7acf",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In order to allow the computation to halt after a single step, ACT introduces a small constant "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": " (e.g. 0.01), so that whenever the cumulative probability goes above "
+          },
+          {
+            "type": "inline_math",
+            "text": "1-\\epsilon"
+          },
+          {
+            "type": "text",
+            "text": ", the computation stops."
+          }
+        ]
+      },
+      {
+        "id": "math-795e6d27e3c9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nN(t) &= \\min(\\min\\{n': \\sum_{n=1}^{n'} h_t^n \\geq 1 -\\epsilon\\}, M) \\\\\np_t^n &= \\begin{cases}\nh_t^n & \\text{if }n < N(t) \\\\\nR(t) = 1 - \\sum_{n=1}^{N(t)-1} h_t^n & \\text{if }n= N(t)\\\\\n\\end{cases}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-83539b062115",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " is an upper limit for the number of immediate steps allowed."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-21f015aff9ae",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The final state and output are mean-field updates:"
+          }
+        ]
+      },
+      {
+        "id": "math-c5bb6d7ee7a0",
+        "type": "math",
+        "attrs": {
+          "latex": "s_t = \\sum_{n=1}^{N(t)} p_t^n s_t^n,\\quad y_t = \\sum_{n=1}^{N(t)} p_t^n y_t^n"
+        }
+      },
+      {
+        "id": "image-6662265a7d6b",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/ACT-computation-graph.png",
+          "alt": "The computation graph of a RNN with ACT mechanism. (Image source: Graves, 2016 )"
+        }
+      },
+      {
+        "id": "paragraph-b181f0f0ee30",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To avoid unnecessary pondering over each input, ACT adds a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "ponder cost"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{P}(x) = \\sum_{t=1}^L N(t) + R(t) "
+          },
+          {
+            "type": "text",
+            "text": "  in the loss function to encourage a smaller number of intermediate computational steps."
+          }
+        ]
+      },
+      {
+        "id": "heading-09cc7f928b29",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Improved Attention Span"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-85d51dcacfca",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The goal of improving attention span is to make the context that can be used in self-attention longer, more efficient and flexible."
+          }
+        ]
+      },
+      {
+        "id": "heading-fab1ef0517c1",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Longer Attention Span (Transformer-XL)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-bc0ccb76e7f0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The vanilla Transformer has a fixed and limited attention span. The model can only attend to other elements in the same segments during each update step and no information can flow across separated fixed-length segments."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9145ec253338",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "context segmentation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " causes several issues:"
+          }
+        ]
+      },
+      {
+        "id": "list-682914a74ffb",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-124cb1428508",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The model cannot capture very long term dependencies."
+              }
+            ]
+          },
+          {
+            "id": "list-item-652e34939860",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "It is hard to predict the first few tokens in each segment given no or thin context."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9d0f188cfd68",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The evaluation is expensive. Whenever the segment is shifted  to the right by one, the new segment is re-processed from scratch, although there are a lot of overlapped tokens."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d855260a06d2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Transformer-XL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.02860"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dai et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; “XL” means “extra long”) solves the context segmentation problem with two main modifications:"
+          }
+        ]
+      },
+      {
+        "id": "list-ddf5aa42ae4a",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-78e07099ca27",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Reusing hidden states between segments."
+              }
+            ]
+          },
+          {
+            "id": "list-item-c9fc04a6e4bb",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Adopting a new positional encoding that is suitable for reused states."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-91e03d0c9e56",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Hidden State Reuse"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19377161fc80",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The recurrent connection between segments is introduced into the model by continuously using the hidden states from the previous segments."
+          }
+        ]
+      },
+      {
+        "id": "image-45540eea0780",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/transformer-XL-training.png",
+          "alt": "A comparison between the training phrase of vanilla Transformer & Transformer-XL with a segment length 4. (Image source: left part of Figure 2 in Dai et al., 2019 )."
+        }
+      },
+      {
+        "id": "paragraph-c3cdb6919995",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s label the hidden state of the "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": "-th layer for the "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\tau + 1)"
+          },
+          {
+            "type": "text",
+            "text": "-th segment in the model as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}_{\\tau+1}^{(n)} \\in \\mathbb{R}^{L \\times d}"
+          },
+          {
+            "type": "text",
+            "text": ". In addition to the hidden state of the last layer for the same segment "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}_{\\tau+1}^{(n-1)}"
+          },
+          {
+            "type": "text",
+            "text": ", it also depends on the hidden state of the same layer for the previous segment "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}_{\\tau}^{(n)}"
+          },
+          {
+            "type": "text",
+            "text": ".  By incorporating information from the previous hidden states, the model extends the attention span much longer in the past, over multiple segments."
+          }
+        ]
+      },
+      {
+        "id": "math-1ddf02b12c24",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\color{red}{\\widetilde{\\mathbf{h}}_{\\tau+1}^{(n-1)}} &= [\\text{stop-gradient}(\\mathbf{h}_{\\tau}^{(n-1)}) \\circ \\mathbf{h}_{\\tau+1}^{(n-1)}] \\\\\n\\mathbf{Q}_{\\tau+1}^{(n)} &= \\mathbf{h}_{\\tau+1}^{(n-1)}\\mathbf{W}^q \\\\\n\\mathbf{K}_{\\tau+1}^{(n)} &= \\color{red}{\\widetilde{\\mathbf{h}}_{\\tau+1}^{(n-1)}} \\mathbf{W}^k \\\\\n\\mathbf{V}_{\\tau+1}^{(n)} &= \\color{red}{\\widetilde{\\mathbf{h}}_{\\tau+1}^{(n-1)}} \\mathbf{W}^v \\\\\n\\mathbf{h}_{\\tau+1}^{(n)} &= \\text{transformer-layer}(\\mathbf{Q}_{\\tau+1}^{(n)}, \\mathbf{K}_{\\tau+1}^{(n)}, \\mathbf{V}_{\\tau+1}^{(n)})\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-770fac372e77",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that both key and value rely on the extended hidden state, while the query only consumes hidden state at current step. The concatenation operation "
+          },
+          {
+            "type": "inline_math",
+            "text": "[. \\circ .]"
+          },
+          {
+            "type": "text",
+            "text": " is along the sequence length dimension."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-60fb14ada064",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Relative Positional Encoding"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-08b26e95187c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In order to work with this new form of attention span, Transformer-XL proposed a new type of positional encoding. If using the same approach by vanilla Transformer and encoding the absolute position, the previous and current segments will be assigned with the same encoding, which is undesired."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-11b9a248d1a5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To keep the positional information flow coherently across segments, Transformer-XL encodes the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "relative"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " position instead, as it could be sufficient enough to know the position offset for making good predictions, i.e. "
+          },
+          {
+            "type": "inline_math",
+            "text": "i-j"
+          },
+          {
+            "type": "text",
+            "text": ", between one key vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{k}_{\\tau, j}"
+          },
+          {
+            "type": "text",
+            "text": " and its query "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}_{\\tau, i}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-28badbac68b9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If omitting the scalar "
+          },
+          {
+            "type": "inline_math",
+            "text": "1/\\sqrt{d_k}"
+          },
+          {
+            "type": "text",
+            "text": " and the normalizing term in softmax but including positional encodings, we can write the attention score between query at position "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " and key at position "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": " as:"
+          }
+        ]
+      },
+      {
+        "id": "math-d9fcc22236df",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\na_{ij} \n&= \\mathbf{q}_i {\\mathbf{k}_j}^\\top = (\\mathbf{x}_i + \\mathbf{p}_i)\\mathbf{W}^q ((\\mathbf{x}_j + \\mathbf{p}_j)\\mathbf{W}^k)^\\top \\\\\n&= \\mathbf{x}_i\\mathbf{W}^q {\\mathbf{W}^k}^\\top\\mathbf{x}_j^\\top + \\mathbf{x}_i\\mathbf{W}^q {\\mathbf{W}^k}^\\top\\mathbf{p}_j^\\top + \\mathbf{p}_i\\mathbf{W}^q {\\mathbf{W}^k}^\\top\\mathbf{x}_j^\\top + \\mathbf{p}_i\\mathbf{W}^q {\\mathbf{W}^k}^\\top\\mathbf{p}_j^\\top\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-4c54fd3ceb64",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Transformer-XL reparameterizes the above four terms as follows:"
+          }
+        ]
+      },
+      {
+        "id": "math-8270568f4bef",
+        "type": "math",
+        "attrs": {
+          "latex": "a_{ij}^\\text{rel} = \n\\underbrace{ \\mathbf{x}_i\\mathbf{W}^q \\color{blue}{ {\\mathbf{W}_E^k}^\\top } \\mathbf{x}_j^\\top }_\\text{content-based addressing} + \n\\underbrace{ \\mathbf{x}_i\\mathbf{W}^q \\color{blue}{ {\\mathbf{W}_R^k}^\\top } \\color{green}{\\mathbf{r}_{i-j}^\\top} }_\\text{content-dependent positional bias} + \n\\underbrace{ \\color{red}{\\mathbf{u}} \\color{blue}{ {\\mathbf{W}_E^k}^\\top } \\mathbf{x}_j^\\top }_\\text{global content bias} + \n\\underbrace{ \\color{red}{\\mathbf{v}} \\color{blue}{ {\\mathbf{W}_R^k}^\\top } \\color{green}{\\mathbf{r}_{i-j}^\\top} }_\\text{global positional bias}"
+        }
+      },
+      {
+        "id": "list-703952a09761",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-411c3d3ebdc1",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Replace "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{p}_j"
+              },
+              {
+                "type": "text",
+                "text": " with relative positional encoding "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{r}_{i-j} \\in \\mathbf{R}^{d}"
+              },
+              {
+                "type": "text",
+                "text": ";"
+              }
+            ]
+          },
+          {
+            "id": "list-item-18fecdd0e195",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Replace "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{p}_i\\mathbf{W}^q"
+              },
+              {
+                "type": "text",
+                "text": " with two trainable parameters "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{u}"
+              },
+              {
+                "type": "text",
+                "text": " (for content) and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{v}"
+              },
+              {
+                "type": "text",
+                "text": " (for location) in two different terms;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-0577fa267ab0",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Split "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{W}^k"
+              },
+              {
+                "type": "text",
+                "text": " into two matrices, "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{W}^k_E"
+              },
+              {
+                "type": "text",
+                "text": " for content information and "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{W}^k_R"
+              },
+              {
+                "type": "text",
+                "text": " for location information."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-4569e881aa74",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Adaptive Attention Span"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-bc1c003186e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One key advantage of Transformer is the capability of capturing long-term dependencies. Depending on the context, the model may prefer to attend further sometime than others; or one attention head may had different attention pattern from the other. If the attention span could adapt its length flexibly and only attend further back when needed, it would help reduce both computation and memory cost to support longer maximum context size in the model."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-20f907998669",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This is the motivation for "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Adaptive Attention Span"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.07799"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sukhbaatar, et al., (2019)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " proposed a self-attention mechanism that seeks an optimal attention span. They hypothesized that different attention heads might assign scores differently within the same context window (See Fig. 7) and thus the optimal span would be trained separately per head."
+          }
+        ]
+      },
+      {
+        "id": "image-3a32710457dc",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/attention-per-head.png",
+          "alt": "Two attention heads in the same model, A & B, assign attention differently within the same context window. Head A attends more to the recent tokens, while head B look further back into the past uniformly. (Image source: Sukhbaatar, et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-75e74fc78815",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th token, we need to compute the attention weights between this token and other keys at positions "
+          },
+          {
+            "type": "inline_math",
+            "text": "j \\in S_i"
+          },
+          {
+            "type": "text",
+            "text": ", where "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i"
+          },
+          {
+            "type": "text",
+            "text": " defineds the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th token’s context window."
+          }
+        ]
+      },
+      {
+        "id": "math-0b481d21189b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\ne_{ij} &= \\mathbf{q}_i {\\mathbf{k}_j}^\\top \\\\ \na_{ij} &= \\text{softmax}(e_{ij}) = \\frac{\\exp(e_{ij})}{\\sum_{r=i-s}^{i-1} \\exp(e_{ir})} \\\\\n\\mathbf{y}_i &= \\sum_{r=i-s}^{i-1}a_{ir}\\mathbf{v}_r = \\sum_{r=i-s}^{i-1}a_{ir}\\mathbf{x}_r\\mathbf{W}^v\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-5b423a69babe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "soft mask function"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "m_z"
+          },
+          {
+            "type": "text",
+            "text": " is added to control for an effective adjustable attention span, which maps the distance between query and key into a [0, 1] value. "
+          },
+          {
+            "type": "inline_math",
+            "text": "m_z"
+          },
+          {
+            "type": "text",
+            "text": " is parameterized by "
+          },
+          {
+            "type": "inline_math",
+            "text": "z \\in [0, s]"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " is to be learned:"
+          }
+        ]
+      },
+      {
+        "id": "math-644d060824aa",
+        "type": "math",
+        "attrs": {
+          "latex": "m_z(x) = \\text{clamp}(\\frac{1}{R}(R+z-x), 0, 1)"
+        }
+      },
+      {
+        "id": "paragraph-2d15f5cb9395",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "R"
+          },
+          {
+            "type": "text",
+            "text": " is a hyper-parameter which defines the softness of "
+          },
+          {
+            "type": "inline_math",
+            "text": "m_z"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-d5613fcf5bb6",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/soft-masking-function.png",
+          "alt": "The soft masking function used in the adaptive attention span. (Image source: Sukhbaatar, et al. 2019 .)"
+        }
+      },
+      {
+        "id": "paragraph-736090f856cb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The soft mask function is applied to the softmax elements in the attention weights:"
+          }
+        ]
+      },
+      {
+        "id": "math-3626b546b449",
+        "type": "math",
+        "attrs": {
+          "latex": "a_{ij} = \\frac{m_z(i-j)\\exp(s_{ij})}{\\sum_{r=i-s}^{i-1}m_z(i-r) \\exp(s_{ir})}"
+        }
+      },
+      {
+        "id": "paragraph-9cfa9c257889",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the above equation, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " is differentiable so it is trained jointly with other parts of the model. Parameters "
+          },
+          {
+            "type": "inline_math",
+            "text": "z^{(i)}, i=1, \\dots, h"
+          },
+          {
+            "type": "text",
+            "text": " are learned "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "separately per head"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Moreover, the loss function has an extra L1 penalty on "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\sum_{i=1}^h z^{(i)}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fba2db1f9bb4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Using "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Adaptive Computation Time"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the approach can be further enhanced to have flexible attention span length, adaptive to the current input dynamically. The span parameter "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_t"
+          },
+          {
+            "type": "text",
+            "text": " of an attention head at time "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " is a sigmoidal function, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z_t = S \\sigma(\\mathbf{v} \\cdot \\mathbf{x}_t +b)"
+          },
+          {
+            "type": "text",
+            "text": ", where the vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{v}"
+          },
+          {
+            "type": "text",
+            "text": " and the bias scalar "
+          },
+          {
+            "type": "inline_math",
+            "text": "b"
+          },
+          {
+            "type": "text",
+            "text": " are learned jointly with other parameters."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e36ac294750e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the experiments of Transformer with adaptive attention span, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.07799"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sukhbaatar, et al. (2019)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " found a general tendency that lower layers do not require very long attention spans, while a few attention heads in higher layers may use exceptionally long spans. Adaptive attention span also helps greatly reduce the number of FLOPS, especially in a big model with many attention layers and a large context length."
+          }
+        ]
+      },
+      {
+        "id": "heading-212884f710be",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Localized Attention Span (Image Transformer)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-2172cb6d145d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The original, also the most popular, use case for Transformer is to do language modeling. The text sequence is one-dimensional in a clearly defined chronological order and thus the attention span grows linearly with increased context size."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-abdb9bd53628",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "However, if we want to use Transformer on images, it is unclear how to define the scope of context or the order. "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Image Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1802.05751"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Parmer, et al 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") embraces a formulation of image generation similar to sequence modeling within the Transformer framework. Additionally, Image Transformer restricts the self-attention span to only "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "local"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " neighborhoods, so that the model can scale up to process more images in parallel and keep the likelihood loss tractable."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1fb6691f7413",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The encoder-decoder architecture remains for image-conditioned generation:"
+          }
+        ]
+      },
+      {
+        "id": "list-4983a4c25562",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-6d5c3de56dbd",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The encoder generates a contextualized, per-pixel-channel representation of the source image;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-6e6f54560170",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The decoder "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "autoregressively"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " generates an output image, one channel per pixel at each time step."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4461ab526a2e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s label the representation of the current pixel to be generated as the query "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}"
+          },
+          {
+            "type": "text",
+            "text": ". Other positions whose representations will be used for computing "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}"
+          },
+          {
+            "type": "text",
+            "text": " are key vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{k}_1, \\mathbf{k}_2, \\dots"
+          },
+          {
+            "type": "text",
+            "text": " and they together form a memory matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{M}"
+          },
+          {
+            "type": "text",
+            "text": ". The scope of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{M}"
+          },
+          {
+            "type": "text",
+            "text": " defines the context window for pixel query "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-80e530d54943",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Image Transformer introduced two types of localized "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{M}"
+          },
+          {
+            "type": "text",
+            "text": ", as illustrated below."
+          }
+        ]
+      },
+      {
+        "id": "image-6f7d4f7f0e83",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/image-transformer-attention.png",
+          "alt": "Illustration of 1D and 2D attention span for visual inputs in Image Transformer. The black line marks a query block and the cyan outlines the actual attention span for pixel q. (Image source: Figure 2 in Parmer et al, 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-341d00562ffe",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "1D Local Attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": The input image is flattened in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Raster_scan#Scanning_pattern"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "raster scanning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " order, that is, from left to right and top to bottom. The linearized image is then partitioned into non-overlapping query blocks. The context window consists of pixels in the same query block as "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}"
+          },
+          {
+            "type": "text",
+            "text": " and a fixed number of additional pixels generated before this query block."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7f0d5a607524",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "2D Local Attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": The image is partitioned into multiple non-overlapping rectangular query blocks. The query pixel can attend to all others in the same memory blocks. To make sure the pixel at the top-left corner can also have a valid context window, the memory block is extended to the top, left and right by a fixed amount, respectively."
+          }
+        ]
+      },
+      {
+        "id": "heading-834660cd5d8b",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Less Time and Memory Cost"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-f49503f3cf5d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This section introduces several improvements made on Transformer to reduce the computation time and memory consumption."
+          }
+        ]
+      },
+      {
+        "id": "heading-cf11a1dd2495",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparse Attention Matrix Factorization (Sparse Transformers)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-07abf7d95003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The compute and memory cost of the vanilla Transformer grows quadratically with sequence length and thus it is hard to be applied on very long sequences."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7630b3d6cfc9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sparse Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1904.10509"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Child et al., 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") introduced "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "factorized self-attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", through sparse matrix factorization, making it possible to train dense attention networks with hundreds of layers on sequence length up to 16,384, which would be infeasible on modern hardware otherwise."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d85a333ffdd8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a set of attention connectivity pattern "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{S} = \\{S_1, \\dots, S_n\\}"
+          },
+          {
+            "type": "text",
+            "text": ", where each "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i"
+          },
+          {
+            "type": "text",
+            "text": " records a set of key positions that the "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": "-th query vector attends to."
+          }
+        ]
+      },
+      {
+        "id": "math-18bcd0fa6125",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\text{Attend}(\\mathbf{X}, \\mathcal{S}) &= \\Big( a(\\mathbf{x}_i, S_i) \\Big)_{i \\in \\{1, \\dots, L\\}} \\\\\n\\text{ where } a(\\mathbf{x}_i, S_i) &= \\text{softmax}\\Big(\\frac{(\\mathbf{x}_i \\mathbf{W}^q)(\\mathbf{x}_j \\mathbf{W}^k)_{j \\in S_i}^\\top}{\\sqrt{d_k}}\\Big) (\\mathbf{x}_j \\mathbf{W}^v)_{j \\in S_i}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-31245f314a7c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Note that although the size of "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i"
+          },
+          {
+            "type": "text",
+            "text": " is not fixed, "
+          },
+          {
+            "type": "inline_math",
+            "text": "a(\\mathbf{x}_i, S_i)"
+          },
+          {
+            "type": "text",
+            "text": " is always of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "d_v"
+          },
+          {
+            "type": "text",
+            "text": " and thus "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{Attend}(\\mathbf{X}, \\mathcal{S}) \\in \\mathbb{R}^{L \\times d_v}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-416869d99149",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In anto-regressive models, one attention span is defined as "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i = \\{j: j \\leq i\\}"
+          },
+          {
+            "type": "text",
+            "text": " as it allows each token to attend to all the positions in the past."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ec1750b4f282",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In factorized self-attention, the set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i"
+          },
+          {
+            "type": "text",
+            "text": " is decomposed into a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "tree"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of dependencies, such that for every pair of "
+          },
+          {
+            "type": "inline_math",
+            "text": "(i, j)"
+          },
+          {
+            "type": "text",
+            "text": " where "
+          },
+          {
+            "type": "inline_math",
+            "text": "j \\leq i"
+          },
+          {
+            "type": "text",
+            "text": ", there is a path connecting "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " back to "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " can attend to "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": " either directly or indirectly."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fea9105f84fb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Precisely, the set "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i"
+          },
+          {
+            "type": "text",
+            "text": " is divided into "
+          },
+          {
+            "type": "inline_math",
+            "text": "p"
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "non-overlapping"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " subsets, where the "
+          },
+          {
+            "type": "inline_math",
+            "text": "m"
+          },
+          {
+            "type": "text",
+            "text": "-th subset is denoted as "
+          },
+          {
+            "type": "inline_math",
+            "text": "A^{(m)}_i \\subset S_i, m = 1,\\dots, p"
+          },
+          {
+            "type": "text",
+            "text": ". Therefore the path between the output position "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " and any "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": " has a maximum length "
+          },
+          {
+            "type": "inline_math",
+            "text": "p + 1"
+          },
+          {
+            "type": "text",
+            "text": ". For example, if "
+          },
+          {
+            "type": "inline_math",
+            "text": "(j, a, b, c, \\dots, i)"
+          },
+          {
+            "type": "text",
+            "text": " is a path of indices between "
+          },
+          {
+            "type": "inline_math",
+            "text": "i"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "j"
+          },
+          {
+            "type": "text",
+            "text": ", we would have "
+          },
+          {
+            "type": "inline_math",
+            "text": "j \\in A_a^{(1)}, a \\in A_b^{(2)}, b \\in A_c^{(3)}, \\dots"
+          },
+          {
+            "type": "text",
+            "text": ", so on and so forth."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-994e13d194a7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Sparse Factorized Attention"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6c3769c82983",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparse Transformer proposed two types of fractorized attention. It is easier to understand the concepts as illustrated in Fig. 10 with 2D image inputs as examples."
+          }
+        ]
+      },
+      {
+        "id": "image-2ad3d9c61e38",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/sparse-attention.png",
+          "alt": "The top row illustrates the attention connectivity patterns in (a) Transformer, (b) Sparse Transformer with strided attention, and (c) Sparse Transformer with fixed attention. The bottom row contains corresponding self-attention connectivity matrices. Note that the top and bottom rows are not in the same scale. (Image source: Child et al., 2019 + a few of extra annotations.)"
+        }
+      },
+      {
+        "id": "paragraph-afe83198e10c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(1) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Strided"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " attention with stride "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell \\sim \\sqrt{n}"
+          },
+          {
+            "type": "text",
+            "text": ". This works well with image data as the structure is aligned with strides. In the image case, each pixel would attend to all the previous "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell"
+          },
+          {
+            "type": "text",
+            "text": " pixels in the raster scanning order (naturally cover the entire width of the image) and then those pixels attend to others in the same column (defined by another attention connectivity subset)."
+          }
+        ]
+      },
+      {
+        "id": "math-22cbd2c204ae",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nA_i^{(1)} &= \\{ t, t+1, \\dots, i\\} \\text{, where } t = \\max(0, i - \\ell) \\\\\nA_i^{(2)} &= \\{j: (i-j) \\mod \\ell = 0\\}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-0f6c20fb16b8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(2) "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Fixed"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " attention. A small set of tokens summarize previous locations and propagate that information to all future locations."
+          }
+        ]
+      },
+      {
+        "id": "math-cf501f3341ce",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nA_i^{(1)} &= \\{j: \\lfloor \\frac{j}{\\ell} \\rfloor = \\lfloor \\frac{i}{\\ell} \\rfloor \\} \\\\\nA_i^{(2)} &= \\{j: j \\mod \\ell \\in \\{\\ell-c, \\dots, \\ell-1\\} \\}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-6beef413716f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " is a hyperparameter. If "
+          },
+          {
+            "type": "inline_math",
+            "text": "c=1"
+          },
+          {
+            "type": "text",
+            "text": ", it restricts the representation whereas many depend on a few positions. The paper chose "
+          },
+          {
+            "type": "inline_math",
+            "text": "c\\in \\{ 8, 16, 32 \\}"
+          },
+          {
+            "type": "text",
+            "text": " for "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\ell \\in \\{ 128, 256 \\}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-953ce6f39ff5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Use Factorized Self-Attention in Transformer"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-137be2c77e9c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are three ways to use sparse factorized attention patterns in Transformer architecture:"
+          }
+        ]
+      },
+      {
+        "id": "list-9f5a3bbee979",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-02db9e3ef174",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "One attention type per residual block and then interleave them, "
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "inline_math",
+                "text": "\\text{attention}(\\mathbf{X}) = \\text{Attend}(\\mathbf{X}, A^{(n \\mod p)}) \\mathbf{W}^o"
+              },
+              {
+                "type": "text",
+                "text": ", where "
+              },
+              {
+                "type": "inline_math",
+                "text": "n"
+              },
+              {
+                "type": "text",
+                "text": " is the index of the current residual block."
+              }
+            ]
+          },
+          {
+            "id": "list-item-06dee7b5940c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Set up a single head which attends to locations that all the factorized heads attend to, "
+              },
+              {
+                "type": "line_break"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "inline_math",
+                "text": "\\text{attention}(\\mathbf{X}) = \\text{Attend}(\\mathbf{X}, \\cup_{m=1}^p A^{(m)}) \\mathbf{W}^o "
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f723426bc394",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Use a multi-head attention mechanism, but different from vanilla Transformer, each head might adopt a pattern presented above, 1 or 2. => This option often performs the best."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d97ffda3340e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Sparse Transformer also proposed a set of changes so as to train the Transformer up to hundreds of layers, including gradient checkpointing, recomputing attention & FF layers during the backward pass, mixed precision training, efficient block-sparse implementation, etc. Please check the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1904.10509"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for more details."
+          }
+        ]
+      },
+      {
+        "id": "heading-40e2c590507a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Locality-Sensitive Hashing (Reformer)"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-b8eaf6938272",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The improvements proposed by the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Reformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " model ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2001.04451"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kitaev, et al. 2020"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") aim to solve the following pain points in Transformer:"
+          }
+        ]
+      },
+      {
+        "id": "list-91fd0837fdd3",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-79340f021528",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Memory in a model with "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " layers is "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": "-times larger than in a single-layer model because we need to store activations for back-propagation."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7339c911bd39",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The intermediate FF layers are often quite large."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5cfb223c3205",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The attention matrix on sequences of length "
+              },
+              {
+                "type": "inline_math",
+                "text": "L"
+              },
+              {
+                "type": "text",
+                "text": " often requires "
+              },
+              {
+                "type": "inline_math",
+                "text": "O(L^2)"
+              },
+              {
+                "type": "text",
+                "text": " in both memory and time."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-86bd0db36f12",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reformer proposed two main changes:"
+          }
+        ]
+      },
+      {
+        "id": "list-b53c27f8c025",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-14bdf783b94f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Replace the dot-product attention with "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "locality-sensitive hashing (LSH) attention"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", reducing the complexity from "
+              },
+              {
+                "type": "inline_math",
+                "text": "O(L^2)"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "O(L\\log L)"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "list-item-78447c70f9e9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Replace the standard residual blocks with "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "reversible residual layers"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", which allows storing activations only once during training instead of "
+              },
+              {
+                "type": "inline_math",
+                "text": "N"
+              },
+              {
+                "type": "text",
+                "text": " times (i.e. proportional to the number of layers)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-613507c314b8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Locality-Sensitive Hashing Attention"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b94536a307b3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{Q} \\mathbf{K}^\\top"
+          },
+          {
+            "type": "text",
+            "text": " part of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#attention-and-self-attention"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "attention formula"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", we are only interested in the largest elements as only large elements contribute a lot after softmax. For each query "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}_i \\in \\mathbf{Q}"
+          },
+          {
+            "type": "text",
+            "text": ", we are looking for row vectors in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{K}"
+          },
+          {
+            "type": "text",
+            "text": " closest to "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{q}_i"
+          },
+          {
+            "type": "text",
+            "text": ". In order to find nearest neighbors quickly in high-dimensional space, Reformer incorporates "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Locality-sensitive_hashing"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Locality-Sensitive Hashing (LSH)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " into its attention mechanism."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-882cbe5aa2f0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A hashing scheme "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\mapsto h(x)"
+          },
+          {
+            "type": "text",
+            "text": " is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "locality-sensitive"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " if it preserves the distancing information between data points, such that close vectors obtain similar hashes while distant vectors have very different ones. The Reformer adopts a hashing scheme as such, given a fixed random matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{R} \\in \\mathbb{R}^{d \\times b/2}"
+          },
+          {
+            "type": "text",
+            "text": " (where "
+          },
+          {
+            "type": "inline_math",
+            "text": "b"
+          },
+          {
+            "type": "text",
+            "text": " is a hyperparam), the hash function is "
+          },
+          {
+            "type": "inline_math",
+            "text": "h(x) = \\arg\\max([xR; −xR])"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-38987bd3eefd",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/LSH-attention-matrix.png",
+          "alt": "Illustration of Locality-Sensitive Hashing (LSH) attention. (Image source: right part of Figure 1 in Kitaev, et al. 2020 )."
+        }
+      },
+      {
+        "id": "paragraph-43edb7d77c54",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In LSH attention, a query can only attend to positions in the same hashing bucket, "
+          },
+          {
+            "type": "inline_math",
+            "text": "S_i = \\{j: h(\\mathbf{q}_i) = h(\\mathbf{k}_j)\\}"
+          },
+          {
+            "type": "text",
+            "text": ". It is carried out in the following process, as illustrated in Fig. 11:"
+          }
+        ]
+      },
+      {
+        "id": "list-3e0ea9abbe96",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-5b634e00a26e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(a) The attention matrix for full attention is often sparse."
+              }
+            ]
+          },
+          {
+            "id": "list-item-f246e88a5380",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(b) Using LSH, we can sort the keys and queries to be aligned according to their hash buckets."
+              }
+            ]
+          },
+          {
+            "id": "list-item-9276d5289c82",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(c) Set "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{Q} = \\mathbf{K}"
+              },
+              {
+                "type": "text",
+                "text": " (precisely "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{k}_j = \\mathbf{q}_j / |\\mathbf{q}_j|"
+              },
+              {
+                "type": "text",
+                "text": "), so that there are equal numbers of keys and queries in one bucket, easier for batching. Interestingly, this “shared-QK” config does not affect the performance of the Transformer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-e495cae42654",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "(d) Apply batching where chunks of "
+              },
+              {
+                "type": "inline_math",
+                "text": "m"
+              },
+              {
+                "type": "text",
+                "text": " consecutive queries are grouped together."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-1c360862dc6e",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/LSH-attention.png",
+          "alt": "The LSH attention consists of 4 steps: bucketing, sorting, chunking, and attention computation. (Image source: left part of Figure 1 in Kitaev, et al. 2020 )."
+        }
+      },
+      {
+        "id": "paragraph-a92f5fd768c5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Reversible Residual Network"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-49cea55047e3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Another improvement by Reformer is to use "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "reversible residual layers"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1707.04585"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Gomez et al. 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "). The motivation for reversible residual network is to design the architecture in a way that activations at any given layer can be recovered from the activations at the following layer, using only the model parameters. Hence, we can save memory by recomputing the activation during backprop rather than storing all the activations."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ebdf7005dbd4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a layer "
+          },
+          {
+            "type": "inline_math",
+            "text": "x \\mapsto y"
+          },
+          {
+            "type": "text",
+            "text": ", the normal residual layer does "
+          },
+          {
+            "type": "inline_math",
+            "text": "y = x + F(x)"
+          },
+          {
+            "type": "text",
+            "text": ", but the reversible layer splits both input and output into pairs "
+          },
+          {
+            "type": "inline_math",
+            "text": "(x_1, x_2) \\mapsto (y_1, y_2)"
+          },
+          {
+            "type": "text",
+            "text": " and then executes the following:"
+          }
+        ]
+      },
+      {
+        "id": "math-4c787a7895a7",
+        "type": "math",
+        "attrs": {
+          "latex": "y_1 = x_1 + F(x_2),\\; y_2 = x_2 + G(y_1)"
+        }
+      },
+      {
+        "id": "paragraph-140f6c8ba833",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "and reversing is easy:"
+          }
+        ]
+      },
+      {
+        "id": "math-c98dfecc5a2a",
+        "type": "math",
+        "attrs": {
+          "latex": "x_2 = y_2 - G(y_1), \\; x_1 = y_1 − F(x_2)"
+        }
+      },
+      {
+        "id": "paragraph-b382e58b7e68",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reformer applies the same idea to Transformer by combination attention ("
+          },
+          {
+            "type": "inline_math",
+            "text": "F"
+          },
+          {
+            "type": "text",
+            "text": ") and feed-forward layers ("
+          },
+          {
+            "type": "inline_math",
+            "text": "G"
+          },
+          {
+            "type": "text",
+            "text": ") within a reversible net block:"
+          }
+        ]
+      },
+      {
+        "id": "math-0c72baa9b0ac",
+        "type": "math",
+        "attrs": {
+          "latex": "Y_1 = X_1 + \\text{Attention}(X_2), \\; Y_2 = X_2 + \\text{FeedForward}(Y_1)"
+        }
+      },
+      {
+        "id": "paragraph-2e6256f61169",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The memory can be further reduced by chunking the feed-forward computation:"
+          }
+        ]
+      },
+      {
+        "id": "math-71a0d7c3a08e",
+        "type": "math",
+        "attrs": {
+          "latex": "Y_2 = [Y_2^{(1)}; \\dots; Y_2^{(c)}] = [X_2^{(1)} + \\text{FeedForward}(Y_1^{(1)}); \\dots; X_2^{(c)} + \\text{FeedForward}(Y_1^{(c)})]"
+        }
+      },
+      {
+        "id": "paragraph-b54b8418bbba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The resulting reversible Transformer does not need to store activation in every layer."
+          }
+        ]
+      },
+      {
+        "id": "heading-c59d6f0874c0",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Make it Recurrent (Universal Transformer)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-99a3d20d667a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Universal Transformer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1807.03819"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dehghani, et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") combines self-attention in Transformer with the recurrent mechanism in RNN, aiming to benefit from both a long-term global receptive field of Transformer and learned inductive biases of RNN."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ecf409a2610c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Rather than going through a fixed number of layers, Universal Transformer dynamically adjusts the number of steps using "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "adaptive computation time"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". If we fix the number of steps, an Universal Transformer is equivalent to a multi-layer Transformer with shared parameters across layers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4a0b24274d74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "On a high level, the universal transformer can be viewed as a recurrent function for learning the hidden state representation per token. The recurrent function evolves in parallel across token positions and the information between positions is shared through self-attention."
+          }
+        ]
+      },
+      {
+        "id": "image-d76f8272e2b0",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/universal-transformer-loop.png",
+          "alt": "How the Universal Transformer refines a set of hidden state representations repeatedly for every position in parallel. (Image source: Figure 1 in Dehghani, et al. 2019 )."
+        }
+      },
+      {
+        "id": "paragraph-9071fcfcde48",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given an input sequence of length "
+          },
+          {
+            "type": "inline_math",
+            "text": "L"
+          },
+          {
+            "type": "text",
+            "text": ", Universal Transformer iteratively updates the representation "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{H}^t \\in \\mathbb{R}^{L \\times d}"
+          },
+          {
+            "type": "text",
+            "text": " at step "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " for an adjustable number of steps. At step 0, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{H}^0"
+          },
+          {
+            "type": "text",
+            "text": " is initialized to be same as the input embedding matrix. All the positions are processed in parallel in the multi-head self-attention mechanism and then go through a recurrent transition function."
+          }
+        ]
+      },
+      {
+        "id": "math-1124f3248fd6",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{A}^t &= \\text{LayerNorm}(\\mathbf{H}^{t-1} + \\text{MultiHeadAttention}(\\mathbf{H}^{t-1} + \\mathbf{P}^t) \\\\\n\\mathbf{H}^t &= \\text{LayerNorm}(\\mathbf{A}^{t-1} + \\text{Transition}(\\mathbf{A}^t))\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-1863290b14ba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\text{Transition}(.)"
+          },
+          {
+            "type": "text",
+            "text": " is either a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1610.02357"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "separable convolution"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or a fully-connected neural network that consists of two position-wise (i.e. applied to each row of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{A}^t"
+          },
+          {
+            "type": "text",
+            "text": " individually) affine transformation + one ReLU."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c4ae4681b456",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The positional encoding "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{P}^t"
+          },
+          {
+            "type": "text",
+            "text": " uses sinusoidal position signal but with an additional time dimension:"
+          }
+        ]
+      },
+      {
+        "id": "math-c42980f03824",
+        "type": "math",
+        "attrs": {
+          "latex": "\\text{PE}(i, t, \\delta) = \n\\begin{cases}\n\\sin(\\frac{i}{10000^{2\\delta'/d}}) \\oplus \\sin(\\frac{t}{10000^{2\\delta'/d}}) & \\text{if } \\delta = 2\\delta'\\\\\n\\cos(\\frac{i}{10000^{2\\delta'/d}}) \\oplus \\cos(\\frac{t}{10000^{2\\delta'/d}}) & \\text{if } \\delta = 2\\delta' + 1\\\\\n\\end{cases}"
+        }
+      },
+      {
+        "id": "image-34855115ba33",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/universal-transformer.png",
+          "alt": "A simplified illustration of Universal Transformer. The encoder and decoder share the same basic recurrent structure. But the decoder also attends to final encoder representation $\\mathbf{H}^T$. (Image source: Figure 2 in Dehghani, et al. 2019 )"
+        }
+      },
+      {
+        "id": "paragraph-cf2958e34c71",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the adaptive version of Universal Transformer, the number of recurrent steps "
+          },
+          {
+            "type": "inline_math",
+            "text": "T"
+          },
+          {
+            "type": "text",
+            "text": " is dynamically determined by "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#adaptive-computation-time-act"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "ACT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Each position is equipped with a dynamic ACT halting mechanism. Once a per-token recurrent block halts, it stops taking more recurrent updates but simply copies the current value to the next step until all the blocks halt or until the model reaches a maximum step limit."
+          }
+        ]
+      },
+      {
+        "id": "heading-d68a9ab5ea13",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Stabilization for RL (GTrXL)"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-b5e4ab9f29b5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The self-attention mechanism avoids compressing the whole past into a fixed-size hidden state and does not suffer from vanishing or exploding gradients as much as RNNs. Reinforcement Learning tasks can for sure benefit from these traits. "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "However"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", it is quite difficult to train Transformer even in supervised learning, let alone in the RL context. It could be quite challenging to stabilize and train a LSTM agent by itself, after all."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-f8bd24a9f8e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Gated Transformer-XL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "GTrXL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.06764"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Parisotto, et al. 2019"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is one attempt to use Transformer for RL. GTrXL succeeded in stabilizing training with two changes on top of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/#longer-attention-span-transformer-xl"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Transformer-XL"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "list-efc7ed7a80d0",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-40050d43b291",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The layer normalization is only applied on the input stream in a residual module, but NOT on the shortcut stream. A key benefit to this reordering is to allow the original input to flow from the first to last layer."
+              }
+            ]
+          },
+          {
+            "id": "list-item-376cf4446607",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The residual connection is replaced with a GRU-style (Gated Recurrent Unit; "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://arxiv.org/abs/1412.3555"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Chung et al., 2014"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ") "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "gating"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " mechanism."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-3fc1b77b24f8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\nr &= \\sigma(W_r^{(l)} y + U_r^{(l)} x) \\\\\nz &= \\sigma(W_z^{(l)} y + U_z^{(l)} x - b_g^{(l)}) \\\\\n\\hat{h} &= \\tanh(W_g^{(l)} y + U_g^{(l)} (r \\odot x)) \\\\\ng^{(l)}(x, y) &= (1-z)\\odot x + z\\odot \\hat{h}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7696debbb510",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The gating function parameters are explicitly initialized to be close to an identity map - this is why there is a "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_g"
+          },
+          {
+            "type": "text",
+            "text": " term. A "
+          },
+          {
+            "type": "inline_math",
+            "text": "b_g > 0"
+          },
+          {
+            "type": "text",
+            "text": " greatly helps with the learning speedup."
+          }
+        ]
+      },
+      {
+        "id": "image-3c3d94ad4925",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/gated-transformer-XL.png",
+          "alt": "Comparison of the model architecture of Transformer-XL, Transformer-XL with the layer norm reordered, and Gated Transformer-XL. (Image source: Figure 1 in Parisotto, et al. 2019 )"
+        }
+      },
+      {
+        "id": "heading-b0fd453dd29a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Citation"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "blockquote-58c0c4b312e0",
+        "type": "blockquote",
+        "children": [
+          {
+            "id": "paragraph-80730adabd52",
+            "type": "paragraph",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Weng, Lilian. (Apr 2020). The transformer family. Lil’Log. https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-19df72562aed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Or"
+          }
+        ]
+      },
+      {
+        "id": "code-2d5d33cb5855",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2020transformer,\n  title   = \"The Transformer Family\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2020\",\n  month   = \"Apr\",\n  url     = \"https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-1e128c52c168",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reference"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-5d3b01e25e3c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Ashish Vaswani, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Attention is all you need.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1890076d0c87",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] Rami Al-Rfou, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1808.04444"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Character-level language modeling with deeper self-attention.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " AAAI 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-304fad899a5b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] Olah & Carter, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://doi.org/10.23915/disti"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Attention and Augmented Recurrent Neural Networks”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", Distill, 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5c675879f5c8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] Sainbayar Sukhbaatar, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1905.07799"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Adaptive Attention Span in Transformers”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". ACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14c109e2e617",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Rewon Child, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1904.10509"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Generating Long Sequences with Sparse Transformers”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1904.10509 (2019)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e96df85cfe4f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Nikita Kitaev, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2001.04451"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Reformer: The Efficient Transformer”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2020."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0d1f4ed59a98",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Alex Graves. (“Adaptive Computation Time for Recurrent Neural Networks”)[https://arxiv.org/abs/1603.08983]"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-ca0e7f67163f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Niki Parmar, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1802.05751"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Image Transformer”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2018."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d98a5911ac46",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Zihang Dai, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1901.02860"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ACL 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-11268750ce14",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Aidan N. Gomez, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1707.04585"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“The Reversible Residual Network: Backpropagation Without Storing Activations”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c7d86b92e4f6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] Mostafa Dehghani, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1807.03819"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Universal Transformers”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2019."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-23570ab5fe97",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Emilio Parisotto, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1910.06764"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Stabilizing Transformers for Reinforcement Learning”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1910.06764 (2019)."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "the-transformer-family",
+    "source_slug": "2020-04-07-the-transformer-family",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 16,
+      "math": 25,
+      "image": 15,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/multi-head-attention.png",
+      "alt": "Illustration of the multi-head scaled dot-product attention mechanism. (Image source: Figure 2 in Vaswani, et al., 2017 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/transformer.png",
+      "alt": "The architecture of the vanilla Transformer model. (Image source: Figure 17 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/sinoidual-positional-encoding.png",
+      "alt": "Sinusoidal positional encoding with $L=32$ and $d=128$. The value is between -1 (black) and 1 (white) and the value 0 is in gray."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/transformer-aux-losses.png",
+      "alt": "Auxiliary prediction tasks used in deep Transformer for character-level language modeling. (Image source: Al-Rfou et al. (2018) )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/ACT-computation-graph.png",
+      "alt": "The computation graph of a RNN with ACT mechanism. (Image source: Graves, 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/transformer-XL-training.png",
+      "alt": "A comparison between the training phrase of vanilla Transformer & Transformer-XL with a segment length 4. (Image source: left part of Figure 2 in Dai et al., 2019 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/attention-per-head.png",
+      "alt": "Two attention heads in the same model, A & B, assign attention differently within the same context window. Head A attends more to the recent tokens, while head B look further back into the past uniformly. (Image source: Sukhbaatar, et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/soft-masking-function.png",
+      "alt": "The soft masking function used in the adaptive attention span. (Image source: Sukhbaatar, et al. 2019 .)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/image-transformer-attention.png",
+      "alt": "Illustration of 1D and 2D attention span for visual inputs in Image Transformer. The black line marks a query block and the cyan outlines the actual attention span for pixel q. (Image source: Figure 2 in Parmer et al, 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/sparse-attention.png",
+      "alt": "The top row illustrates the attention connectivity patterns in (a) Transformer, (b) Sparse Transformer with strided attention, and (c) Sparse Transformer with fixed attention. The bottom row contains corresponding self-attention connectivity matrices. Note that the top and bottom rows are not in the same scale. (Image source: Child et al., 2019 + a few of extra annotations.)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/LSH-attention-matrix.png",
+      "alt": "Illustration of Locality-Sensitive Hashing (LSH) attention. (Image source: right part of Figure 1 in Kitaev, et al. 2020 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/LSH-attention.png",
+      "alt": "The LSH attention consists of 4 steps: bucketing, sorting, chunking, and attention computation. (Image source: left part of Figure 1 in Kitaev, et al. 2020 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/universal-transformer-loop.png",
+      "alt": "How the Universal Transformer refines a set of hidden state representations repeatedly for every position in parallel. (Image source: Figure 1 in Dehghani, et al. 2019 )."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/universal-transformer.png",
+      "alt": "A simplified illustration of Universal Transformer. The encoder and decoder share the same basic recurrent structure. But the decoder also attends to final encoder representation $\\mathbf{H}^T$. (Image source: Figure 2 in Dehghani, et al. 2019 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2020-04-07-the-transformer-family/gated-transformer-XL.png",
+      "alt": "Comparison of the model architecture of Transformer-XL, Transformer-XL with the layer norm reordered, and Gated Transformer-XL. (Image source: Figure 1 in Parisotto, et al. 2019 )"
+    }
+  ]
+}

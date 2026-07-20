@@ -1,0 +1,3956 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "lilian-weng:2018-10-13-flow-models",
+  "source": {
+    "canonical_url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/",
+    "site": "lilian-weng",
+    "author": "Lilian Weng",
+    "published_at": "2018-10-13T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:7b2a776224a8516645d7eba7dee75f6941845592585335b2d3dee9392d14f83f",
+    "fetched_at": "2026-07-14T02:05:07.099395+00:00",
+    "parser_version": "lilian-weng.v5"
+  },
+  "content": {
+    "title": "Flow-based Deep Generative Models",
+    "title_en": "Flow-based Deep Generative Models",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "paragraph-d604ba376e74",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "So far, I’ve written about two types of generative models, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2017-08-20-gan/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GAN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "VAE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Neither of them explicitly learns the probability density function of real data, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " (where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} \\in \\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": ") — because it is really hard! Taking the generative model with latent variables as an example, "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{x}) = \\int p(\\mathbf{x}\\vert\\mathbf{z})p(\\mathbf{z})d\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": " can hardly be calculated as it is intractable to go through all possible values of the latent code "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b67945a6ce1e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Flow-based deep generative models conquer this hard problem with the help of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1505.05770"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "normalizing flows"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", a powerful statistics tool for density estimation. A good estimation of "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " makes it possible to efficiently complete many downstream tasks: sample unobserved but realistic new data points (data generation), predict the rareness of future events (density estimation), infer latent variables, fill in incomplete data samples, etc."
+          }
+        ]
+      },
+      {
+        "id": "heading-fdc286144aff",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Types of Generative Models"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-206c865c0b7b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here is a quick summary of the difference between GAN, VAE, and flow-based generative models:"
+          }
+        ]
+      },
+      {
+        "id": "list-05d4b680f57b",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-3efda4a87290",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Generative adversarial networks: GAN provides a smart solution to model the data generation, an unsupervised learning problem, as a supervised one. The discriminator model learns to distinguish the real data from the fake samples that are produced by the generator model. Two models are trained as they are playing a "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Minimax"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "minimax"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " game."
+              }
+            ]
+          },
+          {
+            "id": "list-item-b33c3843a8b7",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Variational autoencoders: VAE inexplicitly optimizes the log-likelihood of the data by maximizing the evidence lower bound (ELBO)."
+              }
+            ]
+          },
+          {
+            "id": "list-item-ce78aa1f92aa",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Flow-based generative models: A flow-based generative model is constructed by a sequence of invertible transformations. Unlike other two, the model explicitly learns the data distribution "
+              },
+              {
+                "type": "inline_math",
+                "text": "p(\\mathbf{x})"
+              },
+              {
+                "type": "text",
+                "text": " and therefore the loss function is simply the negative log-likelihood."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "image-20b2c62f3691",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/three-generative-models.png",
+          "alt": "Comparison of three categories of generative models."
+        }
+      },
+      {
+        "id": "heading-964326bb0edc",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Linear Algebra Basics Recap"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-7d3c78296292",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We should understand two key concepts before getting into the flow-based generative model: the Jacobian determinant and the change of variable rule. Pretty basic, so feel free to skip."
+          }
+        ]
+      },
+      {
+        "id": "heading-db14c6553939",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Jacobian Matrix and Determinant"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-b82177b5eb6e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a function of mapping a "
+          },
+          {
+            "type": "inline_math",
+            "text": "n"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional input vector "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " to a "
+          },
+          {
+            "type": "inline_math",
+            "text": "m"
+          },
+          {
+            "type": "text",
+            "text": "-dimensional output vector, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{f}: \\mathbb{R}^n \\mapsto \\mathbb{R}^m"
+          },
+          {
+            "type": "text",
+            "text": ", the matrix of all first-order partial derivatives of this function is called the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Jacobian matrix"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{J}"
+          },
+          {
+            "type": "text",
+            "text": " where one entry on the i-th row and j-th column is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{J}_{ij} = \\frac{\\partial f_i}{\\partial x_j}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-02068ccfd812",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{J} = \\begin{bmatrix}\n\\frac{\\partial f_1}{\\partial x_1} & \\dots & \\frac{\\partial f_1}{\\partial x_n} \\\\[6pt]\n\\vdots & \\ddots & \\vdots \\\\[6pt]\n\\frac{\\partial f_m}{\\partial x_1} & \\dots & \\frac{\\partial f_m}{\\partial x_n} \\\\[6pt]\n\\end{bmatrix}"
+        }
+      },
+      {
+        "id": "paragraph-f7d674039d07",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The determinant is one real number computed as a function of all the elements in a squared matrix. Note that the determinant "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "only exists for "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "square"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " matrices"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The absolute value of the determinant can be thought of as a measure of "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“how much multiplication by the matrix expands or contracts space”."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9a0cf58798d4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The determinant of a nxn matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " is:"
+          }
+        ]
+      },
+      {
+        "id": "math-aaaaec5fd48c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\det M = \\det \\begin{bmatrix}\na_{11} & a_{12} & \\dots & a_{1n} \\\\\na_{21} & a_{22} & \\dots & a_{2n} \\\\\n\\vdots & \\vdots & & \\vdots \\\\\na_{n1} & a_{n2} & \\dots & a_{nn} \\\\\n\\end{bmatrix} = \\sum_{j_1 j_2 \\dots j_n} (-1)^{\\tau(j_1 j_2 \\dots j_n)} a_{1j_1} a_{2j_2} \\dots a_{nj_n}"
+        }
+      },
+      {
+        "id": "paragraph-31cef266295b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where the subscript under the summation "
+          },
+          {
+            "type": "inline_math",
+            "text": "j_1 j_2 \\dots j_n"
+          },
+          {
+            "type": "text",
+            "text": " are all permutations of the set {1, 2, …, n}, so there are "
+          },
+          {
+            "type": "inline_math",
+            "text": "n!"
+          },
+          {
+            "type": "text",
+            "text": " items in total; "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tau(.)"
+          },
+          {
+            "type": "text",
+            "text": " indicates the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Parity_of_a_permutation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "signature"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of a permutation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e9e20cf0ff69",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The determinant of a square matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " detects whether it is invertible: If "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det(M)=0"
+          },
+          {
+            "type": "text",
+            "text": " then "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " is not invertible (a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "singular"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " matrix with linearly dependent rows or columns; or any row or column is all 0); otherwise, if "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det(M)\\neq 0"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "M"
+          },
+          {
+            "type": "text",
+            "text": " is invertible."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7412d21cbb3e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The determinant of the product is equivalent to the product of the determinants: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det(AB) = \\det(A)\\det(B)"
+          },
+          {
+            "type": "text",
+            "text": ". ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://proofwiki.org/wiki/Determinant_of_Matrix_Product"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "proof"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")"
+          }
+        ]
+      },
+      {
+        "id": "heading-5dbe71421299",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Change of Variable Theorem"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-5bd3877e2326",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s review the change of variable theorem specifically in the context of probability density estimation, starting with a single variable case."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-9989ed2e6116",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given a random variable "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " and its known probability density function "
+          },
+          {
+            "type": "inline_math",
+            "text": "z \\sim \\pi(z)"
+          },
+          {
+            "type": "text",
+            "text": ", we would like to construct a new random variable using a 1-1 mapping function "
+          },
+          {
+            "type": "inline_math",
+            "text": "x = f(z)"
+          },
+          {
+            "type": "text",
+            "text": ". The function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": " is invertible, so "
+          },
+          {
+            "type": "inline_math",
+            "text": "z=f^{-1}(x)"
+          },
+          {
+            "type": "text",
+            "text": ". Now the question is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "how to infer the unknown probability density function of the new variable"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(x)"
+          },
+          {
+            "type": "text",
+            "text": "?"
+          }
+        ]
+      },
+      {
+        "id": "math-1ed0d7e244d4",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\int p(x)dx = \\int \\pi(z)dz = 1 \\scriptstyle{\\text{   ; Definition of probability distribution.}}\\\\\n& p(x) = \\pi(z) \\left\\vert\\frac{dz}{dx}\\right\\vert = \\pi(f^{-1}(x)) \\left\\vert\\frac{d f^{-1}}{dx}\\right\\vert = \\pi(f^{-1}(x)) \\vert (f^{-1})'(x) \\vert\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-0482d2d38c3d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "By definition, the integral "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\int \\pi(z)dz"
+          },
+          {
+            "type": "text",
+            "text": " is the sum of an infinite number of rectangles of infinitesimal width "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta z"
+          },
+          {
+            "type": "text",
+            "text": ". The height of such a rectangle at position "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " is the value of the density function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi(z)"
+          },
+          {
+            "type": "text",
+            "text": ". When we substitute the variable, "
+          },
+          {
+            "type": "inline_math",
+            "text": "z = f^{-1}(x)"
+          },
+          {
+            "type": "text",
+            "text": " yields "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\frac{\\Delta z}{\\Delta x} = (f^{-1}(x))’"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\Delta z =  (f^{-1}(x))’ \\Delta x"
+          },
+          {
+            "type": "text",
+            "text": ". Here "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\vert(f^{-1}(x))’\\vert"
+          },
+          {
+            "type": "text",
+            "text": " indicates the ratio between the area of rectangles defined in two different coordinate of variables "
+          },
+          {
+            "type": "inline_math",
+            "text": "z"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "x"
+          },
+          {
+            "type": "text",
+            "text": " respectively."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3fea31823b1a",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The multivariable version has a similar format:"
+          }
+        ]
+      },
+      {
+        "id": "math-f2228748cf02",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{z} &\\sim \\pi(\\mathbf{z}), \\mathbf{x} = f(\\mathbf{z}), \\mathbf{z} = f^{-1}(\\mathbf{x}) \\\\\np(\\mathbf{x}) \n&= \\pi(\\mathbf{z}) \\left\\vert \\det \\dfrac{d \\mathbf{z}}{d \\mathbf{x}} \\right\\vert  \n= \\pi(f^{-1}(\\mathbf{x})) \\left\\vert \\det \\dfrac{d f^{-1}}{d \\mathbf{x}} \\right\\vert\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-3f95ef80b246",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det \\frac{\\partial f}{\\partial\\mathbf{z}}"
+          },
+          {
+            "type": "text",
+            "text": " is the Jacobian determinant of the function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f"
+          },
+          {
+            "type": "text",
+            "text": ". The full proof of the multivariate version is out of the scope of this post; ask Google if interested ;)"
+          }
+        ]
+      },
+      {
+        "id": "heading-5e45eee7f921",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What is Normalizing Flows?"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-cc0e6028dd6c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Being able to do good density estimation has direct applications in many machine learning problems, but it is very hard. For example, since we need to run backward propagation in deep learning models, the embedded probability distribution (i.e. posterior "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ") is expected to be simple enough to calculate the derivative easily and efficiently. That is why Gaussian distribution is often used in latent variable generative models, even though most of real world distributions are much more complicated than Gaussian."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2b732ce848e9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here comes a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Normalizing Flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (NF) model for better and more powerful distribution approximation. A normalizing flow transforms a simple distribution into a complex one by applying a sequence of invertible transformation functions. Flowing through a chain of transformations, we repeatedly substitute the variable for the new one according to the change of variables theorem and eventually obtain a probability distribution of the final target variable."
+          }
+        ]
+      },
+      {
+        "id": "image-eabebf046b8f",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/normalizing-flow.png",
+          "alt": "Illustration of a normalizing flow model, transforming a simple distribution $p\\_0(\\mathbf{z}\\_0)$ to a complex one $p\\_K(\\mathbf{z}\\_K)$ step by step."
+        }
+      },
+      {
+        "id": "paragraph-27f91296fc07",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As defined in Fig. 2,"
+          }
+        ]
+      },
+      {
+        "id": "math-1d5d812797b8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{z}_{i-1} &\\sim p_{i-1}(\\mathbf{z}_{i-1}) \\\\\n\\mathbf{z}_i &= f_i(\\mathbf{z}_{i-1})\\text{, thus }\\mathbf{z}_{i-1} = f_i^{-1}(\\mathbf{z}_i) \\\\\np_i(\\mathbf{z}_i) \n&= p_{i-1}(f_i^{-1}(\\mathbf{z}_i)) \\left\\vert \\det\\dfrac{d f_i^{-1}}{d \\mathbf{z}_i} \\right\\vert\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-7cb8476b1e40",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then let’s convert the equation to be a function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_i"
+          },
+          {
+            "type": "text",
+            "text": " so that we can do inference with the base distribution."
+          }
+        ]
+      },
+      {
+        "id": "math-b26e1993ba13",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\np_i(\\mathbf{z}_i) \n&= p_{i-1}(f_i^{-1}(\\mathbf{z}_i)) \\left\\vert \\det\\dfrac{d f_i^{-1}}{d \\mathbf{z}_i} \\right\\vert \\\\\n&= p_{i-1}(\\mathbf{z}_{i-1}) \\left\\vert \\det \\color{red}{\\Big(\\dfrac{d f_i}{d\\mathbf{z}_{i-1}}\\Big)^{-1}} \\right\\vert & \\scriptstyle{\\text{; According to the inverse func theorem.}} \\\\\n&= p_{i-1}(\\mathbf{z}_{i-1}) \\color{red}{\\left\\vert \\det \\dfrac{d f_i}{d\\mathbf{z}_{i-1}} \\right\\vert^{-1}} & \\scriptstyle{\\text{; According to a property of Jacobians of invertible func.}} \\\\\n\\log p_i(\\mathbf{z}_i) &= \\log p_{i-1}(\\mathbf{z}_{i-1}) - \\log \\left\\vert \\det \\dfrac{d f_i}{d\\mathbf{z}_{i-1}} \\right\\vert\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-d297a94e9de9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(*) A note on the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“inverse function theorem”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": If "
+          },
+          {
+            "type": "inline_math",
+            "text": "y=f(x)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "x=f^{-1}(y)"
+          },
+          {
+            "type": "text",
+            "text": ", we have:"
+          }
+        ]
+      },
+      {
+        "id": "math-d017482dde14",
+        "type": "math",
+        "attrs": {
+          "latex": "\\dfrac{df^{-1}(y)}{dy} = \\dfrac{dx}{dy} = (\\dfrac{dy}{dx})^{-1} = (\\dfrac{df(x)}{dx})^{-1}"
+        }
+      },
+      {
+        "id": "paragraph-96050012dc14",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "(*) A note on "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "“Jacobians of invertible function”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": The determinant of the inverse of an invertible matrix is the inverse of the determinant: "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det(M^{-1}) = (\\det(M))^{-1}"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/#jacobian-matrix-and-determinant"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "because"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\det(M)\\det(M^{-1}) = \\det(M \\cdot M^{-1}) = \\det(I) = 1"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6f567f0e2f42",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given such a chain of probability density functions, we know the relationship between each pair of consecutive variables. We can expand the equation of the output "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": " step by step until tracing back to the initial distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_0"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-4a80721b42d5",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{x} = \\mathbf{z}_K &= f_K \\circ f_{K-1} \\circ \\dots \\circ f_1 (\\mathbf{z}_0) \\\\\n\\log p(\\mathbf{x}) = \\log \\pi_K(\\mathbf{z}_K) \n&= \\log \\pi_{K-1}(\\mathbf{z}_{K-1}) - \\log\\left\\vert\\det\\dfrac{d f_K}{d \\mathbf{z}_{K-1}}\\right\\vert \\\\\n&= \\log \\pi_{K-2}(\\mathbf{z}_{K-2}) - \\log\\left\\vert\\det\\dfrac{d f_{K-1}}{d\\mathbf{z}_{K-2}}\\right\\vert - \\log\\left\\vert\\det\\dfrac{d f_K}{d\\mathbf{z}_{K-1}}\\right\\vert \\\\\n&= \\dots \\\\\n&= \\log \\pi_0(\\mathbf{z}_0) - \\sum_{i=1}^K \\log\\left\\vert\\det\\dfrac{d f_i}{d\\mathbf{z}_{i-1}}\\right\\vert\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-e7e1ac76eee3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The path traversed by the random variables "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}_i = f_i(\\mathbf{z}_{i-1})"
+          },
+          {
+            "type": "text",
+            "text": " is the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and the full chain formed by the successive distributions "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi_i"
+          },
+          {
+            "type": "text",
+            "text": " is called a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "normalizing flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Required by the computation in the equation, a transformation function "
+          },
+          {
+            "type": "inline_math",
+            "text": "f_i"
+          },
+          {
+            "type": "text",
+            "text": " should satisfy two properties:"
+          }
+        ]
+      },
+      {
+        "id": "list-31ec5252621d",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "list-item-03f3b1662eab",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "It is easily invertible."
+              }
+            ]
+          },
+          {
+            "id": "list-item-5ed17c449b0e",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Its Jacobian determinant is easy to compute."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-3b6fee99f172",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Models with Normalizing Flows"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-79cd3b1eb2c2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With normalizing flows in our toolbox, the exact log-likelihood of input data "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\log p(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " becomes tractable. As a result, the training criterion of flow-based generative model is simply the negative log-likelihood (NLL) over the training dataset "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathcal{D}"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "math-9a7ae44ccd33",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathcal{L}(\\mathcal{D}) = - \\frac{1}{\\vert\\mathcal{D}\\vert}\\sum_{\\mathbf{x} \\in \\mathcal{D}} \\log p(\\mathbf{x})"
+        }
+      },
+      {
+        "id": "heading-59cbfd8298fa",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "RealNVP"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-4f053041dee2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "RealNVP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Real-valued Non-Volume Preserving; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1605.08803"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dinh et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") model implements a normalizing flow by stacking a sequence of invertible bijective transformation functions. In each bijection "
+          },
+          {
+            "type": "inline_math",
+            "text": "f: \\mathbf{x} \\mapsto \\mathbf{y}"
+          },
+          {
+            "type": "text",
+            "text": ", known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "affine coupling layer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ",  the input dimensions are split into two parts:"
+          }
+        ]
+      },
+      {
+        "id": "list-2a3f49e25e35",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-d457555af702",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The first "
+              },
+              {
+                "type": "inline_math",
+                "text": "d"
+              },
+              {
+                "type": "text",
+                "text": " dimensions stay same;"
+              }
+            ]
+          },
+          {
+            "id": "list-item-835b2f6a211f",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The second part, "
+              },
+              {
+                "type": "inline_math",
+                "text": "d+1"
+              },
+              {
+                "type": "text",
+                "text": " to "
+              },
+              {
+                "type": "inline_math",
+                "text": "D"
+              },
+              {
+                "type": "text",
+                "text": " dimensions, undergo an affine transformation (“scale-and-shift”) and both the scale and shift parameters are functions of the first "
+              },
+              {
+                "type": "inline_math",
+                "text": "d"
+              },
+              {
+                "type": "text",
+                "text": " dimensions."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "math-52169bac1aa8",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{y}_{1:d} &= \\mathbf{x}_{1:d} \\\\ \n\\mathbf{y}_{d+1:D} &= \\mathbf{x}_{d+1:D} \\odot \\exp({s(\\mathbf{x}_{1:d})}) + t(\\mathbf{x}_{1:d})\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-aa20eacbf184",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "s(.)"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "t(.)"
+          },
+          {
+            "type": "text",
+            "text": " are "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "scale"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "translation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " functions and both map "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbb{R}^d \\mapsto \\mathbb{R}^{D-d}"
+          },
+          {
+            "type": "text",
+            "text": ". The "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\odot"
+          },
+          {
+            "type": "text",
+            "text": " operation is the element-wise product."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4a60153a6091",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now let’s check whether this transformation satisfy two basic properties  for a flow transformation."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6dd53cc52456",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Condition 1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": “It is easily invertible.”"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fef397335245",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Yes and it is fairly straightforward."
+          }
+        ]
+      },
+      {
+        "id": "math-787cc1d032ff",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{cases}\n\\mathbf{y}_{1:d} &= \\mathbf{x}_{1:d} \\\\ \n\\mathbf{y}_{d+1:D} &= \\mathbf{x}_{d+1:D} \\odot \\exp({s(\\mathbf{x}_{1:d})}) + t(\\mathbf{x}_{1:d})\n\\end{cases}\n\\Leftrightarrow \n\\begin{cases}\n\\mathbf{x}_{1:d} &= \\mathbf{y}_{1:d} \\\\ \n\\mathbf{x}_{d+1:D} &= (\\mathbf{y}_{d+1:D} - t(\\mathbf{y}_{1:d})) \\odot \\exp(-s(\\mathbf{y}_{1:d}))\n\\end{cases}"
+        }
+      },
+      {
+        "id": "paragraph-45b9092719a6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Condition 2"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": “Its Jacobian determinant is easy to compute.”"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1574e3a18f36",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Yes. It is not hard to get the Jacobian matrix and determinant of this transformation. The Jacobian is a lower triangular matrix."
+          }
+        ]
+      },
+      {
+        "id": "math-95eab49045b7",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{J} = \n\\begin{bmatrix}\n  \\mathbb{I}_d & \\mathbf{0}_{d\\times(D-d)} \\\\[5pt]\n  \\frac{\\partial \\mathbf{y}_{d+1:D}}{\\partial \\mathbf{x}_{1:d}} & \\text{diag}(\\exp(s(\\mathbf{x}_{1:d})))\n\\end{bmatrix}"
+        }
+      },
+      {
+        "id": "paragraph-6a04ddbc5cdb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hence the determinant is simply the product of terms on the diagonal."
+          }
+        ]
+      },
+      {
+        "id": "math-8351885f7c6c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\det(\\mathbf{J}) \n= \\prod_{j=1}^{D-d}\\exp(s(\\mathbf{x}_{1:d}))_j\n= \\exp(\\sum_{j=1}^{D-d} s(\\mathbf{x}_{1:d})_j)"
+        }
+      },
+      {
+        "id": "paragraph-5e6e30bcca37",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "So far, the affine coupling layer looks perfect for constructing a normalizing flow :)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-218e199ec3ff",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Even better, since (i) computing "
+          },
+          {
+            "type": "inline_math",
+            "text": "f^-1"
+          },
+          {
+            "type": "text",
+            "text": " does not require computing the inverse of "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " and (ii) computing the Jacobian determinant does not involve computing the Jacobian of "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " or "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": ", those functions can be "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "arbitrarily complex"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; i.e. both "
+          },
+          {
+            "type": "inline_math",
+            "text": "s"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "t"
+          },
+          {
+            "type": "text",
+            "text": " can be modeled by deep neural networks."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c475920b3a42",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In one affine coupling layer, some dimensions (channels) remain unchanged. To make sure all the inputs have a chance to be altered, the model reverses the ordering in each layer so that different components are left unchanged. Following such an alternating pattern, the set of units which remain identical in one transformation layer are always modified in the next. Batch normalization is found to help training models with a very deep stack of coupling layers."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d30db3253fe6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Furthermore, RealNVP can work in a multi-scale architecture to build a more efficient model for large inputs. The multi-scale architecture applies several “sampling” operations to normal affine layers, including spatial checkerboard pattern masking, squeezing operation, and channel-wise masking. Read the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1605.08803"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for more details on the multi-scale architecture."
+          }
+        ]
+      },
+      {
+        "id": "heading-1bd8978bac08",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "NICE"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-a9acabe5f972",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "NICE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Non-linear Independent Component Estimation; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1410.8516"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Dinh, et al. 2015"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") model is a predecessor of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/#realnvp"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "RealNVP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The transformation in NICE is the affine coupling layer without the scale term, known as "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "additive coupling layer"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "math-bc2ad1932a8c",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{cases}\n\\mathbf{y}_{1:d} &= \\mathbf{x}_{1:d} \\\\ \n\\mathbf{y}_{d+1:D} &= \\mathbf{x}_{d+1:D} + m(\\mathbf{x}_{1:d})\n\\end{cases}\n\\Leftrightarrow \n\\begin{cases}\n\\mathbf{x}_{1:d} &= \\mathbf{y}_{1:d} \\\\ \n\\mathbf{x}_{d+1:D} &= \\mathbf{y}_{d+1:D} - m(\\mathbf{y}_{1:d})\n\\end{cases}"
+        }
+      },
+      {
+        "id": "heading-35180adf4370",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Glow"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-16ddf9f64ac6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Glow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1807.03039"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kingma and Dhariwal, 2018"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") model extends the previous reversible generative models, NICE and RealNVP, and simplifies the architecture by replacing the reverse permutation operation on the channel ordering with invertible 1x1 convolutions."
+          }
+        ]
+      },
+      {
+        "id": "image-ace5e3b627b3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/one-glow-step.png",
+          "alt": "One step of flow in the Glow model. (Image source: Kingma and Dhariwal, 2018 )"
+        }
+      },
+      {
+        "id": "paragraph-b09890203063",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There are three substeps in one step of flow in Glow."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7b64da6b484d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Substep 1: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Activation normalization"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (short for “actnorm”)"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2142b5d51410",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It performs an affine transformation using a scale and bias parameter per channel, similar to batch normalization, but works for mini-batch size 1. The parameters are trainable but initialized so that the first minibatch of data have mean 0 and standard deviation 1 after actnorm."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-99106342309c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Substep 2: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Invertible 1x1 conv"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c5bdbcd635f7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Between layers of the RealNVP flow, the ordering of channels is reversed so that all the data dimensions have a chance to be altered. A 1×1 convolution with equal number of input and output channels is "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "a generalization of any permutation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " of the channel ordering."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-34cb9ff48878",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Say, we have an invertible 1x1 convolution of an input "
+          },
+          {
+            "type": "inline_math",
+            "text": "h \\times w \\times c"
+          },
+          {
+            "type": "text",
+            "text": " tensor "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}"
+          },
+          {
+            "type": "text",
+            "text": " with a weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}"
+          },
+          {
+            "type": "text",
+            "text": " of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "c \\times c"
+          },
+          {
+            "type": "text",
+            "text": ". The output is a "
+          },
+          {
+            "type": "inline_math",
+            "text": "h \\times w \\times c"
+          },
+          {
+            "type": "text",
+            "text": " tensor, labeled as "
+          },
+          {
+            "type": "inline_math",
+            "text": "f = \\texttt{conv2d}(\\mathbf{h}; \\mathbf{W})"
+          },
+          {
+            "type": "text",
+            "text": ". In order to apply the change of variable rule, we need to compute the Jacobian determinant "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\vert \\det\\partial f / \\partial\\mathbf{h}\\vert"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fb1d734fd78b",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both the input and output of 1x1 convolution here can be viewed as a matrix of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "h \\times w"
+          },
+          {
+            "type": "text",
+            "text": ". Each entry "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_{ij}"
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "inline_math",
+            "text": "i=1,\\dots,h, j=1,\\dots,w"
+          },
+          {
+            "type": "text",
+            "text": ") in "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{h}"
+          },
+          {
+            "type": "text",
+            "text": " is a vector of "
+          },
+          {
+            "type": "inline_math",
+            "text": "c"
+          },
+          {
+            "type": "text",
+            "text": " channels and each entry is multiplied by the weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}"
+          },
+          {
+            "type": "text",
+            "text": " to obtain the corresponding entry "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{y}_{ij}"
+          },
+          {
+            "type": "text",
+            "text": " in the output matrix respectively. The derivative of each entry is "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\partial \\mathbf{x}_{ij} \\mathbf{W} / \\partial\\mathbf{x}_{ij} = \\mathbf{W}"
+          },
+          {
+            "type": "text",
+            "text": " and there are "
+          },
+          {
+            "type": "inline_math",
+            "text": "h \\times w"
+          },
+          {
+            "type": "text",
+            "text": " such entries in total:"
+          }
+        ]
+      },
+      {
+        "id": "math-d9b59b2cb603",
+        "type": "math",
+        "attrs": {
+          "latex": "\\log \\left\\vert\\det \\frac{\\partial\\texttt{conv2d}(\\mathbf{h}; \\mathbf{W})}{\\partial\\mathbf{h}}\\right\\vert\n= \\log (\\vert\\det\\mathbf{W}\\vert^{h \\cdot w}\\vert) = h \\cdot w \\cdot \\log \\vert\\det\\mathbf{W}\\vert"
+        }
+      },
+      {
+        "id": "paragraph-e1db2eacd4c3",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The inverse 1x1 convolution depends on the inverse matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^{-1}"
+          },
+          {
+            "type": "text",
+            "text": ". Since the weight matrix is relatively small, the amount of computation for the matrix determinant ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/linalg/det"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.linalg.det"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and inversion ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.tensorflow.org/api_docs/python/tf/linalg/inv"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "tf.linalg.inv"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is still under control."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-0aefe48ee81d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Substep 3: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Affine coupling layer"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-136413dc1201",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The design is same as in RealNVP."
+          }
+        ]
+      },
+      {
+        "id": "image-b9b1c1863414",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/glow-table.png",
+          "alt": "Three substeps in one step of flow in Glow. (Image source: Kingma and Dhariwal, 2018 )"
+        }
+      },
+      {
+        "id": "heading-ab4d61f8204a",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Models with Autoregressive Flows"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-f3122e55c5e6",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "autoregressive"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " constraint is a way to model sequential data, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} = [x_1, \\dots, x_D]"
+          },
+          {
+            "type": "text",
+            "text": ": each output only depends on the data observed in the past, but not on the future ones. In other words, the probability of observing "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_i"
+          },
+          {
+            "type": "text",
+            "text": " is conditioned on "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_1, \\dots, x_{i-1}"
+          },
+          {
+            "type": "text",
+            "text": " and the product of these conditional probabilities gives us the probability of observing the full sequence:"
+          }
+        ]
+      },
+      {
+        "id": "math-c9f415139571",
+        "type": "math",
+        "attrs": {
+          "latex": "p(\\mathbf{x}) = \\prod_{i=1}^{D} p(x_i\\vert x_1, \\dots, x_{i-1}) = \\prod_{i=1}^{D} p(x_i\\vert x_{1:i-1})"
+        }
+      },
+      {
+        "id": "paragraph-c07295867c0f",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How to model the conditional density is of your choice. It can be a univariate Gaussian with mean and standard deviation computed as a function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_{1:i-1}"
+          },
+          {
+            "type": "text",
+            "text": ", or a multilayer neural network with "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_{1:i-1}"
+          },
+          {
+            "type": "text",
+            "text": " as the input."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e71a03b4d2dc",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If a flow transformation in a normalizing flow is framed as an autoregressive model — each dimension in a vector variable is conditioned on the previous dimensions — this is an "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "autoregressive flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-5ae9e752c763",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This section starts with several classic autoregressive models (MADE, PixelRNN, WaveNet) and then we dive into autoregressive flow models (MAF and IAF)."
+          }
+        ]
+      },
+      {
+        "id": "heading-24e91e76b1f4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MADE"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-aa25c74091aa",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MADE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (Masked Autoencoder for Distribution Estimation; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1502.03509"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Germain et al., 2015"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a specially designed architecture to enforce the autoregressive property in the autoencoder "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "efficiently"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". When using an autoencoder to predict the conditional probabilities, rather than feeding the autoencoder with input of different observation windows "
+          },
+          {
+            "type": "inline_math",
+            "text": "D"
+          },
+          {
+            "type": "text",
+            "text": " times, MADE removes the contribution from certain hidden units by multiplying binary mask matrices so that each input dimension is reconstructed only from previous dimensions in a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "given"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ordering in a "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "single pass"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-fefabbc64725",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In a multilayer fully-connected neural network, say, we have "
+          },
+          {
+            "type": "inline_math",
+            "text": "L"
+          },
+          {
+            "type": "text",
+            "text": " hidden layers with weight matrices "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}^1, \\dots, \\mathbf{W}^L"
+          },
+          {
+            "type": "text",
+            "text": " and an output layer with weight matrix "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{V}"
+          },
+          {
+            "type": "text",
+            "text": ". The output "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{\\mathbf{x}}"
+          },
+          {
+            "type": "text",
+            "text": " has each dimension "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\hat{x}_i = p(x_i\\vert x_{1:i-1})"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-cf48d85ea393",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Without any mask, the computation through layers looks like the following:"
+          }
+        ]
+      },
+      {
+        "id": "math-f034441e849b",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{h}^0 &= \\mathbf{x} \\\\\n\\mathbf{h}^l &= \\text{activation}^l(\\mathbf{W}^l\\mathbf{h}^{l-1} + \\mathbf{b}^l) \\\\\n\\hat{\\mathbf{x}} &= \\sigma(\\mathbf{V}\\mathbf{h}^L + \\mathbf{c})\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "image-5aa49424acb3",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/MADE.png",
+          "alt": "Demonstration of how MADE works in a three-layer feed-forward neural network. (Image source: Germain et al., 2015 )"
+        }
+      },
+      {
+        "id": "paragraph-a5071df0382e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To zero out some connections between layers, we can simply element-wise multiply every weight matrix by a binary mask matrix. Each hidden node is assigned with a random “connectivity integer” between "
+          },
+          {
+            "type": "inline_math",
+            "text": "1"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "D-1"
+          },
+          {
+            "type": "text",
+            "text": "; the assigned value for the "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "-th unit in the "
+          },
+          {
+            "type": "inline_math",
+            "text": "l"
+          },
+          {
+            "type": "text",
+            "text": "-th layer is denoted by "
+          },
+          {
+            "type": "inline_math",
+            "text": "m^l_k"
+          },
+          {
+            "type": "text",
+            "text": ". The binary mask matrix is determined by element-wise comparing values of two nodes in two layers."
+          }
+        ]
+      },
+      {
+        "id": "math-ada6ba1aa8d9",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\mathbf{h}^l &= \\text{activation}^l((\\mathbf{W}^l \\color{red}{\\odot \\mathbf{M}^{\\mathbf{W}^l}}) \\mathbf{h}^{l-1} + \\mathbf{b}^l) \\\\\n\\hat{\\mathbf{x}} &= \\sigma((\\mathbf{V} \\color{red}{\\odot \\mathbf{M}^{\\mathbf{V}}}) \\mathbf{h}^L + \\mathbf{c}) \\\\\nM^{\\mathbf{W}^l}_{k', k} \n&= \\mathbf{1}_{m^l_{k'} \\geq m^{l-1}_k} \n= \\begin{cases}\n    1, & \\text{if } m^l_{k'} \\geq m^{l-1}_k\\\\\n    0, & \\text{otherwise}\n\\end{cases} \\\\\nM^{\\mathbf{V}}_{d, k} \n&= \\mathbf{1}_{d \\geq m^L_k} \n= \\begin{cases}\n    1, & \\text{if } d > m^L_k\\\\\n    0, & \\text{otherwise}\n\\end{cases}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-4b711c9140d9",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A unit in the current layer can only be connected to other units with equal or smaller numbers in the previous layer and this type of dependency easily propagates through the network up to the output layer. Once the numbers are assigned to all the units and layers, the ordering of input dimensions is fixed and the conditional probability is produced with respect to it.  See a great illustration in To make sure all the hidden units are connected to the input and output layers through some paths, the "
+          },
+          {
+            "type": "inline_math",
+            "text": "m^l_k"
+          },
+          {
+            "type": "text",
+            "text": " is sampled to be equal or greater than the minimal connectivity integer in the previous layer, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\min_{k’} m_{k’}^{l-1}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-63b3d0faeb9d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MADE training can be further facilitated by:"
+          }
+        ]
+      },
+      {
+        "id": "list-c3f18fb67b60",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-1e9018731521",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Order-agnostic training"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": shuffle the input dimensions, so that MADE is able to model any arbitrary ordering; can create an ensemble of autoregressive models at the runtime."
+              }
+            ]
+          },
+          {
+            "id": "list-item-7af064d43ab9",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Connectivity-agnostic training"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": to avoid a model being tied up to a specific connectivity pattern constraints, resample "
+              },
+              {
+                "type": "inline_math",
+                "text": "m^l_k"
+              },
+              {
+                "type": "text",
+                "text": " for each training minibatch."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "heading-5308fcd73182",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "PixelRNN"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-08a98c3f3728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "PixelRNN ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1601.06759"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Oord et al, 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a deep generative model for images. The image is generated one pixel at a time and each new pixel is sampled conditional on the pixels that have been seen before."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-4d66fc7f7484",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Let’s consider an image of size "
+          },
+          {
+            "type": "inline_math",
+            "text": "n \\times n"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} = \\{x_1, \\dots, x_{n^2}\\}"
+          },
+          {
+            "type": "text",
+            "text": ", the model starts generating pixels from the top left corner, from left to right and top to bottom (See Fig. 6)."
+          }
+        ]
+      },
+      {
+        "id": "image-5d9f3c7e7f65",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/pixel-rnn-context.png",
+          "alt": "The context for generating one pixel in PixelRNN. (Image source: Oord et al, 2016 )"
+        }
+      },
+      {
+        "id": "paragraph-3fc77e9e6f2d",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Every pixel "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_i"
+          },
+          {
+            "type": "text",
+            "text": " is sampled from a probability distribution conditional over the the past context: pixels above it or on the left of it when in the same row. The definition of such context looks pretty arbitrary, because how visual "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-06-24-attention/"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is attended to an image is more flexible. Somehow magically a generative model with such a strong assumption works."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-27fc5c497b19",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One implementation that could capture the entire context is the "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Diagonal BiLSTM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". First, apply the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "skewing"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " operation by offsetting each row of the input feature map by one position with respect to the previous row, so that computation for each row can be parallelized. Then the LSTM states are computed with respect to the current pixel and the pixels on the left."
+          }
+        ]
+      },
+      {
+        "id": "image-1f07d0acfb68",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/diagonal-biLSTM.png",
+          "alt": "(a) PixelRNN with diagonal BiLSTM. (b) Skewing operation that offsets each row in the feature map by one with regards to the row above. (Image source: Oord et al, 2016 )"
+        }
+      },
+      {
+        "id": "math-bdb4050f8075",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n\\lbrack \\mathbf{o}_i, \\mathbf{f}_i, \\mathbf{i}_i, \\mathbf{g}_i \\rbrack &= \\sigma(\\mathbf{K}^{ss} \\circledast \\mathbf{h}_{i-1} + \\mathbf{K}^{is} \\circledast \\mathbf{x}_i) & \\scriptstyle{\\text{; }\\sigma\\scriptstyle{\\text{ is tanh for g, but otherwise sigmoid; }}\\circledast\\scriptstyle{\\text{ is convolution operation.}}} \\\\\n\\mathbf{c}_i &= \\mathbf{f}_i \\odot \\mathbf{c}_{i-1} + \\mathbf{i}_i \\odot \\mathbf{g}_i & \\scriptstyle{\\text{; }}\\odot\\scriptstyle{\\text{ is elementwise product.}}\\\\\n\\mathbf{h}_i &= \\mathbf{o}_i \\odot \\tanh(\\mathbf{c}_i)\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-631c05790aeb",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\circledast"
+          },
+          {
+            "type": "text",
+            "text": " denotes the convolution operation and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\odot"
+          },
+          {
+            "type": "text",
+            "text": " is the element-wise multiplication. The input-to-state component "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{K}^{is}"
+          },
+          {
+            "type": "text",
+            "text": " is a 1x1 convolution, while the state-to-state recurrent component is computed with a column-wise convolution "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{K}^{ss}"
+          },
+          {
+            "type": "text",
+            "text": " with a kernel of size 2x1."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-82177e1490bd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The diagonal BiLSTM layers are capable of processing an unbounded context field, but expensive to compute due to the sequential dependency between states. A faster implementation uses multiple convolutional layers without pooling to define a bounded context box. The convolution kernel is masked so that the future context is not seen, similar to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/#MADE"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MADE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". This convolution version is called "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "PixelCNN"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "image-d217d2ddd5eb",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/pixel-cnn.png",
+          "alt": "PixelCNN with masked convolution constructed by an elementwise product of a mask tensor and the convolution kernel before applying it. (Image source: http://slazebni.cs.illinois.edu/spring17/lec13_advanced.pdf)"
+        }
+      },
+      {
+        "id": "heading-c547b2e1fb8e",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "WaveNet"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-317ddf8f8d2e",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "WaveNet"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1609.03499"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Van Den Oord, et al. 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is very similar to PixelCNN but applied to 1-D audio signals. WaveNet consists of a stack of "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "causal convolution"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " which is a convolution operation designed to respect the ordering: the prediction at a certain timestamp can only consume the data observed in the past, no dependency on the future. In PixelCNN, the causal convolution is implemented by masked convolution kernel. The causal convolution in WaveNet is simply to shift the output by a number of timestamps to the future so that the output is aligned with the last input element."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-e3f1ef259f8c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One big drawback of convolution layer is a very limited size of receptive field. The output can hardly depend on the input hundreds or thousands of timesteps ago, which can be a crucial requirement for modeling long sequences. WaveNet therefore adopts "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "dilated convolution"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/vdumoulin/conv_arithmetic#dilated-convolution-animations"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "animation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "), where the kernel is applied to an evenly-distributed subset of samples in a much larger receptive field of the input."
+          }
+        ]
+      },
+      {
+        "id": "image-08142bb7f332",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/wavenet.png",
+          "alt": "Visualization of WaveNet models with a stack of (top) causal convolution layers and (bottom) dilated convolution layers. (Image source: Van Den Oord, et al. 2016 )"
+        }
+      },
+      {
+        "id": "paragraph-6252a9bd4dea",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "WaveNet uses the gated activation unit as the non-linear layer, as it is found to work significantly better than ReLU for modeling 1-D audio data. The residual connection is applied after the gated activation."
+          }
+        ]
+      },
+      {
+        "id": "math-c5b734031b16",
+        "type": "math",
+        "attrs": {
+          "latex": "\\mathbf{z} = \\tanh(\\mathbf{W}_{f,k}\\circledast\\mathbf{x})\\odot\\sigma(\\mathbf{W}_{g,k}\\circledast\\mathbf{x})"
+        }
+      },
+      {
+        "id": "paragraph-b1456ea22d21",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "where "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_{f,k}"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{W}_{g,k}"
+          },
+          {
+            "type": "text",
+            "text": " are convolution filter and gate weight matrix of the "
+          },
+          {
+            "type": "inline_math",
+            "text": "k"
+          },
+          {
+            "type": "text",
+            "text": "-th layer, respectively; both are learnable."
+          }
+        ]
+      },
+      {
+        "id": "heading-d7cd5333cf74",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Masked Autoregressive Flow"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-3ff006d1cb73",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Masked Autoregressive Flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "  ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "MAF"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.07057"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Papamakarios et al., 2017"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") is a type of normalizing flows, where the transformation layer is built as an autoregressive neural network. MAF is very similar to "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Inverse Autoregressive Flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (IAF) introduced later. See more discussion on the relationship between MAF and IAF in the next section."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-61e342e61125",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Given two random variables, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z} \\sim \\pi(\\mathbf{z})"
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x} \\sim p(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " and the probability density function "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\pi(\\mathbf{z})"
+          },
+          {
+            "type": "text",
+            "text": " is known, MAF aims to learn "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": ". MAF generates each "
+          },
+          {
+            "type": "inline_math",
+            "text": "x_i"
+          },
+          {
+            "type": "text",
+            "text": " conditioned on the past dimensions "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}_{1:i-1}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-d5867b36c644",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Precisely the conditional probability is an affine transformation of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{z}"
+          },
+          {
+            "type": "text",
+            "text": ", where the scale and shift terms are functions of the observed part of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "list-ea2eae0de5a8",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-dbf7f4e3383c",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Data generation, producing a new "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-3d286c23e6ed",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "x_i \\sim p(x_i\\vert\\mathbf{x}_{1:i-1}) = z_i \\odot \\sigma_i(\\mathbf{x}_{1:i-1}) + \\mu_i(\\mathbf{x}_{1:i-1})\\text{, where }\\mathbf{z} \\sim \\pi(\\mathbf{z})"
+          }
+        ]
+      },
+      {
+        "id": "list-58084d3c9c59",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "list-item-8a0dfd1f0a08",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Density estimation, given a known "
+              },
+              {
+                "type": "inline_math",
+                "text": "\\mathbf{x}"
+              },
+              {
+                "type": "text",
+                "text": ":"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-1cf0ef5beb22",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{x}) = \\prod_{i=1}^D p(x_i\\vert\\mathbf{x}_{1:i-1})"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-31432f47cea8",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The generation procedure is sequential, so it is slow by design. While density estimation only needs one pass the network using architecture like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/#MADE"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MADE"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The transformation function is trivial to inverse and the Jacobian determinant is easy to compute too."
+          }
+        ]
+      },
+      {
+        "id": "heading-4dfb454714b3",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Inverse Autoregressive Flow"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "paragraph-24784c396265",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to MAF, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Inverse autoregressive flow"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ("
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "IAF"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "; "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.04934"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Kingma et al., 2016"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") models the conditional probability of the target variable as an autoregressive model too, but with a reversed flow, thus achieving a much efficient sampling process."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-da2c71aa3952",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "First, let’s reverse the affine transformation in MAF:"
+          }
+        ]
+      },
+      {
+        "id": "math-dc2e7aebddb8",
+        "type": "math",
+        "attrs": {
+          "latex": "z_i = \\frac{x_i - \\mu_i(\\mathbf{x}_{1:i-1})}{\\sigma_i(\\mathbf{x}_{1:i-1})} = -\\frac{\\mu_i(\\mathbf{x}_{1:i-1})}{\\sigma_i(\\mathbf{x}_{1:i-1})} + x_i \\odot \\frac{1}{\\sigma_i(\\mathbf{x}_{1:i-1})}"
+        }
+      },
+      {
+        "id": "paragraph-d81a6b6a0628",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If let:"
+          }
+        ]
+      },
+      {
+        "id": "math-09b0e1afbfae",
+        "type": "math",
+        "attrs": {
+          "latex": "\\begin{aligned}\n& \\tilde{\\mathbf{x}} = \\mathbf{z}\\text{, }\\tilde{p}(.) = \\pi(.)\\text{, }\\tilde{\\mathbf{x}} \\sim \\tilde{p}(\\tilde{\\mathbf{x}}) \\\\\n& \\tilde{\\mathbf{z}} = \\mathbf{x} \\text{, }\\tilde{\\pi}(.) = p(.)\\text{, }\\tilde{\\mathbf{z}} \\sim \\tilde{\\pi}(\\tilde{\\mathbf{z}})\\\\\n& \\tilde{\\mu}_i(\\tilde{\\mathbf{z}}_{1:i-1}) = \\tilde{\\mu}_i(\\mathbf{x}_{1:i-1}) = -\\frac{\\mu_i(\\mathbf{x}_{1:i-1})}{\\sigma_i(\\mathbf{x}_{1:i-1})} \\\\\n& \\tilde{\\sigma}(\\tilde{\\mathbf{z}}_{1:i-1}) = \\tilde{\\sigma}(\\mathbf{x}_{1:i-1}) = \\frac{1}{\\sigma_i(\\mathbf{x}_{1:i-1})}\n\\end{aligned}"
+        }
+      },
+      {
+        "id": "paragraph-16118ea424fd",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then we would have,"
+          }
+        ]
+      },
+      {
+        "id": "math-3f7f5b3b9355",
+        "type": "math",
+        "attrs": {
+          "latex": "\\tilde{x}_i \\sim p(\\tilde{x}_i\\vert\\tilde{\\mathbf{z}}_{1:i}) = \\tilde{z}_i \\odot \\tilde{\\sigma}_i(\\tilde{\\mathbf{z}}_{1:i-1}) + \\tilde{\\mu}_i(\\tilde{\\mathbf{z}}_{1:i-1})\n\\text{, where }\\tilde{\\mathbf{z}} \\sim \\tilde{\\pi}(\\tilde{\\mathbf{z}})"
+        }
+      },
+      {
+        "id": "paragraph-1e88fa5c0b57",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "IAF intends to estimate the probability density function of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{\\mathbf{x}}"
+          },
+          {
+            "type": "text",
+            "text": " given that "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{\\pi}(\\tilde{\\mathbf{z}})"
+          },
+          {
+            "type": "text",
+            "text": " is already known. The inverse flow is an autoregressive affine transformation too, same as in MAF, but the scale and shift terms are autoregressive functions of observed variables from the known distribution "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{\\pi}(\\tilde{\\mathbf{z}})"
+          },
+          {
+            "type": "text",
+            "text": ". See the comparison between MAF and IAF in "
+          }
+        ]
+      },
+      {
+        "id": "image-3a00653aa159",
+        "type": "image",
+        "attrs": {
+          "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/MAF-vs-IAF.png",
+          "alt": "Comparison of MAF and IAF.  The variable with known density is in green while the unknown one is in red."
+        }
+      },
+      {
+        "id": "paragraph-dba8ff53b056",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Computations of the individual elements "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{x}_i"
+          },
+          {
+            "type": "text",
+            "text": " do not depend on each other, so they are easily parallelizable (only one pass using MADE). The density estimation for a known "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{\\mathbf{x}}"
+          },
+          {
+            "type": "text",
+            "text": " is not efficient, because we have to recover the value of "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{z}_i"
+          },
+          {
+            "type": "text",
+            "text": " in a sequential order, "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\tilde{z}_i = (\\tilde{x}_i - \\tilde{\\mu}_i(\\tilde{\\mathbf{z}}_{1:i-1})) / \\tilde{\\sigma}_i(\\tilde{\\mathbf{z}}_{1:i-1})"
+          },
+          {
+            "type": "text",
+            "text": ", thus D times in total."
+          }
+        ]
+      },
+      {
+        "id": "table-4b7a7a09fb83",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "",
+            "Base distribution",
+            "Target distribution",
+            "Model",
+            "Data generation",
+            "Density estimation"
+          ],
+          "rows": [
+            [
+              "MAF",
+              "$\\mathbf{z}\\sim\\pi(\\mathbf{z})$",
+              "$\\mathbf{x}\\sim p(\\mathbf{x})$",
+              "$x_i = z_i \\odot \\sigma_i(\\mathbf{x}_{1:i-1}) + \\mu_i(\\mathbf{x}_{1:i-1})$",
+              "Sequential; slow",
+              "One pass; fast"
+            ],
+            [
+              "IAF",
+              "$\\tilde{\\mathbf{z}}\\sim\\tilde{\\pi}(\\tilde{\\mathbf{z}})$",
+              "$\\tilde{\\mathbf{x}}\\sim\\tilde{p}(\\tilde{\\mathbf{x}})$",
+              "$\\tilde{x}_i  = \\tilde{z}_i \\odot \\tilde{\\sigma}_i(\\tilde{\\mathbf{z}}_{1:i-1}) + \\tilde{\\mu}_i(\\tilde{\\mathbf{z}}_{1:i-1})$",
+              "One pass; fast",
+              "Sequential; slow"
+            ],
+            [
+              "———-",
+              "———-",
+              "———-",
+              "———-",
+              "———-",
+              "———-"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "heading-9733495dc2f4",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "VAE + Flows"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-572be69bbd39",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://lilianweng.github.io/posts/2018-08-12-vae/#vae-variational-autoencoder"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Variational Autoencoder"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", if we want to model the posterior "
+          },
+          {
+            "type": "inline_math",
+            "text": "p(\\mathbf{z}\\vert\\mathbf{x})"
+          },
+          {
+            "type": "text",
+            "text": " as a more complicated distribution rather than simple Gaussian. Intuitively we can use normalizing flow to transform the base Gaussian for better density approximation. The encoder then would predict a set of scale and shift terms "
+          },
+          {
+            "type": "inline_math",
+            "text": "(\\mu_i, \\sigma_i)"
+          },
+          {
+            "type": "text",
+            "text": " which are all functions of input "
+          },
+          {
+            "type": "inline_math",
+            "text": "\\mathbf{x}"
+          },
+          {
+            "type": "text",
+            "text": ". Read the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1809.05861"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "paper"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " for more details if interested."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2254a52927a4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "If you notice mistakes and errors in this post, don’t hesitate to contact me at [lilian dot wengweng at gmail dot com] and I would be very happy to correct them right away!"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "paragraph-a103695eaeb4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "See you in the next post :D"
+          }
+        ]
+      },
+      {
+        "id": "paragraph-14bccf30c728",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Cited as:"
+          }
+        ]
+      },
+      {
+        "id": "code-6111b1a47ef2",
+        "type": "code",
+        "attrs": {
+          "code": "@article{weng2018flow,\n  title   = \"Flow-based Deep Generative Models\",\n  author  = \"Weng, Lilian\",\n  journal = \"lilianweng.github.io\",\n  year    = \"2018\",\n  url     = \"https://lilianweng.github.io/posts/2018-10-13-flow-models/\"\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "heading-1e128c52c168",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reference"
+          }
+        ],
+        "attrs": {
+          "level": 1
+        }
+      },
+      {
+        "id": "paragraph-28ebeb5489ba",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[1] Danilo Jimenez Rezende, and Shakir Mohamed. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1505.05770"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Variational inference with normalizing flows.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-831d6b2226d1",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[2] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://blog.evjang.com/2018/01/nf1.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Normalizing Flows Tutorial, Part 1: Distributions and Determinants"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Eric Jang."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-2a55c4498da7",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[3] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://blog.evjang.com/2018/01/nf2.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Normalizing Flows Tutorial, Part 2: Modern Normalizing Flows"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Eric Jang."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-daf555d02357",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[4] "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "http://akosiorek.github.io/ml/2018/04/03/norm_flows.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Normalizing Flows"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " by Adam Kosiorek."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-7cc786dbf4ce",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[5] Laurent Dinh, Jascha Sohl-Dickstein, and Samy Bengio. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1605.08803"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Density estimation using Real NVP.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-71ed215277d2",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[6] Laurent Dinh, David Krueger, and Yoshua Bengio. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1410.8516"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“NICE: Non-linear independent components estimation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICLR 2015 Workshop track."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c53dc0b4bbec",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[7] Diederik P. Kingma, and Prafulla Dhariwal. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1807.03039"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Glow: Generative flow with invertible 1x1 convolutions.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1807.03039 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-40019b2cafd5",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[8] Germain, Mathieu, Karol Gregor, Iain Murray, and Hugo Larochelle. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1502.03509"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Made: Masked autoencoder for distribution estimation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2015."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-6558df629f3c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[9] Aaron van den Oord, Nal Kalchbrenner, and Koray Kavukcuoglu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1601.06759"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Pixel recurrent neural networks.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " ICML 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-c801061b764c",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[10] Diederik P. Kingma, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1606.04934"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Improved variational inference with inverse autoregressive flow.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS. 2016."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-70b1b90fcfd0",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[11] George Papamakarios, Iain Murray, and Theo Pavlakou. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1705.07057"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“Masked autoregressive flow for density estimation.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " NIPS 2017."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-256fff9aafb4",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[12] Jianlin Su, and Guang Wu. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1809.05861"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“f-VAEs: Improve VAEs with Conditional Flows.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " arXiv:1809.05861 (2018)."
+          }
+        ]
+      },
+      {
+        "id": "paragraph-b355fc18c184",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "[13] Van Den Oord, Aaron, et al. "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1609.03499"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "“WaveNet: A generative model for raw audio.”"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " SSW. 2016."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "flow-based-deep-generative-models",
+    "source_slug": "2018-10-13-flow-models",
+    "source_profile": "lilian-weng.v5",
+    "source_counts": {
+      "heading": 17,
+      "math": 23,
+      "image": 10,
+      "table": 1,
+      "code": 1
+    }
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/three-generative-models.png",
+      "alt": "Comparison of three categories of generative models."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/normalizing-flow.png",
+      "alt": "Illustration of a normalizing flow model, transforming a simple distribution $p\\_0(\\mathbf{z}\\_0)$ to a complex one $p\\_K(\\mathbf{z}\\_K)$ step by step."
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/one-glow-step.png",
+      "alt": "One step of flow in the Glow model. (Image source: Kingma and Dhariwal, 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/glow-table.png",
+      "alt": "Three substeps in one step of flow in Glow. (Image source: Kingma and Dhariwal, 2018 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/MADE.png",
+      "alt": "Demonstration of how MADE works in a three-layer feed-forward neural network. (Image source: Germain et al., 2015 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/pixel-rnn-context.png",
+      "alt": "The context for generating one pixel in PixelRNN. (Image source: Oord et al, 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/diagonal-biLSTM.png",
+      "alt": "(a) PixelRNN with diagonal BiLSTM. (b) Skewing operation that offsets each row in the feature map by one with regards to the row above. (Image source: Oord et al, 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/pixel-cnn.png",
+      "alt": "PixelCNN with masked convolution constructed by an elementwise product of a mask tensor and the convolution kernel before applying it. (Image source: http://slazebni.cs.illinois.edu/spring17/lec13_advanced.pdf)"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/wavenet.png",
+      "alt": "Visualization of WaveNet models with a stack of (top) causal convolution layers and (bottom) dilated convolution layers. (Image source: Van Den Oord, et al. 2016 )"
+    },
+    {
+      "type": "image",
+      "url": "https://lilianweng.github.io/posts/2018-10-13-flow-models/MAF-vs-IAF.png",
+      "alt": "Comparison of MAF and IAF.  The variable with known density is in green while the unknown one is in red."
+    }
+  ]
+}
