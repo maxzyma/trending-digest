@@ -1,0 +1,603 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:01877b46b9dc6f19368758006ffde9fbd32ec2688b9ab8e3545e7e76fa266982",
+  "engine": "legacy-monolith",
+  "prompt_version": "claude-blog-migrate.v2",
+  "title": "上手智能体循环",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "现在有很多关于\"设计循环\"（designing loops）而非给编码智能体写提示词的讨论。如果你花些时间在 X 上试图弄清循环究竟是什么，你会看到多种不同的答案。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Claude Code 团队，我们把循环定义为：智能体不断重复工作周期，直到满足停止条件。我们基于以下几点对循环类型做了区分："
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如何触发"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如何停止"
+        }
+      ]
+    },
+    "b005": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用了哪个 Claude Code 原语（primitive）"
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每种循环最适合哪类任务。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们将介绍主要的循环类型、各自的适用场景，以及如何在管理 token 用量的同时保持代码质量。并非所有任务都需要复杂的循环；从最简单的方案入手，有选择地使用这些模式。"
+        }
+      ]
+    },
+    "b009": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "轮次循环（Turn-based loops）"
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "触发方式：用户的一次提示。"
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "停止条件：Claude 判断自己已完成任务，或需要更多上下文。"
+        }
+      ]
+    },
+    "b013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最适合：不属于常规流程或排期的较短任务。"
+        }
+      ]
+    },
+    "b014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用量管理方式：编写具体的提示，并借助技能（skills）改进验证，以减少轮次数量。"
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你发送的每一条提示都会启动一个手动循环，由你来主导每一轮。Claude 收集上下文、采取行动、检查自己的工作，必要时重复，然后给出回应。我们称之为智能体循环（agentic loop）。"
+        }
+      ]
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，让 Claude 创建一个点赞按钮。它会阅读你的代码、完成修改、运行测试，然后交回一个它认为可用的结果。之后由你手动检查这份工作，并写下一条提示。"
+        }
+      ]
+    },
+    "b018": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你可以把自己的手动步骤编码进一个 SKILL.md 文件，从而改进验证环节，让 Claude 能端到端地检查更多自己的工作。这应当包含工具或连接器（connectors），以便 Claude 能够看到、测量或与结果交互。检查越量化，Claude 就越容易自我验证。"
+        }
+      ]
+    },
+    "b019": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，在你的 SKILL.md 文件中，你可以这样指定："
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于目标的循环（/goal）"
+        }
+      ]
+    },
+    "b023": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "触发方式：实时手动输入提示词。"
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "停止条件：达成目标，或到达最大轮次数。"
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最适合：具有可验证退出条件的任务。"
+        }
+      ]
+    },
+    "b026": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用量管理方式：设定明确的完成标准和明确的轮次上限，比如“尝试 5 次后停止”。"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有时候一轮还不够，尤其是较复杂的任务。智能体（agent）在能够迭代时表现更好。你可以通过用 /goal 定义“完成”的样子，来延长 Claude 持续迭代的时长。"
+        }
+      ]
+    },
+    "b029": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当你定义了成功标准后，Claude 就不必自行判断怎样算“足够好”而提前结束循环。每次 Claude 试图停止时，一个评估模型（evaluator model）会检查你设定的条件，并让它继续工作，直到达成目标或到达你设定的轮次数。"
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "正因如此，确定性的标准（比如通过的测试数量，或达到某个分数阈值）才如此有效。"
+        }
+      ]
+    },
+    "b031": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如："
+        }
+      ]
+    },
+    "b033": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "基于时间的循环（/loop 和 /schedule）"
+        }
+      ]
+    },
+    "b034": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "触发方式：指定的时间间隔。"
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "停止条件：你取消它，或工作完成（PR 合并、队列清空）。"
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最适用于：周期性工作，或与外部环境／系统对接。"
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用量管理方式：设置更长的间隔，或基于事件而非时间来响应。"
+        }
+      ]
+    },
+    "b039": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有些智能体（agentic）工作是周期性的：任务保持不变，只有输入在变化。例如每天早上汇总 Slack 消息。另一些工作依赖于外部系统，而与其对接的一种简单方式，就是按间隔检查它并对变化做出响应。例如一个 PR，它可能收到代码评审或 CI 失败。"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于这些场景，你可以用 `/loop` 触发 Claude 的运行，它会按间隔重新执行一个提示词。例如："
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "`/loop` 运行在你的电脑上，所以如果你关机，它就会停止。你可以通过用 `/schedule` 创建一个例程（routine），把循环迁移到云端。"
+        }
+      ]
+    },
+    "b043": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "主动式循环"
+        }
+      ]
+    },
+    "b045": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "触发方式：由事件或计划任务触发，无需人工实时参与。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "停止条件：每个任务在达成目标后退出。例程本身则持续运行，直到你手动关闭。"
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最适合场景：定义明确、反复出现的工作流：缺陷报告、问题分类（triage）、迁移、依赖升级等。"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用量管理方式：将例程路由到更小、更快的模型，只在需要判断决策时使用能力最强的模型。"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上述基础能力，连同其他 Claude Code 特性——如自动模式（auto mode）和动态工作流（dynamic workflows，研究预览版）——可以组合成一个用于长时间运行工作的循环。"
+        }
+      ]
+    },
+    "b051": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，要处理收到的反馈，你可以使用："
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "`/schedule`（研究预览版）来运行一个检查新报告的例程"
+        }
+      ]
+    },
+    "b053": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "`/goal` 来定义\"完成\"的样子，并用技能（skills）来记录如何验证完成"
+        }
+      ]
+    },
+    "b054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "动态工作流来编排各个智能体，对每份报告进行分类、修复，并复审修复"
+        }
+      ]
+    },
+    "b055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "自动模式，让例程无需停下来请求许可即可运行"
+        }
+      ]
+    },
+    "b057": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "把它们组合起来，一个提示词可能是这样的："
+        }
+      ]
+    },
+    "b059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "保持代码质量"
+        }
+      ]
+    },
+    "b060": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "循环输出的质量取决于其周围的系统。在设计系统时："
+        }
+      ]
+    },
+    "b061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "保持代码库本身整洁：Claude 会遵循代码库中已有的模式和约定。"
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给 Claude 一种验证自身工作的方法：用技能（skills）把你和团队心中\"好的标准\"编码下来。"
+        }
+      ]
+    },
+    "b063": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让文档易于获取：框架和库的文档包含最新的最佳实践。"
+        }
+      ]
+    },
+    "b064": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用第二个智能体做代码审查：拥有全新上下文的审查者偏见更少，不会受主智能体推理过程的影响。你可以使用内置的 `/code-review` 技能，或使用 Code Review for Github。"
+        }
+      ]
+    },
+    "b066": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当某个单独结果未达到标准时，不要止步于修复这个单独问题，而要尝试把它编码进系统，从而改进未来所有的迭代。"
+        }
+      ]
+    },
+    "b067": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "管理令牌用量"
+        }
+      ]
+    },
+    "b068": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为管理令牌用量，循环应有清晰的边界："
+        }
+      ]
+    },
+    "b069": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为任务选择合适的原语和模型：较小的任务不需要多个智能体或循环。有些任务可以使用更便宜、更快的模型。"
+        }
+      ]
+    },
+    "b070": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定义清晰的成功与停止标准：明确说明\"完成\"是什么样子，好让 Claude 更早（但不要太早）得出解决方案。"
+        }
+      ]
+    },
+    "b071": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大规模运行前先试点：动态工作流可能生成数百个智能体。先在一小部分工作上评估用量。"
+        }
+      ]
+    },
+    "b072": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "用脚本处理确定性工作：运行脚本比逐步推理更便宜。例如，PDF 技能可以附带一个填表脚本，让 Claude 每次运行它，而不是每次重新推导代码。"
+        }
+      ]
+    },
+    "b073": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "不要以超出需要的频率运行例程：让间隔与你所监测事物的变化频率相匹配。"
+        }
+      ]
+    },
+    "b074": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "查看用量：`/usage` 命令按技能、子智能体和 MCP 分解近期用量，不带参数的 `/goal` 显示目前的轮次数和令牌用量，`/workflows` 显示每个智能体的令牌用量，你可以随时停止某个智能体。"
+        }
+      ]
+    },
+    "b076": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "开始上手"
+        }
+      ]
+    },
+    "b077": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "总结一下："
+        }
+      ]
+    },
+    "b078": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "要开始使用循环（loops），先审视你已经在做的工作。挑选一个你成为瓶颈的任务，并思考其中哪一部分可以交出去：你能否写出验证检查？目标是否足够清晰？工作是否按固定时间到达？"
+        }
+      ]
+    },
+    "b079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一旦有了想法，就运行循环，观察结果，比如它在哪里停滞或越界，并且不要害怕对它进行迭代。"
+        }
+      ]
+    },
+    "b080": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "更多信息请阅读 Claude Code 文档中关于并行运行智能体（running agents in parallel）的内容，以及循环（loop）、调度（schedule）、目标（goal）和动态工作流（dynamic workflows）等页面。"
+        }
+      ]
+    },
+    "b081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本文由 Delba de Oliveira 和 Michael Segner 撰写"
+        }
+      ]
+    }
+  }
+}

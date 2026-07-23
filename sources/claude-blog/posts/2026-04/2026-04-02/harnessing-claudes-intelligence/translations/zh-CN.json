@@ -1,0 +1,405 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:21d12c00bdfee31eb8931cdd2bcfb8612dea87ec29aab0f0563d980c65450811",
+  "engine": "legacy-monolith",
+  "prompt_version": "claude-blog-migrate.v2",
+  "title": "驾驭 Claude 的智能",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Anthropic 联合创始人之一 Chris Olah 表示，像 Claude 这样的生成式 AI 系统更像是被培育出来的，而非被搭建出来的。研究者设定条件来引导其生长，但最终涌现出的确切结构或能力并不总是可预测的。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这给基于 Claude 的开发带来了挑战：智能体框架（agent harness）编码了对 Claude 自身做不到什么的种种假设，但随着 Claude 能力增强，这些假设会逐渐过时。即便是本文这类文章中分享的经验，也值得经常重新审视。"
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本文分享三种模式，供团队在构建应用时使用，使应用既能跟上 Claude 不断演进的智能，又能兼顾延迟与成本：利用它已经知道的、追问哪些事可以不再做、以及谨慎地用智能体框架划定边界。"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "1. 利用 Claude 已知的能力"
+        }
+      ]
+    },
+    "b005": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们建议使用 Claude 熟悉的工具来构建应用。"
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "2024 年末，Claude 3.5 Sonnet 在 SWE-bench Verified 上达到 49%——当时的最高水平——而它仅依靠一个 bash 工具和一个用于查看、创建、编辑文件的文本编辑器工具。Claude Code 也建立在这同样的工具之上。Bash 并不是为构建智能体而设计的，但它是 Claude 懂得如何使用、并随时间越用越好的工具。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们看到 Claude 将这些通用工具组合成各种模式，用以解决不同的问题。例如，智能体技能（Agent Skills）、程序化工具调用（programmatic tool calling）和记忆工具（memory tool），都是由 bash 和文本编辑器工具构建出来的。"
+        }
+      ]
+    },
+    "b010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "2. 追问\"我可以不再做什么？\""
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体框架编码了对 Claude 自身做不到什么的假设。随着 Claude 能力增强，这些假设应当受到检验。"
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让 Claude 自行编排其行动"
+        }
+      ]
+    },
+    "b013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个常见的假设是：每个工具调用结果都应回流到 Claude 的上下文窗口中，以指导下一步行动。如果某个结果只需传递给下一个工具，或 Claude 只关心输出中的一小部分，那么以 token 形式处理工具结果可能既慢、又贵，且没有必要。"
+        }
+      ]
+    },
+    "b015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设想要读取一个很大的表格，却只为推断其中某一列：整个表格都进入上下文，Claude 为每一行（哪怕用不到）都付出 token 成本。可以在工具设计层面用硬编码过滤器来应对这个问题。但这并未解决一个根本事实：是智能体框架在做编排决策，而 Claude 其实更适合做这个决策。"
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "给 Claude 一个代码执行工具（例如 bash 工具或特定语言的 REPL）就能解决这一点：它让 Claude 能编写代码来表达工具调用以及调用之间的逻辑。与其由框架决定每个工具调用结果都以 token 形式处理，不如让 Claude 自行决定哪些结果应该透传、过滤，或在不触及上下文窗口的情况下管道传递给下一次调用。只有代码执行的输出才进入 Claude 的上下文窗口。"
+        }
+      ]
+    },
+    "b018": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "编排决策从框架转移到了模型。由于代码是 Claude 编排行动的一种通用方式，一个强大的编码模型同时也是一个强大的通用智能体。Claude 用这种模式在非编码评测上表现出色：在测试智能体网页浏览能力的基准 BrowseComp 上，赋予 Opus 4.6 自行过滤工具输出的能力，将准确率从 45.3% 提升到了 61.6%。"
+        }
+      ]
+    },
+    "b019": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让 Claude 自行管理其上下文"
+        }
+      ]
+    },
+    "b020": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "针对任务的上下文会引导 Claude 使用 bash、文本编辑器等通用工具。一个常见假设是：系统提示词应该用针对任务的指令手工精心编写。问题在于，预先在提示词中塞入指令无法跨众多任务扩展：每加入一个 token 都会消耗 Claude 的注意力预算，而预先载入很少用到的指令是一种浪费。"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让 Claude 能够访问技能就解决了这一点：每个技能的 YAML 前置元数据（frontmatter）是一段预先载入上下文窗口的简短描述，提供该技能内容的概览。当某个任务需要时，Claude 可调用读取文件工具，逐步展开完整的技能内容。"
+        }
+      ]
+    },
+    "b023": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果说技能让 Claude 有自由组装自己上下文窗口的能力，那么上下文编辑（context editing）则是其反向操作：提供一种方式，有选择地移除已过时或不再相关的上下文，例如旧的工具结果或思考块。"
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "借助子智能体（subagents），Claude 越来越懂得何时该分叉出一个全新的上下文窗口，以隔离某项具体任务的工作。在 Opus 4.6 上，派生子智能体的能力使 BrowseComp 的成绩比最佳的单智能体运行高出 2.8%。"
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "让 Claude 自行持久化其上下文"
+        }
+      ]
+    },
+    "b026": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "长时间运行的智能体可能超出单个上下文窗口的限制。一个常见假设是：记忆系统应依赖围绕模型搭建的检索基础设施。我们的许多工作都聚焦于给 Claude 提供简单的方式，让它自行选择要持久化哪些内容。"
+        }
+      ]
+    },
+    "b027": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，压缩（compaction）让 Claude 能够总结其过往的上下文，以便在长跨度任务中保持连贯性。经过多个版本的迭代，Claude 在选择记住什么方面越来越好。例如在智能体搜索任务 BrowseComp 上，无论我们给多少压缩预算，Sonnet 4.5 都停滞在 43%。而在相同设置下，Opus 4.5 扩展到了 68%，Opus 4.6 更达到了 84%。"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "记忆文件夹是另一种方法，允许 Claude 把上下文写入文件，之后按需读取。我们已经看到 Claude 把它用于智能体式搜索（agentic search）。在 BrowseComp-Plus 上，给 Sonnet 4.5 配备记忆文件夹，使准确率从 60.4% 提升到 67.2%。"
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "长程游戏（long-horizon games），例如宝可梦，体现了 Claude 在使用记忆文件夹方面的能力提升。Sonnet 3.5 把记忆当作逐字记录，写下非玩家角色（NPC）说了什么，而不是真正重要的内容。在 14000 步之后，它有 31 个文件——其中包括两个关于毛毛虫宝可梦的近乎重复的文件——而它仍停留在第二个城镇："
+        }
+      ]
+    },
+    "b032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "后来的模型则写下战术笔记。Opus 4.6 在相同步数下，有 10 个按目录组织的文件、三枚道馆徽章，以及一个从自身失败中提炼出来的经验文件："
+        }
+      ]
+    },
+    "b034": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "3. 谨慎设定边界"
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体框架（agent harness）在 Claude 周围提供结构，以确保用户体验、成本或安全。"
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设计上下文以最大化缓存命中"
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "消息 API（Messages API）是无状态的。Claude 无法看到此前回合的对话历史。这意味着智能体框架需要在每个回合把新的上下文连同所有过往动作、工具描述和指令一起打包给 Claude。"
+        }
+      ]
+    },
+    "b038": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提示可以基于设定的断点（breakpoint）进行缓存。换句话说，Claude API 会把断点之前的上下文写入缓存，并检查该上下文是否与任何此前的缓存条目匹配。"
+        }
+      ]
+    },
+    "b039": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于缓存令牌的成本仅为基础输入令牌的 10%，以下是智能体框架中有助于最大化缓存命中的几条原则："
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用声明式工具来处理用户体验、可观测性或安全边界"
+        }
+      ]
+    },
+    "b041": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude 不一定知道某个应用的安全边界或用户体验界面。Claude 发出工具调用，由框架处理。bash 工具给了 Claude 广泛的程序化能力来执行动作，但它只给框架一个命令字符串——每个动作的形态都相同。把动作提升为专用工具，则给框架提供了一个针对具体动作、带类型化参数的钩子，框架可以拦截、把关、渲染或审计它。"
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "需要安全边界的动作天然适合做成专用工具。可逆性通常是一个好的判断标准，而像外部 API 调用这类难以逆转的动作可以通过用户确认来把关。诸如 edit 之类的写入工具可以包含陈旧性检查（staleness check），这样 Claude 就不会覆盖一个自上次读取以来已发生变更的文件。"
+        }
+      ]
+    },
+    "b044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当某个动作需要呈现给用户时，工具也很有用。例如，它们可以渲染为模态框，向用户清晰地展示一个问题、给用户多个选项，或者在用户提供反馈之前阻塞智能体循环。"
+        }
+      ]
+    },
+    "b045": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，工具对可观测性也很有用。当动作是一个类型化的工具时，框架就能获得结构化的参数，可以记录、追踪和回放。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "把动作提升为工具的决定应当持续重新评估。例如，Claude Code 的自动模式（在本文发表时处于研究模式）为 bash 工具提供了一道安全边界：它让第二个 Claude 读取命令字符串并判断其是否安全。这种模式可以减少对专用工具的需求，且只应用于用户信任其总体方向的任务。对于某些高风险动作，专用工具仍有其存在价值。"
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "展望"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude 智能的前沿始终在变化。关于 Claude 做不到什么的假设，需要随着它能力的每一次阶跃而重新检验。"
+        }
+      ]
+    },
+    "b049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们看到这种模式反复出现。在我们为长程任务构建的一个智能体中，Sonnet 4.5 一旦感觉到上下文上限临近，就会过早收尾。我们加入了重置机制来清空上下文窗口，以应对这种\"上下文焦虑\"。到了 Opus 4.5，这种行为消失了。我们为弥补它而构建的上下文重置，反而成了智能体框架中的累赘。"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "移除这种累赘很重要，因为它可能成为 Claude 性能的瓶颈。随着时间推移，我们应用中的结构或边界应当基于这样一个问题来修剪：我可以停止做什么？"
+        }
+      ]
+    },
+    "b051": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "要使用这里讨论的所有工具和模式，请查看我们的 claude-api 技能。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "致谢"
+        }
+      ]
+    },
+    "b053": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由 Lance Martin 撰写，他是 Claude 平台团队的技术人员。特别感谢 Thariq Shihipar、Barry Zhang、Mike Lambert、David Hershey 和 Daliang Li 就本文所涉主题展开的有益讨论。感谢 Lydia Hallie、Lexi Ross、Katelyn Lesse、Andy Schumeister、Rebecca Hiscott、Jake Eaton、Pedram Navid 和 Molly Vorwerck 的编辑审阅与反馈。"
+        }
+      ]
+    }
+  }
+}
