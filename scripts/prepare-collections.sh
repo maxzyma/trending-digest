@@ -5,14 +5,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SRC="$ROOT/sources/claude-blog/posts"
-DEST="$ROOT/_claude_blog"
 
-rm -rf "$DEST"
-mkdir -p "$DEST"
-if [ -d "$SRC" ] && [ -n "$(ls -A "$SRC" 2>/dev/null)" ]; then
-  cp -R "$SRC/." "$DEST/"
-  echo "[prepare-collections] materialized _claude_blog from sources/claude-blog/posts"
-else
-  echo "[prepare-collections] WARN: sources/claude-blog/posts empty/missing — _claude_blog is empty"
-fi
+# Self-contained archive: each article is a canonical package (canonical.json +
+# raw + translations + rendered md variants + metadata) under posts/. Only ONE
+# reading page per article may reach the site, with the front matter the
+# claude-blog-post layout needs, so materialization is a transform (not a raw
+# copy): see scripts/materialize_collection.py. Legacy flat posts pass through.
+PYTHON_BIN="${TD_PIPELINE_PYTHON:-python3}"
+"$PYTHON_BIN" "$ROOT/scripts/materialize_collection.py"

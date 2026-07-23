@@ -1,0 +1,1778 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "claude-blog:ai-code-migration",
+  "source": {
+    "canonical_url": "https://claude.com/blog/ai-code-migration",
+    "site": "claude-blog",
+    "author": "Anthropic",
+    "published_at": "2026-07-16",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:0f8abe54c0bf3d7ff821e9ae871060932ebaaa294aad8d829bad2ba8f2e2f7fe",
+    "fetched_at": "2026-07-16T00:00:00+00:00",
+    "parser_version": "claude-blog.v1"
+  },
+  "content": {
+    "title": "How Anthropic runs large-scale code migrations with Claude Code",
+    "title_en": "How Anthropic runs large-scale code migrations with Claude Code",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "b001",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Code migrations, projects that port a production codebase to a new language, were multi-year endeavors until recently."
+          }
+        ]
+      },
+      {
+        "id": "b002",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In the last month, individual developers at Anthropic migrated 10 code packages consisting of tens to hundreds of thousands of lines of code using Claude Fable 5, Claude Opus 4.8, and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://claude.com/blog/introducing-dynamic-workflows-in-claude-code"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "dynamic workflows"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". In this article we’ll cover two examples along with best practices from these projects."
+          }
+        ]
+      },
+      {
+        "id": "b003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Jarred Sumner, co-founder of Bun and Member of Technical Staff at Anthropic, used Claude Code to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://bun.com/blog/bun-in-rust"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "migrate Bun from Zig to Rust"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". A million lines of code were produced in less than two weeks, with 100% of Bun's existing test suite passing in CI before merge. Nineteen regressions surfaced after merge and have all been fixed. The Rust port was shipped inside Claude Code in June. "
+          }
+        ]
+      },
+      {
+        "id": "b004",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mike Krieger, co-lead of Anthropic Labs, migrated a Python codebase to 165,000 lines of TypeScript over a weekend. This included hundreds of agents, eight phase gates, three adversarial review rounds, and a final parity check that diffed every command's output against the Python original. "
+          }
+        ]
+      },
+      {
+        "id": "b005",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Claude Code’s new capabilities change the math for these long-deferred projects. Below is the six-step process we now use, drawn from what these migrations taught us."
+          }
+        ]
+      },
+      {
+        "id": "b006",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The core insight is that you don’t fix the code. "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "You fix the process (loop) that produced the code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b007",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Why and when to migrate languages"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b008",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before going straight into "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "the how"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", it’s worth discussing "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "the when"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "why"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " because the assumptions around these projects have evolved. "
+          }
+        ]
+      },
+      {
+        "id": "b009",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Teams launch migrations because of landscape changes between their initial build and current project. Either a known trade-off has become limiting, a better approach has emerged, or the original ecosystem is shrinking. "
+          }
+        ]
+      },
+      {
+        "id": "b010",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For example, Jarred originally chose Zig because it offered C-level performance with radical simplicity, ideal for a solo founder “writing Bun in 1 year in a cramped Oakland apartment pre-LLM.” This simplicity came with known tradeoffs, "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://bun.com/blog/bun-in-rust#just-be-really-smart-and-don-t-make-mistakes"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "which he writes about here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". "
+          }
+        ]
+      },
+      {
+        "id": "b011",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fast forward to 2026. Bun's CLI is getting over 10 million monthly downloads and is used extensively within Claude Code.  "
+          }
+        ]
+      },
+      {
+        "id": "b012",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As recently as last quarter, those tradeoffs wouldn’t have been enough to justify freezing the roadmap and committing resources to a multi-quarter project. Migrating languages can deliver smaller, faster, and safer systems, but no one wants to pay for them."
+          }
+        ]
+      },
+      {
+        "id": "b013",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Software engineers have also had to contend with the career risk inherent in these formerly mega-projects. You could maintain two parallel code bases for quarters or years, and if the end result was 90% parity, you had a bigger headache than when you started."
+          }
+        ]
+      },
+      {
+        "id": "b014",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Now, the worst case scenario is you delete the branch and try again."
+          }
+        ]
+      },
+      {
+        "id": "b015",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "There still needs to be a justifiable business case. While million line migrations no longer cost $3 to $4 million in engineering resources over the course of a four year project, they still cost tens to hundreds of thousands of dollars or more to execute. The Bun migration, for example, consumed 5.9 billion uncached input tokens and 690 million output tokens — around $165,000 at API pricing. The main portion of Mike’s port was 27 million tokens."
+          }
+        ]
+      },
+      {
+        "id": "b016",
+        "type": "image",
+        "attrs": {
+          "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58f8844b99cec5d277a9ee_27e78c5a.png",
+          "alt": "Jarred’s million-line PR."
+        }
+      },
+      {
+        "id": "b017",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "However, the migration case no longer needs to be existential. "
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "A year of memory-bug patches in the changelog, or one chronic bottleneck, can now justify it."
+          }
+        ]
+      },
+      {
+        "id": "b018",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The compile step was the impetus for Mike's project. The internal tool his team works on ships to users as a single binary. Producing that binary with the Python toolchain took roughly eight minutes per platform, totaling a 30-minute wait across the build matrix on every release. After the port, the same compile now takes about two seconds, the binary starts 6x faster, and the team was able to retire a separate deployment pipeline."
+          }
+        ]
+      },
+      {
+        "id": "b019",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Why AI changes the code migration math"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b020",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Claude Fable 5 is our most capable, generally available model. Fable and Opus 4.8 are particularly good at delegating, directing, and verifying parallel workstreams with subagents while finding multiple paths towards stated goals. "
+          }
+        ]
+      },
+      {
+        "id": "b021",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Large code migrations are a particularly effective use case for these advanced models because:"
+          }
+        ]
+      },
+      {
+        "id": "b027",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b022",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The work is parallel"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Work can be executed across thousands of independent units such as files and crates, so agents can work at the same time rather than have one waiting on the other."
+              }
+            ]
+          },
+          {
+            "id": "b023",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Context is clear and comprehensive. "
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "The old code serves as a great spec for the model. It also serves as a core reference to help build the guide for translation agents to follow."
+              }
+            ]
+          },
+          {
+            "id": "b024",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "There is a built-in referee"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Many large codebases will include a test suite that agents can use to verify their work. Agents perform their best when verification is objective, because the model can grind against a ground truth for days without a human arbitrating quality."
+              }
+            ]
+          },
+          {
+            "id": "b025",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The queue writes itself"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". When a compiler or test run fails, that becomes the next item for an agent to fix."
+              }
+            ]
+          },
+          {
+            "id": "b026",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "They require consistency and edge case handling"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ": The process is built so drift has nowhere to hide: reviewers cite the rule behind every finding, so a violation becomes a queue item instead of a quiet divergence. And when an agent does hit an edge case, the fix becomes a rule every subsequent agent follows."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b028",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As we will see below, both Mike and Jarred used Fable for key steps in their migration process, particularly in "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "an advisory pattern"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " that used multiple model classes to optimize token consumption. "
+          }
+        ]
+      },
+      {
+        "id": "b029",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Six steps for large code migrations"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b030",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "The process below has been generalized to be relevant to multiple languages and scenarios. For additional details, you can read "
+              }
+            ]
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://bun.com/blog/bun-in-rust"
+            },
+            "children": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Jarred’s blog"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b031",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prerequisites"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b032",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A prerequisite before starting on your migration project is to have a strong judge in place, otherwise you won’t have an exit condition or measure of success. "
+          }
+        ]
+      },
+      {
+        "id": "b033",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The judge must be able to evaluate both the original code and the target code on equal terms. Test suites written in the original language will often depend on internal functions that won't exist in the target code. "
+          }
+        ]
+      },
+      {
+        "id": "b034",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To build this judge:"
+          }
+        ]
+      },
+      {
+        "id": "b038",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b035",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Categorize existing tests"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Use Claude to identify which tests are expressible as external calls and which depend on internals that won't port. "
+              }
+            ]
+          },
+          {
+            "id": "b036",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Rewrite for portability."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Convert the external-facing tests into assertions that can run against both the original and the port. Use adversarial agents to verify the rewritten tests don't weaken the assertions."
+              }
+            ]
+          },
+          {
+            "id": "b037",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Validate the judge"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Run it against the original code to confirm it passes. Then run it against deliberately broken code to confirm it fails — a judge that doesn't catch breakage isn't a judge."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b039",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Jarred had a large test suite written in a third language (TypeScript), but that will not be the case for most projects. For his Python-to-TypeScript port, Mike created a parity harness of seven real-world scenarios and considered any behavior change a bug to be fixed. "
+          }
+        ]
+      },
+      {
+        "id": "b040",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before we get into each stage, this graphic may help you follow along. This mostly follows Jarred’s methodology, with reviews and gates at each stage. Mike followed a similar overall structure using similar loop workflows, but he ran the entire migration end to end, revised the rules and the workflow based on the results, and ran it again — discarding the output each time until the third run."
+          }
+        ]
+      },
+      {
+        "id": "b041",
+        "type": "image",
+        "attrs": {
+          "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58f8854b99cec5d277aa48_e7dd47de.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b042",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 1 — Create the rulebook, dependency map, and gap inventory"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b043",
+        "type": "image",
+        "attrs": {
+          "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fa78da7794274460319e_Code-migration-step1.jpeg",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b044",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this stage we are creating the foundations of our migration: an inventory of places where code will need to be refactored rather than just translated, a rulebook for how to translate our code, and a dependency map to order our migration implementation workstreams. "
+          }
+        ]
+      },
+      {
+        "id": "b045",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The order matters: the rulebook must come before the gap inventory. The gap inventory is defined by what the rulebook's defaults won't cover, and the two are tested together in a joint audit."
+          }
+        ]
+      },
+      {
+        "id": "b046",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Rulebook"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 4
+        }
+      },
+      {
+        "id": "b047",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The exact shape of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/code-migration-kit-with-claude-code/blob/main/templates/RULEBOOK.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "rulebook"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " depends on key architectural decisions you must make at the start. Chief among them, if the new code will follow the same structure, or if it will be completely redesigned. "
+          }
+        ]
+      },
+      {
+        "id": "b048",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If it’s the former (Jarred), the rulebook will primarily be lookup tables that translates types and idioms between languages while pointing to the gap inventory for the harder-to-translate components. If it’s the latter (Mike), it will be a design document. "
+          }
+        ]
+      },
+      {
+        "id": "b049",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Jarred created his rulebook by chatting with Claude, forming a policy for each area of ambiguity. He also used eight subagents specifically designed to review for 8 different categories of common failure modes based on his own intuition."
+          }
+        ]
+      },
+      {
+        "id": "b050",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Dependency map"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 4
+        }
+      },
+      {
+        "id": "b051",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "You need to understand file dependencies to effectively break up workstreams for a parallel migration so you know which files to migrate first and which files to contain in the same batch. Some languages and codebases have explicit manifests that make this easy, but for legacy codebases and many popular languages like C/C++ and Python, these dependencies need to be discovered and mapped."
+          }
+        ]
+      },
+      {
+        "id": "b052",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Claude Code can deploy agents to create and run a deterministic script to produce this map. The "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/code-migration-kit-with-claude-code/blob/main/prompts/01-dependency-map.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "prompt in the migration kit"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " uses a workflow to create a review-and-fix loop. "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Note: The starter kit is a generalized template of the process laid out in this post — it's not what these specific ports ran on."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b053",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Gap inventory and skeptic reviewers"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 4
+        }
+      },
+      {
+        "id": "b054",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The new language has different requirements from the old language that must be met. For Zig to Rust the difference was manual memory management (C and C++ work the same way). For example:"
+          }
+        ]
+      },
+      {
+        "id": "b055",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Zig"
+          }
+        ]
+      },
+      {
+        "id": "b056",
+        "type": "code",
+        "attrs": {
+          "code": "fn readConfig(allocator: std.mem.Allocator) ![]u8 {\n    const buf = try allocator.alloc(u8, 1024);\n    // ...fill buf...\n    return buf; // caller must free this — but only the comment says so\n}\n\n// A caller that forgets 'defer allocator.free(buf)' still compiles — the leak only surfaces at runtime.",
+          "language": "plaintext"
+        }
+      },
+      {
+        "id": "b057",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Rust"
+          }
+        ]
+      },
+      {
+        "id": "b058",
+        "type": "code",
+        "attrs": {
+          "code": "fn read_config() -> Vec<u8> { \nlet buf = vec![0u8; 1024]; \n// ...fill buf... \nbuf // ownership moves to the caller; memory is freed automatically \n} \n// Use it after it's moved? Free it twice? Neither compiles. \n// Forget to free it? There's no free call to forget — drop is automatic.",
+          "language": "rust"
+        }
+      },
+      {
+        "id": "b059",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For Python to TypeScript the gap was interfaces and contracts. Python doesn’t require a contract declaring what shape of object it will accept or what it returns, but TypeScript does. For example:"
+          }
+        ]
+      },
+      {
+        "id": "b060",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Python"
+          }
+        ]
+      },
+      {
+        "id": "b061",
+        "type": "code",
+        "attrs": {
+          "code": "def register(handler):\n    handler.setup()\n    return handler.run({\"retries\": 3})\n\n# Any object with .setup() and .run() works here. Which objects actually get passed in? Read the whole codebase to find out.",
+          "language": "python"
+        }
+      },
+      {
+        "id": "b062",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "TypeScript"
+          }
+        ]
+      },
+      {
+        "id": "b063",
+        "type": "code",
+        "attrs": {
+          "code": "interface RunResult { ok: boolean } \n\ninterface Handler \n{ setup(): void; \nrun(opts: { retries: number }): Promise<RunResult>; \n} \n\nfunction register(handler: Handler): Promise<RunResult> { \nhandler.setup(); \nreturn handler.run({ retries: 3 }); } \n\n// The contract must be written down before this compiles",
+          "language": "typescript"
+        }
+      },
+      {
+        "id": "b064",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both Jarred and Mike created gap inventory files capturing this implicit knowledge. Jarred inventoried these gaps up front, which is what we do here, while Mike chose to translate first and then create the gap inventory by auditing afterwards. You may need to do both. "
+          }
+        ]
+      },
+      {
+        "id": "b065",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check out this sample "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/code-migration-kit-with-claude-code/blob/main/prompts/02-gap-inventory.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Claude Code prompt to create a gap inventory file"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b066",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 2 — Stress-test the rules "
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b067",
+        "type": "image",
+        "attrs": {
+          "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fbe31db98b8b59d39ba8_MIgration-step2.jpeg",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b068",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This step involves a mini-migration that serves as a “shakedown cruise” for the larger migration. "
+          }
+        ]
+      },
+      {
+        "id": "b069",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In this step, Jarred used one agent to translate three files using the rulebook, one agent to translate three files “like a senior Rust engineer,” and one agent to use the diff to create new translation rules. At this stage he caught two critical issues that would have created numerous issues if fanned out across all 1,448 files."
+          }
+        ]
+      },
+      {
+        "id": "b070",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The prompt may look something like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/code-migration-kit-with-claude-code/blob/main/prompts/03-stress-test.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "this"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b071",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This type of stress test "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "only works for structure-preserving migrations"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", where two translations of the same file are comparable line by line.  If your rulebook is a redesign — like Mike's — the equivalent test is attacking the design document directly with adversarial reviewers, then validating it with a disposable end-to-end run."
+          }
+        ]
+      },
+      {
+        "id": "b072",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Regardless, throw out any translated files. The goal is to refine the rules, not make incremental progress."
+          }
+        ]
+      },
+      {
+        "id": "b073",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 3 — Translate everything "
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b074",
+        "type": "image",
+        "attrs": {
+          "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fd9c8899de91189a89e0_ai-migation-step4-5-6.jpeg",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b075",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For the remaining steps, you run the same multi-agent loop architecture: implement, review, and fix. "
+          }
+        ]
+      },
+      {
+        "id": "b076",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "You can offload implementer work to smaller models and keep reviewers on larger ones. For example, Mike used Claude Sonnet when he fanned out 12 subagents for the main migration. "
+          }
+        ]
+      },
+      {
+        "id": "b077",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The work queue should be mechanical. A batch script decides what’s done by checking whether the translated file exists on disk, then slices the pending files into batches for the implementer agents. Because the queue is rebuilt from disk every time, the migration is resumable by construction."
+          }
+        ]
+      },
+      {
+        "id": "b078",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At this stage, agents can be overly cautious with how much work they do. The fix can be a blunt, emphatic prompt instruction with context that the compiler will catch mistakes in the next step. "
+          }
+        ]
+      },
+      {
+        "id": "b079",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Anything the translator can’t execute confidently gets flagged with // TODO(port): <reason> to be dealt with in step 4. From here on, the to-do lists write themselves: the compiler enumerates the errors, the smoke tests find the crashes, the suite reports the failures."
+          }
+        ]
+      },
+      {
+        "id": "b080",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Two adversarial reviewers evaluate the work of the implementers using separate contexts and disagreement between reviewers goes to a third agent. When a reviewer keeps catching the same mistake across files, the fix isn't per-file. You add one sentence to the rulebook and regenerate the affected batch. The rulebook keeps growing through this step; the code never gets hand-patched against it."
+          }
+        ]
+      },
+      {
+        "id": "b081",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One important design decision to note in this step is where the compiler sits. Mike ran the TypeScript compiler inside every loop, because it checks a unit in seconds. Jarred banned the compiler from the loop entirely and deferred it to the next step, because cargo takes minutes."
+          }
+        ]
+      },
+      {
+        "id": "b082",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At this step, much of the heavy lifting has been done and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/code-migration-kit-with-claude-code/blob/main/prompts/04-translation-kickoff.md"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the prompts start to get shorter."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b083",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Steps 4, 5, 6 — Compile, run, and match behavior"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b084",
+        "type": "image",
+        "attrs": {
+          "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fd76153c143199b57e1b_ai-migration-step3.jpeg",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b085",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "These three steps share the same loop architecture and need progressively less human judgment, so we cover them together."
+          }
+        ]
+      },
+      {
+        "id": "b086",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 4"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", for example, may often dissolve into step 3 depending on the language and size of the migration. "
+          }
+        ]
+      },
+      {
+        "id": "b087",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Depending on the size and difficulty of the compiler step, agents may not run this at all. Jarred executed this with an orchestrator script that invoked the compiler once across the whole workspace. “Fixer agents” then ran through the error list in parallel with adversarial review. The build runs again, rinse and repeat. "
+          }
+        ]
+      },
+      {
+        "id": "b088",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Reviewing the error list is helpful to catch systemic issues that may require adjustments. For example, Jarred ran into thousands of Rust module errors that surfaced after fixing cyclic imports that Zig's lazy compilation tolerated. He fixed the loop by encoding logic to classify which dependence to delete, move, or restructure the boundary. "
+          }
+        ]
+      },
+      {
+        "id": "b089",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 5 "
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "also has a mechanical source of truth similar to the compiler error list: crashes from the smoke test. Again, the loop fix was to group issues into categories, in this case grouping causes by root cause that are reviewed by adversarial subagents. "
+          }
+        ]
+      },
+      {
+        "id": "b090",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 6"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and the end of our story is comparing the programs’ behavior across the two codebases."
+          }
+        ]
+      },
+      {
+        "id": "b091",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Our files have now been translated, compiled, and smoke tested. Now it's time to shard them and run the test suite (from the prerequisite stage) against them. Tackle failures with \"fixer agents\" that review the failed tests against both codebases. Adversarial reviewers check their fixes."
+          }
+        ]
+      },
+      {
+        "id": "b092",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The next stage in this loop is a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/code-migration-kit-with-claude-code/blob/main/scripts/build_daemon.sh"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "build daemon"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which is the only process allowed to rebuild the binary. Fixers write patches; the daemon batches them, rebuilds once, re-runs the affected tests, and feeds the results back. This serializes the most expensive operation instead of letting multiple agents trigger it independently."
+          }
+        ]
+      },
+      {
+        "id": "b093",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When the same failure repeats across many tests, the fix moves upstream: you amend the rule that produced the bug and regenerate only the files that rule touched."
+          }
+        ]
+      },
+      {
+        "id": "b094",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mike's approach matters here, because many developers won't have a built-out or ported test suite. Mike had Claude create a small script to run 7 real-world scenarios against both the new port and the original Python codebase, and diffed the results. Each failing scenario got its own fix agent, and the loop ran until all seven passed."
+          }
+        ]
+      },
+      {
+        "id": "b095",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then he went one step further. Claude designed its own end-to-end test suite and ran it autonomously overnight, fixing what broke and re-running four nights in a row. As a result, it caught the paper cuts no scenario list would have predicted."
+          }
+        ]
+      },
+      {
+        "id": "b096",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The lesson is that a missing test suite doesn't block this step. If you can't inherit a referee, have Claude build one. Your original codebase is the ground truth either way."
+          }
+        ]
+      },
+      {
+        "id": "b097",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Code migrations best practices"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b098",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Every run taught us something the previous one didn't. It’s a safe bet your next migration will teach you things this guide can't. But a few practices held up across every project:"
+          }
+        ]
+      },
+      {
+        "id": "b105",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b099",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Don't follow this guide blindly."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Each migration is different. Treat this as a starting point, and plan your specific migration with Claude before committing to it."
+              }
+            ]
+          },
+          {
+            "id": "b100",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Don’t focus on individual failures."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Individual failures are the loop's job. Fixer agents burn those down. Your attention belongs on the patterns. "
+              }
+            ]
+          },
+          {
+            "id": "b101",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Make review adversarial and verification mechanical."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Adversarial review allows for longer running tasks and is often worth the token consumption. Let scripts — a compiler, a diff, a test suite — be the referee. "
+              }
+            ]
+          },
+          {
+            "id": "b102",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Don't use the largest model for everything."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Token spend concentrates in your loops, so design them deliberately. Smaller models handle the high-volume implementation fan-out well; save your largest model for reviewers and for anything that writes rules other agents will follow."
+              }
+            ]
+          },
+          {
+            "id": "b103",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Front-load the human hours."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The rulebook and the stress test are the most time-consuming. Everything after is mostly queues burning down. "
+              }
+            ]
+          },
+          {
+            "id": "b104",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Make the work queue mechanical and resumable."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Done should mean \"the output file exists on disk.\" "
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b106",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Review loop results, not code"
+              }
+            ]
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b107",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Jarred’s Bun migration is now in production, although every migration has tradeoffs. For example, about 4% of the Rust code sits inside \"unsafe\" blocks, mostly single-line pointer operations at C/C++ boundaries."
+          }
+        ]
+      },
+      {
+        "id": "b108",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "But the new codebase is measurably better. Every memory leak the team's tooling can detect has been fixed: one benchmark of 2,000 repeated builds dropped from 6,745 MB of memory to 609. The binary is 19% smaller on Linux and Windows. And cross-language optimization made it 2–5% faster across HTTP serving and real-world workloads like next build and tsc. "
+          }
+        ]
+      },
+      {
+        "id": "b109",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Consider whether it’s time to re-run the math of your long deferred migration. Pick the codebase you've been tolerating and ask Claude what the migration process looks like for it."
+          }
+        ]
+      },
+      {
+        "id": "b110",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Related"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b114",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b111",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/anthropics/code-migration-kit-with-claude-code"
+                },
+                "children": [
+                  {
+                    "type": "emphasis",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Migration starter kit"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": " Note: The starter kit is a generalized template of the process above — it's not what these specific ports ran on."
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b112",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-modernization"
+                },
+                "children": [
+                  {
+                    "type": "emphasis",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Code-modernization plugin"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": " — for legacy modernization and framework upgrades rather than language ports"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b113",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://claude.com/blog/introducing-dynamic-workflows-in-claude-code"
+                },
+                "children": [
+                  {
+                    "type": "emphasis",
+                    "children": [
+                      {
+                        "type": "text",
+                        "text": "Dynamic workflows in Claude Code"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "ai-code-migration",
+    "source_slug": "ai-code-migration",
+    "source_profile": "claude-blog.v1",
+    "source_counts": {
+      "heading": 13,
+      "image": 6,
+      "table": 0,
+      "code": 4
+    },
+    "categories": [
+      "Claude Code",
+      "Enterprise AI"
+    ],
+    "intro_paragraph_count": 6
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58f8844b99cec5d277a9ee_27e78c5a.png",
+      "alt": "Jarred’s million-line PR."
+    },
+    {
+      "type": "image",
+      "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58f8854b99cec5d277aa48_e7dd47de.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fa78da7794274460319e_Code-migration-step1.jpeg",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fbe31db98b8b59d39ba8_MIgration-step2.jpeg",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fd9c8899de91189a89e0_ai-migation-step4-5-6.jpeg",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a58fd76153c143199b57e1b_ai-migration-step3.jpeg",
+      "alt": ""
+    }
+  ]
+}
