@@ -21,8 +21,8 @@ Before breaking into anything, they harvest publicly available information about
 
 They then turn that intelligence into bait, like a fake website with a fraudulent login page, to trick victims into handing over credentials. The access gained from these lures help the attacker get inside the perimeter to reach an organization’s most valuable and sensitive assets.
 
- $  
-/$This three-part sequence is predictable, but legacy security tooling guards only one slice at a time:
+   
+This three-part sequence is predictable, but legacy security tooling guards only one slice at a time:
 
 - Threat intelligence tools monitor the public-data stage,
 - Brand protection tools watch for impersonations, and
@@ -56,9 +56,9 @@ Initially, the Outtake team used traditional agent frameworks to progressively a
 
 They quickly realized, however, that the Recon Agent couldn't just be a simple investigator. It needed to write, run code, build tools on the fly, and actually interact with malicious domains. 
 
-“Every investigation is different, and deeply technical,” Hayford said. “The agent needed coding muscle and capability, and Claude Code was a strong initial harness for us to actually validate those assumptions and start experimenting more and more.” $  
-/$$  
-/$It was by prototyping in Claude Code that they forged their core design principle: constrain the agent tightly at the orchestration level (*‘always do X, Y, Z when investigating a domain’*), but leave  it free to improvise whenever judgement was required.
+“Every investigation is different, and deeply technical,” Hayford said. “The agent needed coding muscle and capability, and Claude Code was a strong initial harness for us to actually validate those assumptions and start experimenting more and more.”   
+  
+It was by prototyping in Claude Code that they forged their core design principle: constrain the agent tightly at the orchestration level (*‘always do X, Y, Z when investigating a domain’*), but leave  it free to improvise whenever judgement was required.
 
 #### **Step 3: Graduate to a production-grade harness**
 
@@ -88,9 +88,9 @@ Filesystem enables memory that survives compaction. Agents are typically given v
 
 #### **Prompts are suggestions**
 
-Prompts provide flexibility when needed, but hardcoding where possible ensures stability. “When you're building these long-running agents that get complicated over time, prompts are suggestions,” Hayford said. “When an agent didn't do what you wanted, the natural response is to add to the most plastic part of the agent. Slipping ‘when X happens, make sure you do Y’ into the system prompt may work initially, but as this agent runs longer, every single word in that prompt will probably be ignored eventually.” $  
-/$$  
-/$The correct approach is to build around that likelihood by identifying what the agent should always do every time and making it part of the agent guardrails. “Pull these things out of the prompt and put them into the harness,” he said. “Now the agent doesn't have to think about it anymore and it has more context space and attention to put towards areas where it can really thrive.” 
+Prompts provide flexibility when needed, but hardcoding where possible ensures stability. “When you're building these long-running agents that get complicated over time, prompts are suggestions,” Hayford said. “When an agent didn't do what you wanted, the natural response is to add to the most plastic part of the agent. Slipping ‘when X happens, make sure you do Y’ into the system prompt may work initially, but as this agent runs longer, every single word in that prompt will probably be ignored eventually.”   
+  
+The correct approach is to build around that likelihood by identifying what the agent should always do every time and making it part of the agent guardrails. “Pull these things out of the prompt and put them into the harness,” he said. “Now the agent doesn't have to think about it anymore and it has more context space and attention to put towards areas where it can really thrive.” 
 
 *Read more on *[best practices for directing Claude](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more)*, and the context cost and authority of each method. *
 
