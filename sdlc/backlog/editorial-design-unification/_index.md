@@ -46,7 +46,7 @@ prior_g1: superseded
 <!-- sources-manifest:begin -->
 ### triage @ 2026-07-09
 - specs：`features/aggregation-portal/_index.md`（边界）、`ui/prototype.html` + `ui/views/pc-portal-home.md`（现状 token）、`contracts.md`（视觉对齐原意）
-- 复用源码：`projects/external/theuntold/src/layouts/BaseLayout.astro`（:root token SSoT）
+- 复用源码：`projects/maxzyma/theuntold/src/layouts/BaseLayout.astro`（:root token SSoT）
 - theuntold SDLC：`wide-screen-design-system` + `site-editorial-redesign` 交付 decisions/scope
 <!-- sources-manifest:end -->
 
@@ -69,7 +69,7 @@ trending 三站按 **theuntold 主站当前设计语言**做一等编辑重设�
 
 > **照搬 vs 改造边界**（消歧，dc G1 提出）：token 值 / 字体分工 / decisions 教训 = **照搬不重造**（设计系统底料）；组件级结构（尤其 EditorialCard）= **按 trending 内容模型改造、不逐字复用**（主站 EditorialCard 绕判词/被审对象字段建，trending 无此模型）。即"借设计语言与底料，不搬内容专属组件"。
 
-- **token SSoT**：`projects/external/theuntold/src/layouts/BaseLayout.astro` `:root` 块（light `#faf8f3` 纸底 + 琥珀 `#8b5e0c`；dark `#0b0c0f` + 琥珀 `#e8a820`）——12+ CSS 变量：`--bg-default/surface/elevated/hover`、`--border(-mid/-bright)`、`--fg-emphasis/default/muted/subtle`（附对比度）、`--accent-primary/dim/glow/line/info`、`--signal-*`、`--finding-*`。
+- **token SSoT**：`projects/maxzyma/theuntold/src/layouts/BaseLayout.astro` `:root` 块（light `#faf8f3` 纸底 + 琥珀 `#8b5e0c`；dark `#0b0c0f` + 琥珀 `#e8a820`）——12+ CSS 变量：`--bg-default/surface/elevated/hover`、`--border(-mid/-bright)`、`--fg-emphasis/default/muted/subtle`（附对比度）、`--accent-primary/dim/glow/line/info`、`--signal-*`、`--finding-*`。
 - **字体分工**（theuntold 已定）：trending 站 body = Source Serif 4；标题 Noto Serif SC；mono JetBrains Mono。Google Fonts link 见 BaseLayout.astro:57。
 - **设计经验**：theuntold SDLC 交付 `wide-screen-design-system`（容器分层 / fluid clamp typography / a11y focus-visible / 卡片 hover 去位移 / SVG noise）+ `site-editorial-redesign`（EditorialCard 组件 + tokens SSoT + 媒体报纸编辑语言）的 decisions/scope（见 theuntold `sdlc/deliveries/` 对应目录）。
 - **共享契约声明**：theuntold wide-screen-design-system scope「与姐妹站 trending.theuntold.ai 共享 token 名保持一致」+ decisions「共享 token 契约 12 个 :root 变量」。

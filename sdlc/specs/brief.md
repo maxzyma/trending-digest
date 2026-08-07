@@ -25,7 +25,7 @@
 
 **明确排除**
 - 抓取/译读/调度的**自动化脚本与凭据** —— 归私有 coworkspace 仓（本仓只承接产出）
-- 面向用户的 **Web 展示前端**（trending.theuntold.io）—— **当前**归 `projects/external/theuntold`（独立 SDLC）。⚠️ 该前端迁入本仓的方案正在 theuntold 项目讨论中，未定论；已登记为 Backlog 条目 `frontend-migration-from-theuntold`（阻塞待结论），定论后再纳入本仓 specs（届时新增 `ui/`）
+- 面向用户的 **Web 展示前端**（trending.theuntold.io）—— **当前**归 `projects/maxzyma/theuntold`（独立 SDLC）。⚠️ 该前端迁入本仓的方案正在 theuntold 项目讨论中，未定论；已登记为 Backlog 条目 `frontend-migration-from-theuntold`（阻塞待结论），定论后再纳入本仓 specs（届时新增 `ui/`）
 - 非公开 / 需登录才能访问的源内容
 
 ---
