@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-08-12）
+# 跨源主题聚类 — 同类与升温（2026-08-13）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -11,10 +11,10 @@
 | coding-agents-and-harnesses | →持稳 | 7 | 7 | 23 | 21 | github+claude+lilian | canonical |
 | networking-and-security | ↑升温 | 6 | 5 | 19 | 16 | github+claude+lilian | canonical |
 | agent-skills-and-plugins | ↓退潮 | 5 | 7 | 22 | 21 | github+claude | canonical |
-| learning-and-curated-resources | ↓退潮 | 4 | 7 | 68 | 68 | github+claude+lilian | canonical |
-| ai-video-voice-creative | ↑升温 | 4 | 2 | 11 | 11 | github+claude+lilian | canonical |
-| data-and-analytics-infra | →持稳 | 4 | 4 | 11 | 11 | github | canonical |
-| inference-and-serving-runtime | ↑升温 | 4 | 3 | 9 | 9 | github+claude+lilian | canonical |
+| learning-and-curated-resources | ↓退潮 | 4 | 6 | 68 | 68 | github+claude+lilian | canonical |
+| ai-video-voice-creative | ↑升温 | 4 | 1 | 11 | 11 | github+claude+lilian | canonical |
+| inference-and-serving-runtime | ↑升温 | 4 | 2 | 9 | 9 | github+claude+lilian | canonical |
+| data-and-analytics-infra | ↓退潮 | 3 | 5 | 11 | 11 | github | canonical |
 | games-and-emulators | ↓退潮 | 1 | 2 | 7 | 7 | github | canonical |
 | desktop-and-media-apps | →持稳 | 1 | 1 | 6 | 6 | github+claude | canonical |
 
@@ -237,6 +237,19 @@ _AI 创意与音视频赛道整体呈现出显著升温的态势，其底层研�
 - `github-trends` [kyutai-labs/pocket-tts](https://github.com/kyutai-labs/pocket-tts) — 一个"能塞进口袋"的文本转语音（TTS）模型——小到能在普通 CPU 上跑，却能生成接近商业级质量的语音。出自法国非营利 AI 实验室 Kyutai（此前开源实时语音模型 Moshi 而知名）。
 - `github-trends` [DayuanJiang/next-ai-draw-io](https://github.com/DayuanJiang/next-ai-draw-io) — 一个用自然语言对话来生成和修改 draw.io 流程图/架构图的 Web 应用——你用自然语言描述需求，AI 直接操作 draw.io 的 XML 出图，也能上传已有图让 AI 复刻改进。
 
+### inference-and-serving-runtime（9）
+_推理与服务运行时赛道正处于快速升温与结构性重构期。一方面，官方博客与主流企业侧持续推动托管合规化与多云落地，不断固化云端服务基础设施；另一方面，开源社区正全力下压硬件门槛，通过手写专有 CUDA 内核、极低比特量化（1-bit/1.58-bit）及逆向硬件潜能，将 200B+ 级别的超大 MoE 模型推向单机与边缘端。这种从理论方法论到极致 Bare-metal 工程的跨源协同，表明推理算力正从“通用云端集中化”加速走向“企业级合规托管”与“消费级本地破局”双向并驾齐驱的崭新格局。_
+
+- `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
+- `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
+- `github-trends` [kvcache-ai/ktransformers](https://github.com/kvcache-ai/ktransformers) — 一个灵活的异构 LLM 推理/微调优化框架，让用户在本地机器上体验对超大模型的高效推理，主打"单机跑得动 236B/671B 级模型 + 超长上下文"。
+- `github-trends` [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) — 月之暗面把自家 Kimi Linear / K3 模型里那一步核心注意力计算（KDA，Kimi Delta Attention）手写成了 CUDA 内核并开源。打个比方：同一套数学运算，原来用通用零件拼装，现在换成为它专门打造的一台发动机——结果一模一样，但跑得更快。
+- `github-trends` [maderix/ANE](https://github.com/maderix/ANE) — 一个研究性质的 hack：把苹果芯片里那块专门做 AI 推理的协处理器（Neural Engine，ANE）改造成能**训练**模型。作者逆向了苹果从未公开的私有接口（`_ANEClient` / `_ANECompiler`）和 MIL 中间格式，绕开 CoreML，直接把含反向传播的计算图塞进 ANE 里跑。
+- `github-trends` [antirez/ds4](https://github.com/antirez/ds4) — Redis 作者 Salvatore Sanfilippo（antirez）用纯 C 手写的本地大模型推理引擎。它有一个反直觉的设计选择：**只跑 DeepSeek V4 Flash/PRO 和 GLM 5.2 这几个模型，不做通用工具**。目标场景是让 128GB 的 MacBook、DGX Spark、Strix Halo 这类个人高配机器直接在本地跑 284B 参数的 MoE 模型，内存不够时用 SSD 流式加载权重。
+- `claude-blog` [Claude in Microsoft Foundry is now generally available](https://claude.com/blog/claude-in-microsoft-foundry) — Starting today, Claude models are generally available in Microsoft Foundry, hosted on Azure. Claude runs in your Azure environment with the authentication, billing, and governance controls your teams already use. You can choose where inference is processed, including a US data zone for teams with data residency requirements. Anthropic operates the inference and is the data processor.
+- `lilian-weng` [Large Transformer Model Inference Optimization](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) — [Updated on 2023-01-24: add a small section on [Distillation](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation).]
+- `github-trends` [huggingface/transformers](https://github.com/huggingface/transformers) — 机器学习领域使用最广的模型库——用统一的接口加载和运行几乎所有主流的预训练模型（文本、图像、音频、多模态），几行代码就能跑推理或微调。
+
 ### data-and-analytics-infra（11）
 _数据与分析基础设施赛道总体热度保持平稳，但内部正在经历面向 AI Agent 的深层次结构性变革。研发重心正从传统的数据管道与集中式存储，全面延伸至面向大模型的非结构化数据高效解析，以及统一指标口径的开放语义层与生成式 BI（GenBI）。这一趋势不仅重塑了数据的预处理与消费链路，更促使底层数据库与垂直分析引擎开始围绕 AI 驱动的开发与调用范式进行重构，推动基础设施向“Agent 可直接感知与调用的统一语义底座”演进。_
 
@@ -251,19 +264,6 @@ _数据与分析基础设施赛道总体热度保持平稳，但内部正在经�
 - `github-trends` [google-deepmind/weathernext](https://github.com/google-deepmind/weathernext) — DeepMind 天气预报模型的统一开源仓库。它不是新建的——就是原来的 `graphcast` 仓库改名而来（创建日期仍是 2023-07-14，旧地址 302 跳转到这里）。现在里面放着 WeatherNext 2（0.25°、约 30km 分辨率的通用预报模型）、WeatherNext Cyclones（热带气旋专用）、Cyclones Mini（1° 简化版，能在免费 Colab 上跑），原来的 GraphCast 和 GenCast 被降级成 legacy 放进 `docs/`。
 - `github-trends` [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) — 面向 LLM 场景的开源网页抓取/清洗工具，把网页转成对大模型友好的干净 markdown/结构化数据，是 RAG 和 agent 数据管线里被广泛引用的事实级组件之一。
 - `github-trends` [malisper/pgrust](https://github.com/malisper/pgrust) — 一个用 Rust 从零重写的 PostgreSQL，磁盘格式兼容 Postgres 18.3（可直接从现有数据目录启动）。作者 Michael Malis（前 Heap CEO）主要靠 AI 编码代理（自述 8 个并行 Codex 账号、约 45 万行代码）生成，目标是让 Postgres 内部更易改造——去掉 VACUUM、内置连接池、换用线程/连接模型。
-
-### inference-and-serving-runtime（9）
-_推理与服务运行时赛道正处于快速升温与结构性重构期。一方面，官方博客与主流企业侧持续推动托管合规化与多云落地，不断固化云端服务基础设施；另一方面，开源社区正全力下压硬件门槛，通过手写专有 CUDA 内核、极低比特量化（1-bit/1.58-bit）及逆向硬件潜能，将 200B+ 级别的超大 MoE 模型推向单机与边缘端。这种从理论方法论到极致 Bare-metal 工程的跨源协同，表明推理算力正从“通用云端集中化”加速走向“企业级合规托管”与“消费级本地破局”双向并驾齐驱的崭新格局。_
-
-- `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
-- `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
-- `github-trends` [kvcache-ai/ktransformers](https://github.com/kvcache-ai/ktransformers) — 一个灵活的异构 LLM 推理/微调优化框架，让用户在本地机器上体验对超大模型的高效推理，主打"单机跑得动 236B/671B 级模型 + 超长上下文"。
-- `github-trends` [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) — 月之暗面把自家 Kimi Linear / K3 模型里那一步核心注意力计算（KDA，Kimi Delta Attention）手写成了 CUDA 内核并开源。打个比方：同一套数学运算，原来用通用零件拼装，现在换成为它专门打造的一台发动机——结果一模一样，但跑得更快。
-- `github-trends` [maderix/ANE](https://github.com/maderix/ANE) — 一个研究性质的 hack：把苹果芯片里那块专门做 AI 推理的协处理器（Neural Engine，ANE）改造成能**训练**模型。作者逆向了苹果从未公开的私有接口（`_ANEClient` / `_ANECompiler`）和 MIL 中间格式，绕开 CoreML，直接把含反向传播的计算图塞进 ANE 里跑。
-- `github-trends` [antirez/ds4](https://github.com/antirez/ds4) — Redis 作者 Salvatore Sanfilippo（antirez）用纯 C 手写的本地大模型推理引擎。它有一个反直觉的设计选择：**只跑 DeepSeek V4 Flash/PRO 和 GLM 5.2 这几个模型，不做通用工具**。目标场景是让 128GB 的 MacBook、DGX Spark、Strix Halo 这类个人高配机器直接在本地跑 284B 参数的 MoE 模型，内存不够时用 SSD 流式加载权重。
-- `claude-blog` [Claude in Microsoft Foundry is now generally available](https://claude.com/blog/claude-in-microsoft-foundry) — Starting today, Claude models are generally available in Microsoft Foundry, hosted on Azure. Claude runs in your Azure environment with the authentication, billing, and governance controls your teams already use. You can choose where inference is processed, including a US data zone for teams with data residency requirements. Anthropic operates the inference and is the data processor.
-- `lilian-weng` [Large Transformer Model Inference Optimization](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) — [Updated on 2023-01-24: add a small section on [Distillation](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation).]
-- `github-trends` [huggingface/transformers](https://github.com/huggingface/transformers) — 机器学习领域使用最广的模型库——用统一的接口加载和运行几乎所有主流的预训练模型（文本、图像、音频、多模态），几行代码就能跑推理或微调。
 
 ### games-and-emulators（7）
 _该赛道在整体热度小幅退潮的背景下，正经历从传统“黑盒模拟”向“原生重构与深度开放”的结构性转变。社区端对经典老作的反编译原生 PC 移植，与官方厂商将长寿游戏源码开源的决策形成强烈的双向共振，极大地拓宽了游戏保存与二次开发的边界。此外，利用 Rust 语言重写高性能服务端及搭建自托管游戏管理基础设施逐渐成为主流，表明该领域正从单纯的玩家尝鲜向更具工程厚度的开发者工具链沉淀。_
