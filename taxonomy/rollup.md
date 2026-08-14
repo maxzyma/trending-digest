@@ -1,26 +1,27 @@
-# 跨源主题聚类 — 同类与升温（2026-08-13）
+# 跨源主题聚类 — 同类与升温（2026-08-14）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
-> **本周生态**：本周全栈技术生态正加速向“Agent 原生”的自动化生产力基础设施全面重构，AI 正在从单点辅助工具蜕变为具备自主身份、受控合规且具备持久状态的数字生产力核心。在此趋势下，整个产业链呈现出“企业级云端托管合规”与“端侧/本地极致掌控与低迟隐私”的双轨并进，驱动数据底座、安全体系及开发工具链展开全链路的工程化洗牌。
+> **本周生态**：本周全栈技术生态继续向“Agent 原生”的自动化生产力基础设施重构，同时出现一个更靠近用户的新入口：Agent 不再只交付回答或代码，而是直接交付可编辑、可分享、可继续协作的图表、演示文稿、设计画布与工程资产。企业级托管治理、本地高掌控运行环境和成品交付工具正在三线并进，推动竞争焦点从“Agent 怎么想、怎么跑”扩展到“Agent 交出来的东西能否直接使用”。
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↑升温 | 19 | 6 | 33 | 30 | github+claude | canonical |
-| agent-frameworks-and-platforms | ↑升温 | 9 | 3 | 23 | 22 | github+claude+lilian | canonical |
-| coding-agents-and-harnesses | →持稳 | 7 | 7 | 23 | 21 | github+claude+lilian | canonical |
-| networking-and-security | ↑升温 | 6 | 5 | 19 | 16 | github+claude+lilian | canonical |
-| agent-skills-and-plugins | ↓退潮 | 5 | 7 | 22 | 21 | github+claude | canonical |
-| learning-and-curated-resources | ↓退潮 | 4 | 6 | 68 | 68 | github+claude+lilian | canonical |
-| ai-video-voice-creative | ↑升温 | 4 | 1 | 11 | 11 | github+claude+lilian | canonical |
-| inference-and-serving-runtime | ↑升温 | 4 | 2 | 9 | 9 | github+claude+lilian | canonical |
-| data-and-analytics-infra | ↓退潮 | 3 | 5 | 11 | 11 | github | canonical |
-| games-and-emulators | ↓退潮 | 1 | 2 | 7 | 7 | github | canonical |
-| desktop-and-media-apps | →持稳 | 1 | 1 | 6 | 6 | github+claude | canonical |
+| dev-infra-and-tooling | ↑升温 | 19 | 7 | 34 | 31 | github+claude | canonical |
+| agent-frameworks-and-platforms | ↑升温 | 10 | 4 | 25 | 24 | github+claude+lilian | canonical |
+| coding-agents-and-harnesses | ↑升温 | 8 | 5 | 23 | 21 | github+claude+lilian | canonical |
+| networking-and-security | ↑升温 | 7 | 5 | 20 | 17 | github+claude+lilian | canonical |
+| agent-skills-and-plugins | →持稳 | 6 | 6 | 22 | 21 | github+claude | canonical |
+| learning-and-curated-resources | ↓退潮 | 5 | 6 | 69 | 69 | github+claude+lilian | canonical |
+| data-and-analytics-infra | →持稳 | 5 | 5 | 13 | 13 | github+claude | canonical |
+| ai-video-voice-creative | ↑升温 | 4 | 2 | 10 | 10 | github+lilian | canonical |
+| inference-and-serving-runtime | ↓退潮 | 3 | 4 | 10 | 10 | github+claude+lilian | canonical |
+| desktop-and-media-apps | ↑升温 | 2 | 1 | 7 | 7 | github+claude | canonical |
+| agent-deliverables-and-artifacts | ↑升温 | 2 | 1 | 6 | 6 | github+claude | canonical |
+| games-and-emulators | →持稳 | 1 | 1 | 7 | 7 | github | canonical |
 
 ## 各主题项目清单
 
-### dev-infra-and-tooling（30）
+### dev-infra-and-tooling（31）
 _开发者基础设施与工具链赛道呈现明显升温态势，研发交互界面正在经历从传统 WebGUI 向高密度“终端优先”（TUI/CLI）与声明式代码化工具的深刻转向。面对 AI Agent 深度参与编码的新常态，开源社区重押本地化工作流，通过终端级代码审查、离线语言服务与多叠层 PR 工具重构研发效能基底。这一变化与 JavaScript 运行时等底层基础设施的持续演进相互交织，推动整个赛道向低延迟、高掌控感及自动化集成的现代化研发生态快速演进。_
 
 - `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
@@ -53,8 +54,9 @@ _开发者基础设施与工具链赛道呈现明显升温态势，研发交互�
 - `github-trends` [prisma/prisma](https://github.com/prisma/prisma) — Node.js/TypeScript 生态里最主流的下一代 ORM（对象关系映射）之一，支持 PostgreSQL、MySQL、MariaDB、SQL Server、SQLite、MongoDB、CockroachDB。用类型安全的方式定义数据模型、生成查询客户端、管理数据库迁移。
 - `github-trends` [argoproj/argo-cd](https://github.com/argoproj/argo-cd) — Kubernetes 上的声明式持续部署（GitOps）事实标准工具。把 Git 仓库作为集群期望状态的唯一信源，自动把 K8s 集群同步到 Git 中声明的状态，是 CNCF 毕业项目。
 - `github-trends` [nvm-sh/nvm](https://github.com/nvm-sh/nvm) — 在一台机器上装多个 Node.js 版本、并随时切换的命令行工具。一个 POSIX 兼容的 bash 脚本，`nvm install 24`、`nvm use 22` 就能换版本。
+- `github-trends` [unslothai/unsloth](https://github.com/unslothai/unsloth) — 一个让你在自己电脑上跑和训练 AI 模型的桌面应用。以前 Unsloth 是给会写 Python 的人用的微调加速库，你得配 CUDA 版本、装依赖、抄 notebook；8-11 之后它多了一个装完就能用的窗口，模型下载、对话、微调、导出都在里面。
 
-### agent-frameworks-and-platforms（22）
+### agent-frameworks-and-platforms（24）
 _头部厂商与开源社区正在共同推动 Agent 框架从“对话编排库”向“托管基础设施”与“企业级运行环境”急剧升温与重构。以 Claude 官方上线 Managed Agents 及内置记忆为代表，底层能力正快速标准化与服务化；与此呼应，GitHub 社区则密集涌现出针对长时任务控制面、云/本地沙盒隔离、合规治理以及“AI 员工”组织化协同的开源平台。这标志着赛道轨迹正从单次会话的自主探索，转向将 Agent 作为身份平等、受控合规且具备持久状态的数字成员深度融入真实生产力系统。_
 
 - `github-trends` [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) — 一个集成多个 IM 平台、多种 LLM、插件与 AI 能力的 AI Agent 助手与开发框架，自我定位为可自托管的对话机器人平台。
@@ -79,6 +81,8 @@ _头部厂商与开源社区正在共同推动 Agent 框架从“对话编排库
 - `lilian-weng` [LLM Powered Autonomous Agents](https://lilianweng.github.io/posts/2023-06-23-agent/) — Building agents with LLM (large language model) as its core controller is a cool concept. Several proof-of-concepts demos, such as [AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT), [GPT-Engineer](https://github.com/AntonOsika/gpt-engineer) and [BabyAGI](https://github.com/yoheinakajima/babyagi), serve as inspiring examples. The potentiality of LLM extends beyond generating well-written 
 - `github-trends` [MadsLorentzen/ai-job-search](https://github.com/MadsLorentzen/ai-job-search) — 一个建在 Claude Code 之上的"AI 求职助手"框架。你 fork 仓库、填好自己的资料，Claude 就能帮你评估职位匹配度、按岗位定制简历、写求职信、做面试准备。
 - `github-trends` [TencentCloud/TencentDB-Agent-Memory](https://github.com/TencentCloud/TencentDB-Agent-Memory) — 腾讯云出的一套"给 AI agent 装长期记忆"的开源组件。它让 agent 把跨会话的对话、工具调用、用户偏好等信息，按层级压缩、存进本地数据库，下次对话时按需取回——全程跑在本地 SQLite，不依赖 Pinecone 之类的外部向量数据库服务。
+- `github-trends` [macro-inc/macro](https://github.com/macro-inc/macro) — 一个把邮件、群聊、文档、任务、通话、CRM 和 AI agent 装进同一个应用的团队工作区。所有对象可以双向 `@` 互链（邮件 → 任务 → PR 可追溯），整个工作区每晚构建成团队级 AI memory，内部或外部 agent 都能通过 MCP 调用。
+- `github-trends` [embabel/embabel-agent](https://github.com/embabel/embabel-agent) — 让 Java / Spring 开发者用自己熟悉的方式写 AI agent，不必转去 Python 生态。核心差异是"目标导向行动规划"（GOAP，借自游戏 AI）：你只声明目标、动作和前后置条件，框架用**确定性代码**算出执行路径，而不是再问一次 LLM"下一步做什么"。
 
 ### coding-agents-and-harnesses（21）
 _编码 Agent 赛道在热度持稳的同时正经历深度的结构演进，从单一的终端对话交互转向以 Harness 框架、自主 Loop 与多 Agent 并行演进为核心的工程化阶段。官方博客与社区开源项目展现出高度对齐的进化路径：一方面通过拦截器、规范钩子（Hooks）与代码图谱构建严密的执行安全与精准上下文，另一方面将运行场域从本地单终端拓展至云端沙箱、共享桌面浏览器等复杂环境。这标志着 AI 编程助手正在从“人机协助改代码”加速迈向高自主性、安全可控且可沉淀经验的自动化软件工程基础设施。_
@@ -94,7 +98,6 @@ _编码 Agent 赛道在热度持稳的同时正经历深度的结构演进，从
 - `github-trends` [PrimeIntellect-ai/prime-agent](https://github.com/PrimeIntellect-ai/prime-agent) — 一个跑在命令行里的"编码助手外壳"（harness）。你把任务交给它，它自己拆步骤、写代码、跑命令、看结果、再改，可以连续跑几个小时不用人盯着。和常见工具不同的地方是它带一个"自改进循环"——把这次任务里摸索出来的做法沉淀下来，下次遇到类似问题直接复用。
 - `github-trends` [vitali87/code-graph-rag](https://github.com/vitali87/code-graph-rag) — 把一整个 monorepo 解析成一张"代码知识图谱"存进图数据库，然后让 AI 助手用自然语言去查——比如"这个函数被谁调用了""改这里会影响哪些模块"。它还能顺着图谱定位到具体位置直接改代码，并给出 diff 预览。
 - `claude-blog` [Redesigning Claude Code on desktop for parallel agents](https://claude.com/blog/claude-code-desktop-redesign) — It includes a new sidebar for managing multiple sessions, a drag-and-drop layout for arranging your workspace, an integrated terminal and file editor, plus performance and quality-of-life improvements.
-- `claude-blog` [Claude Code now supports artifacts](https://claude.com/blog/artifacts-in-claude-code) — Starting today, Claude Code can capture work progress as an artifact, which turn Claude Code's work into live, shareable visual pages— including PR walkthroughs, system explainers, dashboards, and release checklists—that update themselves as your session works.
 - `claude-blog` [Steering Claude Code: CLAUDE.md files, skills, hooks, rules, subagents and more](https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more) — Claude is built to work the way you work, and in Claude Code you can customize it.
 - `claude-blog` [Getting started with loops](https://claude.com/blog/getting-started-with-loops) — There’s a lot of talk right now about "designing loops" instead of prompting your coding agent. If you spend some time on X trying to pin down what a loop actually is, you'll come across multiple different answers.
 - `claude-blog` [Choosing a Claude model and effort level in Claude Code](https://claude.com/blog/claude-model-and-effort-level-in-claude-code) — **Key takeaways**:
@@ -104,8 +107,9 @@ _编码 Agent 赛道在热度持稳的同时正经历深度的结构演进，从
 - `claude-blog` [Running auto mode in production](https://claude.com/blog/auto-mode-in-production) — [Auto mode is now the default](http://claude.com/blog/auto-mode-default-in-claude-code) setting in Claude Code. Instead of asking you to approve every command an agent wants to run, a classifier evaluates each action and blocks ones that look potentially harmful.
 - `lilian-weng` [Harness Engineering for Self-Improvement](https://lilianweng.github.io/posts/2026-07-04-harness/) — The concept of **recursive self-improvement (RSI)** dates back to [I. J. Good (1965)](https://philpapers.org/rec/GOOSCT), where he defined an “ultraintelligent machine” as a system that can surpass humans in all intellectual activities and design better machines to improve itself. [Yudkowsky (2008)](https://www.lesswrong.com/posts/JBadX7rwdcRFzGuju/recursive-self-improvement) used the phrase “recu
 - `github-trends` [gastownhall/gastown](https://github.com/gastownhall/gastown) — Steve Yegge 做的"AI agent 工厂"。你不再一次开一个 agent 手动盯着，而是让它在同一个代码库里同时调度 20-30 个 Claude Code / Codex / Gemini agent，各自分到写代码、测试、审查、维护的角色，像一条流水线一样并行干活。配了 git 记录的 issue 跟踪、进程持久化、看门狗自动重启、Web 仪表盘。
+- `github-trends` [holaboss-ai/holaOS](https://github.com/holaboss-ai/holaOS) — 一个"给 AI 助手用的电脑桌面"。你不用在几个 AI 工具之间来回复制粘贴——它把 Claude Code、Codex 和自带 agent 装进同一个本地工作台，共用一份记忆、一批工具和同一批文件。主打卖点是"不失忆"：关掉应用、换个 agent，上周那个项目的上下文还在（记忆以本地纯文本文件存，人可读可改）。
 
-### networking-and-security（16）
+### networking-and-security（17）
 _该赛道整体呈现出“网络基础设施自主化”与“AI Agent 身份及动态攻防”双轨并发的持续升温态势。一方面，开源社区持续押注自托管 VPN、离线 Mesh 通信与自部署身份认证（IdP），体现出开发者对去中心化基础设施与隐私防护的刚性需求；另一方面，主流 AI 厂商与企业工程团队正在跨源同步推动安全范式重构——从 Anthropic 搭建 Agent 专属身份认证（WIF/MCP）与 CISO 治理框架，到开源社区将传统 EDR 演化为针对 AI Agent“Prompt-推理-工具调用”的全链条运行时监测（ADR），网络与安全的主战场正加速由传统边界防御向自治 AI 系统的零信任身份管控与动态因果链审计跃迁。_
 
 - `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
@@ -124,9 +128,10 @@ _该赛道整体呈现出“网络基础设施自主化”与“AI Agent 身份�
 - `lilian-weng` [Adversarial Attacks on LLMs](https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/) — The use of large language models in the real world has strongly accelerated by the launch of ChatGPT. We (including my team at OpenAI, shoutout to them) have invested a lot of effort to build default safe behavior into the model during the alignment process (e.g. via [RLHF](https://openai.com/research/learning-to-summarize-with-human-feedback)). However, adversarial attacks or jailbreak prompts co
 - `github-trends` [vxcontrol/pentagi](https://github.com/vxcontrol/pentagi) — 一个"全自动 AI 渗透测试"agent 系统。你用自然语言下发一个测试目标，它由一个 orchestrator 协调 researcher / developer / executor 三类子 agent，在 Docker 沙箱里跑 Kali Linux + nmap/metasploit/sqlmap 等 20 余款安全工具，自动完成侦察和漏洞利用。
 - `github-trends` [imthenachoman/How-To-Secure-A-Linux-Server](https://github.com/imthenachoman/How-To-Secure-A-Linux-Server) — 一份持续演进的 Linux 服务器安全加固指南（SSH、防火墙、入侵检测、账户与权限等），是社区长期引用的经典 how-to 文档型仓库。
+- `github-trends` [megadose/holehe](https://github.com/megadose/holehe) — 给一个邮箱地址，它自动跑到 120 多个网站上"假装点忘记密码"，从各站响应的细微差别反推这个邮箱在哪些平台注册过，有些站还能带出被打码的备用邮箱或手机尾号。全程不给目标发邮件、不惊动本人。
 
 ### agent-skills-and-plugins（21）
-_尽管 Agent Skills 赛道在开源热度上呈现小幅退潮，但内部正经历从“万物皆可打包”到“极客级专业化”的结构性演进。跨源信号表明，在 Claude 官方持续升级 MCP 协议规范并拓宽通用连接器的同时，社区开发者正集中转向基于代码图谱的 Token 压缩方案以及 CAD、UI 质检、逆向工程等超垂直工作流。这一交织的轨迹意味着，Skill 生态正在告别泛化概念炒作，加速走向以高效上下文治理与高壁垒专有场景为核心的实用成熟阶段。_
+_尽管 Agent Skills 赛道在开源热度上呈现小幅退潮，但内部正经历从“万物皆可打包”到“极客级专业化”的结构性演进。跨源信号表明，在 Claude 官方持续升级 MCP 协议规范并拓宽通用连接器的同时，社区开发者正集中转向基于代码图谱的 Token 压缩、UI 质检、逆向工程等超垂直工作流；直接生产可编辑成品的工具则开始析出为独立的交付物赛道。Skill 生态正在告别泛化概念炒作，加速走向高效上下文治理与高壁垒专有场景。_
 
 - `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
 - `github-trends` [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) — 一个给 AI 编码助手用的「知识图谱 skill」。它把一整个代码文件夹（含 SQL schema、脚本、文档甚至图片视频）解析成可查询的知识图谱，让 Claude Code、Codex、Cursor 等在检索代码前先查图谱来导航，宣称能在大型仓库里省下大量 token。
@@ -134,7 +139,6 @@ _尽管 Agent Skills 赛道在开源热度上呈现小幅退潮，但内部正�
 - `github-trends` [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) — 一个本地优先（local-first）的代码智能图谱工具，通过 MCP 和 CLI 为你的代码库建立持久化结构地图，让 AI 编码工具"只读关键部分"，官方宣称在代码审查与大仓工作流中可显著压缩上下文 token。
 - `github-trends` [KnockOutEZ/wigolo](https://github.com/KnockOutEZ/wigolo) — 一个面向 AI 编码 agent 的本地优先"网络入口"，通过 MCP 提供搜索、抓取、爬取与调研能力，主打无需 API key、无需云、每次查询 $0，目前处于公开 beta。
 - `github-trends` [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) — 由商业 agent 工具厂商 Composio 维护的 Claude Skills 精选清单（awesome list），同时捆绑其 Rube MCP / connect-apps，可让 Claude 通过 Composio 连 500+ SaaS 执行真实动作（发邮件、建 issue、发 Slack）。
-- `github-trends` [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad) — 一套给 AI 编码 agent（Claude Code / Codex）用的"技能包"，让 agent 能用自然语言或图片直接生成、检查、切片和交付 CAD 模型、机器人描述文件（URDF/SDF）和硬件设计产物，基于 Build123d + OpenCASCADE，配套网站 cadskills.xyz。
 - `github-trends` [virgiliojr94/book-to-skill](https://github.com/virgiliojr94/book-to-skill) — 把一本技术书的 PDF 自动加工成 Claude Code 的"技能包"。加工完之后，你在写代码时可以让 agent 按需翻到相关章节，而不是把整本书塞进对话。
 - `github-trends` [zhaoxuya520/reverse-skill](https://github.com/zhaoxuya520/reverse-skill) — 给 AI 编码客户端（Claude Code / Cursor / Cline / Kiro）装的一套"安全工作流路由包"。你把一个 APK、一个二进制、一段加密 JS 或一道 CTF 题丢给 AI，它替 AI 决定该用 jadx 还是 IDA、自动把需要的工具链和 MCP 服务拉起来，并强制这次分析走一遍授权确认、证据链记录、时间线和报告输出。
 - `github-trends` [NomaDamas/k-skill](https://github.com/NomaDamas/k-skill) — 一个"让 AI agent 变成韩国人"的技能包合集，130+ 个 SKILL.md，一条 `npx skills add NomaDamas/k-skill --all -g` 装完。
@@ -149,8 +153,9 @@ _尽管 Agent Skills 赛道在开源热度上呈现小幅退潮，但内部正�
 - `github-trends` [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) — 一个把知名品牌设计系统（色板、字体、间距、组件状态等）抽取成 DESIGN.md 文件的合集。你把某个品牌的 DESIGN.md 丢进项目根目录，Claude Code / Cursor / Copilot / Gemini CLI 等编码 agent 就能据此生成"有该品牌质感"的 UI。
 - `github-trends` [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills) — Google Labs 出品的 Agent Skills 技能库，配合 Stitch（Gemini 驱动的 UI 设计工具）的 MCP server，让 Claude Code / Cursor / Gemini CLI 等编码 agent 能直接调用 Stitch 生成界面设计并转成代码（React / React Native / shadcn 等）。注意：属 Google Labs 实验项目，非 Google 官方支持产品。
 - `github-trends` [anthropics/skills](https://github.com/anthropics/skills) — Anthropic 官方维护的 Agent Skills 公共仓库——存放"技能"这种东西本身的官方样例和参考实现。所谓 skill，就是给 AI agent 的一份写在 markdown 里的操作手册（SKILL.md + 配套脚本、参考资料），agent 需要做某类任务时按需加载它，而不是把所有知识都塞进上下文。
+- `github-trends` [cactus-compute/needle](https://github.com/cactus-compute/needle) — 一个 14MB 的超小模型（45M 参数、2-bit 量化），只干一件事——把自然语言变成函数调用（工具调用、设备控制、结构化抽取）。不聊天、不写文章，请求超出已声明的工具范围就返回空调用 `[]`。
 
-### learning-and-curated-resources（68）
+### learning-and-curated-resources（69）
 _尽管“学习与精选资源”赛道在数量上呈现退潮态势，但内部正经历从“静态资料收集”向“动态可执行载体”的结构性转型。开源社区与厂商博客的信号共同表明，传统的知识合集正加速演变为附带可运行代码、甚至嵌入 MCP 接口以供 AI Agent 直接调用的知识库。开发者的学习重心已从被动的路线图搜集，全面转向与 Agent 工具链协同的“即学即跑”与实战构建。_
 
 - `github-trends` [Shubhamsaboo/awesome-llm-apps](https://github.com/Shubhamsaboo/awesome-llm-apps) — 一个「能真正跑起来」的 AI Agent 与 RAG 应用合集——100+ 个可克隆、可定制、可上线的示例项目，覆盖多 agent、RAG、记忆、语音等常见形态。
@@ -221,36 +226,9 @@ _尽管“学习与精选资源”赛道在数量上呈现退潮态势，但内�
 - `github-trends` [sindresorhus/awesome](https://github.com/sindresorhus/awesome) — GitHub 上最著名的"awesome 清单之王"——各种主题精选资源列表的总目录（编程语言、框架、平台、工具等）。由 Sindre Sorhus（多产开源作者）维护，是所有 `awesome-*` 清单的源头与索引。
 - `github-trends` [practical-tutorials/project-based-learning](https://github.com/practical-tutorials/project-based-learning) — 一份"照着做项目来学编程"的教程清单。按语言分类（C/C++、Python、JavaScript、Go、Rust 等），每条指向一篇教你从零写出某个真东西的教程——写一个自己的 shell、写一个数据库、写一个编译器、写一个操作系统。
 - `github-trends` [jaywcjlove/awesome-mac](https://github.com/jaywcjlove/awesome-mac) — 中文维护的 macOS 应用推荐清单，按开发工具、效率、设计、媒体等分类收录，开源与闭源都收，条目带简介和是否免费的标注。
+- `github-trends` [ZuodaoTech/everyone-can-use-english](https://github.com/ZuodaoTech/everyone-can-use-english) — 李笑来的《人人都能用英语》开源书，以及围绕它演化出的桌面练习应用（Enjoy App）——通过跟读、录音比对和音素级反馈练发音与听力。
 
-### ai-video-voice-creative（11）
-_AI 创意与音视频赛道整体呈现出显著升温的态势，其底层研究与工程落地正同步加速。前沿研究关注的视频生成扩散模型突破，正与开源社区对节点化工作流、3D 资产生成及本地语音套件的工程化实践形成合力，推动技术从单点内容生成向可控的创合作业流演进。与此同时，开源社区正在掀起一轮“去云端化”与端侧替代浪潮，大量聚焦本地隐私安全、离线可用的音视频剪辑与配音工具快速崛起，与官方侧对桌面设计画布及跨模态一致性的重构共同重塑着未来的创意生产管线。_
-
-- `github-trends` [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) — 一个完全开源、在浏览器里就能用的视频剪辑器，定位是「CapCut 的开源替代」。你打开网页就能剪片，不用注册、不用下载客户端，素材也不上传到别人的服务器。
-- `github-trends` [AIEraDev/Clypra](https://github.com/AIEraDev/Clypra) — 一个用 Tauri + React + TypeScript 写的桌面视频剪辑器，定位「免费的 CapCut 替代品」——把付费剪辑软件的常用能力（多轨时间线、剪切、导出）做成本地原生、无水印、无订阅的开源工具。
-- `github-trends` [huggingface/speech-to-speech](https://github.com/huggingface/speech-to-speech) — Hugging Face 官方的"本地语音对话助手搭建套件"。你对着麦克风说话，它转文字、交给大模型思考、再用语音答复你——整条链路都能跑在自己的机器上，不必把语音送到第三方云。
-- `github-trends` [deepfakes/faceswap](https://github.com/deepfakes/faceswap) — 一个在自己机器上跑的开源换脸工具。给它两个人的素材，它训练一个神经网络，然后把视频或图片里 A 的脸换成 B 的脸；带图形界面，流程是"提取人脸 → 训练 → 转换"三步。它是 "deepfake" 这个词的源头级项目——2017 年 12 月 Reddit 那次事件之后由社区接手重写，官网与论坛在 faceswap.dev。
-- `github-trends` [microsoft/TRELLIS.2](https://github.com/microsoft/TRELLIS.2) — 给它一张图片，它输出一个带完整材质、可以直接进游戏或渲染管线的 3D 模型。
-- `github-trends` [abus-aikorea/voice-pro](https://github.com/abus-aikorea/voice-pro) — 装在自己电脑上的音视频配音工作台。把 YouTube 视频或本地音频丢进网页界面，它自动扒音轨、用 Demucs 分离人声伴奏、用 Whisper 转文字、翻译成目标语言，再用 TTS（Edge-TTS、kokoro）或零样本声音克隆（F5-TTS、CosyVoice，约 15 秒样本即可）合成配音。
-- `github-trends` [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) — 扩散模型的节点式工作流界面——你把加载模型、编码提示词、采样、解码这些步骤拖成一张流程图，跑图像/视频生成。同时也提供后端和 API，可以被别的服务调用。
-- `claude-blog` [Claude Design now stays on brand for daily work](https://claude.com/blog/claude-design-stays-on-brand-for-daily-work) — Claude Design now sticks to your design system across projects, works fluidly with Claude Code, lets you edit directly on the canvas, and connects to more tools you already use. It has a new home in the sidebar on the Claude desktop app; you can also find it at [claude.ai/design](https://claude.ai/design).
-- `lilian-weng` [Diffusion Models for Video Generation](https://lilianweng.github.io/posts/2024-04-12-diffusion-video/) — [Diffusion models](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/) have demonstrated strong results on image synthesis in past years. Now the research community has started working on a harder task—using it for video generation. The task itself is a superset of the image case, since an image is a video of 1 frame, and it is much more challenging because:
-- `github-trends` [kyutai-labs/pocket-tts](https://github.com/kyutai-labs/pocket-tts) — 一个"能塞进口袋"的文本转语音（TTS）模型——小到能在普通 CPU 上跑，却能生成接近商业级质量的语音。出自法国非营利 AI 实验室 Kyutai（此前开源实时语音模型 Moshi 而知名）。
-- `github-trends` [DayuanJiang/next-ai-draw-io](https://github.com/DayuanJiang/next-ai-draw-io) — 一个用自然语言对话来生成和修改 draw.io 流程图/架构图的 Web 应用——你用自然语言描述需求，AI 直接操作 draw.io 的 XML 出图，也能上传已有图让 AI 复刻改进。
-
-### inference-and-serving-runtime（9）
-_推理与服务运行时赛道正处于快速升温与结构性重构期。一方面，官方博客与主流企业侧持续推动托管合规化与多云落地，不断固化云端服务基础设施；另一方面，开源社区正全力下压硬件门槛，通过手写专有 CUDA 内核、极低比特量化（1-bit/1.58-bit）及逆向硬件潜能，将 200B+ 级别的超大 MoE 模型推向单机与边缘端。这种从理论方法论到极致 Bare-metal 工程的跨源协同，表明推理算力正从“通用云端集中化”加速走向“企业级合规托管”与“消费级本地破局”双向并驾齐驱的崭新格局。_
-
-- `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
-- `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
-- `github-trends` [kvcache-ai/ktransformers](https://github.com/kvcache-ai/ktransformers) — 一个灵活的异构 LLM 推理/微调优化框架，让用户在本地机器上体验对超大模型的高效推理，主打"单机跑得动 236B/671B 级模型 + 超长上下文"。
-- `github-trends` [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) — 月之暗面把自家 Kimi Linear / K3 模型里那一步核心注意力计算（KDA，Kimi Delta Attention）手写成了 CUDA 内核并开源。打个比方：同一套数学运算，原来用通用零件拼装，现在换成为它专门打造的一台发动机——结果一模一样，但跑得更快。
-- `github-trends` [maderix/ANE](https://github.com/maderix/ANE) — 一个研究性质的 hack：把苹果芯片里那块专门做 AI 推理的协处理器（Neural Engine，ANE）改造成能**训练**模型。作者逆向了苹果从未公开的私有接口（`_ANEClient` / `_ANECompiler`）和 MIL 中间格式，绕开 CoreML，直接把含反向传播的计算图塞进 ANE 里跑。
-- `github-trends` [antirez/ds4](https://github.com/antirez/ds4) — Redis 作者 Salvatore Sanfilippo（antirez）用纯 C 手写的本地大模型推理引擎。它有一个反直觉的设计选择：**只跑 DeepSeek V4 Flash/PRO 和 GLM 5.2 这几个模型，不做通用工具**。目标场景是让 128GB 的 MacBook、DGX Spark、Strix Halo 这类个人高配机器直接在本地跑 284B 参数的 MoE 模型，内存不够时用 SSD 流式加载权重。
-- `claude-blog` [Claude in Microsoft Foundry is now generally available](https://claude.com/blog/claude-in-microsoft-foundry) — Starting today, Claude models are generally available in Microsoft Foundry, hosted on Azure. Claude runs in your Azure environment with the authentication, billing, and governance controls your teams already use. You can choose where inference is processed, including a US data zone for teams with data residency requirements. Anthropic operates the inference and is the data processor.
-- `lilian-weng` [Large Transformer Model Inference Optimization](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) — [Updated on 2023-01-24: add a small section on [Distillation](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation).]
-- `github-trends` [huggingface/transformers](https://github.com/huggingface/transformers) — 机器学习领域使用最广的模型库——用统一的接口加载和运行几乎所有主流的预训练模型（文本、图像、音频、多模态），几行代码就能跑推理或微调。
-
-### data-and-analytics-infra（11）
+### data-and-analytics-infra（13）
 _数据与分析基础设施赛道总体热度保持平稳，但内部正在经历面向 AI Agent 的深层次结构性变革。研发重心正从传统的数据管道与集中式存储，全面延伸至面向大模型的非结构化数据高效解析，以及统一指标口径的开放语义层与生成式 BI（GenBI）。这一趋势不仅重塑了数据的预处理与消费链路，更促使底层数据库与垂直分析引擎开始围绕 AI 驱动的开发与调用范式进行重构，推动基础设施向“Agent 可直接感知与调用的统一语义底座”演进。_
 
 - `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
@@ -264,6 +242,57 @@ _数据与分析基础设施赛道总体热度保持平稳，但内部正在经�
 - `github-trends` [google-deepmind/weathernext](https://github.com/google-deepmind/weathernext) — DeepMind 天气预报模型的统一开源仓库。它不是新建的——就是原来的 `graphcast` 仓库改名而来（创建日期仍是 2023-07-14，旧地址 302 跳转到这里）。现在里面放着 WeatherNext 2（0.25°、约 30km 分辨率的通用预报模型）、WeatherNext Cyclones（热带气旋专用）、Cyclones Mini（1° 简化版，能在免费 Colab 上跑），原来的 GraphCast 和 GenCast 被降级成 legacy 放进 `docs/`。
 - `github-trends` [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) — 面向 LLM 场景的开源网页抓取/清洗工具，把网页转成对大模型友好的干净 markdown/结构化数据，是 RAG 和 agent 数据管线里被广泛引用的事实级组件之一。
 - `github-trends` [malisper/pgrust](https://github.com/malisper/pgrust) — 一个用 Rust 从零重写的 PostgreSQL，磁盘格式兼容 Postgres 18.3（可直接从现有数据目录启动）。作者 Michael Malis（前 Heap CEO）主要靠 AI 编码代理（自述 8 个并行 Codex 账号、约 45 万行代码）生成，目标是让 Postgres 内部更易改造——去掉 VACUUM、内置连接池、换用线程/连接模型。
+- `github-trends` [infiniflow/ragflow](https://github.com/infiniflow/ragflow) — 开源 RAG 引擎——把企业里的 PDF、扫描件、表格、幻灯片先做深度文档解析和 OCR，切成带结构信息的块，再配上引用可溯源的检索问答，近两年又叠加了 agent 编排能力。
+- `claude-blog` [Self-service data analytics in Slack: how Anthropic deploys Claude Tag for ad-hoc questions](https://claude.com/blog/self-service-data-analytics-in-slack-how-anthropic-deploys-claude-tag-for-ad-hoc-questions) — In our [previous post](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude), we described how we enabled Claude to answer data analytics questions with ~95% accuracy through three primary artifacts:
+
+### ai-video-voice-creative（10）
+_AI 创意与音视频赛道整体呈现出显著升温的态势，其底层研究与工程落地正同步加速。前沿研究关注的视频生成扩散模型突破，正与开源社区对节点化工作流、3D 资产生成及本地语音套件的工程化实践形成合力，推动技术从单点内容生成向可控的创合作业流演进。与此同时，社区正在掀起一轮“去云端化”与端侧替代浪潮，大量聚焦本地隐私安全、离线可用的音视频剪辑与配音工具快速崛起。_
+
+- `github-trends` [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) — 一个完全开源、在浏览器里就能用的视频剪辑器，定位是「CapCut 的开源替代」。你打开网页就能剪片，不用注册、不用下载客户端，素材也不上传到别人的服务器。
+- `github-trends` [AIEraDev/Clypra](https://github.com/AIEraDev/Clypra) — 一个用 Tauri + React + TypeScript 写的桌面视频剪辑器，定位「免费的 CapCut 替代品」——把付费剪辑软件的常用能力（多轨时间线、剪切、导出）做成本地原生、无水印、无订阅的开源工具。
+- `github-trends` [huggingface/speech-to-speech](https://github.com/huggingface/speech-to-speech) — Hugging Face 官方的"本地语音对话助手搭建套件"。你对着麦克风说话，它转文字、交给大模型思考、再用语音答复你——整条链路都能跑在自己的机器上，不必把语音送到第三方云。
+- `github-trends` [deepfakes/faceswap](https://github.com/deepfakes/faceswap) — 一个在自己机器上跑的开源换脸工具。给它两个人的素材，它训练一个神经网络，然后把视频或图片里 A 的脸换成 B 的脸；带图形界面，流程是"提取人脸 → 训练 → 转换"三步。它是 "deepfake" 这个词的源头级项目——2017 年 12 月 Reddit 那次事件之后由社区接手重写，官网与论坛在 faceswap.dev。
+- `github-trends` [microsoft/TRELLIS.2](https://github.com/microsoft/TRELLIS.2) — 给它一张图片，它输出一个带完整材质、可以直接进游戏或渲染管线的 3D 模型。
+- `github-trends` [abus-aikorea/voice-pro](https://github.com/abus-aikorea/voice-pro) — 装在自己电脑上的音视频配音工作台。把 YouTube 视频或本地音频丢进网页界面，它自动扒音轨、用 Demucs 分离人声伴奏、用 Whisper 转文字、翻译成目标语言，再用 TTS（Edge-TTS、kokoro）或零样本声音克隆（F5-TTS、CosyVoice，约 15 秒样本即可）合成配音。
+- `github-trends` [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) — 扩散模型的节点式工作流界面——你把加载模型、编码提示词、采样、解码这些步骤拖成一张流程图，跑图像/视频生成。同时也提供后端和 API，可以被别的服务调用。
+- `lilian-weng` [Diffusion Models for Video Generation](https://lilianweng.github.io/posts/2024-04-12-diffusion-video/) — [Diffusion models](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/) have demonstrated strong results on image synthesis in past years. Now the research community has started working on a harder task—using it for video generation. The task itself is a superset of the image case, since an image is a video of 1 frame, and it is much more challenging because:
+- `github-trends` [kyutai-labs/pocket-tts](https://github.com/kyutai-labs/pocket-tts) — 一个"能塞进口袋"的文本转语音（TTS）模型——小到能在普通 CPU 上跑，却能生成接近商业级质量的语音。出自法国非营利 AI 实验室 Kyutai（此前开源实时语音模型 Moshi 而知名）。
+- `github-trends` [lightningpixel/modly](https://github.com/lightningpixel/modly) — 一个桌面应用，把一张照片拖进去就生成能用的 3D 模型，全程在自己电脑的显卡上跑，图片不上传。导出支持 GLB / OBJ / STL / PLY，其中 STL 可以直接丢进 3D 打印切片软件。
+
+### inference-and-serving-runtime（10）
+_推理与服务运行时赛道正处于快速升温与结构性重构期。一方面，官方博客与主流企业侧持续推动托管合规化与多云落地，不断固化云端服务基础设施；另一方面，开源社区正全力下压硬件门槛，通过手写专有 CUDA 内核、极低比特量化（1-bit/1.58-bit）及逆向硬件潜能，将 200B+ 级别的超大 MoE 模型推向单机与边缘端。这种从理论方法论到极致 Bare-metal 工程的跨源协同，表明推理算力正从“通用云端集中化”加速走向“企业级合规托管”与“消费级本地破局”双向并驾齐驱的崭新格局。_
+
+- `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
+- `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
+- `github-trends` [kvcache-ai/ktransformers](https://github.com/kvcache-ai/ktransformers) — 一个灵活的异构 LLM 推理/微调优化框架，让用户在本地机器上体验对超大模型的高效推理，主打"单机跑得动 236B/671B 级模型 + 超长上下文"。
+- `github-trends` [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) — 月之暗面把自家 Kimi Linear / K3 模型里那一步核心注意力计算（KDA，Kimi Delta Attention）手写成了 CUDA 内核并开源。打个比方：同一套数学运算，原来用通用零件拼装，现在换成为它专门打造的一台发动机——结果一模一样，但跑得更快。
+- `github-trends` [maderix/ANE](https://github.com/maderix/ANE) — 一个研究性质的 hack：把苹果芯片里那块专门做 AI 推理的协处理器（Neural Engine，ANE）改造成能**训练**模型。作者逆向了苹果从未公开的私有接口（`_ANEClient` / `_ANECompiler`）和 MIL 中间格式，绕开 CoreML，直接把含反向传播的计算图塞进 ANE 里跑。
+- `github-trends` [antirez/ds4](https://github.com/antirez/ds4) — Redis 作者 Salvatore Sanfilippo（antirez）用纯 C 手写的本地大模型推理引擎。它有一个反直觉的设计选择：**只跑 DeepSeek V4 Flash/PRO 和 GLM 5.2 这几个模型，不做通用工具**。目标场景是让 128GB 的 MacBook、DGX Spark、Strix Halo 这类个人高配机器直接在本地跑 284B 参数的 MoE 模型，内存不够时用 SSD 流式加载权重。
+- `claude-blog` [Claude in Microsoft Foundry is now generally available](https://claude.com/blog/claude-in-microsoft-foundry) — Starting today, Claude models are generally available in Microsoft Foundry, hosted on Azure. Claude runs in your Azure environment with the authentication, billing, and governance controls your teams already use. You can choose where inference is processed, including a US data zone for teams with data residency requirements. Anthropic operates the inference and is the data processor.
+- `lilian-weng` [Large Transformer Model Inference Optimization](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) — [Updated on 2023-01-24: add a small section on [Distillation](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation).]
+- `github-trends` [huggingface/transformers](https://github.com/huggingface/transformers) — 机器学习领域使用最广的模型库——用统一的接口加载和运行几乎所有主流的预训练模型（文本、图像、音频、多模态），几行代码就能跑推理或微调。
+- `github-trends` [NVIDIA-NeMo/Switchyard](https://github.com/NVIDIA-NeMo/Switchyard) — 一个放在 coding agent 和推理端点之间的流量代理（同时也是 Rust 库）。让 Claude Code / Codex / OpenClaw 这类客户端**一行不改**，就把请求转发给 vLLM、NIM、Ollama 或任意 OpenAI 兼容端点，并在 OpenAI Chat / OpenAI Responses / Anthropic Messages 三种协议间自动翻译。
+
+### desktop-and-media-apps（7）
+_桌面与媒体应用赛道呈现出“官方推动企业级全能终端”与“社区押注本地私有化”双轨演进的态势。一方面，头部 AI 厂商正将包含协同与编程的完整桌面体验深度整合至企业级云生态；另一方面，开源社区正通过 Rust 等原生高性能语言以及端侧 AI 模型，加速打造隐私优先、100% 本地运行的媒体与知识管理工具。赛道整体保持稳步推进，专业创作工具的持续迭代与端侧 AI 的深融合，正共同驱动桌面应用从单纯的工具载体演化为低延迟、高可控的智能生产力枢纽。_
+
+- `github-trends` [andrewrabert/jellium-desktop](https://github.com/andrewrabert/jellium-desktop) — Jellyfin（开源自托管媒体服务器）的一个非官方桌面客户端，用 Rust 编写。
+- `claude-blog` [The full Claude Desktop experience on AWS, Google Cloud, and Microsoft Foundry](https://claude.com/blog/the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry) — Organizations that use Claude Desktop through AWS, Google Cloud, and Microsoft Foundry now get the full Desktop experience — chat, Claude Cowork, and Claude Code, all in one app.
+- `github-trends` [Zackriya-Solutions/meetily](https://github.com/Zackriya-Solutions/meetily) — 一个隐私优先、100% 本地跑的 AI 会议助手。开会时它实时转写（用 Parakeet/Whisper，号称快 4 倍）、区分谁在说话，再用本地 Ollama 生成会议纪要——全程不上云、不需要往会议里塞录制机器人。
+- `github-trends` [karakeep-app/karakeep](https://github.com/karakeep-app/karakeep) — 一个自托管的"什么都能收藏"应用。你把链接、笔记、图片、PDF、YouTube 视频丢进去，它自动用 AI（可接 OpenAI 或本地 Ollama）打标签、做全文搜索，还会把网页归档下来防止链接失效。前身是 2023 年发布的 Hoarder，2025 年更名 Karakeep。
+- `github-trends` [huxingyi/autoremesher](https://github.com/huxingyi/autoremesher) — 一个自动"四边形重拓扑"（auto-retopology）工具——把高精度但杂乱的三角网格 3D 模型，自动转换成干净规整的四边形（quad）拓扑，供后续雕刻、动画使用。作者是 Dust3D 的作者。
+- `github-trends` [3b1b/manim](https://github.com/3b1b/manim) — 3Blue1Brown 频道作者写的数学动画引擎——用 Python 代码描述"这个公式怎么变形、这条曲线怎么画出来"，渲染成讲解视频里那种精确的数学动画。
+- `github-trends` [localsend/localsend](https://github.com/localsend/localsend) — AirDrop 的开源跨平台替代品——在同一局域网内的手机、平板、电脑之间直接传文件和消息，不经任何服务器、不需要账号、不上传云端。
+
+### agent-deliverables-and-artifacts（6）
+_Agent 工具正在从能力入口转向成品入口：社区侧的 diagram-design、ppt-master、可编辑 draw.io 与 CAD skill，把自然语言直接编译成单文件网页、原生 PPTX 或专业工程资产；厂商侧则把生成结果升级为可持续更新、可分享、可在画布中继续编辑的 Artifact。共同信号是竞争重点正在从“Agent 能不能完成任务”前移到“交付物能不能直接进入真实工作流”，可编辑性、单文件分发、原生格式和生成后验证成为新的产品分界线。_
+
+- `github-trends` [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad) — 一套给 AI 编码 agent（Claude Code / Codex）用的"技能包"，让 agent 能用自然语言或图片直接生成、检查、切片和交付 CAD 模型、机器人描述文件（URDF/SDF）和硬件设计产物，基于 Build123d + OpenCASCADE，配套网站 cadskills.xyz。
+- `claude-blog` [Claude Design now stays on brand for daily work](https://claude.com/blog/claude-design-stays-on-brand-for-daily-work) — Claude Design now sticks to your design system across projects, works fluidly with Claude Code, lets you edit directly on the canvas, and connects to more tools you already use. It has a new home in the sidebar on the Claude desktop app; you can also find it at [claude.ai/design](https://claude.ai/design).
+- `claude-blog` [Claude Code now supports artifacts](https://claude.com/blog/artifacts-in-claude-code) — Starting today, Claude Code can capture work progress as an artifact, which turn Claude Code's work into live, shareable visual pages— including PR walkthroughs, system explainers, dashboards, and release checklists—that update themselves as your session works.
+- `github-trends` [DayuanJiang/next-ai-draw-io](https://github.com/DayuanJiang/next-ai-draw-io) — 一个用自然语言对话来生成和修改 draw.io 流程图/架构图的 Web 应用——你用自然语言描述需求，AI 直接操作 draw.io 的 XML 出图，也能上传已有图让 AI 复刻改进。
+- `github-trends` [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design) — 给 Claude Code / Codex 用的一个"作图技能包"，不是独立作图软件。装上以后，你让 AI 画架构图、流程图、时序图、状态机、ER 图、泳道图、2×2 象限、飞轮、甘特、雷达等 29 类图，它会直接产出**单文件 HTML + 内联 SVG**——零 JS、零外链图片、零构建，浏览器双击就能看。
+- `github-trends` [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) — 把 PDF / DOCX / URL / Markdown 或者干脆一句话主题交给它，在 Claude Code / Cursor / Codex 里跑一套工作流，直接产出**真正可编辑的 .pptx**——原生形状、页面切换与入场动画、按需生成的数据图表和表格、从演讲者备注合成的语音旁白，还能套用你自己的 pptx 模板。
 
 ### games-and-emulators（7）
 _该赛道在整体热度小幅退潮的背景下，正经历从传统“黑盒模拟”向“原生重构与深度开放”的结构性转变。社区端对经典老作的反编译原生 PC 移植，与官方厂商将长寿游戏源码开源的决策形成强烈的双向共振，极大地拓宽了游戏保存与二次开发的边界。此外，利用 Rust 语言重写高性能服务端及搭建自托管游戏管理基础设施逐渐成为主流，表明该领域正从单纯的玩家尝鲜向更具工程厚度的开发者工具链沉淀。_
@@ -275,13 +304,3 @@ _该赛道在整体热度小幅退潮的背景下，正经历从传统“黑盒�
 - `github-trends` [HarbourMasters/Lighthouse](https://github.com/HarbourMasters/Lighthouse) — 1998 年 N64 游戏《Banjo-Kazooie》（班卓熊大冒险）的**原生 PC 移植版**——注意，不是模拟器。社区先把原版游戏反编译成可读的 C 代码，Lighthouse 在此基础上重建出能在 Windows / Linux / macOS 上原生编译运行的程序。HarbourMasters 就是做《塞尔达传说：时之笛》PC 移植（Ship of Harkinian）的那个团队，Lighthouse 是他们在马里奥 64、时之笛、姆吉拉之后的新作。
 - `github-trends` [rommapp/romm](https://github.com/rommapp/romm) — 一个自托管的复古游戏 ROM 管理器 + 播放器。你把自己收藏的 ROM 丢进去，它自动刮削封面/元数据、整理成漂亮的 Web 库，还能通过 EmulatorJS 直接在浏览器里开玩，支持多用户。
 - `github-trends` [SmartlyDressedGames/U3-SDK](https://github.com/SmartlyDressedGames/U3-SDK) — 免费开放世界僵尸生存沙盒游戏 Unturned 的官方源码仓库。开发商 Smartly Dressed Games 于 2026-07-07 把这款日活峰值超过 1 万的老牌游戏源码公开，供玩家和 modder 查看内部实现、提交修复和功能、制作深度 mod 与地图。
-
-### desktop-and-media-apps（6）
-_桌面与媒体应用赛道呈现出“官方推动企业级全能终端”与“社区押注本地私有化”双轨演进的态势。一方面，头部 AI 厂商正将包含协同与编程的完整桌面体验深度整合至企业级云生态；另一方面，开源社区正通过 Rust 等原生高性能语言以及端侧 AI 模型，加速打造隐私优先、100% 本地运行的媒体与知识管理工具。赛道整体保持稳步推进，专业创作工具的持续迭代与端侧 AI 的深融合，正共同驱动桌面应用从单纯的工具载体演化为低延迟、高可控的智能生产力枢纽。_
-
-- `github-trends` [andrewrabert/jellium-desktop](https://github.com/andrewrabert/jellium-desktop) — Jellyfin（开源自托管媒体服务器）的一个非官方桌面客户端，用 Rust 编写。
-- `claude-blog` [The full Claude Desktop experience on AWS, Google Cloud, and Microsoft Foundry](https://claude.com/blog/the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry) — Organizations that use Claude Desktop through AWS, Google Cloud, and Microsoft Foundry now get the full Desktop experience — chat, Claude Cowork, and Claude Code, all in one app.
-- `github-trends` [Zackriya-Solutions/meetily](https://github.com/Zackriya-Solutions/meetily) — 一个隐私优先、100% 本地跑的 AI 会议助手。开会时它实时转写（用 Parakeet/Whisper，号称快 4 倍）、区分谁在说话，再用本地 Ollama 生成会议纪要——全程不上云、不需要往会议里塞录制机器人。
-- `github-trends` [karakeep-app/karakeep](https://github.com/karakeep-app/karakeep) — 一个自托管的"什么都能收藏"应用。你把链接、笔记、图片、PDF、YouTube 视频丢进去，它自动用 AI（可接 OpenAI 或本地 Ollama）打标签、做全文搜索，还会把网页归档下来防止链接失效。前身是 2023 年发布的 Hoarder，2025 年更名 Karakeep。
-- `github-trends` [huxingyi/autoremesher](https://github.com/huxingyi/autoremesher) — 一个自动"四边形重拓扑"（auto-retopology）工具——把高精度但杂乱的三角网格 3D 模型，自动转换成干净规整的四边形（quad）拓扑，供后续雕刻、动画使用。作者是 Dust3D 的作者。
-- `github-trends` [3b1b/manim](https://github.com/3b1b/manim) — 3Blue1Brown 频道作者写的数学动画引擎——用 Python 代码描述"这个公式怎么变形、这条曲线怎么画出来"，渲染成讲解视频里那种精确的数学动画。
