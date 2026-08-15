@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-08-14）
+# 跨源主题聚类 — 同类与升温（2026-08-15）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,22 +6,22 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↑升温 | 19 | 7 | 34 | 31 | github+claude | canonical |
+| dev-infra-and-tooling | ↑升温 | 18 | 9 | 35 | 32 | github+claude | canonical |
 | agent-frameworks-and-platforms | ↑升温 | 10 | 4 | 25 | 24 | github+claude+lilian | canonical |
 | coding-agents-and-harnesses | ↑升温 | 8 | 5 | 23 | 21 | github+claude+lilian | canonical |
-| networking-and-security | ↑升温 | 7 | 5 | 20 | 17 | github+claude+lilian | canonical |
-| agent-skills-and-plugins | →持稳 | 6 | 6 | 22 | 21 | github+claude | canonical |
-| learning-and-curated-resources | ↓退潮 | 5 | 6 | 69 | 69 | github+claude+lilian | canonical |
-| data-and-analytics-infra | →持稳 | 5 | 5 | 13 | 13 | github+claude | canonical |
+| agent-skills-and-plugins | ↑升温 | 7 | 5 | 23 | 22 | github+claude | canonical |
+| networking-and-security | ↑升温 | 7 | 4 | 20 | 17 | github+claude+lilian | canonical |
+| learning-and-curated-resources | ↑升温 | 6 | 5 | 70 | 70 | github+claude+lilian | canonical |
+| data-and-analytics-infra | ↑升温 | 5 | 4 | 13 | 13 | github+claude | canonical |
 | ai-video-voice-creative | ↑升温 | 4 | 2 | 10 | 10 | github+lilian | canonical |
-| inference-and-serving-runtime | ↓退潮 | 3 | 4 | 10 | 10 | github+claude+lilian | canonical |
+| inference-and-serving-runtime | →持稳 | 3 | 3 | 10 | 10 | github+claude+lilian | canonical |
 | desktop-and-media-apps | ↑升温 | 2 | 1 | 7 | 7 | github+claude | canonical |
 | agent-deliverables-and-artifacts | ↑升温 | 2 | 1 | 6 | 6 | github+claude | canonical |
 | games-and-emulators | →持稳 | 1 | 1 | 7 | 7 | github | canonical |
 
 ## 各主题项目清单
 
-### dev-infra-and-tooling（31）
+### dev-infra-and-tooling（32）
 _开发者基础设施与工具链赛道呈现明显升温态势，研发交互界面正在经历从传统 WebGUI 向高密度“终端优先”（TUI/CLI）与声明式代码化工具的深刻转向。面对 AI Agent 深度参与编码的新常态，开源社区重押本地化工作流，通过终端级代码审查、离线语言服务与多叠层 PR 工具重构研发效能基底。这一变化与 JavaScript 运行时等底层基础设施的持续演进相互交织，推动整个赛道向低延迟、高掌控感及自动化集成的现代化研发生态快速演进。_
 
 - `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
@@ -55,6 +55,7 @@ _开发者基础设施与工具链赛道呈现明显升温态势，研发交互�
 - `github-trends` [argoproj/argo-cd](https://github.com/argoproj/argo-cd) — Kubernetes 上的声明式持续部署（GitOps）事实标准工具。把 Git 仓库作为集群期望状态的唯一信源，自动把 K8s 集群同步到 Git 中声明的状态，是 CNCF 毕业项目。
 - `github-trends` [nvm-sh/nvm](https://github.com/nvm-sh/nvm) — 在一台机器上装多个 Node.js 版本、并随时切换的命令行工具。一个 POSIX 兼容的 bash 脚本，`nvm install 24`、`nvm use 22` 就能换版本。
 - `github-trends` [unslothai/unsloth](https://github.com/unslothai/unsloth) — 一个让你在自己电脑上跑和训练 AI 模型的桌面应用。以前 Unsloth 是给会写 Python 的人用的微调加速库，你得配 CUDA 版本、装依赖、抄 notebook；8-11 之后它多了一个装完就能用的窗口，模型下载、对话、微调、导出都在里面。
+- `github-trends` [ToolJet/ToolJet](https://github.com/ToolJet/ToolJet) — 一个自建内部工具的可视化平台。公司内部常年要做一堆"给运营看的后台"、"给客服查订单的页面"、"批量改数据的小工具"，正规做要前后端排期，不做又只能用 Excel 顶着。ToolJet 让你拖组件、连数据库和 API，把这类内部应用拼出来，能自己部署在公司服务器上。它是商业产品 ToolJet AI 的开源底座，对标 Retool / Appsmith / Budibase。**这是一个 2021 年建仓的成熟项目，首次进入本 tracker，按知名老项目记录，不做完整社区 grounding。**
 
 ### agent-frameworks-and-platforms（24）
 _头部厂商与开源社区正在共同推动 Agent 框架从“对话编排库”向“托管基础设施”与“企业级运行环境”急剧升温与重构。以 Claude 官方上线 Managed Agents 及内置记忆为代表，底层能力正快速标准化与服务化；与此呼应，GitHub 社区则密集涌现出针对长时任务控制面、云/本地沙盒隔离、合规治理以及“AI 员工”组织化协同的开源平台。这标志着赛道轨迹正从单次会话的自主探索，转向将 Agent 作为身份平等、受控合规且具备持久状态的数字成员深度融入真实生产力系统。_
@@ -109,28 +110,7 @@ _编码 Agent 赛道在热度持稳的同时正经历深度的结构演进，从
 - `github-trends` [gastownhall/gastown](https://github.com/gastownhall/gastown) — Steve Yegge 做的"AI agent 工厂"。你不再一次开一个 agent 手动盯着，而是让它在同一个代码库里同时调度 20-30 个 Claude Code / Codex / Gemini agent，各自分到写代码、测试、审查、维护的角色，像一条流水线一样并行干活。配了 git 记录的 issue 跟踪、进程持久化、看门狗自动重启、Web 仪表盘。
 - `github-trends` [holaboss-ai/holaOS](https://github.com/holaboss-ai/holaOS) — 一个"给 AI 助手用的电脑桌面"。你不用在几个 AI 工具之间来回复制粘贴——它把 Claude Code、Codex 和自带 agent 装进同一个本地工作台，共用一份记忆、一批工具和同一批文件。主打卖点是"不失忆"：关掉应用、换个 agent，上周那个项目的上下文还在（记忆以本地纯文本文件存，人可读可改）。
 
-### networking-and-security（17）
-_该赛道整体呈现出“网络基础设施自主化”与“AI Agent 身份及动态攻防”双轨并发的持续升温态势。一方面，开源社区持续押注自托管 VPN、离线 Mesh 通信与自部署身份认证（IdP），体现出开发者对去中心化基础设施与隐私防护的刚性需求；另一方面，主流 AI 厂商与企业工程团队正在跨源同步推动安全范式重构——从 Anthropic 搭建 Agent 专属身份认证（WIF/MCP）与 CISO 治理框架，到开源社区将传统 EDR 演化为针对 AI Agent“Prompt-推理-工具调用”的全链条运行时监测（ADR），网络与安全的主战场正加速由传统边界防御向自治 AI 系统的零信任身份管控与动态因果链审计跃迁。_
-
-- `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
-- `github-trends` [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) — 一个完全不需要互联网的聊天 App。手机之间直接用蓝牙互相连接、并且能多跳中继（最多 7 跳），所以在断网、关网、没有信号的地方，一群人依然可以互相发消息。由 Jack Dorsey（Twitter 联合创始人）做出原型，现在由社区组织 permissionlesstech 维护，风格上刻意做成"IRC 味"。
-- `github-trends` [permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android) — 上面 bitchat（iOS/Swift）的 Android 版本，功能定位相同——蓝牙 mesh、无需互联网的加密聊天，官方称与 iOS 版协议 100% 兼容。
-- `github-trends` [amnezia-vpn/amnezia-client](https://github.com/amnezia-vpn/amnezia-client) — 一个自建 VPN 的客户端。你在自己租的云服务器（AWS、DigitalOcean 等）上一键部署，然后用这个客户端连接——VPN 只属于你自己，没有第三方服务商掌握你的流量。桌面和移动端都有。
-- `github-trends` [uber/ADR](https://github.com/uber/ADR) — 把杀毒软件里的 EDR（端点检测与响应）那一套，搬到 AI agent 上。公司里现在到处是 Cursor、Claude Code、Codex 这类会自己读写文件、调 API、执行命令的 agent，安全团队面对的问题是：传统监控只能看到"某个进程写了一个文件"，看不到"是哪句 prompt、经过什么推理链，最后决定写这个文件的"。ADR 采集的是完整因果链 `prompt → 推理 → 工具调用 → 结果`，让安全团队第一次能回答"这个 agent 刚才为什么这么干"。
-- `github-trends` [goauthentik/authentik](https://github.com/goauthentik/authentik) — 开源的身份认证提供方（IdP）。你自己部署一套，其他应用统统通过它登录，支持 SAML、OAuth2/OIDC、LDAP、SCIM 等主流协议，常被用作 Okta、Auth0 的自托管替代。
-- `github-trends` [opa334/Dopamine](https://github.com/opa334/Dopamine) — iPhone 越狱工具。它利用 iOS 内核漏洞解除系统的安装限制，让用户能装苹果商店之外的软件和系统级插件（tweak）。"semi-untethered"意思是手机重启后越狱状态会失效，需要重新打开 App 激活一次。
-- `claude-blog` [Preparing your security program for AI-accelerated offense](https://claude.com/blog/preparing-your-security-program-for-ai-accelerated-offense) — Earlier this week, we announced Project Glasswing—our urgent attempt to put the strong cybersecurity capabilities of our newest frontier model, Claude Mythos Preview, to use for defensive purposes. In the [announcement](https://www.anthropic.com/glasswing)—and the [accompanying technical blog post](https://red.anthropic.com/2026/mythos-preview/)—we described how AI models are rapidly reducing the 
-- `claude-blog` [Secure access to the Claude Platform with Workload Identity Federation](https://claude.com/blog/workload-identity-federation) — Workload Identity Federation (WIF) is now generally available on the Claude Platform. WIF is compatible with any OIDC-compliant identity provider and covers all Claude API endpoints, including when accessing the endpoints through our first-party SDKs and Claude Code.
-- `claude-blog` [Centrally manage authorization for MCP connectors](https://claude.com/blog/enterprise-managed-auth) — Admins can now provision MCP connectors for their whole organization through their identity provider, starting with Okta. Users get connector access automatically on first login, with authorization configured centrally by their organization.
-- `claude-blog` [Agent identity in Claude Tag: a new access model for autonomous, team-wide AI](https://claude.com/blog/agent-identity-access-model) — For an AI agent to do its best work on a human-agent team, it needs access to the same tools, documents, and context humans have.
-- `claude-blog` [Zero risk isn't the job: a CISO's guide to agentic AI](https://claude.com/blog/ciso-guide-to-agentic-ai) — Security leaders are being asked to approve agentic AI use cases that did not even exist a few months ago. Boards want to know whether any of it is governed, and somewhere in your organization, an employee has already connected an agent to something without telling you.
-- `claude-blog` [How Anthropic secures its AI-native software development lifecycle](https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle) — At Anthropic, the amount of code and velocity of deployment have scaled exponentially. Our software engineers on average ship 8x as much code per quarter as they did from 2021 to 2025.
-- `lilian-weng` [Adversarial Attacks on LLMs](https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/) — The use of large language models in the real world has strongly accelerated by the launch of ChatGPT. We (including my team at OpenAI, shoutout to them) have invested a lot of effort to build default safe behavior into the model during the alignment process (e.g. via [RLHF](https://openai.com/research/learning-to-summarize-with-human-feedback)). However, adversarial attacks or jailbreak prompts co
-- `github-trends` [vxcontrol/pentagi](https://github.com/vxcontrol/pentagi) — 一个"全自动 AI 渗透测试"agent 系统。你用自然语言下发一个测试目标，它由一个 orchestrator 协调 researcher / developer / executor 三类子 agent，在 Docker 沙箱里跑 Kali Linux + nmap/metasploit/sqlmap 等 20 余款安全工具，自动完成侦察和漏洞利用。
-- `github-trends` [imthenachoman/How-To-Secure-A-Linux-Server](https://github.com/imthenachoman/How-To-Secure-A-Linux-Server) — 一份持续演进的 Linux 服务器安全加固指南（SSH、防火墙、入侵检测、账户与权限等），是社区长期引用的经典 how-to 文档型仓库。
-- `github-trends` [megadose/holehe](https://github.com/megadose/holehe) — 给一个邮箱地址，它自动跑到 120 多个网站上"假装点忘记密码"，从各站响应的细微差别反推这个邮箱在哪些平台注册过，有些站还能带出被打码的备用邮箱或手机尾号。全程不给目标发邮件、不惊动本人。
-
-### agent-skills-and-plugins（21）
+### agent-skills-and-plugins（22）
 _尽管 Agent Skills 赛道在开源热度上呈现小幅退潮，但内部正经历从“万物皆可打包”到“极客级专业化”的结构性演进。跨源信号表明，在 Claude 官方持续升级 MCP 协议规范并拓宽通用连接器的同时，社区开发者正集中转向基于代码图谱的 Token 压缩、UI 质检、逆向工程等超垂直工作流；直接生产可编辑成品的工具则开始析出为独立的交付物赛道。Skill 生态正在告别泛化概念炒作，加速走向高效上下文治理与高壁垒专有场景。_
 
 - `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
@@ -154,8 +134,30 @@ _尽管 Agent Skills 赛道在开源热度上呈现小幅退潮，但内部正�
 - `github-trends` [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills) — Google Labs 出品的 Agent Skills 技能库，配合 Stitch（Gemini 驱动的 UI 设计工具）的 MCP server，让 Claude Code / Cursor / Gemini CLI 等编码 agent 能直接调用 Stitch 生成界面设计并转成代码（React / React Native / shadcn 等）。注意：属 Google Labs 实验项目，非 Google 官方支持产品。
 - `github-trends` [anthropics/skills](https://github.com/anthropics/skills) — Anthropic 官方维护的 Agent Skills 公共仓库——存放"技能"这种东西本身的官方样例和参考实现。所谓 skill，就是给 AI agent 的一份写在 markdown 里的操作手册（SKILL.md + 配套脚本、参考资料），agent 需要做某类任务时按需加载它，而不是把所有知识都塞进上下文。
 - `github-trends` [cactus-compute/needle](https://github.com/cactus-compute/needle) — 一个 14MB 的超小模型（45M 参数、2-bit 量化），只干一件事——把自然语言变成函数调用（工具调用、设备控制、结构化抽取）。不聊天、不写文章，请求超出已声明的工具范围就返回空调用 `[]`。
+- `github-trends` [cursor/plugins](https://github.com/cursor/plugins) — Cursor（那个基于 VS Code 改的 AI 编程编辑器）官方开的仓库，用来定义"插件"这个东西该长什么样，并把官方自己做的插件放进去当范例。可以理解成 Cursor 版的应用商店规格书 + 官方样板间：里面既有格式规范（`schemas/`、`.cursor-plugin/`），也有 `create-plugin` 这种脚手架，还有 14 个官方插件目录（`orchestrate` 编排、`pr-review-canvas` PR 评审、`cursor-team-kit` 团队工具包、`continual-learning`、`teaching` 等）。
 
-### learning-and-curated-resources（69）
+### networking-and-security（17）
+_该赛道整体呈现出“网络基础设施自主化”与“AI Agent 身份及动态攻防”双轨并发的持续升温态势。一方面，开源社区持续押注自托管 VPN、离线 Mesh 通信与自部署身份认证（IdP），体现出开发者对去中心化基础设施与隐私防护的刚性需求；另一方面，主流 AI 厂商与企业工程团队正在跨源同步推动安全范式重构——从 Anthropic 搭建 Agent 专属身份认证（WIF/MCP）与 CISO 治理框架，到开源社区将传统 EDR 演化为针对 AI Agent“Prompt-推理-工具调用”的全链条运行时监测（ADR），网络与安全的主战场正加速由传统边界防御向自治 AI 系统的零信任身份管控与动态因果链审计跃迁。_
+
+- `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
+- `github-trends` [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) — 一个完全不需要互联网的聊天 App。手机之间直接用蓝牙互相连接、并且能多跳中继（最多 7 跳），所以在断网、关网、没有信号的地方，一群人依然可以互相发消息。由 Jack Dorsey（Twitter 联合创始人）做出原型，现在由社区组织 permissionlesstech 维护，风格上刻意做成"IRC 味"。
+- `github-trends` [permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android) — 上面 bitchat（iOS/Swift）的 Android 版本，功能定位相同——蓝牙 mesh、无需互联网的加密聊天，官方称与 iOS 版协议 100% 兼容。
+- `github-trends` [amnezia-vpn/amnezia-client](https://github.com/amnezia-vpn/amnezia-client) — 一个自建 VPN 的客户端。你在自己租的云服务器（AWS、DigitalOcean 等）上一键部署，然后用这个客户端连接——VPN 只属于你自己，没有第三方服务商掌握你的流量。桌面和移动端都有。
+- `github-trends` [uber/ADR](https://github.com/uber/ADR) — 把杀毒软件里的 EDR（端点检测与响应）那一套，搬到 AI agent 上。公司里现在到处是 Cursor、Claude Code、Codex 这类会自己读写文件、调 API、执行命令的 agent，安全团队面对的问题是：传统监控只能看到"某个进程写了一个文件"，看不到"是哪句 prompt、经过什么推理链，最后决定写这个文件的"。ADR 采集的是完整因果链 `prompt → 推理 → 工具调用 → 结果`，让安全团队第一次能回答"这个 agent 刚才为什么这么干"。
+- `github-trends` [goauthentik/authentik](https://github.com/goauthentik/authentik) — 开源的身份认证提供方（IdP）。你自己部署一套，其他应用统统通过它登录，支持 SAML、OAuth2/OIDC、LDAP、SCIM 等主流协议，常被用作 Okta、Auth0 的自托管替代。
+- `github-trends` [opa334/Dopamine](https://github.com/opa334/Dopamine) — iPhone 越狱工具。它利用 iOS 内核漏洞解除系统的安装限制，让用户能装苹果商店之外的软件和系统级插件（tweak）。"semi-untethered"意思是手机重启后越狱状态会失效，需要重新打开 App 激活一次。
+- `claude-blog` [Preparing your security program for AI-accelerated offense](https://claude.com/blog/preparing-your-security-program-for-ai-accelerated-offense) — Earlier this week, we announced Project Glasswing—our urgent attempt to put the strong cybersecurity capabilities of our newest frontier model, Claude Mythos Preview, to use for defensive purposes. In the [announcement](https://www.anthropic.com/glasswing)—and the [accompanying technical blog post](https://red.anthropic.com/2026/mythos-preview/)—we described how AI models are rapidly reducing the 
+- `claude-blog` [Secure access to the Claude Platform with Workload Identity Federation](https://claude.com/blog/workload-identity-federation) — Workload Identity Federation (WIF) is now generally available on the Claude Platform. WIF is compatible with any OIDC-compliant identity provider and covers all Claude API endpoints, including when accessing the endpoints through our first-party SDKs and Claude Code.
+- `claude-blog` [Centrally manage authorization for MCP connectors](https://claude.com/blog/enterprise-managed-auth) — Admins can now provision MCP connectors for their whole organization through their identity provider, starting with Okta. Users get connector access automatically on first login, with authorization configured centrally by their organization.
+- `claude-blog` [Agent identity in Claude Tag: a new access model for autonomous, team-wide AI](https://claude.com/blog/agent-identity-access-model) — For an AI agent to do its best work on a human-agent team, it needs access to the same tools, documents, and context humans have.
+- `claude-blog` [Zero risk isn't the job: a CISO's guide to agentic AI](https://claude.com/blog/ciso-guide-to-agentic-ai) — Security leaders are being asked to approve agentic AI use cases that did not even exist a few months ago. Boards want to know whether any of it is governed, and somewhere in your organization, an employee has already connected an agent to something without telling you.
+- `claude-blog` [How Anthropic secures its AI-native software development lifecycle](https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle) — At Anthropic, the amount of code and velocity of deployment have scaled exponentially. Our software engineers on average ship 8x as much code per quarter as they did from 2021 to 2025.
+- `lilian-weng` [Adversarial Attacks on LLMs](https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/) — The use of large language models in the real world has strongly accelerated by the launch of ChatGPT. We (including my team at OpenAI, shoutout to them) have invested a lot of effort to build default safe behavior into the model during the alignment process (e.g. via [RLHF](https://openai.com/research/learning-to-summarize-with-human-feedback)). However, adversarial attacks or jailbreak prompts co
+- `github-trends` [vxcontrol/pentagi](https://github.com/vxcontrol/pentagi) — 一个"全自动 AI 渗透测试"agent 系统。你用自然语言下发一个测试目标，它由一个 orchestrator 协调 researcher / developer / executor 三类子 agent，在 Docker 沙箱里跑 Kali Linux + nmap/metasploit/sqlmap 等 20 余款安全工具，自动完成侦察和漏洞利用。
+- `github-trends` [imthenachoman/How-To-Secure-A-Linux-Server](https://github.com/imthenachoman/How-To-Secure-A-Linux-Server) — 一份持续演进的 Linux 服务器安全加固指南（SSH、防火墙、入侵检测、账户与权限等），是社区长期引用的经典 how-to 文档型仓库。
+- `github-trends` [megadose/holehe](https://github.com/megadose/holehe) — 给一个邮箱地址，它自动跑到 120 多个网站上"假装点忘记密码"，从各站响应的细微差别反推这个邮箱在哪些平台注册过，有些站还能带出被打码的备用邮箱或手机尾号。全程不给目标发邮件、不惊动本人。
+
+### learning-and-curated-resources（70）
 _尽管“学习与精选资源”赛道在数量上呈现退潮态势，但内部正经历从“静态资料收集”向“动态可执行载体”的结构性转型。开源社区与厂商博客的信号共同表明，传统的知识合集正加速演变为附带可运行代码、甚至嵌入 MCP 接口以供 AI Agent 直接调用的知识库。开发者的学习重心已从被动的路线图搜集，全面转向与 Agent 工具链协同的“即学即跑”与实战构建。_
 
 - `github-trends` [Shubhamsaboo/awesome-llm-apps](https://github.com/Shubhamsaboo/awesome-llm-apps) — 一个「能真正跑起来」的 AI Agent 与 RAG 应用合集——100+ 个可克隆、可定制、可上线的示例项目，覆盖多 agent、RAG、记忆、语音等常见形态。
@@ -227,6 +229,7 @@ _尽管“学习与精选资源”赛道在数量上呈现退潮态势，但内�
 - `github-trends` [practical-tutorials/project-based-learning](https://github.com/practical-tutorials/project-based-learning) — 一份"照着做项目来学编程"的教程清单。按语言分类（C/C++、Python、JavaScript、Go、Rust 等），每条指向一篇教你从零写出某个真东西的教程——写一个自己的 shell、写一个数据库、写一个编译器、写一个操作系统。
 - `github-trends` [jaywcjlove/awesome-mac](https://github.com/jaywcjlove/awesome-mac) — 中文维护的 macOS 应用推荐清单，按开发工具、效率、设计、媒体等分类收录，开源与闭源都收，条目带简介和是否免费的标注。
 - `github-trends` [ZuodaoTech/everyone-can-use-english](https://github.com/ZuodaoTech/everyone-can-use-english) — 李笑来的《人人都能用英语》开源书，以及围绕它演化出的桌面练习应用（Enjoy App）——通过跟读、录音比对和音素级反馈练发音与听力。
+- `github-trends` [deepseek-ai/awesome-deepseek-agent](https://github.com/deepseek-ai/awesome-deepseek-agent) — DeepSeek 官方组织下的一份接入指南合集。它不是代码库，是一堆文档：把 DeepSeek 的模型（V4-Pro / V4-Flash）接进各种 AI 编程工具和 agent 客户端时，每个工具怎么装、怎么填配置、怎么跑通第一次调用，一个工具一篇，中英双语。`docs/` 下已收录 AstrBot、Cherry Studio、Claude Code、Cline、Codex、Copilot CLI、Crush、DeepCode 等。
 
 ### data-and-analytics-infra（13）
 _数据与分析基础设施赛道总体热度保持平稳，但内部正在经历面向 AI Agent 的深层次结构性变革。研发重心正从传统的数据管道与集中式存储，全面延伸至面向大模型的非结构化数据高效解析，以及统一指标口径的开放语义层与生成式 BI（GenBI）。这一趋势不仅重塑了数据的预处理与消费链路，更促使底层数据库与垂直分析引擎开始围绕 AI 驱动的开发与调用范式进行重构，推动基础设施向“Agent 可直接感知与调用的统一语义底座”演进。_
