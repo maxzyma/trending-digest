@@ -25,8 +25,7 @@ artifacts:
 > - ❌ 原写「trending.theuntold.io 当前由 theuntold 仓维护」——实际 trending 子域是 **github-trending-digest** 的 Jekyll 站；theuntold 是另一个 Astro 主站（theuntold.ai）。
 > - ❌ 原范围「迁入 theuntold Astro 前端」——实际定论是**本仓自建 Jekyll 聚合门户**（不搬 Astro）。
 >
-> 归属讨论已定论（2026-06-29），阻塞解除，intake 补齐。本条目自包含（含下方 §归属迁移与 G1 历史）。
-> 方案信源：`notes/02-调研/trending-diggest/aggregation-portal-proposal.md`。theuntold 侧已 discard（仅留 Archive 指针）。
+> 归属讨论已定论（2026-06-29），阻塞解除，intake 补齐。本条目自包含；方案依据见[问题陈述](#problem-statement)、[期望成果](#desired-outcome)、[关键决策](#key-decisions)及[归属迁移与 G1 历史](#ownership-migration-history)。
 
 ## Intake 覆盖账本（五问留痕）
 
@@ -40,7 +39,7 @@ artifacts:
 
 ---
 
-## 问题陈述
+## 问题陈述 {#problem-statement}
 
 **现状**：想对外展示多源译读/深读内容，但 claude-blog 单源内容不足以撑独立站；各源由独立仓在不同项目维护；GitHub Pages「一域一仓」硬约束无法单域多仓路径聚合。
 **问题**：内容要么碎片化分散在多个地址，要么被迫合并单仓违背「独立维护」诉求。
@@ -48,7 +47,7 @@ artifacts:
 
 ---
 
-## 期望成果
+## 期望成果 {#desired-outcome}
 
 用单一入口域 `trending.theuntold.ai` 对外像一个站，背后各源仍由独立仓/独立项目/独立部署维护互不耦合：
 - 小源（claude-blog 等）= 本仓（trending-diggest）同仓分目录 Jekyll 渲染（`/claude-blog/`）
@@ -77,7 +76,7 @@ artifacts:
 
 ---
 
-## 关键决策
+## 关键决策 {#key-decisions}
 
 | 项 | 裁决 |
 |---|---|
@@ -87,7 +86,7 @@ artifacts:
 
 ---
 
-## 归属迁移与 G1 历史（迁自 theuntold，自包含）
+## 归属迁移与 G1 历史（迁自 theuntold，自包含） {#ownership-migration-history}
 
 本条目工作在 theuntold 仓走过 collect→triage→refine→**G1 passed**，因归属裁定（聚合门户交付主体在本仓、theuntold 是平级叶子产物仓）整体迁入本仓。完整历史在 theuntold git history（条目 `trending-aggregation-portal`，已 discard 归档）；关键记录复制如下，使本条目自包含。
 

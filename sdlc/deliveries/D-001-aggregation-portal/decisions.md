@@ -91,6 +91,6 @@
 
 - specs：`features/aggregation-portal/behaviors/*.gherkin`（SC-01~25）、`contracts.md`（路由/301 fixture）、`entities.md`（SourceCard/DigestEntry/RedirectRule）、`_index.md`（INV-01/02/04 + 架构约束）
 - specs：`architecture/_index.md#ADR`（ADR-002 superseded、新增 ADR-004/005）
-- 参考：`backlog/aggregation-portal/`（stories US-00~05）、方案信源 `notes/02-调研/trending-diggest/aggregation-portal-proposal.md`（路 A / §5 首页 / 裸 / 冲突）
+- 参考：[聚合门户归档 Backlog](../../backlog/_archive/aggregation-portal/_index.md#problem-statement)（问题、目标、方案与 G1 历史）、[用户故事](../../backlog/_archive/aggregation-portal/stories.md)（US-00~05）；路 A、门户首页与裸路径冲突的裁决见本文件 ADR-001~003
 - code：`publications/github-trending-digest/_config.yml`（permalink 枚举依据：无自定义 permalink、Jekyll 默认）、`_layouts/home.html`（观感对齐依据）
 <!-- sources-manifest:end -->
