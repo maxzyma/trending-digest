@@ -1,4 +1,4 @@
-# Trending Diggest
+# Trending Digest
 
 Multi-source digest archive and public reading site for technical resources.
 

@@ -1,4 +1,4 @@
 ---
 layout: portal-home
-title: Trending Diggest
+title: Trending Digest
 ---
