@@ -96,11 +96,18 @@
       <span class="taxonomy-desc">三个信源的主题分布与升温退潮 →</span>
     </a>
 
-    <!-- 最新内容流：仅同仓小源 digest 倒序（ALG-03）。github-trending 属另一仓、构建期不可得，天然排除 (INV-02/SC-09)。 -->
+    <!-- 最新内容流：同仓小源 + github-trending（经其已发布的 latest.json）合并倒序（ALG-03 / ADR-005）。 -->
     <h2 class="section-title">最新译读</h2>
     {%- comment -%} 同仓小源 collection 汇总；缺 published_at 的条目被 where_exp 过滤（SC-22 跳过），倒序取前 N（SC-08 可配置）。 {%- endcomment -%}
     {%- assign same_repo = site.claude_blog | concat: site.talks -%}
     {%- assign entries = same_repo | where_exp: "p", "p.published_at" | sort: "published_at" | reverse -%}
+    {%- comment -%}
+      跨仓条目来自 github-trending 已发布的 latest.json（ADR-005）。fetch 脚本已把字段
+      规范成与同仓条目一致，所以这里 concat 后共用同一套渲染；取不到时是空清单，
+      自然退回只显示同仓源（SC-09b）。只用 concat／sort，不依赖 Jekyll 4 的 push filter。
+    {%- endcomment -%}
+    {%- assign cross = site.data.github_trending_latest.items -%}
+    {%- if cross -%}{%- assign entries = entries | concat: cross | sort: "published_at" | reverse -%}{%- endif -%}
     {%- assign stream_n = site.latest_stream_count | default: 8 -%}
     {%- if entries.size > 0 -%}
     <ul class="stream" data-testid="portal-latest-stream">
@@ -121,7 +128,7 @@
       刻意不用 li / time 标签——首页构建断言按这两个标签计数与验倒序。
     {%- endcomment -%}
     <p class="stream-note" data-testid="portal-stream-scope">
-      以上为本站直接归档的来源。<a href="{{ '/github-trending/' | relative_url }}">GitHub Trending Digest</a> 每日更新，条目在其站内。
+      跨源合并呈现；各源完整归档见上方信源入口。
     </p>
   </main>
 </body>

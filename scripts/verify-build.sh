@@ -27,14 +27,16 @@ assert "SC-01/TC-API-FUNC-001" "Pages 构建成功产出 HTML" "$( [ $BUILD_EXIT
 grep -q 'data-testid="portal-hero"' $SITE/index.html && grep -q 'data-testid="portal-source-grid"' $SITE/index.html; assert "SC-04/TC-UI-FUNC-001" "首页含 Hero + 信源导航网格" $?
 # SC-05 两卡 + href
 c=$(grep -c 'class="source-card"' $SITE/index.html); grep -q 'href="/github-trending/"' $SITE/index.html && grep -q 'href="/claude-blog/"' $SITE/index.html && [ "$c" -ge 2 ]; assert "SC-05/TC-UI-FUNC-002" "≥2 卡且入口链接正确" $?
-# SC-06 无 github-trending 明细（无 daily/weekly 明细条目链接）
-! grep -qE 'href="/github-trending/(daily|weekly|monthly)/' $SITE/index.html; assert "SC-06/TC-UI-BND-001" "首页无 github-trending 明细条目" $?
+# SC-06 首页只引用 github-trending 的标题与链接，不嵌入其正文（ADR-005 后 INV-02 的保留部分）
+# 上限 = 1 张信源卡 + 最多 stream_n 条最新流；超出即说明首页开始搬运该源内容
+gtlinks=$(grep -oE 'href="/github-trending/[^"]*"' $SITE/index.html | wc -l | tr -d ' ')
+[ "$gtlinks" -le 9 ]; assert "SC-06/TC-UI-BND-001" "首页对 github-trending 的引用不超过卡片+流上限（实为 $gtlinks）" $?
 # SC-07 最新流占位块
 grep -q 'data-testid="portal-latest-stream"' $SITE/index.html; assert "SC-07/TC-UI-FUNC-003" "最新流区块存在" $?
 # SC-08 倒序 + 条数 ≤ N(=8)
 n=$(grep -c '<li>' $SITE/index.html); dates=$(grep -oE '<time datetime="[0-9-]+"' $SITE/index.html | grep -oE '[0-9-]+' ); sorted=$(echo "$dates" | sort -r); [ "$n" -le 8 ] && [ "$dates" = "$sorted" ]; assert "SC-08/TC-UI-FUNC-004" "最新流倒序且条数≤N" $?
-# SC-09 流不含 github-trending 明细（stream src 只能来自同仓 collection 源）
-srcs=$(grep -oE '<span class="src">[^<]+' $SITE/index.html | sed 's/.*>//' | sort -u); foreign=$(echo "$srcs" | grep -vE '^(claude-blog|talks)?$' | grep -c .); [ "$foreign" -eq 0 ]; assert "SC-09/TC-UI-BND-002" "最新流仅同仓源" $?
+# SC-09 流可含 github-trending 条目，但 src 只能是已知三源之一（ADR-005）
+srcs=$(grep -oE '<span class="src">[^<]+' $SITE/index.html | sed 's/.*>//' | sort -u); foreign=$(echo "$srcs" | grep -vE '^(claude-blog|talks|github-trending)?$' | grep -c .); [ "$foreign" -eq 0 ]; assert "SC-09/TC-UI-BND-002" "最新流 src 均为已知源" $?
 # SC-11 /claude-blog/ 索引渲染
 [ -f $SITE/claude-blog/index.html ] && grep -q 'claude-blog-post-list\|post-list' $SITE/claude-blog/index.html; assert "SC-11/TC-UI-FUNC-005" "/claude-blog/ 子站索引渲染" $?
 # SC-12 子站 post 前缀正确 + 内链
