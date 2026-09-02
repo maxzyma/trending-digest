@@ -16,6 +16,8 @@
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--serif); line-height:1.6; }
     a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+    /* 默认焦点环是深蓝，在深色底上对比度不足；用 accent 显式指定。 */
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
     .site-header { border-bottom:1px solid var(--border); }
     .header-inner { max-width:960px; margin:0 auto; padding:1rem 1.5rem; font-family:var(--mono); font-size:.85rem; }
     main { max-width:960px; margin:0 auto; padding:2rem 1.5rem 6rem; }
@@ -29,10 +31,13 @@
     table { border-collapse:collapse; width:100%; font-size:.9rem; }
     th, td { border:1px solid var(--border); padding:.5rem .7rem; text-align:left; white-space:nowrap; }
     th { background:var(--surface); font-family:var(--mono); font-size:.78rem; color:var(--muted); font-weight:500; }
-    td:first-child { font-family:var(--mono); font-size:.85rem; white-space:normal; }
+    td:first-child, tbody th[scope=row] { font-family:var(--mono); font-size:.85rem; white-space:normal; }
+    tbody th[scope=row] { background:none; color:var(--fg); font-weight:400; text-align:left; }
     code { font-family:var(--mono); font-size:.85em; background:var(--surface); padding:.1rem .35rem; border-radius:4px; margin:0 .15em; }
     ul, ol { padding-left:1.4rem; }
     li { margin:.3rem 0; }
+    .table-scroll:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
   </style>
 </head>
 <body>
@@ -45,12 +50,35 @@
     {{ content }}
   </main>
   <script>
-    // rollup 是宽表，包一层可横向滚动的容器，避免窄屏溢出裁切。
-    document.querySelectorAll('main > table').forEach(function (table) {
+    // rollup 表由 markdown 渲染，拿不到 scope/caption，也没有可滚动容器。
+    // 这里补齐：宽表包一层横向滚动容器（窄屏不裁切），容器可聚焦以便键盘滚动，
+    // 表头补 scope，并加一个仅供辅助技术朗读的 caption。
+    document.querySelectorAll('main > table').forEach(function (table, i) {
       var wrap = document.createElement('div')
       wrap.className = 'table-scroll'
+      wrap.tabIndex = 0
+      wrap.setAttribute('role', 'region')
+      wrap.setAttribute('aria-label', document.querySelector('h1').textContent.trim())
       table.parentNode.insertBefore(wrap, table)
       wrap.appendChild(table)
+
+      table.querySelectorAll('thead th').forEach(function (th) {
+        th.setAttribute('scope', 'col')
+      })
+      // scope 只在 th 上有效，所以行头要真的换成 th，不能给 td 加属性
+      table.querySelectorAll('tbody tr > td:first-child').forEach(function (td) {
+        var th = document.createElement('th')
+        th.setAttribute('scope', 'row')
+        th.innerHTML = td.innerHTML
+        th.className = td.className
+        td.replaceWith(th)
+      })
+      if (!table.querySelector('caption')) {
+        var cap = document.createElement('caption')
+        cap.className = 'sr-only'
+        cap.textContent = '跨源主题分布：主题、趋势、近窗与前窗计数、累计、项目数、覆盖源与状态'
+        table.insertBefore(cap, table.firstChild)
+      }
     })
   </script>
 </body>

@@ -17,7 +17,7 @@
 | 卡标题 | title | NOT NULL |
 | 卡简介 | summary | NOT NULL |
 | 入口链接 href | entry_url | 同仓源 `/claude-blog/`；反代源 `/github-trending/` |
-| 反代标记 | kind | proxied 卡不含明细（INV-02 / SC-06） |
+| —（不呈现） | kind | 部署概念，不对读者显示；仅约束 proxied 卡不含明细（INV-02 / SC-06） |
 
 首批卡：GitHub Trending（kind=proxied，→ `/github-trending/`）+ Claude Blog（kind=same-repo，→ `/claude-blog/`）。
 
