@@ -29,29 +29,54 @@ def _yaml_str(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def read_category(package_dir: Path) -> str:
+# Mounted same-repo sources. `legacy_flat` is only true for claude-blog, which
+# still has pre-canonical flat posts to pass through; manual sources never do.
+SOURCES = (
+    {
+        "key": "claude-blog",
+        "collection_dir": "_claude_blog",
+        "default_category": "Claude Blog",
+        "format": "bilingual-paragraph-zh-first",
+        "legacy_flat": True,
+    },
+    {
+        "key": "talks",
+        "collection_dir": "_talks",
+        "default_category": "演讲与访谈",
+        "format": "manual-zh-translation",
+        "legacy_flat": False,
+    },
+)
+
+
+def read_category(package_dir: Path, meta: dict, default: str) -> str:
+    """Category precedence: metadata.category (manual sources carry it) >
+    canonical.json metadata.categories[0] (article-pivot packages) > source default."""
+    declared = str(meta.get("category", "")).strip()
+    if declared:
+        return declared
     canonical = package_dir / "canonical.json"
     if canonical.is_file():
         data = json.loads(canonical.read_text(encoding="utf-8"))
         categories = data.get("metadata", {}).get("categories") or []
         if categories:
             return str(categories[0])
-    return "Claude Blog"
+    return default
 
 
-def frontmatter(meta: dict, category: str) -> str:
+def frontmatter(meta: dict, category: str, source: dict) -> str:
     published = str(meta.get("published_at", "")).strip()
     return "\n".join(
         [
             "---",
-            f"source: {_yaml_str('claude-blog')}",
+            f"source: {_yaml_str(source['key'])}",
             f"source_url: {_yaml_str(meta.get('source_url', ''))}",
             f"published_at: {_yaml_str(published)}",
             f"category: {_yaml_str(category)}",
             f"title_en: {_yaml_str(meta.get('title_en', ''))}",
             f"title_zh: {_yaml_str(meta.get('title_zh', meta.get('title', '')))}",
             f"document_id: {_yaml_str(meta.get('document_id', ''))}",
-            'format: "bilingual-paragraph-zh-first"',
+            f"format: {_yaml_str(source['format'])}",
             "---",
             "",
         ]
@@ -71,10 +96,9 @@ def slug_of_legacy(md_path: Path) -> str:
     return m.group(1) if m else md_path.stem
 
 
-def main() -> int:
-    root = Path(__file__).resolve().parent.parent
-    src = root / "sources" / "claude-blog" / "posts"
-    dest = root / "_claude_blog"
+def materialize(root: Path, source: dict) -> int:
+    src = root / "sources" / source["key"] / "posts"
+    dest = root / source["collection_dir"]
 
     if dest.exists():
         import shutil
@@ -83,7 +107,10 @@ def main() -> int:
     dest.mkdir(parents=True, exist_ok=True)
 
     if not src.is_dir():
-        print("[materialize] WARN: sources/claude-blog/posts missing — _claude_blog empty")
+        print(
+            f"[materialize] WARN: sources/{source['key']}/posts missing — "
+            f"{source['collection_dir']} empty"
+        )
         return 0
 
     emitted_slugs: set[str] = set()
@@ -104,29 +131,39 @@ def main() -> int:
             print(f"[materialize] WARN: bad published_at for {slug}, skipping")
             continue
         body = content_file.read_text(encoding="utf-8")
-        category = read_category(package_dir)
+        category = read_category(package_dir, meta, source["default_category"])
         out = dest / rel
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(frontmatter(meta, category) + body, encoding="utf-8")
+        out.write_text(frontmatter(meta, category, source) + body, encoding="utf-8")
         emitted_slugs.add(slug)
         package_count += 1
 
     # 2) Legacy flat posts (already carry front matter): passthrough, dedup by slug.
-    for md_path in sorted(src.glob("[0-9]" * 4 + "/*/*.md")):
-        slug = slug_of_legacy(md_path)
-        if slug in emitted_slugs:
-            continue
-        rel = md_path.relative_to(src)
-        out = dest / rel
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(md_path.read_text(encoding="utf-8"), encoding="utf-8")
-        emitted_slugs.add(slug)
-        legacy_count += 1
+    if source["legacy_flat"]:
+        for md_path in sorted(src.glob("[0-9]" * 4 + "/*/*.md")):
+            slug = slug_of_legacy(md_path)
+            if slug in emitted_slugs:
+                continue
+            rel = md_path.relative_to(src)
+            out = dest / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(md_path.read_text(encoding="utf-8"), encoding="utf-8")
+            emitted_slugs.add(slug)
+            legacy_count += 1
 
     print(
-        f"[materialize] _claude_blog: {package_count} from canonical packages, "
+        f"[materialize] {source['collection_dir']}: {package_count} from canonical packages, "
         f"{legacy_count} legacy flat passthrough, {len(emitted_slugs)} total articles"
     )
+    return 0
+
+
+def main() -> int:
+    root = Path(__file__).resolve().parent.parent
+    for source in SOURCES:
+        rc = materialize(root, source)
+        if rc != 0:
+            return rc
     return 0
 
 

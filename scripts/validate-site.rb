@@ -3,7 +3,7 @@
 
 # 构建前站点校验：Jekyll 不对"语义必填项缺失"报错（只渲染空值），
 # 故用本脚本在 Pages workflow 构建前 fail-loud——任一违反即非零退出，阻断部署（SC-20/21/23）。
-# 契约：sdlc/specs/features/aggregation-portal/{entities.md, contracts.md}。
+# 契约：specs/portal/{entities.md, routing-contract.md}。
 
 require 'yaml'
 require 'date'
@@ -59,7 +59,7 @@ end
 if File.exist?(config_path)
   config ||= load_yaml(config_path) || {}
   # 挂载子站 = 必需 collection（缺失即子站不渲染，比前缀错位更严重 → 同样 fail-loud）。
-  mounts = { 'claude_blog' => '/claude-blog/' }
+  mounts = { 'claude_blog' => '/claude-blog/', 'talks' => '/talks/' }
   collections = config['collections'] || {}
   mounts.each do |coll, prefix|
     unless collections.key?(coll) && collections[coll].is_a?(Hash)
@@ -79,8 +79,10 @@ end
 
 # ── SC-22（非致命）：同仓小源 digest 缺 published_at 排序键 → stderr 告警但不阻断 ──
 # 最新流会跳过这些条目（portal-home.html where_exp 过滤），此处产出可识别告警关键词供构建日志诊断。
-posts_dir = File.join(ROOT, 'sources', 'claude-blog', 'posts')
-if Dir.exist?(posts_dir)
+%w[claude-blog talks].each do |source_key|
+  posts_dir = File.join(ROOT, 'sources', source_key, 'posts')
+  next unless Dir.exist?(posts_dir)
+
   Dir.glob(File.join(posts_dir, '**', '*.md')).sort.each do |md|
     front = File.read(md)[/\A---\s*\n(.*?)\n---\s*\n/m, 1]
     next unless front

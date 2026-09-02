@@ -13,3 +13,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # copy): see scripts/materialize_collection.py. Legacy flat posts pass through.
 PYTHON_BIN="${TD_PIPELINE_PYTHON:-python3}"
 "$PYTHON_BIN" "$ROOT/scripts/materialize_collection.py"
+
+# 跨源主题聚类页：taxonomy/rollup.md 由编排层写入、无 front matter，
+# 物化成 taxonomy/index.md 才能被 Jekyll 渲染到 /taxonomy/。
+"$PYTHON_BIN" "$ROOT/scripts/materialize_taxonomy.py"

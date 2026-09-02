@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  门户首页 layout（pc-portal-home）。由 sdlc/specs/features/aggregation-portal/ui/prototype.html 还原。
+  门户首页 layout（portal-home）。由 specs/portal/ui/prototype.html 还原。
   Hero + 信源导航网格（_data/sources.yml）+ 最新内容流（同仓小源，构建期聚合）。
 -->
 <html lang="zh-CN" data-theme="dark">
@@ -48,6 +48,12 @@
     .stream .src { font-family: var(--mono); font-size: .7rem; color: var(--pulse); }
     .stream time { font-family: var(--mono); font-size: .8rem; color: var(--muted); white-space: nowrap; }
     .stream-empty { color: var(--muted); font-style: italic; padding: 1rem 0; }
+
+    /* 跨源主题聚类入口 */
+    .taxonomy-entry { display: flex; align-items: baseline; gap: .8rem; margin-top: 2rem; padding: 1rem 1.2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; transition: border-color .15s; }
+    .taxonomy-entry:hover { border-color: var(--accent); text-decoration: none; }
+    .taxonomy-label { font-family: var(--mono); font-size: .95rem; color: var(--fg); }
+    .taxonomy-desc { color: var(--muted); font-size: .9rem; }
   </style>
 </head>
 <body>
@@ -79,10 +85,18 @@
       {% endfor %}
     </div>
 
+    <!-- 跨源主题聚类入口：正文由 taxonomy/rollup.md 物化渲染在 /taxonomy/。
+         刻意不用 li / time 标签——首页最新流的构建断言按这两个标签计数。 -->
+    <a class="taxonomy-entry" href="{{ '/taxonomy/' | relative_url }}" data-testid="portal-taxonomy-entry">
+      <span class="taxonomy-label">跨源主题聚类</span>
+      <span class="taxonomy-desc">三个信源的主题分布与升温退潮 →</span>
+    </a>
+
     <!-- 最新内容流：仅同仓小源 digest 倒序（ALG-03）。github-trending 属另一仓、构建期不可得，天然排除 (INV-02/SC-09)。 -->
     <h2 class="section-title">最新（同仓源）</h2>
     {%- comment -%} 同仓小源 collection 汇总；缺 published_at 的条目被 where_exp 过滤（SC-22 跳过），倒序取前 N（SC-08 可配置）。 {%- endcomment -%}
-    {%- assign entries = site.claude_blog | where_exp: "p", "p.published_at" | sort: "published_at" | reverse -%}
+    {%- assign same_repo = site.claude_blog | concat: site.talks -%}
+    {%- assign entries = same_repo | where_exp: "p", "p.published_at" | sort: "published_at" | reverse -%}
     {%- assign stream_n = site.latest_stream_count | default: 8 -%}
     {%- if entries.size > 0 -%}
     <ul class="stream" data-testid="portal-latest-stream">

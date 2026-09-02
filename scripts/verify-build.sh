@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 可重复构建校验：本仓 Jekyll 门户 + claude-blog 子站的 SC 断言（TC-API/TC-UI 中可在构建产物上断言的部分）。
-# Worker 相关 SC（14/17-19/24-27）由 theuntold tests/unit/trending-proxy vitest 覆盖，不在本脚本。
+# Worker 相关 SC（14/17-19/24-27）由 theuntold 侧的 Worker 单测覆盖，不在本脚本。
 # 用法：bash scripts/verify-build.sh   （需 docker + jekyll/builder:4 镜像）
 # 退出码：全 PASS=0，任一 FAIL=1。
 set -uo pipefail
@@ -33,8 +33,8 @@ c=$(grep -c 'class="source-card"' $SITE/index.html); grep -q 'href="/github-tren
 grep -q 'data-testid="portal-latest-stream"' $SITE/index.html; assert "SC-07/TC-UI-FUNC-003" "最新流区块存在" $?
 # SC-08 倒序 + 条数 ≤ N(=8)
 n=$(grep -c '<li>' $SITE/index.html); dates=$(grep -oE '<time datetime="[0-9-]+"' $SITE/index.html | grep -oE '[0-9-]+' ); sorted=$(echo "$dates" | sort -r); [ "$n" -le 8 ] && [ "$dates" = "$sorted" ]; assert "SC-08/TC-UI-FUNC-004" "最新流倒序且条数≤N" $?
-# SC-09 流不含 github-trending 明细（stream src 仅 claude-blog）
-srcs=$(grep -oE '<span class="src">[^<]+' $SITE/index.html | sed 's/.*>//' | sort -u); [ "$srcs" = "claude-blog" ] || [ -z "$srcs" ]; assert "SC-09/TC-UI-BND-002" "最新流仅同仓源" $?
+# SC-09 流不含 github-trending 明细（stream src 只能来自同仓 collection 源）
+srcs=$(grep -oE '<span class="src">[^<]+' $SITE/index.html | sed 's/.*>//' | sort -u); foreign=$(echo "$srcs" | grep -vE '^(claude-blog|talks)?$' | grep -c .); [ "$foreign" -eq 0 ]; assert "SC-09/TC-UI-BND-002" "最新流仅同仓源" $?
 # SC-11 /claude-blog/ 索引渲染
 [ -f $SITE/claude-blog/index.html ] && grep -q 'claude-blog-post-list\|post-list' $SITE/claude-blog/index.html; assert "SC-11/TC-UI-FUNC-005" "/claude-blog/ 子站索引渲染" $?
 # SC-12 子站 post 前缀正确 + 内链
@@ -59,8 +59,8 @@ cp _config.yml /tmp/vb_c.bak; ruby -e "require 'yaml';require 'date';c=YAML.load
 # SC-22 缺 published_at → stderr 告警 + 构建不中止 + 跳过
 mkdir -p sources/claude-blog/posts/2099/01; printf -- '---\nsource: claude-blog\ntitle_zh: 无日期\ncategory: X\n---\n# x\n' > sources/claude-blog/posts/2099/01/2099-01-01-nd.md
 warn=$(ruby scripts/validate-site.rb 2>&1 | grep -c "WARN.*published_at"); bash scripts/prepare-collections.sh >/dev/null 2>&1; $JEKYLL sh -c "jekyll build -d $SITE >/dev/null 2>&1"; rc=$?; nd=$(grep -c "无日期" $SITE/index.html); rm -rf sources/claude-blog/posts/2099; [ "$warn" -ge 1 ] && [ $rc -eq 0 ] && [ "$nd" -eq 0 ]; assert "SC-22/TC-UI-ERR-002" "缺 published_at 跳过+告警+构建不中止" $?
-# SC-10 空集优雅
-mkdir -p _cb_bak && mv _claude_blog/* _cb_bak/ 2>/dev/null; $JEKYLL sh -c "jekyll build -d $SITE >/dev/null 2>&1"; rc=$?; empt=$(grep -c 'portal-stream-empty' $SITE/index.html); li=$(grep -c '<li>' $SITE/index.html); mv _cb_bak/* _claude_blog/ 2>/dev/null; rmdir _cb_bak 2>/dev/null; [ $rc -eq 0 ] && [ "$empt" -ge 1 ] && [ "$li" -eq 0 ]; assert "SC-10/TC-UI-BND-003" "空同仓源最新流优雅留空不报错" $?
+# SC-10 空集优雅（须清空全部同仓 collection，留一个非空则测不到空集路径）
+mkdir -p _cb_bak _tk_bak && mv _claude_blog/* _cb_bak/ 2>/dev/null; mv _talks/* _tk_bak/ 2>/dev/null; $JEKYLL sh -c "jekyll build -d $SITE >/dev/null 2>&1"; rc=$?; empt=$(grep -c 'portal-stream-empty' $SITE/index.html); li=$(grep -c '<li>' $SITE/index.html); mv _cb_bak/* _claude_blog/ 2>/dev/null; mv _tk_bak/* _talks/ 2>/dev/null; rmdir _cb_bak _tk_bak 2>/dev/null; [ $rc -eq 0 ] && [ "$empt" -ge 1 ] && [ "$li" -eq 0 ]; assert "SC-10/TC-UI-BND-003" "空同仓源最新流优雅留空不报错" $?
 
 # 恢复干净构建
 bash scripts/prepare-collections.sh >/dev/null 2>&1; $JEKYLL sh -c "jekyll build -d $SITE >/dev/null 2>&1"

@@ -17,11 +17,37 @@ Claude Blog producer. New producers must use private runtime state and may write
 a public `sources/<source>/manifest.json` containing only published-content
 lineage.
 
+## Repository layout
+
+| Path | Role |
+|---|---|
+| `sources/<source>/` | Content sources — the canonical archive packages written by producers |
+| `taxonomy/` | Cross-source theme rollup data written by the aggregation pipeline; rendered at `/taxonomy/` |
+| `pages/` | Standalone site entry pages (`/claude-blog/`, `/talks/`), each with an explicit `permalink` |
+| `index.md`, `_layouts/`, `_data/`, `_config.yml` | Jekyll site: portal home, layouts, source cards, build config |
+| `scripts/` | Build-time materialization and fail-loud validation |
+| `specs/` | Design and contracts — read before changing the portal, routes, or validation scripts |
+| `docs/` | Operations and outbound contracts (producer contract, cutover runbook) |
+| `TODO.md` | Open work |
+
+Three directories share the `claude-blog` name by design, and they are not
+interchangeable: `sources/claude-blog/` is the content source, `_claude_blog/`
+is the gitignored collection materialized at build time by
+`scripts/prepare-collections.sh`, and `pages/claude-blog.html` is the entry page
+served at `/claude-blog/`. The same holds for `talks`.
+
 ## Sources
 
-| Source | Directory | Description |
-|---|---|---|
-| Claude Blog | `sources/claude-blog/` | Chinese reading notes and translations for official Claude Blog posts |
+| Source | Directory | Mode | Description |
+|---|---|---|---|
+| Claude Blog | `sources/claude-blog/` | pipeline | Chinese reading notes and translations for official Claude Blog posts |
+| Talks | `sources/talks/` | manual | Chinese translations of technical talks and interviews, hand-selected and hand-translated |
+
+`sources/talks/` is a manual source: there is no upstream canonical article package
+and no scheduler. Each package carries the reading Markdown, the chaptered English
+transcript it was translated from, the raw caption file under `raw/`, and a
+`metadata.json` whose `generator` is `manual` and whose `provenance` block records
+the transcript source. `manifest.json` for this source is written by hand.
 
 ## 安装
 
