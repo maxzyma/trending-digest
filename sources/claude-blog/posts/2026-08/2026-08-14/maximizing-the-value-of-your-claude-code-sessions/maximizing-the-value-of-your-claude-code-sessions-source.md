@@ -69,16 +69,11 @@ Claude Code manages the prompt cache on every request, there's nothing to turn o
 Say we type "fix the failing test in `utils.test.ts`". Here's what Claude Code sends for it:
 
 1. Claude Code assembles the first request out of the system prompt (tool definitions included), your `CLAUDE.md`, and your message, and sends it off (input tokens). Nothing is in the cache yet, so all of it gets prefilled and written into the cache.
-
-1. The model can't fix a test it hasn't seen, so it thinks for a moment and responds with a Read call for `utils.test.ts` (output tokens). Claude Code reads the file, appends it to the conversation, and sends the whole thing again (input tokens). This time everything from request 1 is read back out of the cache at a tenth of the price, and the only thing prefilled at full price is what's new: the Read call and the file.
-
-1. Now the model wants the file under test (output). Another Read, another append, and everything goes out again: requests 1 and 2 from the cache, the second file at full price (input).
-
-1. The model responds with an Edit (output). Claude Code applies it, appends the result, and sends everything again. Same story: the Edit and its result are new, everything in front of them is a cache read (input).
-
-1. The model runs `npm test `(output). Claude Code appends the test output and sends everything again, with the test output as the only new part (input).
-
-1. The tests pass, and the model responds with a short summary (output). No tool call means nothing to append and no request 6, so we're done.
+2. The model can't fix a test it hasn't seen, so it thinks for a moment and responds with a Read call for `utils.test.ts` (output tokens). Claude Code reads the file, appends it to the conversation, and sends the whole thing again (input tokens). This time everything from request 1 is read back out of the cache at a tenth of the price, and the only thing prefilled at full price is what's new: the Read call and the file.
+3. Now the model wants the file under test (output). Another Read, another append, and everything goes out again: requests 1 and 2 from the cache, the second file at full price (input).
+4. The model responds with an Edit (output). Claude Code applies it, appends the result, and sends everything again. Same story: the Edit and its result are new, everything in front of them is a cache read (input).
+5. The model runs `npm test `(output). Claude Code appends the test output and sends everything again, with the test output as the only new part (input).
+6. The tests pass, and the model responds with a short summary (output). No tool call means nothing to append and no request 6, so we're done.
 
 That's five requests for one small fix, and every one of them contained the entire conversation up to that point. A typical turn is lopsided: tens of thousands of tokens going in, a few hundred coming out. But only what's new in that turn gets prefilled at full price. 
 

@@ -148,28 +148,18 @@ Claude Code 在每次请求时都会管理提示词缓存，无需手动开启�
 > Say we type "fix the failing test in `utils.test.ts`". Here's what Claude Code sends for it:
 
 1. Claude Code 会用系统提示词（其中包含工具定义）、你的 `CLAUDE.md` 以及你的消息组装出第一个请求，然后把它发送出去（输入 token）。此时缓存里还什么都没有，所以这些内容全部会被预填充并写入缓存。
+2. 模型无法修复一个它没看到过的测试，于是它思考片刻，回应了一个针对 `utils.test.ts` 的 Read 调用（输出 token）。Claude Code 读取该文件，将其追加到对话中，然后把整个内容再次发送出去（输入 token）。这一次，请求 1 中的所有内容都以十分之一的价格从缓存中读回，唯一需要按全价预填充的是新增的部分：那个 Read 调用和那个文件。
+3. 现在模型需要待测试的文件（输出）。又一次 Read，又一次追加，所有内容再次发送出去：请求 1 和 2 来自缓存，第二个文件按全价计费（输入）。
+4. 模型返回一个 Edit（输出）。Claude Code 应用它，把结果追加进去，然后再把全部内容发送一次。情况还是一样：Edit 和它的结果是新的，排在它们前面的所有内容都是缓存读取（输入）。
+5. 模型运行 `npm test `（输出）。Claude Code 追加测试输出，然后再次发送全部内容，其中测试输出是唯一的新增部分（输入）。
+6. 测试通过，模型返回了一段简短的总结（输出）。没有工具调用意味着没有内容需要追加，也没有请求 6，因此我们完成了。
 
-> • Claude Code assembles the first request out of the system prompt (tool definitions included), your `CLAUDE.md`, and your message, and sends it off (input tokens). Nothing is in the cache yet, so all of it gets prefilled and written into the cache.
-
-1. 模型无法修复一个它没看到过的测试，于是它思考片刻，回应了一个针对 `utils.test.ts` 的 Read 调用（输出 token）。Claude Code 读取该文件，将其追加到对话中，然后把整个内容再次发送出去（输入 token）。这一次，请求 1 中的所有内容都以十分之一的价格从缓存中读回，唯一需要按全价预填充的是新增的部分：那个 Read 调用和那个文件。
-
-> • The model can't fix a test it hasn't seen, so it thinks for a moment and responds with a Read call for `utils.test.ts` (output tokens). Claude Code reads the file, appends it to the conversation, and sends the whole thing again (input tokens). This time everything from request 1 is read back out of the cache at a tenth of the price, and the only thing prefilled at full price is what's new: the Read call and the file.
-
-1. 现在模型需要待测试的文件（输出）。又一次 Read，又一次追加，所有内容再次发送出去：请求 1 和 2 来自缓存，第二个文件按全价计费（输入）。
-
-> • Now the model wants the file under test (output). Another Read, another append, and everything goes out again: requests 1 and 2 from the cache, the second file at full price (input).
-
-1. 模型返回一个 Edit（输出）。Claude Code 应用它，把结果追加进去，然后再把全部内容发送一次。情况还是一样：Edit 和它的结果是新的，排在它们前面的所有内容都是缓存读取（输入）。
-
-> • The model responds with an Edit (output). Claude Code applies it, appends the result, and sends everything again. Same story: the Edit and its result are new, everything in front of them is a cache read (input).
-
-1. 模型运行 `npm test `（输出）。Claude Code 追加测试输出，然后再次发送全部内容，其中测试输出是唯一的新增部分（输入）。
-
-> • The model runs `npm test `(output). Claude Code appends the test output and sends everything again, with the test output as the only new part (input).
-
-1. 测试通过，模型返回了一段简短的总结（输出）。没有工具调用意味着没有内容需要追加，也没有请求 6，因此我们完成了。
-
-> • The tests pass, and the model responds with a short summary (output). No tool call means nothing to append and no request 6, so we're done.
+> 1\. Claude Code assembles the first request out of the system prompt (tool definitions included), your `CLAUDE.md`, and your message, and sends it off (input tokens). Nothing is in the cache yet, so all of it gets prefilled and written into the cache.
+> 2\. The model can't fix a test it hasn't seen, so it thinks for a moment and responds with a Read call for `utils.test.ts` (output tokens). Claude Code reads the file, appends it to the conversation, and sends the whole thing again (input tokens). This time everything from request 1 is read back out of the cache at a tenth of the price, and the only thing prefilled at full price is what's new: the Read call and the file.
+> 3\. Now the model wants the file under test (output). Another Read, another append, and everything goes out again: requests 1 and 2 from the cache, the second file at full price (input).
+> 4\. The model responds with an Edit (output). Claude Code applies it, appends the result, and sends everything again. Same story: the Edit and its result are new, everything in front of them is a cache read (input).
+> 5\. The model runs `npm test `(output). Claude Code appends the test output and sends everything again, with the test output as the only new part (input).
+> 6\. The tests pass, and the model responds with a short summary (output). No tool call means nothing to append and no request 6, so we're done.
 
 为了一个小小的修复，这就发出了五次请求，而其中每一次都包含了到那个时间点为止的整段对话。典型的一轮交互是极不对称的：输入是数万个 token，输出只有几百个。但在那一轮中，只有新增的部分才会按全价进行预填充。
 
