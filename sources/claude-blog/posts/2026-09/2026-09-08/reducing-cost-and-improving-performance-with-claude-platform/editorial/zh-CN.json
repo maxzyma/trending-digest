@@ -1,0 +1,104 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:3ad4fb95b347e7e5cb53fb30420f1e2dd94b7a145e5b13c5461d5b5dfeffb190",
+  "profile": "bilingual-zh-first.v1",
+  "category": "AI 工程 / 大模型成本优化",
+  "summary": "围绕 Claude Platform 应用的三条优化路径——提高提示缓存命中率、清除面向旧模型的提示反模式、按任务校准 effort——介绍具体做法及 claude-api 技能提供的 prompt-audit、hillclimb、cost-optimize 命令与基准测试结果。",
+  "source_label": "Claude Blog / Anthropic",
+  "key_points": [
+    "许多使用 Claude Platform 的应用可以通过最大化提示缓存命中率、移除提示反模式和校准思考投入这三项改进，在不牺牲性能的前提下削减成本。",
+    "提示缓存保存的是预填充阶段生成的键值缓存状态，缓存读取的计费价格仅为完整输入价格的一小部分，但要求前缀逐字节一致、绑定同一模型，并受存活时间限制。",
+    "破坏缓存的常见做法包括在对话中途改动 effort 或 thinking 设置、把时间戳与 ID 等易变值放进前缀、改动会被渲染在最前面的工具定义，以及在分叉对话时前缀不完全一致。",
+    "保护缓存的手段包括监控缓存命中率并使用缓存诊断 API、对不常用工具启用 defer_loading、以对话中途系统消息的形式下发指令更新、把静态上下文放在增长的对话之前，以及按需为前缀设置 1 小时 TTL。",
+    "缓存本就会因压缩等操作失效的时刻，是切换模型或推理强度的合适时机；发送 max_tokens 为 0 且带显式缓存断点的请求可以预热缓存以降低首次延迟。",
+    "为弥补旧模型弱点而写的提示指令会成为反模式，包括验证仪式、彻底性与强调类增强表述、强制流程与草稿纸脚手架、过时的少样本示例、相互矛盾的规则以及已被平台拒绝的过时配置。",
+    "在客户支持基准的迁移实验中，对六个分别植入一种反模式的提示运行 prompt-audit，平均使成本下降 14.6%、准确率提升 5.3%，成因包括消除多余工具调用、废弃 thinking 设置导致的请求被拒以及草稿纸与内置思考的冲突。",
+    "effort 等级会同时改变成本与性能，Fable 5 在 FrontierCode Diamond 上从低到最高档得分提高约 2.7 倍而成本约 3.5 倍，Fable 5.1 在 Humanity's Last Exam 上最后一档的提升则落在噪声范围内。",
+    "effort 可能在两个方向失准：过高导致过度思考、推高成本与延迟甚至降低质量，过低则让模型在证据不足时停下、发起更少工具调用并跳过检查。",
+    "校准方法包括在低 effort 档位测试更强的模型，以及在一系列 effort 级别上测量应用性能以判断任务是否受思考算力限制；在 CursorBench 3.2 上低档 Fable 5.1 达到高档 Fable 5 的性能而成本仅三分之一。",
+    "hillclimb 命令将评估集拆分为训练集与测试集并迭代搜索配置，在客户支持基准上最终以低推理强度的 Sonnet 5 配合补充的路由规则，在 14 个留出工单上把得分从 78.6% 提升至 90.5%，成本约为原来的五分之一。",
+    "cost-optimize 命令先定位 token 开销来源，再按提示缓存、精简请求、限制输出规模和批处理排序施加措施，在 LegalBench、tau2-bench retail、OfficeQA Pro 和 SWE-bench Verified 上分别降低约 58%、73%、52% 和 55% 的成本。"
+  ],
+  "glossary": [
+    {
+      "term": "prompt caching",
+      "translation": "提示缓存",
+      "note": "把提示前缀的预填充结果保存下来，后续相同前缀的请求直接读取而不重新计算。"
+    },
+    {
+      "term": "prefill",
+      "translation": "预填充",
+      "note": "模型生成回复前把输入提示处理为内部工作状态的阶段，是处理输入中开销最大的部分。"
+    },
+    {
+      "term": "KV cache",
+      "translation": "键值缓存",
+      "note": "预填充阶段产生并被保存复用的注意力键值张量状态。"
+    },
+    {
+      "term": "TTL",
+      "translation": "存活时间",
+      "note": "缓存条目在过期前可被读取的有效时长，Claude 提供 5 分钟与 1 小时两档。"
+    },
+    {
+      "term": "cache breakpoint",
+      "translation": "缓存断点",
+      "note": "在提示中标记的位置，其之前的内容会被写入缓存。"
+    },
+    {
+      "term": "defer_loading",
+      "translation": "推迟加载",
+      "note": "工具定义的一种标记，使其不进入缓存前缀，仅在被工具搜索找到时才追加到对话中。"
+    },
+    {
+      "term": "effort",
+      "translation": "努力程度 / 思考强度",
+      "note": "控制模型回答前投入多少斟酌、验证与备选探索的参数。"
+    },
+    {
+      "term": "thinking budget",
+      "translation": "思考预算",
+      "note": "早期模型中手动设定的推理 token 上限，属于升级到前沿模型后可能被拒绝的过时配置。"
+    },
+    {
+      "term": "compaction",
+      "translation": "压缩",
+      "note": "对已增长的对话内容进行精简重写的操作，会导致大部分缓存失效。"
+    },
+    {
+      "term": "Batch API",
+      "translation": "批处理 API",
+      "note": "以批量方式提交无人值守请求的接口，用于以更低单价处理非实时任务。"
+    },
+    {
+      "term": "prompt-audit",
+      "translation": "提示词审查",
+      "note": "claude-api 技能中的命令，扫描工作目录中的提示、技能与工具描述并移除反模式。"
+    },
+    {
+      "term": "hillclimb",
+      "translation": "爬坡搜索",
+      "note": "claude-api 技能中的命令，基于训练集与测试集迭代搜索成本更低而性能不降的配置。"
+    },
+    {
+      "term": "cost-optimize",
+      "translation": "成本优化",
+      "note": "claude-api 技能中的命令，剖析 token 开销来源并按序施加各类成本削减措施。"
+    },
+    {
+      "term": "few-shot examples",
+      "translation": "少样本示例",
+      "note": "提示中给出的示范样例，若针对旧模型失效模式调优则可能误导前沿模型。"
+    },
+    {
+      "term": "holdout set",
+      "translation": "留出集",
+      "note": "在配置搜索过程中从未被使用、仅用于最终评分的样本集合。"
+    },
+    {
+      "term": "cache hit rate",
+      "translation": "缓存命中率",
+      "note": "请求中成功读取到已缓存前缀的比例，是提示缓存效果的核心监控指标。"
+    }
+  ]
+}

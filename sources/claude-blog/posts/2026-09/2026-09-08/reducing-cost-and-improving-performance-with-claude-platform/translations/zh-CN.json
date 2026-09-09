@@ -1,0 +1,1507 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:3ad4fb95b347e7e5cb53fb30420f1e2dd94b7a145e5b13c5461d5b5dfeffb190",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "claude-blog-zh.v1",
+  "title": "使用 Claude Platform 降低成本并提升性能",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "性能与成本常常被视为一种权衡：想少花钱，就得接受更差的结果。但在实践中，我们发现许多使用 Claude Platform 的应用可以通过三项改进在不牺牲性能的前提下削减成本：最大化提示缓存命中率、在升级到前沿 Claude 模型时移除提示中的反模式，以及根据任务校准投入的思考量。我们已将这些指导整理进 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/skills/tree/main/skills/claude-api"
+          },
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "claude-api "
+            },
+            {
+              "type": "text",
+              "text": "skill"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。在本文中，我们将展示 Claude Code 搭配 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-api "
+        },
+        {
+          "type": "text",
+          "text": "往往能够找到在保持甚至提升性能的同时降低成本的方法。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "提示词缓存"
+            }
+          ]
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Claude 生成回复之前，它会先将你的提示词处理成一个内部工作状态。这一步称为"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "预填充"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，是处理输入过程中开销最大的部分。提示词缓存会保存该状态（即键值缓存，KV cache）：当某个请求以相同的前缀开头时，Claude 会将其读回，而不是重新计算。缓存读取的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/about-claude/pricing"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "计费价格仅为"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "完整输入价格的一小部分。"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "要有效利用提示缓存，有几点实际的注意事项。首先，提示缓存与特定模型绑定。其次，提示缓存的读取必须在整个提示的完整范围内做到"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "逐字节精确一致"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。最后，提示缓存的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching#ttl-support"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "存活时间有限"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（TTL）。"
+        }
+      ]
+    },
+    "b005": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "考虑到这几点，这里有一些实用的建议："
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "避免在对话中途更改 effort 或 thinking 设置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。这些设置会在你的内容之前被渲染进提示词中，因此它们属于被缓存的前缀部分。特别是在使用 Claude Opus 5 和 Fable 5.1 时，你可以"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/effort#changing-effort-mid-conversation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "在对话中途更新 effort"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "而不会破坏缓存。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "不要把易变的值放在前缀中"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。系统提示词中的动态时间戳或 ID 会在不同的模型调用之间发生变化，从而破坏缓存。 "
+        }
+      ]
+    },
+    "b010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "避免会自行重新排序的工具定义"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。使用 Claude Messages API 时，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching#structuring-your-prompt"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "提示词的组装"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "顺序是固定的，工具定义会被渲染在最前面。对工具定义的任何改动都会导致缓存失效。 "
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "分叉对话时要小心"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。只有当分叉的前缀在字节层面完全一致、使用同一模型、且采用相同的 effort 设置时，子代理和分支才会共享父级的缓存。 "
+        }
+      ]
+    },
+    "b014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "避免使用超出缓存 TTL 的同步工具调用和子智能体"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。如果一个智能体阻塞在长时间运行的工具调用或子智能体上，缓存可能在结果返回之前就已过期。下一轮就必须重写缓存，费用是正常输入价格的 1.25 倍（1 小时缓存则为 2 倍），而不是便宜的读取价格。"
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如何修复"
+        }
+      ]
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/lessons-from-building-claude-code-prompt-caching-is-everything"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "积累"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "了一些关于提示词缓存管理的经验教训： "
+        }
+      ]
+    },
+    "b018": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "仔细监控你的提示缓存命中率"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude Console"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提供提示缓存诊断功能，包括提示缓存未命中的原因（图 1）。如果命中率意外下降，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "缓存诊断 API "
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "会准确告诉你两个请求在哪里出现了分歧。"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "推迟加载不常用的工具"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。预先声明你所有的工具，但把不常用的那些标记为 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-use-with-prompt-caching#defer-loading-and-cache-preservation"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "defer_loading"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：它们不会进入被缓存的前缀，只有当 Claude 通过工具搜索查找到它们时才会被追加到对话中，因此缓存得以保留。"
+        }
+      ]
+    },
+    "b023": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "以消息的形式应用系统提示词的更新"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages#when-to-use-a-mid-conversation-system-message"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude Platform"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 允许你在对话中途将系统指令作为一条消息添加进去，而不是去修改系统提示词，这样可以保留缓存。"
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "组织请求结构，让稳定的部分保持稳定"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。先放入静态上下文（工具定义和系统提示词），再把不断增长的对话内容放在它们之后（图 2）。"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "在提示缓存本就会失效时再更换模型或推理强度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。某些操作（例如"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/compaction"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "压缩"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）本身就会重写大部分缓存（即对话内容）。那正是切换模型或推理强度的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://cognition.com/blog/devin-fusion"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "好时机"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，因为反正你已经要为一次缓存未命中付费了。"
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "随着对话增长移动缓存断点"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。在 Claude Platform 中，你可以设置"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching#automatic-caching"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自动缓存"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，将缓存断点自动应用到最后一个可缓存的块。"
+        }
+      ]
+    },
+    "b032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "预热缓存"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。为了降低延迟，可以发送一个带有 "
+        },
+        {
+          "type": "inline_code",
+          "text": "max_tokens: 0"
+        },
+        {
+          "type": "text",
+          "text": " 和显式缓存断点的请求。这会处理提示词并将其写入缓存，而不生成任何内容。如果你在会话开始时运行它（例如，在用户正在输入时），那么第一个真实请求就会命中已预热的缓存。"
+        }
+      ]
+    },
+    "b034": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "不要超出提示缓存的 TTL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。5 分钟的缓存 TTL 从请求开始时计时。如果某个智能体因工具调用或子智能体请求而阻塞，且这些调用运行超过 5 分钟，父级的缓存会在结果返回之前过期。在这类情况下，可以考虑改为对前缀"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "设置 1 小时的 TTL"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "说明"
+            }
+          ]
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提示词中可能会不断累积各种用于弥补模型弱点的指令。随着"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://x.com/trq212/status/2080710971228918066"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "最新 Claude 模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "能力的提升，这些指令可能会逐渐与模型能力脱节。以下是一些常见的提示词“反模式”，它们会束缚前沿 Claude 模型的表现，并且可能无意中增加成本："
+        }
+      ]
+    },
+    "b038": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "验证仪式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。诸如“"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "仔细检查你的工作"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”或“"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "回复前验证两次"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”这样的指令，常常会被前沿模型按字面意思执行，从而浪费 token。"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "彻底性与强调类增强表述"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。“"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "务求最大程度的彻底"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”“"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "关键：你必须始终……"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”这类表述在与前沿模型协作时，可能导致输出冗长以及额外的工具调用。"
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "强制性流程与草稿纸脚手架"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。固定的步骤流程（例如「"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "在草稿纸上一步步思考"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "」）或推理模板都是前沿模型并不需要的仪式。这类脚手架会叠加在原生推理之上，消耗不必要的 token。"
+        }
+      ]
+    },
+    "b044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "过时的示例"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。针对旧模型失效模式而调优的少样本示例，可能会让前沿模型在并不需要长推理链的请求上，也去模仿这种长推理链。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "相互矛盾的规则"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。前沿模型在指令遵循方面表现更好。相互矛盾的指令（“始终在政策范围内退款”与“未经上报绝不发放退款”）可能会被前沿模型更字面地遵循，从而导致性能下降。  "
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "过时的配置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。为较早一代 Claude 编写的设置（例如手动设定的思考预算）在升级到前沿模型时可能会被 Claude 平台拒绝。"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "如何修复 "
+            }
+          ]
+        }
+      ]
+    },
+    "b051": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们已更新 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-api "
+        },
+        {
+          "type": "text",
+          "text": "技能，新增了一个用于排查这些反模式的命令。在 Claude Code 中，针对你的提示词、技能或工具描述运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api prompt-audit"
+        },
+        {
+          "type": "text",
+          "text": "。该审查覆盖你工作目录中的所有内容，包括调用 Claude API 的应用代码以及 Claude Code 自身的配置（例如 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "http://claude.md"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "CLAUDE.md"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 或技能）。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "例如，我们在一个客户支持基准测试上测试了从 Opus 4.8 到 Opus 5 的模型迁移。我们从一个干净的提示词出发，每次植入一种反模式（一个已弃用的思考设置、一对相互矛盾的退款规则、一个手动草稿板、\"验证两次\"、\"尽可能详尽\"，以及一个强制的六步流程），从而得到六个遗留提示词。"
+        }
+      ]
+    },
+    "b053": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们对每一项都进行了测试：在 Opus 4.8 上运行，在仅更改模型 ID 的 Opus 5 上运行，以及在每个提示各运行一次 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api prompt-audit"
+        },
+        {
+          "type": "text",
+          "text": " 之后的 Opus 5 上运行（图 3 显示了这六项的平均值）。"
+        }
+      ]
+    },
+    "b055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Opus 5 上，验证仪式（\""
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "验证两次"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\"）会在每次退款时重复执行订单查询，从而消耗不必要的 token。强调式增强语（\""
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "尽可能详尽彻底"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\"）则变成了数十次不必要的知识库搜索。 "
+        }
+      ]
+    },
+    "b056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api prompt-audit"
+        },
+        {
+          "type": "text",
+          "text": " 移除了这些反模式，平均使成本下降 14.6%，准确率提升 5.3%。成本下降是因为消除了额外的工具调用和重复的推理。准确率上升有三个原因。已废弃的 thinking 设置导致 API 直接拒绝了每一个路由请求。相互矛盾的退款规则使 Opus 5 在要求客户确认的同时，扣下了四笔本应发放的退款。而手动草稿纸与 Opus 5 的内置思考发生了冲突：在三张工单上，它把工具调用写进了自己的推理过程中，却从未真正执行。"
+        }
+      ]
+    },
+    "b057": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Effort"
+            }
+          ]
+        }
+      ]
+    },
+    "b058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/effort"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Effort"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（努力程度）告诉 Claude“要多努力地工作”。在低努力程度下，Claude 通常会更快地得出结论。在高努力程度下，Claude 会在回答之前进行深思、验证并探索其他备选方案。 "
+        }
+      ]
+    },
+    "b059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "同一个模型在不同思考强度（effort）等级下的成本与性能之比可能存在差异。例如，在 FrontierCode Diamond（最难的 50 个任务）上，Claude Fable 5 在低强度下得分为 11.5%，每个任务花费 5.35 美元。在最高强度下，Fable 5 得到 30.9% 的分数，每个任务花费 19.00 美元；改变强度使分数提高了约 2.7 倍（+19 分），而成本约为 3.5 倍（图 4）。"
+        }
+      ]
+    },
+    "b060": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Claude Fable 5.1 上，Humanity's Last Exam（不使用工具）呈现出一条陡峭但最后一步收益递减的曲线。在低算力投入下，它的得分约为 53%，每道题约需 0.30 美元；在最大算力投入下得分约为 61%，每道题约需 2.23 美元；从次高档提升到最大档这最后一步只带来约半个百分点的提升，成本却增加了 46%。这一增益落在该基准测试运行间的噪声范围内，所以你多花了钱却得不到可测量的收益。"
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "努力程度可能在两个方向上失准："
+        }
+      ]
+    },
+    "b063": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "误以为越高总是越好"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。过高的思考投入会导致 Claude "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "过度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "思考。它花在斟酌上的时间超出了任务本身的需要，这既增加了成本和延迟，也可能降低答案质量。只有在仍有证据可供发掘时，斟酌才有帮助。"
+        }
+      ]
+    },
+    "b065": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "偏向低努力程度"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。设置得过低时，Claude 会在证据尚不充分时就停下来。它发起的工具调用更少，因此可能根据第一个搜索结果作答，而不是第三个。它在困难步骤上思考得更少，并跳过原本会自行执行的检查。答案看起来是完整的，但它建立在不完整的信息之上。 "
+        }
+      ]
+    },
+    "b067": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "如何修复 "
+            }
+          ]
+        }
+      ]
+    },
+    "b068": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有一些有用的方法可以校准投入的精力："
+        }
+      ]
+    },
+    "b069": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "在更低的努力档位上测试更强的模型"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。一个更强的模型在低努力档位下运行，可能比一个较弱的模型全力工作（高努力档位）更便宜。例如，在 CursorBench 3.2 上，低努力档位的 Claude Fable 5.1 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www-cdn.anthropic.com/0339e6a7c5c7b87f5c07798616dc32c215d14235/Claude%20Fable%205.1%20&%20Claude%20Mythos%205.1%20System%20Card.pdf"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "达到了"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "高努力档位 Fable 5 的性能，而成本只有三分之一（图 5）。有两点让这个更新的模型更便宜：在低努力档位下它每个任务做的工作更少，而且 Fable 5.1 的提示缓存读取定价为每百万 token 0.25 美元，而 Fable 5 为 1.00 美元。即便按 Fable 5 的价格计算，低努力档位的 Fable 5.1 也会便宜约 40%。"
+        }
+      ]
+    },
+    "b072": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "了解你的任务形态。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#tune-effort"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "一系列思考强度级别"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "上测量应用性能，是理解特定任务成本-性能权衡的有效方法。在未饱和的评估中，如果性能-成本曲线在各个强度级别上保持平坦，说明该任务并不受思考算力的限制；提高思考强度不会带来收益。"
+        }
+      ]
+    },
+    "b074": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种校准通常需要在不同模型和不同投入水平上运行一次评估。在 Claude Code 中，"
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api hillclimb"
+        },
+        {
+          "type": "text",
+          "text": " 会为你执行这项搜索：它将你的评估拆分为训练集和测试集，提出配置更改建议，并读取训练集中未通过的样例以修复所发现的问题。"
+        }
+      ]
+    },
+    "b075": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们在一个客户支持基准测试上运行了它，起点是默认（高）努力程度下的 Opus 4.8。爬坡器首先尝试了低努力程度的 Opus 5，并应用 prompt-audit 来移除强制性的工具调用仪式、草稿纸步骤和相互矛盾的规则。这一步以 98.9% 的训练准确率超越了 Opus 4.8 基线，并将成本降至每张工单 2.6 美分。"
+        }
+      ]
+    },
+    "b077": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随后它降级到低推理强度的 Sonnet 5，成本更低，每张工单 1 美分，但准确率降至 88.9%。在阅读了失败的火车票工单后，Claude 在提示词中加入了路由规则和退款上限交叉引用，使 Sonnet 5 在相同成本下重新回到 98.9%。"
+        }
+      ]
+    },
+    "b078": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在搜索过程从未接触过的 14 个留出工单上，最终配置得分为 90.5%，而原始设置为 78.6%，成本约为原来的五分之一。"
+        }
+      ]
+    },
+    "b079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自动化降低成本"
+            }
+          ]
+        }
+      ]
+    },
+    "b080": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提示缓存、指令和思考投入量是降低成本的常见手段。我们的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#cut-spend-without-losing-quality"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "文档"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "还涵盖了更多内容。为了对使用 Claude API 的应用代码进行全面的成本审计，我们新增了 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": "：它会剖析你的开销去向、施加成本削减措施，并且在你提供评估的情况下，展示节省的成本与性能之间的权衡关系。"
+        }
+      ]
+    },
+    "b081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": " 首先要弄清楚你的 token 都花在了哪里：如果你有 Claude Admin API 密钥，可以查看你所在组织的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/manage-claude/usage-cost-api"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "用量与成本报告"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；如果你的应用记录了日志，可以查看每个 API 响应中的 usage 对象；如果两者都没有，就只能阅读你构建请求的代码并进行估算。"
+        }
+      ]
+    },
+    "b082": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随后，它会对可用的节省手段进行排序，从提示缓存开始，精简每个请求所携带的内容（包括一次提示审计），限制输出规模，并对无人值守的工作进行"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/batch-processing"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "批处理"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。如果你提供了一套评估方案，它还会更进一步，计算不同投入水平和模型选择下的成本与性能。 "
+        }
+      ]
+    },
+    "b083": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们在四个公开基准上运行了该方法，并以 Sonnet 5 作为基线（图 7）："
+        }
+      ]
+    },
+    "b084": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "LegalBench（成本降低约 58%）："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_code",
+          "text": "cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": " 提出在各任务间缓存共享前缀、将 effort 设为低档，并通过 Batch API 处理任务。思考 token 从 102,779 降至 8,284，但通过率仍在噪声范围内，成本下降约 58%。"
+        }
+      ]
+    },
+    "b086": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "tau2-bench retail（成本降低约 73%）："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "通过实现提示词缓存并显式放置断点，"
+        },
+        {
+          "type": "inline_code",
+          "text": "cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": " 在保持通过率不变的情况下将支出减少了 73%。"
+        }
+      ]
+    },
+    "b088": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "OfficeQA Pro（成本降低约 52%）："
+            }
+          ]
+        },
+        {
+          "type": "inline_code",
+          "text": "cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": " 增加了批处理和文档缓存，使成本从 $136.20 降至 $64.87。"
+        }
+      ]
+    },
+    "b090": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "SWE-bench Verified（成本降低约 55%）："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        },
+        {
+          "type": "inline_code",
+          "text": "cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": " 发现默认配置已经能够正确进行缓存。节省来自将 effort 设置为 medium，并将智能体的输出限制为仅几句简洁的句子。每个任务的中位步数从 29 降至 17，提示词 token 从 75.2M 降至 33.7M。 "
+        }
+      ]
+    },
+    "b092": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "‍"
+        }
+      ]
+    },
+    "b094": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "入门"
+            }
+          ]
+        }
+      ]
+    },
+    "b095": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当你已迁移到前沿 Claude 模型，并想据此检查现有提示词时，可以从 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api prompt-audit"
+        },
+        {
+          "type": "text",
+          "text": " 开始。它会扫描你工作目录中的提示词、技能和工具描述。这些可以是调用 Claude API 的应用代码，也可以是 Claude Code 的配置（CLAUDE.md、技能）。它会移除那些拖累前沿模型的常见反模式。"
+        }
+      ]
+    },
+    "b096": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当你的应用使用 Claude API 并且你想做一次成本审计时，就用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api cost-optimize"
+        },
+        {
+          "type": "text",
+          "text": "。它会分析 token 的花费情况，然后测试不同的调节手段：它会应用 prompt-audit，同时还会检查能否通过 prompt caching、把无人值守的工作批量处理，或限制输出长度来降低成本。如果你提供了一份评估，它会衡量投入程度与模型选择之间的权衡。"
+        }
+      ]
+    },
+    "b097": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，使用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api hillclimb"
+        },
+        {
+          "type": "text",
+          "text": " 对成本和性能进行迭代搜索。给定一个评估集，Claude 会将其拆分为训练集和测试集，然后提出对你的应用的更新方案，目标是在保持基线性能的同时降低成本。Claude 会阅读训练集中失败的用例来指导搜索，最终配置会在留出的测试集上进行评分。"
+        }
+      ]
+    },
+    "b098": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "了解更多： "
+        }
+      ]
+    },
+    "b099": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请参阅我们的文档，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#cut-spend-without-losing-quality"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "点击此处"
+            }
+          ]
+        }
+      ]
+    },
+    "b100": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请参阅我们的 cookbook，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/cookbook/cost-optimization-cost-optimization#prompt-caching"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "点击这里"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
