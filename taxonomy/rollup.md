@@ -1,29 +1,30 @@
-# 跨源主题聚类 — 同类与升温（2026-09-13）
+# 跨源主题聚类 — 同类与升温（2026-09-14）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
-> **本周生态**：本周技术生态全面终结原型玩具与演示级探索，加速步入以工程护栏、确定性上下文与受控运行时为核心的工业化交付深水区。整个赛道呈现清晰的双轨分化态势：模型大厂持续向上固化协议并吞噬通用编排层，开源社区则反向向下深耕“本地优先”与硬件极限压榨，全力争夺智能体时代的自主治理底座与数据控制权。
+> **本周生态**：本周技术生态正全面跨越早期的概念探索，加速沉降至由严苛护栏、受控沙箱与标准化协议（如 MCP）支撑的“端到端终态交付”深水区。全栈基础设施因而迎来结构性重塑：向上全面演进为面向智能体协作、消费与行为审计的 AI 原生基座，向下则坚定筑牢“本地优先”、极端硬件压榨与数据主权自决的坚固防线。
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| desktop-and-media-apps | ↑升温 | 9 | 7 | 23 | 23 | github+claude | canonical |
-| coding-agents-and-harnesses | ↓退潮 | 8 | 11 | 44 | 41 | github+claude+lilian | canonical |
-| learning-and-curated-resources | ↑升温 | 7 | 2 | 79 | 79 | github+claude+lilian | canonical |
-| dev-infra-and-tooling | ↓退潮 | 7 | 8 | 50 | 47 | github+claude | canonical |
+| desktop-and-media-apps | ↑升温 | 11 | 7 | 25 | 25 | github+claude | canonical |
+| coding-agents-and-harnesses | ↓退潮 | 9 | 11 | 45 | 42 | github+claude+lilian | canonical |
+| dev-infra-and-tooling | →持稳 | 7 | 7 | 51 | 48 | github+claude | canonical |
+| learning-and-curated-resources | ↑升温 | 6 | 3 | 79 | 79 | github+claude+lilian | canonical |
 | agent-frameworks-and-platforms | →持稳 | 5 | 5 | 35 | 34 | github+claude+lilian | canonical |
 | agent-skills-and-plugins | ↑升温 | 5 | 3 | 31 | 30 | github+claude | canonical |
-| inference-and-serving-runtime | ↑升温 | 5 | 4 | 19 | 19 | github+claude+lilian | canonical |
-| networking-and-security | ↓退潮 | 3 | 5 | 28 | 25 | github+claude+lilian | canonical |
+| inference-and-serving-runtime | ↓退潮 | 3 | 6 | 19 | 19 | github+claude+lilian | canonical |
 | ai-video-voice-creative | ↑升温 | 3 | 0 | 13 | 13 | github+lilian | canonical |
+| networking-and-security | ↓退潮 | 2 | 6 | 28 | 25 | github+claude+lilian | canonical |
 | data-and-analytics-infra | ↑升温 | 1 | 0 | 14 | 14 | github+claude | canonical |
 | agent-deliverables-and-artifacts | →持稳 | 1 | 1 | 8 | 8 | github+claude | canonical |
 | games-and-emulators | ↑升温 | 1 | 0 | 8 | 8 | github | canonical |
 | hardware-and-embedded | →持稳 | 1 | 1 | 2 | 2 | github | candidate |
+| productivity-and-business-apps | ↑升温 | 1 | 0 | 1 | 1 | github | candidate |
 
 ## 各主题项目清单
 
-### desktop-and-media-apps（23）
-_桌面与媒体赛道整体热度虽呈阶段性退潮，但内部正发生鲜明的结构性分化。一方面，Claude 官方博客展现出桌面端向企业云与复杂 Agent 工作流深度融合、演进为一体化全栈工作台的趋势；另一方面，开源社区则反向加速“本地优先”与去中心化探索，集中涌现出由端侧模型驱动的会议助手、纯本地外设管理及轻量自托管工具。这种跨源张力表明，桌面端正在加速两极化——要么向上收敛为连接云端生态的统一智能中枢，要么向下扎根为极致轻量、零遥测的数据自治底座。_
+### desktop-and-media-apps（25）
+_桌面与媒体应用赛道热度持续升温，正经历从单点工具向工作流中枢的结构性重塑。跨源信号呈现出清晰的双向演进态势：一方面，Claude 官方博客展示了桌面端正向深度整合协作与编码能力的云端智能操作台演进；另一方面，GitHub 社区则掀起强烈的“本地优先（Local-first）与数据主权”浪潮，涌现出大量依赖端侧小模型运行、拒绝遥测与云端绑定的私有化工具。两股力量交织下，桌面应用正加速告别平庸的 Web 封装形态，向“云端超级工作流集成”与“纯本地离线堡垒”两个技术极点纵深发展。_
 
 - `github-trends` [andrewrabert/jellium-desktop](https://github.com/andrewrabert/jellium-desktop) — Jellyfin（开源自托管媒体服务器）的一个非官方桌面客户端，用 Rust 编写。
 - `claude-blog` [The full Claude Desktop experience on AWS, Google Cloud, and Microsoft Foundry](https://claude.com/blog/the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry) — Organizations that use Claude Desktop through AWS, Google Cloud, and Microsoft Foundry now get the full Desktop experience — chat, Claude Cowork, and Claude Code, all in one app.
@@ -48,9 +49,11 @@ _桌面与媒体赛道整体热度虽呈阶段性退潮，但内部正发生鲜�
 - `github-trends` [nab138/iloader](https://github.com/nab138/iloader) — 桌面端（Windows / macOS / Linux）一键把 SideStore 装进 iPhone 或 iPad 的安装器。插上设备、登录 Apple ID，它自动完成签名证书申请、pairing 文件生成与放置——这几步原本要手动串起好几个命令行工具。
 - `github-trends` [Sonarr/Sonarr](https://github.com/Sonarr/Sonarr) — 自托管的剧集管理器（PVR）。订阅一部剧之后，它自动盯着新剧集发布、按你设定的画质规则抓取、重命名归档到媒体库，是 *arr 系列（Radarr / Lidarr / Prowlarr）里管电视剧的那个。
 - `github-trends` [yuliskov/SmartTube](https://github.com/yuliskov/SmartTube) — Android TV 和电视盒子上的第三方视频客户端，主打无广告播放和自定义播放规则。
+- `github-trends` [tonhowtf/omniget](https://github.com/tonhowtf/omniget) — 一个桌面下载器。核心是把 yt-dlp（命令行下载工具，支持 1,800 多个站点）包了一层图形界面，装好即用、不用配环境——yt-dlp 和 FFmpeg 它自己装。在此之上加了几个原生抓取器：Udemy、Hotmart、Kiwify、Rocketseat 的在线课程，以及 torrent、PDF/EPUB 阅读器、语音转写和闪卡功能。
+- `github-trends` [jiji262/douyin-downloader](https://github.com/jiji262/douyin-downloader) — 抖音内容批量下载工具。支持单条视频、图集、合集、音乐、收藏夹和整个主页批量导出，能去水印，带进度显示、失败重试、SQLite 去重和完整性校验，接口失效时可回退到浏览器方式。
 
-### coding-agents-and-harnesses（41）
-_该赛道热度总量保持平稳，但内部正经历从“交互式终端对话”向“多 Agent 并行与自主循环外壳（harness）”的结构化演化。开源生态与大厂官方博客呈现出高度共鸣，双方不约而同地淡化单纯的 Prompt 调优，转而重度押注执行前安全拦截（hooks）、工程规则定制及长时间自纠错运行机制。与此同时，配套体系正加速向云端沙箱异步协作与全代码库知识图谱深入，标志着编码 Agent 的核心壁垒已全面延伸至运行外壳的工程治理与环境控制力。_
+### coding-agents-and-harnesses（42）
+_编码 Agent 赛道整体热度虽呈边际退潮，但正经历从前期概念狂热向精细化“外壳治理（Harness）”的实质性收敛。社区开源生态与 Claude 官方博客形成高度共振，双方不约而同将重心转向执行循环设计（Loop）、多 Agent 并行会话管理，以及针对破坏性操作的前置拦截与规则约束。未来赛道的演进不再盲目押注全自动代码生成，而是加速转向依赖云端沙箱隔离、代码图谱上下文增强与强工程护栏的受控异步协同。_
 
 - `github-trends` [Dicklesworthstone/destructive_command_guard](https://github.com/Dicklesworthstone/destructive_command_guard) — 给 AI 编码 agent（Claude Code / Codex / Gemini CLI / Cursor / Aider 等）用的「破坏性命令拦截器」（简称 dcg）。作为 agent 执行命令前的 pre-execution hook，拦截 `git reset --hard`、`rm -rf`、`DROP TABLE` 这类会造成不可逆损失的操作。
 - `github-trends` [ColeMurray/background-agents](https://github.com/ColeMurray/background-agents) — 一个开源的「后台编码 agent」系统——把编码 agent 的会话从本地 localhost 搬到云端沙箱运行，通过 Slack / GitHub PR / Linear / webhook / cron 触发 agent 异步改代码、开 PR。
@@ -93,9 +96,62 @@ _该赛道热度总量保持平稳，但内部正经历从“交互式终端对�
 - `github-trends` [Tencent/teamai-cli](https://github.com/Tencent/teamai-cli) — 一个团队级的"AI 使用经验同步器"。你的团队里每个人都在用 Claude Code / Cursor / Codex，每个人都在自己电脑上攒了一堆提示词、规则、skill 和踩坑笔记，彼此互不知情。这个工具的做法是：把这些东西放进一个团队共享的 Git 仓库，然后自动分发到每个人本地对应工具的目录里。谁摸索出好用的做法就 `teamai push` 开一个 MR，评审合并后其他人下次开会话时自动 `teamai pull` 拿到。
 - `github-trends` [vastsa/PI-Desktop](https://github.com/vastsa/PI-Desktop) — 把终端里的 AI 编程 agent 搬进一个独立桌面应用——本地项目、会话、diff review、终端输出、通知、插件市场都收在一个窗口里。自带模型接入（OpenAI / Anthropic / 本地 / 任意 OpenAI 兼容 API），不需要注册账号，特权操作走一个权限层审批（Agent / Plan / Goal 三档批准边界）。
 - `github-trends` [max-sixty/worktrunk](https://github.com/max-sixty/worktrunk) — 命令名 `wt`，Rust 写的 git worktree 包装器。让多个 AI 编码 agent 各自在一棵独立的工作树里干活，互不踩对方的改动。
+- `github-trends` [alphaXiv/OpenResearch](https://github.com/alphaXiv/OpenResearch) — 一个给科研人员用的"实验调度台"。你已经在用 Claude Code 或 Codex 让 AI 帮你改代码跑实验了，但跑上十几组之后就会乱——哪个结果是哪版代码出来的、超参改了什么、能不能重跑一遍，全靠自己记。OpenResearch 把这件事管起来：每条研究方向开一个独立的 agent 会话，配一棵独立的 git worktree，每次实验存一份不可变快照，并用 git 原生结构记录"这个结果从哪个父实验分叉出来"。
+
+### dev-infra-and-tooling（48）
+_该赛道整体热度保持平稳，但在主流运行时与经典流水线维持基本盘的同时，内部呈现出显著的“终端复兴”与“本地自治”结构演进。开源社区正密集将现代 Web 交互体验反哺至 CLI/TUI 环境，催生出专门适配 AI 协作节奏的终端审查与堆叠式提交工具；同时离线 LSP 服务与轻量自托管协作套件的活跃，也反映出对中心化云端 SaaS 的反思。整体工具链正朝着低交互摩擦、高数据自主权且深度融合本地工作流的极客基建方向持续深化。_
+
+- `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
+- `github-trends` [Automattic/harper](https://github.com/Automattic/harper) — 完全离线、隐私优先的英语语法/拼写检查器，作为 Grammarly / LanguageTool 的开源本地替代品，以语言服务器（LSP）形态嵌入各类编辑器。
+- `github-trends` [likec4/likec4](https://github.com/likec4/likec4) — "架构即代码"工具链——用一套 DSL 描述软件系统、组件和它们的关系，自动生成随代码实时更新、可交互点击下钻的架构图（灵感来自 C4 模型和 Structurizr）。
+- `github-trends` [yorukot/superfile](https://github.com/yorukot/superfile) — 一个跑在终端里的文件管理器，但界面做得像图形界面——多面板、支持鼠标点击，也支持 Vim 键位。可以理解为"终端里的 Windows 资源管理器 / macOS Finder"。
+- `github-trends` [nodejs/node](https://github.com/nodejs/node) — Node.js 运行时本体——让 JavaScript 能在服务器和命令行环境运行的基础设施，现代前后端工具链的地基。
+- `github-trends` [jenkinsci/jenkins](https://github.com/jenkinsci/jenkins) — Jenkins 自动化服务器——最早普及 CI/CD 的开源工具，插件生态极其庞大，至今仍是大量企业自建流水线的默认选择。
+- `github-trends` [grokability/snipe-it](https://github.com/grokability/snipe-it) — 一套自己部署的公司 IT 资产台账系统。公司发出去的笔记本、手机、显示器、软件许可证、耗材，谁在用、什么时候借出、保修什么时候到期，全在一个网页界面里管起来——本质是"取代 IT 部门那张 Excel 表"。2013 年起由 Grokability 公司维护（GitHub 组织已从 `snipe/snipe-it` 迁到 `grokability`，旧地址靠重定向兼容）。
+- `github-trends` [agavra/tuicr](https://github.com/agavra/tuicr) — 一个跑在终端里的代码审查界面。你让 AI agent 改完一堆代码，通常只能用 `git diff` 一屏屏翻，或者先推上 GitHub 再在网页上审。tuicr 把 GitHub 网页版 PR 的审查体验搬进终端：连续滚动的 diff、可展开的折叠上下文、vim 键位导航（j/k、Ctrl-d/u、gG、`/` 搜索）、在某一行或某几行上直接留评论。审完可以选三种出口——推成真实 GitHub/GitLab review、复制成 markdown、或输出到 stdout。作者念作 "tweaker"。
+- `github-trends` [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys) — 一个用 TypeScript/JavaScript 直接说 WhatsApp Web 协议的库。它不通过浏览器，也不走 WhatsApp 官方的 Business API，而是用 WebSocket 直连 WhatsApp 的服务端，把你的手机号以"已链接设备"的身份接进去，然后你就能在代码里收发消息、读群组、处理媒体文件。
+- `github-trends` [usekaneo/kaneo](https://github.com/usekaneo/kaneo) — 一个自己装在服务器上的项目管理工具，看板、时间线、评论、GitHub/Gitea 双向同步，Docker Compose + PostgreSQL 一把起。
+- `github-trends` [geo-tp/ESP32-Bit-Pirate](https://github.com/geo-tp/ESP32-Bit-Pirate) — 一个刷进 ESP32-S3 开发板的固件，把一块十几美元的通用板子变成"什么协议都会说"的硬件调试工具。刷完之后，你可以用 USB 串口终端或者直接在浏览器里打开一个网页 CLI，去读写 I²C、SPI、UART、1-Wire、JTAG、CAN 总线，嗅探 Wi-Fi 与蓝牙，收发红外和 Sub-GHz 射频，读 RFID/NFC 卡，或者把板子当 USB 键盘用。
+- `github-trends` [github/gh-stack](https://github.com/github/gh-stack) — GitHub 官方的 `gh` CLI 扩展加网页端原生功能，让你把一个大改动拆成一串"叠罗汉"式的 PR——A 基于 main，B 基于 A，C 基于 B——并自动维护它们之间的关系。
+- `github-trends` [denoland/deno](https://github.com/denoland/deno) — Deno 运行时——Node.js 作者重做的 JavaScript/TypeScript 运行时，默认沙箱权限、原生 TS 支持、内置工具链。
+- `github-trends` [angular/angular](https://github.com/angular/angular) — Google 维护的前端框架，企业级 Web 应用的主流选型之一，自带路由、依赖注入、表单和构建工具链。
+- `github-trends` [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss) — 原子化 CSS 框架，用组合工具类替代手写样式表，是当前新项目最常见的样式方案。
+- `github-trends` [webpack/webpack](https://github.com/webpack/webpack) — JavaScript 打包器，把模块、样式、图片打成可部署产物，是上一代前端构建体系的事实标准，至今仍被大量存量项目依赖。
+- `github-trends` [gabime/spdlog](https://github.com/gabime/spdlog) — C++ 高性能日志库，header-only 可选，是 C++ 项目里最常见的日志依赖之一。
+- `github-trends` [google/guava](https://github.com/google/guava) — Google 的 Java 核心库，`Immutable*` 集合、`Optional`、`Cache`、`EventBus` 等设施的事实标准，几乎所有大型 Java 项目的传递依赖里都有它。
+- `github-trends` [denoland/celld](https://github.com/denoland/celld) — 让你在自己的服务器上跑 Cloudflare 的 Durable Objects。Durable Objects 是 Cloudflare 的一种"有状态小服务"——每个对象独占一份数据、按需唤醒、用完休眠，很适合放聊天室、协作文档、AI agent 会话这类东西，但它只在 Cloudflare 上有。celld 把这套能力做成一个可自部署的实现：同一套 API、同一份 wrangler 配置，跑在你自己的机器 + 你自己的 S3 桶上。
+- `github-trends` [pranshuparmar/witr](https://github.com/pranshuparmar/witr) — 名字是 "Why Is This Running?" 的缩写。当你发现机器上有个进程在跑、某个端口被占了、某个文件被谁锁着，witr 帮你一路往上追到"到底是谁把它起起来的"——是 systemd、cron、某个 shell 脚本，还是某个容器。提供命令行和 TUI 两种界面。
+- `github-trends` [jdx/mise](https://github.com/jdx/mise) — 一个把"装什么版本的语言 / 工具"、"这个项目要哪些环境变量"、"常用命令怎么跑"三件事合成一个工具的开发者命令行程序。可以理解为 asdf（多语言版本管理）+ direnv（目录级环境变量）+ make（任务运行器）的合并版，用 Rust 重写，速度快很多。
+- `claude-blog` [Building intelligent apps for Apple platforms with Claude in the Foundation Models framework](https://claude.com/blog/claude-for-foundation-models) — Today we're releasing Foundation Models framework support for Claude through a new Swift package that lets Apple developers use Apple's Foundation Models framework to call Claude for more complex workflows.
+- `claude-blog` [Observability for developers building connectors](https://claude.com/blog/observability-for-developers-building-connectors) — Published connectors in the [directory](https://claude.ai/directory/connectors) now have a dashboard showing how they’re performing across Claude product surfaces. Connector owners can use it to:
+- `claude-blog` [Introducing the Claude apps gateway for Amazon Bedrock and Google Cloud](https://claude.com/blog/introducing-the-claude-apps-gateway) — Today, we're introducing the Claude apps gateway for Amazon Bedrock and Google Cloud. Previously, running Claude Code on these platforms has meant provisioning a cloud credential per developer, manually pushing settings to every laptop, and standing up separate tooling to see per-developer spend. The gateway is a self-hosted control plane that gives you corporate SSO login, centrally enforced poli
+- `claude-blog` [Giving admins more visibility and control over Claude spend](https://claude.com/blog/giving-admins-more-visibility-and-control-over-claude-usage-and-spend) — We’re introducing richer admin analytics, model-level entitlements, and spend alerts for Claude Enterprise. As Claude takes on increasingly difficult and complex agentic work across the organization, usage and cost patterns look different from a standard chat tool. These controls give admins the visibility to understand how Claude is being used and the tools to manage costs.
+- `github-trends` [steipete/CodexBar](https://github.com/steipete/CodexBar) — 一个常驻 macOS 菜单栏的 AI 用量看板。它免登录读取本地 JSONL，聚合监控 16+ AI 编码 provider（Codex/Claude Code/Cursor/Gemini/Copilot 等）的用量、配额和成本，帮重度用户随时看还剩多少额度、别撞上限。
+- `github-trends` [AhmadIbrahiim/Website-downloader](https://github.com/AhmadIbrahiim/Website-downloader) — 一个整站源码下载器——输入一个网址，用 Node.js 把该网站的完整前端资源（HTML、CSS、JS、图片）打包成 ZIP 下载下来，用于离线查看、前端结构分析或静态备份。
+- `github-trends` [prisma/prisma](https://github.com/prisma/prisma) — Node.js/TypeScript 生态里最主流的下一代 ORM（对象关系映射）之一，支持 PostgreSQL、MySQL、MariaDB、SQL Server、SQLite、MongoDB、CockroachDB。用类型安全的方式定义数据模型、生成查询客户端、管理数据库迁移。
+- `github-trends` [argoproj/argo-cd](https://github.com/argoproj/argo-cd) — Kubernetes 上的声明式持续部署（GitOps）事实标准工具。把 Git 仓库作为集群期望状态的唯一信源，自动把 K8s 集群同步到 Git 中声明的状态，是 CNCF 毕业项目。
+- `github-trends` [nvm-sh/nvm](https://github.com/nvm-sh/nvm) — 在一台机器上装多个 Node.js 版本、并随时切换的命令行工具。一个 POSIX 兼容的 bash 脚本，`nvm install 24`、`nvm use 22` 就能换版本。
+- `github-trends` [unslothai/unsloth](https://github.com/unslothai/unsloth) — 一个让你在自己电脑上跑和训练 AI 模型的桌面应用。以前 Unsloth 是给会写 Python 的人用的微调加速库，你得配 CUDA 版本、装依赖、抄 notebook；8-11 之后它多了一个装完就能用的窗口，模型下载、对话、微调、导出都在里面。
+- `github-trends` [ToolJet/ToolJet](https://github.com/ToolJet/ToolJet) — 一个自建内部工具的可视化平台。公司内部常年要做一堆"给运营看的后台"、"给客服查订单的页面"、"批量改数据的小工具"，正规做要前后端排期，不做又只能用 Excel 顶着。ToolJet 让你拖组件、连数据库和 API，把这类内部应用拼出来，能自己部署在公司服务器上。它是商业产品 ToolJet AI 的开源底座，对标 Retool / Appsmith / Budibase。**这是一个 2021 年建仓的成熟项目，首次进入本 tracker，按知名老项目记录，不做完整社区 grounding。**
+- `github-trends` [cordiverse/cordis](https://github.com/cordiverse/cordis) — 一个"什么业务都不做"的底座框架。它不提供 HTTP 服务、不连数据库、不带任务调度，只提供一套**装配规则**：功能怎么拆成插件、插件之间怎么互相依赖、插件被卸载时它注册过的东西（事件监听、服务、定时器）怎么按相反顺序全部收回去。核心卖点是**可逆性**——装上和卸下是对称的，进程不用重启就能热插拔一块功能。作者 shigma 已经用它当聊天机器人框架 Koishi 的底座跑了四年，核心体积不到 350KB。
+- `github-trends` [MakazhanAlpamys/Soup](https://github.com/MakazhanAlpamys/Soup) — 一个微调大模型的命令行工具。写一份 `soup.yaml`（模型、数据集、量化方式、训练参数），敲一条 `soup train`，就在自己这台机器上把开源模型微调完，不用租云 GPU、不用 SSH 到远程机器、不用自己拼 PyTorch 训练脚本。招牌功能叫 **layer streaming（层流式加载）**：LoRA 微调时基座模型是只读的，所以把它整份放在主机内存里，按解码器层一层一层送进显存，显存峰值只等于一层的大小——由此宣称 **4 GB 笔记本显卡能微调 8B 模型**。
+- `github-trends` [genlayerlabs/genlayer-project-boilerplate](https://github.com/genlayerlabs/genlayer-project-boilerplate) — 一条叫 GenLayer 的区块链的官方入门模板项目。GenLayer 想做的事是把智能合约换成"智能合约"（Intelligent Contracts）——用 Python 写、能联网抓数据、能调大模型，然后由多个跑不同大模型的验证节点投票裁决主观问题，相当于一个"去中心化法庭"。这个仓库给的是一整套开箱环境：一个足球赌注合约样例、单测与集成测试、合约 linter、CI、Next.js 15 前端和部署脚本。注意它的 GitHub 描述是**空的**，只能读 README 才知道它是什么。
+- `github-trends` [agent-substrate/substrate](https://github.com/agent-substrate/substrate) — Google 开源的一套"让成千上万个 AI agent 同时跑起来"的底层系统。它不是又一个 agent 框架，而是运行 agent 的地方：每个 agent 是一个叫 actor 的沙箱，多个 actor 复用少量已经预热好的 Kubernetes Pod，靠 gVisor / microVM 的内存快照实现亚秒级挂起和恢复——agent 没在干活时就冻结，来请求了再解冻，终端状态和文件系统都还在。README 自己写得很清楚：这不是 agent SDK，而是大规模跑 agent 的系统。
+- `github-trends` [elder-plinius/OBLITERATUS](https://github.com/elder-plinius/OBLITERATUS) — 一个把开源大模型"拒答机制"摘掉的工具。它不重新训练模型，而是先探测模型内部哪些方向的激活值对应"我不能回答这个"，再在推理时把这些方向抹掉或偏转，让模型对所有 prompt 都作答，同时尽量保住语言能力。技术上这类方法叫 abliteration。
+- `github-trends` [microsoft/TypeScript](https://github.com/microsoft/TypeScript) — TypeScript 语言与编译器本体，不需要多做解释。
+- `github-trends` [marin-community/marin](https://github.com/marin-community/marin) — 一个把"从零训练一个大模型"全过程搬到公开仓库里的科研平台。数据清洗、tokenize、预训练、后训练、评测串成一条可复现流水线，更关键的是它的工作方式：每个训练实验先用 GitHub Issue **预注册**（写清楚要验证什么），再用 PR 提交配置，训练过程的 W&B 曲线全程公开。
+- `github-trends` [swoole/typephp](https://github.com/swoole/typephp) — 一个把 PHP 代码提前编译成原生机器码的编译器。你写的还是熟悉的 PHP 语法，但产出的不是需要 PHP 解释器逐条执行的字节码，而是可以直接交给 CPU 跑的可执行文件（也可以产出 PHP 扩展、共享库或 WASI 组件）。作者是 Swoole 团队，项目由此前的 "Swoole AOT" 更名而来。
+- `github-trends` [bigskysoftware/htmx](https://github.com/bigskysoftware/htmx) — 一个让你直接在 HTML 标签上写交互的库。想点按钮从服务器取一段内容替换到页面某处，用 htmx 就是在按钮上加几个属性（`hx-get`、`hx-target`）——不需要写 JavaScript、不需要构建工具、不需要前端框架。服务器返回 HTML 片段而不是 JSON，浏览器直接换上去。
+- `github-trends` [Lakr233/vphone-cli](https://github.com/Lakr233/vphone-cli) — 在 Apple 芯片的 Mac 上开一台"真的 iPhone"。不是 Xcode 里那个模拟器（模拟器跑的是 Mac 版程序），而是拿苹果官方固件包（IPSW）在虚拟机里真正把 iOS 26 启起来，有完整文件系统、有 root、能 SSH 进去。一条命令走完下载固件、打补丁、DFU 刷机、首次开机的全流程，还能像虚拟机一样克隆、导出、导入。
+- `github-trends` [corsairdev/corsair](https://github.com/corsairdev/corsair) — 让你的产品一次性接上几百个第三方 SaaS（Slack、Gmail、Jira、Notion 等）的开源"万能插头"。一个 TypeScript 库加一个可自托管的服务，用一套语法调所有 API，还能帮你的终端用户各自完成 OAuth 授权。YC W25 项目，核心团队 2 人。
+- `github-trends` [vercel-labs/portless](https://github.com/vercel-labs/portless) — 把本地开发时的 `localhost:3000`、`localhost:5173` 这种端口号，换成 `myapp.localhost` 这样固定的、有名字的网址。装好之后它接管 443 端口做反向代理，按你在 `portless.json` 里的配置把请求分发到各个开发服务器，还自动配好 HTTPS。
+- `github-trends` [radixark/miles](https://github.com/radixark/miles) — 一套让企业能在几百上千张卡上给大模型做强化学习后训练的开源框架。它自己不发明训练算法，而是把三个已经成熟的部件粘成一条能跑的流水线：SGLang 负责生成 rollout（让模型先答一批题）、Megatron-LM 负责训练、Ray 负责编排和容错。
+- `github-trends` [llvm/llvm-project](https://github.com/llvm/llvm-project) — LLVM 是 Clang、Rust、Swift 等编译器共用的底层"编译器工具箱"，负责把中间代码优化并翻译成各平台机器码。2016 年迁到 GitHub monorepo，38,863 个 open issue/PR 是超大型基础设施仓的正常体量。
+- `github-trends` [lightpanda-io/browser](https://github.com/lightpanda-io/browser) — 一个从零开始用 Zig 语言写的无头浏览器。它不是 Chrome 或 Firefox 的改装，而是一个只负责"读懂网页、执行 JavaScript、暴露 DOM"而不画任何像素的新内核，专门给自动化脚本和 AI agent 用。它兼容 Puppeteer/Playwright 所用的 CDP 协议，所以现有脚本可以直接接上。官方宣称比 Chrome headless 快 9 到 11 倍、内存低 9 到 16 倍。
+- `github-trends` [Swordfish90/cool-retro-term](https://github.com/Swordfish90/cool-retro-term) — 一个模仿老式 CRT 阴极射线管显示效果的终端模拟器——扫描线、荧光余辉、屏幕弯曲、字符抖动，可调机框样式。2013 年建仓的老项目，今天首次进入本 tracker。
 
 ### learning-and-curated-resources（79）
-_技术学习与知识沉淀赛道正持续升温，呈现出从“静态链接清单”向“即拔即用工程化知识”深刻转型的轨迹。社区高星项目正加速将 CS 底层原理、Agent 设计与量化实操打包为可直接运行的示例或支持 MCP 调用的交互式知识库，与 Claude 官方博客密集宣发黑客松实战指南、倡导“以 AI 为伴边做边学”的探索范式形成强烈共振。这一跨源信号表明，开发者的学习路径已从被动的体系化刷课，全面转向以生成式工具为杠杆、以真实代码运行和场景解决为导向的高密度实操模式。_
+_精选资源赛道呈现明显的升温轨迹，知识形态正加速从“静态阅读清单与经典 CS 路线图”向“代码驱动的 AI Native 实战教材”发生结构性转变。开源社区的顶流项目不仅将底层数学、CUDA 算子与系统设计直接封装为适配 MCP 协议的可调用知识库，更全面转向可克隆、可运行的 Agent 与 RAG 架构拆解。这一趋势与官方博客密集输出黑客松用例及智能体实操指南的动作形成共振，表明开发者学习重心已由被动的通识补课，全面演变为以实战构建为导向的工程落地闭环。_
 
 - `github-trends` [Shubhamsaboo/awesome-llm-apps](https://github.com/Shubhamsaboo/awesome-llm-apps) — 一个「能真正跑起来」的 AI Agent 与 RAG 应用合集——100+ 个可克隆、可定制、可上线的示例项目，覆盖多 agent、RAG、记忆、语音等常见形态。
 - `github-trends` [HenryNdubuaku/maths-cs-ai-compendium](https://github.com/HenryNdubuaku/maths-cs-ai-compendium) — 一份面向「想进顶级 AI Lab」的数学/CS/AI 学习合集，作者把从线性代数到量子 ML、从 SIMD/CUDA/Triton 底层到面试 roadmap 的内容做成 intuition-first（先建直觉）的教材，并附带一个 MCP server 可当 Claude Code/Cursor 的知识库调用。
@@ -177,59 +233,8 @@ _技术学习与知识沉淀赛道正持续升温，呈现出从“静态链接�
 - `claude-blog` [Reducing cost and improving performance with Claude Platform](https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform) — Performance and cost are often viewed as a trade-off: to spend less, you accept worse results. In practice, we've found that many applications using Claude Platform can cut costs without giving up performance with three fixes: maximize the prompt cache hit rate, remove anti-patterns from your prompts when upgrading to frontier Claude models, and calibrate effort to the task. We've put this guidanc
 - `github-trends` [liquidslr/system-design-notes](https://github.com/liquidslr/system-design-notes) — Alex Xu 那本《System Design Interview — An Insider's Guide》（Vol 1 + Vol 2，共 28 章）的免费读书笔记。按章分目录——限流器、一致性哈希、URL 短链、网络爬虫、通知系统、YouTube、Google Drive、分布式消息队列、指标监控、支付系统、股票交易所等——每章一份 Markdown 加配图。
 
-### dev-infra-and-tooling（47）
-_开发基础设施与工具链赛道近期呈现明显的降温退潮趋势，热度几乎完全由 GitHub 社区单向承载，缺乏前沿研究与官方大厂博客的共振背书。社区关注点正从颠覆性的底层运行时与框架创新，结构性转向对存量工程底座的常规维护，以及针对终端交互、本地审查与堆叠工作流等极客场景的精细化微调。整个赛道正步入技术范式确立后的“消化整合期”，演化重点落在离线轻量化与个人工作流的效能缝合上，短期内缺少新的中心化叙事爆发点。_
-
-- `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
-- `github-trends` [Automattic/harper](https://github.com/Automattic/harper) — 完全离线、隐私优先的英语语法/拼写检查器，作为 Grammarly / LanguageTool 的开源本地替代品，以语言服务器（LSP）形态嵌入各类编辑器。
-- `github-trends` [likec4/likec4](https://github.com/likec4/likec4) — "架构即代码"工具链——用一套 DSL 描述软件系统、组件和它们的关系，自动生成随代码实时更新、可交互点击下钻的架构图（灵感来自 C4 模型和 Structurizr）。
-- `github-trends` [yorukot/superfile](https://github.com/yorukot/superfile) — 一个跑在终端里的文件管理器，但界面做得像图形界面——多面板、支持鼠标点击，也支持 Vim 键位。可以理解为"终端里的 Windows 资源管理器 / macOS Finder"。
-- `github-trends` [nodejs/node](https://github.com/nodejs/node) — Node.js 运行时本体——让 JavaScript 能在服务器和命令行环境运行的基础设施，现代前后端工具链的地基。
-- `github-trends` [jenkinsci/jenkins](https://github.com/jenkinsci/jenkins) — Jenkins 自动化服务器——最早普及 CI/CD 的开源工具，插件生态极其庞大，至今仍是大量企业自建流水线的默认选择。
-- `github-trends` [grokability/snipe-it](https://github.com/grokability/snipe-it) — 一套自己部署的公司 IT 资产台账系统。公司发出去的笔记本、手机、显示器、软件许可证、耗材，谁在用、什么时候借出、保修什么时候到期，全在一个网页界面里管起来——本质是"取代 IT 部门那张 Excel 表"。2013 年起由 Grokability 公司维护（GitHub 组织已从 `snipe/snipe-it` 迁到 `grokability`，旧地址靠重定向兼容）。
-- `github-trends` [agavra/tuicr](https://github.com/agavra/tuicr) — 一个跑在终端里的代码审查界面。你让 AI agent 改完一堆代码，通常只能用 `git diff` 一屏屏翻，或者先推上 GitHub 再在网页上审。tuicr 把 GitHub 网页版 PR 的审查体验搬进终端：连续滚动的 diff、可展开的折叠上下文、vim 键位导航（j/k、Ctrl-d/u、gG、`/` 搜索）、在某一行或某几行上直接留评论。审完可以选三种出口——推成真实 GitHub/GitLab review、复制成 markdown、或输出到 stdout。作者念作 "tweaker"。
-- `github-trends` [WhiskeySockets/Baileys](https://github.com/WhiskeySockets/Baileys) — 一个用 TypeScript/JavaScript 直接说 WhatsApp Web 协议的库。它不通过浏览器，也不走 WhatsApp 官方的 Business API，而是用 WebSocket 直连 WhatsApp 的服务端，把你的手机号以"已链接设备"的身份接进去，然后你就能在代码里收发消息、读群组、处理媒体文件。
-- `github-trends` [usekaneo/kaneo](https://github.com/usekaneo/kaneo) — 一个自己装在服务器上的项目管理工具，看板、时间线、评论、GitHub/Gitea 双向同步，Docker Compose + PostgreSQL 一把起。
-- `github-trends` [geo-tp/ESP32-Bit-Pirate](https://github.com/geo-tp/ESP32-Bit-Pirate) — 一个刷进 ESP32-S3 开发板的固件，把一块十几美元的通用板子变成"什么协议都会说"的硬件调试工具。刷完之后，你可以用 USB 串口终端或者直接在浏览器里打开一个网页 CLI，去读写 I²C、SPI、UART、1-Wire、JTAG、CAN 总线，嗅探 Wi-Fi 与蓝牙，收发红外和 Sub-GHz 射频，读 RFID/NFC 卡，或者把板子当 USB 键盘用。
-- `github-trends` [github/gh-stack](https://github.com/github/gh-stack) — GitHub 官方的 `gh` CLI 扩展加网页端原生功能，让你把一个大改动拆成一串"叠罗汉"式的 PR——A 基于 main，B 基于 A，C 基于 B——并自动维护它们之间的关系。
-- `github-trends` [denoland/deno](https://github.com/denoland/deno) — Deno 运行时——Node.js 作者重做的 JavaScript/TypeScript 运行时，默认沙箱权限、原生 TS 支持、内置工具链。
-- `github-trends` [angular/angular](https://github.com/angular/angular) — Google 维护的前端框架，企业级 Web 应用的主流选型之一，自带路由、依赖注入、表单和构建工具链。
-- `github-trends` [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss) — 原子化 CSS 框架，用组合工具类替代手写样式表，是当前新项目最常见的样式方案。
-- `github-trends` [webpack/webpack](https://github.com/webpack/webpack) — JavaScript 打包器，把模块、样式、图片打成可部署产物，是上一代前端构建体系的事实标准，至今仍被大量存量项目依赖。
-- `github-trends` [gabime/spdlog](https://github.com/gabime/spdlog) — C++ 高性能日志库，header-only 可选，是 C++ 项目里最常见的日志依赖之一。
-- `github-trends` [google/guava](https://github.com/google/guava) — Google 的 Java 核心库，`Immutable*` 集合、`Optional`、`Cache`、`EventBus` 等设施的事实标准，几乎所有大型 Java 项目的传递依赖里都有它。
-- `github-trends` [denoland/celld](https://github.com/denoland/celld) — 让你在自己的服务器上跑 Cloudflare 的 Durable Objects。Durable Objects 是 Cloudflare 的一种"有状态小服务"——每个对象独占一份数据、按需唤醒、用完休眠，很适合放聊天室、协作文档、AI agent 会话这类东西，但它只在 Cloudflare 上有。celld 把这套能力做成一个可自部署的实现：同一套 API、同一份 wrangler 配置，跑在你自己的机器 + 你自己的 S3 桶上。
-- `github-trends` [pranshuparmar/witr](https://github.com/pranshuparmar/witr) — 名字是 "Why Is This Running?" 的缩写。当你发现机器上有个进程在跑、某个端口被占了、某个文件被谁锁着，witr 帮你一路往上追到"到底是谁把它起起来的"——是 systemd、cron、某个 shell 脚本，还是某个容器。提供命令行和 TUI 两种界面。
-- `github-trends` [jdx/mise](https://github.com/jdx/mise) — 一个把"装什么版本的语言 / 工具"、"这个项目要哪些环境变量"、"常用命令怎么跑"三件事合成一个工具的开发者命令行程序。可以理解为 asdf（多语言版本管理）+ direnv（目录级环境变量）+ make（任务运行器）的合并版，用 Rust 重写，速度快很多。
-- `claude-blog` [Building intelligent apps for Apple platforms with Claude in the Foundation Models framework](https://claude.com/blog/claude-for-foundation-models) — Today we're releasing Foundation Models framework support for Claude through a new Swift package that lets Apple developers use Apple's Foundation Models framework to call Claude for more complex workflows.
-- `claude-blog` [Observability for developers building connectors](https://claude.com/blog/observability-for-developers-building-connectors) — Published connectors in the [directory](https://claude.ai/directory/connectors) now have a dashboard showing how they’re performing across Claude product surfaces. Connector owners can use it to:
-- `claude-blog` [Introducing the Claude apps gateway for Amazon Bedrock and Google Cloud](https://claude.com/blog/introducing-the-claude-apps-gateway) — Today, we're introducing the Claude apps gateway for Amazon Bedrock and Google Cloud. Previously, running Claude Code on these platforms has meant provisioning a cloud credential per developer, manually pushing settings to every laptop, and standing up separate tooling to see per-developer spend. The gateway is a self-hosted control plane that gives you corporate SSO login, centrally enforced poli
-- `claude-blog` [Giving admins more visibility and control over Claude spend](https://claude.com/blog/giving-admins-more-visibility-and-control-over-claude-usage-and-spend) — We’re introducing richer admin analytics, model-level entitlements, and spend alerts for Claude Enterprise. As Claude takes on increasingly difficult and complex agentic work across the organization, usage and cost patterns look different from a standard chat tool. These controls give admins the visibility to understand how Claude is being used and the tools to manage costs.
-- `github-trends` [steipete/CodexBar](https://github.com/steipete/CodexBar) — 一个常驻 macOS 菜单栏的 AI 用量看板。它免登录读取本地 JSONL，聚合监控 16+ AI 编码 provider（Codex/Claude Code/Cursor/Gemini/Copilot 等）的用量、配额和成本，帮重度用户随时看还剩多少额度、别撞上限。
-- `github-trends` [AhmadIbrahiim/Website-downloader](https://github.com/AhmadIbrahiim/Website-downloader) — 一个整站源码下载器——输入一个网址，用 Node.js 把该网站的完整前端资源（HTML、CSS、JS、图片）打包成 ZIP 下载下来，用于离线查看、前端结构分析或静态备份。
-- `github-trends` [prisma/prisma](https://github.com/prisma/prisma) — Node.js/TypeScript 生态里最主流的下一代 ORM（对象关系映射）之一，支持 PostgreSQL、MySQL、MariaDB、SQL Server、SQLite、MongoDB、CockroachDB。用类型安全的方式定义数据模型、生成查询客户端、管理数据库迁移。
-- `github-trends` [argoproj/argo-cd](https://github.com/argoproj/argo-cd) — Kubernetes 上的声明式持续部署（GitOps）事实标准工具。把 Git 仓库作为集群期望状态的唯一信源，自动把 K8s 集群同步到 Git 中声明的状态，是 CNCF 毕业项目。
-- `github-trends` [nvm-sh/nvm](https://github.com/nvm-sh/nvm) — 在一台机器上装多个 Node.js 版本、并随时切换的命令行工具。一个 POSIX 兼容的 bash 脚本，`nvm install 24`、`nvm use 22` 就能换版本。
-- `github-trends` [unslothai/unsloth](https://github.com/unslothai/unsloth) — 一个让你在自己电脑上跑和训练 AI 模型的桌面应用。以前 Unsloth 是给会写 Python 的人用的微调加速库，你得配 CUDA 版本、装依赖、抄 notebook；8-11 之后它多了一个装完就能用的窗口，模型下载、对话、微调、导出都在里面。
-- `github-trends` [ToolJet/ToolJet](https://github.com/ToolJet/ToolJet) — 一个自建内部工具的可视化平台。公司内部常年要做一堆"给运营看的后台"、"给客服查订单的页面"、"批量改数据的小工具"，正规做要前后端排期，不做又只能用 Excel 顶着。ToolJet 让你拖组件、连数据库和 API，把这类内部应用拼出来，能自己部署在公司服务器上。它是商业产品 ToolJet AI 的开源底座，对标 Retool / Appsmith / Budibase。**这是一个 2021 年建仓的成熟项目，首次进入本 tracker，按知名老项目记录，不做完整社区 grounding。**
-- `github-trends` [cordiverse/cordis](https://github.com/cordiverse/cordis) — 一个"什么业务都不做"的底座框架。它不提供 HTTP 服务、不连数据库、不带任务调度，只提供一套**装配规则**：功能怎么拆成插件、插件之间怎么互相依赖、插件被卸载时它注册过的东西（事件监听、服务、定时器）怎么按相反顺序全部收回去。核心卖点是**可逆性**——装上和卸下是对称的，进程不用重启就能热插拔一块功能。作者 shigma 已经用它当聊天机器人框架 Koishi 的底座跑了四年，核心体积不到 350KB。
-- `github-trends` [MakazhanAlpamys/Soup](https://github.com/MakazhanAlpamys/Soup) — 一个微调大模型的命令行工具。写一份 `soup.yaml`（模型、数据集、量化方式、训练参数），敲一条 `soup train`，就在自己这台机器上把开源模型微调完，不用租云 GPU、不用 SSH 到远程机器、不用自己拼 PyTorch 训练脚本。招牌功能叫 **layer streaming（层流式加载）**：LoRA 微调时基座模型是只读的，所以把它整份放在主机内存里，按解码器层一层一层送进显存，显存峰值只等于一层的大小——由此宣称 **4 GB 笔记本显卡能微调 8B 模型**。
-- `github-trends` [genlayerlabs/genlayer-project-boilerplate](https://github.com/genlayerlabs/genlayer-project-boilerplate) — 一条叫 GenLayer 的区块链的官方入门模板项目。GenLayer 想做的事是把智能合约换成"智能合约"（Intelligent Contracts）——用 Python 写、能联网抓数据、能调大模型，然后由多个跑不同大模型的验证节点投票裁决主观问题，相当于一个"去中心化法庭"。这个仓库给的是一整套开箱环境：一个足球赌注合约样例、单测与集成测试、合约 linter、CI、Next.js 15 前端和部署脚本。注意它的 GitHub 描述是**空的**，只能读 README 才知道它是什么。
-- `github-trends` [agent-substrate/substrate](https://github.com/agent-substrate/substrate) — Google 开源的一套"让成千上万个 AI agent 同时跑起来"的底层系统。它不是又一个 agent 框架，而是运行 agent 的地方：每个 agent 是一个叫 actor 的沙箱，多个 actor 复用少量已经预热好的 Kubernetes Pod，靠 gVisor / microVM 的内存快照实现亚秒级挂起和恢复——agent 没在干活时就冻结，来请求了再解冻，终端状态和文件系统都还在。README 自己写得很清楚：这不是 agent SDK，而是大规模跑 agent 的系统。
-- `github-trends` [elder-plinius/OBLITERATUS](https://github.com/elder-plinius/OBLITERATUS) — 一个把开源大模型"拒答机制"摘掉的工具。它不重新训练模型，而是先探测模型内部哪些方向的激活值对应"我不能回答这个"，再在推理时把这些方向抹掉或偏转，让模型对所有 prompt 都作答，同时尽量保住语言能力。技术上这类方法叫 abliteration。
-- `github-trends` [microsoft/TypeScript](https://github.com/microsoft/TypeScript) — TypeScript 语言与编译器本体，不需要多做解释。
-- `github-trends` [marin-community/marin](https://github.com/marin-community/marin) — 一个把"从零训练一个大模型"全过程搬到公开仓库里的科研平台。数据清洗、tokenize、预训练、后训练、评测串成一条可复现流水线，更关键的是它的工作方式：每个训练实验先用 GitHub Issue **预注册**（写清楚要验证什么），再用 PR 提交配置，训练过程的 W&B 曲线全程公开。
-- `github-trends` [swoole/typephp](https://github.com/swoole/typephp) — 一个把 PHP 代码提前编译成原生机器码的编译器。你写的还是熟悉的 PHP 语法，但产出的不是需要 PHP 解释器逐条执行的字节码，而是可以直接交给 CPU 跑的可执行文件（也可以产出 PHP 扩展、共享库或 WASI 组件）。作者是 Swoole 团队，项目由此前的 "Swoole AOT" 更名而来。
-- `github-trends` [bigskysoftware/htmx](https://github.com/bigskysoftware/htmx) — 一个让你直接在 HTML 标签上写交互的库。想点按钮从服务器取一段内容替换到页面某处，用 htmx 就是在按钮上加几个属性（`hx-get`、`hx-target`）——不需要写 JavaScript、不需要构建工具、不需要前端框架。服务器返回 HTML 片段而不是 JSON，浏览器直接换上去。
-- `github-trends` [Lakr233/vphone-cli](https://github.com/Lakr233/vphone-cli) — 在 Apple 芯片的 Mac 上开一台"真的 iPhone"。不是 Xcode 里那个模拟器（模拟器跑的是 Mac 版程序），而是拿苹果官方固件包（IPSW）在虚拟机里真正把 iOS 26 启起来，有完整文件系统、有 root、能 SSH 进去。一条命令走完下载固件、打补丁、DFU 刷机、首次开机的全流程，还能像虚拟机一样克隆、导出、导入。
-- `github-trends` [corsairdev/corsair](https://github.com/corsairdev/corsair) — 让你的产品一次性接上几百个第三方 SaaS（Slack、Gmail、Jira、Notion 等）的开源"万能插头"。一个 TypeScript 库加一个可自托管的服务，用一套语法调所有 API，还能帮你的终端用户各自完成 OAuth 授权。YC W25 项目，核心团队 2 人。
-- `github-trends` [vercel-labs/portless](https://github.com/vercel-labs/portless) — 把本地开发时的 `localhost:3000`、`localhost:5173` 这种端口号，换成 `myapp.localhost` 这样固定的、有名字的网址。装好之后它接管 443 端口做反向代理，按你在 `portless.json` 里的配置把请求分发到各个开发服务器，还自动配好 HTTPS。
-- `github-trends` [radixark/miles](https://github.com/radixark/miles) — 一套让企业能在几百上千张卡上给大模型做强化学习后训练的开源框架。它自己不发明训练算法，而是把三个已经成熟的部件粘成一条能跑的流水线：SGLang 负责生成 rollout（让模型先答一批题）、Megatron-LM 负责训练、Ray 负责编排和容错。
-- `github-trends` [llvm/llvm-project](https://github.com/llvm/llvm-project) — LLVM 是 Clang、Rust、Swift 等编译器共用的底层"编译器工具箱"，负责把中间代码优化并翻译成各平台机器码。2016 年迁到 GitHub monorepo，38,863 个 open issue/PR 是超大型基础设施仓的正常体量。
-- `github-trends` [lightpanda-io/browser](https://github.com/lightpanda-io/browser) — 一个从零开始用 Zig 语言写的无头浏览器。它不是 Chrome 或 Firefox 的改装，而是一个只负责"读懂网页、执行 JavaScript、暴露 DOM"而不画任何像素的新内核，专门给自动化脚本和 AI agent 用。它兼容 Puppeteer/Playwright 所用的 CDP 协议，所以现有脚本可以直接接上。官方宣称比 Chrome headless 快 9 到 11 倍、内存低 9 到 16 倍。
-
 ### agent-frameworks-and-platforms（34）
-_通用 Agent 编排框架在数量上呈现显著退潮，早期以纯自主循环为卖点的原型玩具走向终结，赛道正经历向生产环境演进的结构性洗牌。伴随 Claude 官方接连发布托管 Agent、内置记忆与受控沙箱，模型厂商正在快速吞噬基础编排层，倒逼开源社区与科技大厂将技术重心下沉至权限治理、虚拟运行环境及长程任务持久化等工程护栏。与此同时，上层探索全面告别通用脚手架，加速分化为深度融入企业身份的人机协同平台、组织架构化的 AI 员工调度以及基于 MCP 的工作流分发，Agent 平台已从技术试验阶段彻底迈入业务交付与规范治理的深水区。_
+_Agent 框架与平台赛道正经历从早期单体自主循环向“企业级运行时与协作基础设施”的深度结构转型，整体热度高位持稳。Claude 官方连续押注托管式 Agent、原生记忆层与受控沙箱，与开源社区在虚拟计算环境、治理审计工具及组织化编排上的集中爆发形成跨源共振。行业关注点已从“如何生成一个 Agent”彻底转向解决真实交付痛点，依托标准协议（如 MCP）、沙箱隔离、细粒度权限控制与长时运行状态维护，将 Agent 正式接入企业身份体系与多岗位协同网络。_
 
 - `github-trends` [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) — 一个集成多个 IM 平台、多种 LLM、插件与 AI 能力的 AI Agent 助手与开发框架，自我定位为可自托管的对话机器人平台。
 - `github-trends` [block/buzz](https://github.com/block/buzz) — Block（Jack Dorsey 旗下、Square/Cash App 母公司）开源的团队协作平台，把团队聊天、Git 代码托管和 AI Agent 装进同一套身份体系里——人和 Agent 都被当作"平等成员"参与协作。可以理解为"为 Agent 时代重做的 Slack + GitHub"。
@@ -267,7 +272,7 @@ _通用 Agent 编排框架在数量上呈现显著退潮，早期以纯自主循
 - `github-trends` [melgarafael/DeskcommCRM](https://github.com/melgarafael/DeskcommCRM) — 一套自己装在服务器上的客户管理系统，专门给"靠聊天卖货"的小生意用。接上自己的 WhatsApp 号之后，AI 客服负责接待、判断这个客人值不值得跟进、按销售漏斗一步步推，谈到关键处再转人工。对标 Kommo、Octadesk、Intercom 这类订阅制 SaaS。
 
 ### agent-skills-and-plugins（30）
-_Agent 技能与插件生态正处于强劲升温期，其演进重心已从简单的外部 API 封装，快速转向针对上下文压缩、设计约束及持久化记忆的高阶技能编排。开源社区正密集涌现基于图谱导航、本地优先工具链与专业工作流规约的技能包，与 Anthropic 官方在 MCP 协议迭代及日常生活连接器扩展上的动作形成强共振。这种官方底层协议化与社区经验模块化的双向奔赴，标志着 Agent 扩展层正由“拼装工具”向具备确定性门禁与深度情境感知的“专家系统插件”演进。_
+_Agent 技能与插件赛道正呈现显著升温与结构化跃迁，官方对 MCP 协议规范的深化推进与官方连接器扩容，与开源社区围绕 Claude Code 等编码代理爆发的技能生态形成了强共振。当前开发重心已跨过早期的单点 API 搬运阶段，加速转向利用代码图谱降本提效、施加专业设计与合规约束，以及攻坚垂直重型工程（如游戏引擎与安全逆向）的复合工作流。技能形态正从零散的 Prompt 脚本，全面演进为跨代理通用、具备持久化记忆管理与状态路由能力的工程化“专业外脑”。_
 
 - `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
 - `github-trends` [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) — 一个给 AI 编码助手用的「知识图谱 skill」。它把一整个代码文件夹（含 SQL schema、脚本、文档甚至图片视频）解析成可查询的知识图谱，让 Claude Code、Codex、Cursor 等在检索代码前先查图谱来导航，宣称能在大型仓库里省下大量 token。
@@ -301,7 +306,7 @@ _Agent 技能与插件生态正处于强劲升温期，其演进重心已从简�
 - `github-trends` [SnailSploit/Claude-Red](https://github.com/SnailSploit/Claude-Red) — 78 个 `SKILL.md` 文件组成的攻击性安全技能库，按 23 个类别划分（Web、活动目录、无线、云、漏洞开发、EDR 规避、C2、反取证等）。克隆进 `~/.claude/skills/` 后，Claude 会根据对话内容自动加载对应"攻击面专家"人设。它不含任何工具代码，本质是提示词方法论库。
 
 ### inference-and-serving-runtime（19）
-_当前推理与服务赛道热度整体持稳，但技术重心正经历从“通用推理部署”向“云端标准化网关”与“端侧极致存算压榨”两极分化的结构性深化。一方面，官方大厂持续将托管推理向公有云深度集成，社区亦涌现出大量抹平协议差异、聚合多端免费额度的轻量路由层；另一方面，开源生态全力攻坚边缘与消费级硬件，通过极低比特量化（1-bit/1.58-bit）、自研注意力算子深度调优及 SSD 流式分级加载，集中突破在单机运行数百亿甚至千亿 MoE 模型的显存瓶颈。整个赛道正由单纯的模型包装，转向面向异构硬件极限与多源成本控制的精细化工程深水区。_
+_推理与服务运行时赛道整体呈现降温与结构分化态势，通用云端部署方案正快速被模型厂商与公有云标准化收口。开源社区的探索重心因而转向两极：一方面是下沉至极致的个人硬件压榨，通过 1-bit 极限压缩、SSD 权重流式加载及逆向专用协处理器，竭力将千亿级 MoE 模型塞进端侧与消费级设备；另一方面，上层服务框架正向协议适配与成本套利退守，大量涌现出面向智能体交互的协议翻译器以及聚合订阅与免费额度的转发网关。技术关注点已从早期的通用高并发吞吐优化，演进为对特定硬件内核的微观定制与对外部异构 API 的管道化封装。_
 
 - `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
 - `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
@@ -323,8 +328,25 @@ _当前推理与服务赛道热度整体持稳，但技术重心正经历从“�
 - `github-trends` [magnitudedev/magnitude](https://github.com/magnitudedev/magnitude) — 一个装在你自己电脑上的"模型供应商"。你现在用的编码 agent（Claude Code、Codex、OpenCode、Cline、Hermes 等）默认要连 Anthropic 或 OpenAI 的云端模型，Magnitude 在本机起一个推理服务，让这些 agent 改连本机——不花 token 费、不联网也能用、代码和提示词不出机器。
 - `github-trends` [JustVugg/colibri](https://github.com/JustVugg/colibri) — 一个让普通电脑跑得动超大模型的推理引擎。现在最强的开源模型多是 MoE（混合专家）结构——模型有几百 B 参数，但每次生成只会用到其中一小部分「专家」。colibri 利用这一点：把全部专家权重留在固态硬盘上，用到哪个读哪个，于是显存装不下的模型也能加载起来。纯 C 实现，零依赖。
 
+### ai-video-voice-creative（13）
+_AI 音视频与创意赛道呈现出强劲的升温势头，学术研究与开源生态形成了紧密的双向呼应：Lil'Log 等前沿研判正推动视频扩散模型向更深层演进，而 GitHub 社区则迅速铺开从音乐生成、单图 3D 到视频剪辑的全链路工程落地。当前赛道最显著的结构性变化在于“端侧化”与“去订阅化”，开发者正以完全本地运行、数据隐私不出机为锚点，集体向 CapCut 等成熟商业创作者 SaaS 发起平替冲击。未来趋势正从孤立的单点生成模型，加速演变为由轻量化端侧模型与节点式工作流支撑的自主可控创作者生产线。_
+
+- `github-trends` [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) — 一个完全开源、在浏览器里就能用的视频剪辑器，定位是「CapCut 的开源替代」。你打开网页就能剪片，不用注册、不用下载客户端，素材也不上传到别人的服务器。
+- `github-trends` [AIEraDev/Clypra](https://github.com/AIEraDev/Clypra) — 一个用 Tauri + React + TypeScript 写的桌面视频剪辑器，定位「免费的 CapCut 替代品」——把付费剪辑软件的常用能力（多轨时间线、剪切、导出）做成本地原生、无水印、无订阅的开源工具。
+- `github-trends` [huggingface/speech-to-speech](https://github.com/huggingface/speech-to-speech) — Hugging Face 官方的"本地语音对话助手搭建套件"。你对着麦克风说话，它转文字、交给大模型思考、再用语音答复你——整条链路都能跑在自己的机器上，不必把语音送到第三方云。
+- `github-trends` [deepfakes/faceswap](https://github.com/deepfakes/faceswap) — 一个在自己机器上跑的开源换脸工具。给它两个人的素材，它训练一个神经网络，然后把视频或图片里 A 的脸换成 B 的脸；带图形界面，流程是"提取人脸 → 训练 → 转换"三步。它是 "deepfake" 这个词的源头级项目——2017 年 12 月 Reddit 那次事件之后由社区接手重写，官网与论坛在 faceswap.dev。
+- `github-trends` [microsoft/TRELLIS.2](https://github.com/microsoft/TRELLIS.2) — 给它一张图片，它输出一个带完整材质、可以直接进游戏或渲染管线的 3D 模型。
+- `github-trends` [abus-aikorea/voice-pro](https://github.com/abus-aikorea/voice-pro) — 装在自己电脑上的音视频配音工作台。把 YouTube 视频或本地音频丢进网页界面，它自动扒音轨、用 Demucs 分离人声伴奏、用 Whisper 转文字、翻译成目标语言，再用 TTS（Edge-TTS、kokoro）或零样本声音克隆（F5-TTS、CosyVoice，约 15 秒样本即可）合成配音。
+- `github-trends` [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) — 扩散模型的节点式工作流界面——你把加载模型、编码提示词、采样、解码这些步骤拖成一张流程图，跑图像/视频生成。同时也提供后端和 API，可以被别的服务调用。
+- `lilian-weng` [Diffusion Models for Video Generation](https://lilianweng.github.io/posts/2024-04-12-diffusion-video/) — [Diffusion models](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/) have demonstrated strong results on image synthesis in past years. Now the research community has started working on a harder task—using it for video generation. The task itself is a superset of the image case, since an image is a video of 1 frame, and it is much more challenging because:
+- `github-trends` [kyutai-labs/pocket-tts](https://github.com/kyutai-labs/pocket-tts) — 一个"能塞进口袋"的文本转语音（TTS）模型——小到能在普通 CPU 上跑，却能生成接近商业级质量的语音。出自法国非营利 AI 实验室 Kyutai（此前开源实时语音模型 Moshi 而知名）。
+- `github-trends` [lightningpixel/modly](https://github.com/lightningpixel/modly) — 一个桌面应用，把一张照片拖进去就生成能用的 3D 模型，全程在自己电脑的显卡上跑，图片不上传。导出支持 GLB / OBJ / STL / PLY，其中 STL 可以直接丢进 3D 打印切片软件。
+- `github-trends` [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) — 一套装在自己电脑上的"配音工作室"。你给它一段三到十五秒的人声样本，它就能用那个声音念任意文本；也能把一段外语视频整段转写、翻译、重新配音，输出成新的 MP4；还能把 EPUB 或 PDF 电子书转成带章节的有声书。所有处理都在本机完成，不上传、不按字符收费。
+- `github-trends` [OpenWhispr/openwhispr](https://github.com/OpenWhispr/openwhispr) — 按住一个快捷键说话，文字自动出现在光标所在的任何输入框里的桌面听写工具，附带会议自动转录、笔记和语音 AI 助手。可以完全在本机跑 Whisper 或 NVIDIA Parakeet 模型（音频不出机），也可以自带 API key 接云端模型。
+- `github-trends` [multimodal-art-projection/YuE](https://github.com/multimodal-art-projection/YuE) — 开源的歌曲生成模型。给它歌词和风格提示词，它先写出一份旋律加和弦的 ABC 记谱方案，再把方案渲染成带人声和伴奏的完整歌曲（48kHz 立体声）。今天上榜是因为 9 月 9 日发布的 YuE2（`yue2-v0.1.6`），v1 已归档到 `YuE-v1` 分支。
+
 ### networking-and-security（25）
-_网络与安全赛道整体热度持稳，但内部正经历从“传统网络边界防护”向“AI 原生治理与去中心主权”双轨演进的结构性重构。一方面，模型厂商官方博客与企业级开源实践形成强烈共振，集中攻坚 AI Agent 的身份凭证、工具调用授权与行为因果链审计，推动企业安全防线从外围网络拦截向智能体运行时治理全面前移；另一方面，开源社区持续涌现离网 Mesh 通信、自建代理及私有化身份协议，反映出开发者在面对集中式平台时，对底层网络物理自主权与数据隐私可控性的防御性深耕。_
+_该赛道虽然在社区整体热度上呈现退潮态势，但底层正经历从传统网络防护与自托管基础设施向“Agent 原生安全”的剧烈结构重构。跨源信号显示，研究界对 LLM 对抗攻击的机理探索与官方博客在 MCP 权限、Agent 身份认证及工作负载安全上的密集押注高度共振，合力将防御重心从传统网络边界推向自治实体的访问控制。加之社区开始将端点检测演进至针对 Agent 推理因果链与工具调用的行为审计，标志着安全赛道正全面转向构建约束与监控自主智能体的新一代防御基建。_
 
 - `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
 - `github-trends` [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) — 一个完全不需要互联网的聊天 App。手机之间直接用蓝牙互相连接、并且能多跳中继（最多 7 跳），所以在断网、关网、没有信号的地方，一群人依然可以互相发消息。由 Jack Dorsey（Twitter 联合创始人）做出原型，现在由社区组织 permissionlesstech 维护，风格上刻意做成"IRC 味"。
@@ -352,25 +374,8 @@ _网络与安全赛道整体热度持稳，但内部正经历从“传统网络�
 - `github-trends` [bikini/exploitarium](https://github.com/bikini/exploitarium) — 一个匿名研究者（handle `bikini`）把自己发现的软件漏洞攻击样例（PoC）打包公开的仓库，覆盖 libssh2、FFmpeg、Firefox、Ghidra、Docker、QEMU、nmap、Redis 等 40 多个主流开源项目。关键在于披露方式：**绝大多数漏洞未事先通知厂商、没有 CVE**，作者在 README 里明说自己发布时都没报过，让读者自己去报、CVE 归报的人。
 - `github-trends` [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux) — 俄语区的反封锁代理工具。README 自称"网络协议栈研究工具"，那是免责措辞；实质是 Go 写的用户态 TCP 隧道加 SOCKS5 客户端，配合自建 VPS 出口节点。
 
-### ai-video-voice-creative（13）
-_在学术研究系统梳理视频扩散等底层生成架构的同时，开源社区正加速将单点生成能力向全流程创作管线与开箱即用的桌面套件重构。从轻量级剪辑器平替、端到端语音克隆到 3D 资产快速成型，项目密集呈现“本地优先（Local-first）”与“反商业订阅”特征，强调完全离线可用与创作者隐私保护。整体赛道热度虽处于持稳沉淀期，但技术重心理念已明确从云端大模型的效果展示，转向深挖端侧推理效率与面向实际生产流的工程落地。_
-
-- `github-trends` [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) — 一个完全开源、在浏览器里就能用的视频剪辑器，定位是「CapCut 的开源替代」。你打开网页就能剪片，不用注册、不用下载客户端，素材也不上传到别人的服务器。
-- `github-trends` [AIEraDev/Clypra](https://github.com/AIEraDev/Clypra) — 一个用 Tauri + React + TypeScript 写的桌面视频剪辑器，定位「免费的 CapCut 替代品」——把付费剪辑软件的常用能力（多轨时间线、剪切、导出）做成本地原生、无水印、无订阅的开源工具。
-- `github-trends` [huggingface/speech-to-speech](https://github.com/huggingface/speech-to-speech) — Hugging Face 官方的"本地语音对话助手搭建套件"。你对着麦克风说话，它转文字、交给大模型思考、再用语音答复你——整条链路都能跑在自己的机器上，不必把语音送到第三方云。
-- `github-trends` [deepfakes/faceswap](https://github.com/deepfakes/faceswap) — 一个在自己机器上跑的开源换脸工具。给它两个人的素材，它训练一个神经网络，然后把视频或图片里 A 的脸换成 B 的脸；带图形界面，流程是"提取人脸 → 训练 → 转换"三步。它是 "deepfake" 这个词的源头级项目——2017 年 12 月 Reddit 那次事件之后由社区接手重写，官网与论坛在 faceswap.dev。
-- `github-trends` [microsoft/TRELLIS.2](https://github.com/microsoft/TRELLIS.2) — 给它一张图片，它输出一个带完整材质、可以直接进游戏或渲染管线的 3D 模型。
-- `github-trends` [abus-aikorea/voice-pro](https://github.com/abus-aikorea/voice-pro) — 装在自己电脑上的音视频配音工作台。把 YouTube 视频或本地音频丢进网页界面，它自动扒音轨、用 Demucs 分离人声伴奏、用 Whisper 转文字、翻译成目标语言，再用 TTS（Edge-TTS、kokoro）或零样本声音克隆（F5-TTS、CosyVoice，约 15 秒样本即可）合成配音。
-- `github-trends` [Comfy-Org/ComfyUI](https://github.com/Comfy-Org/ComfyUI) — 扩散模型的节点式工作流界面——你把加载模型、编码提示词、采样、解码这些步骤拖成一张流程图，跑图像/视频生成。同时也提供后端和 API，可以被别的服务调用。
-- `lilian-weng` [Diffusion Models for Video Generation](https://lilianweng.github.io/posts/2024-04-12-diffusion-video/) — [Diffusion models](https://lilianweng.github.io/posts/2021-07-11-diffusion-models/) have demonstrated strong results on image synthesis in past years. Now the research community has started working on a harder task—using it for video generation. The task itself is a superset of the image case, since an image is a video of 1 frame, and it is much more challenging because:
-- `github-trends` [kyutai-labs/pocket-tts](https://github.com/kyutai-labs/pocket-tts) — 一个"能塞进口袋"的文本转语音（TTS）模型——小到能在普通 CPU 上跑，却能生成接近商业级质量的语音。出自法国非营利 AI 实验室 Kyutai（此前开源实时语音模型 Moshi 而知名）。
-- `github-trends` [lightningpixel/modly](https://github.com/lightningpixel/modly) — 一个桌面应用，把一张照片拖进去就生成能用的 3D 模型，全程在自己电脑的显卡上跑，图片不上传。导出支持 GLB / OBJ / STL / PLY，其中 STL 可以直接丢进 3D 打印切片软件。
-- `github-trends` [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) — 一套装在自己电脑上的"配音工作室"。你给它一段三到十五秒的人声样本，它就能用那个声音念任意文本；也能把一段外语视频整段转写、翻译、重新配音，输出成新的 MP4；还能把 EPUB 或 PDF 电子书转成带章节的有声书。所有处理都在本机完成，不上传、不按字符收费。
-- `github-trends` [OpenWhispr/openwhispr](https://github.com/OpenWhispr/openwhispr) — 按住一个快捷键说话，文字自动出现在光标所在的任何输入框里的桌面听写工具，附带会议自动转录、笔记和语音 AI 助手。可以完全在本机跑 Whisper 或 NVIDIA Parakeet 模型（音频不出机），也可以自带 API key 接云端模型。
-- `github-trends` [multimodal-art-projection/YuE](https://github.com/multimodal-art-projection/YuE) — 开源的歌曲生成模型。给它歌词和风格提示词，它先写出一份旋律加和弦的 ABC 记谱方案，再把方案渲染成带人声和伴奏的完整歌曲（48kHz 立体声）。今天上榜是因为 9 月 9 日发布的 YuE2（`yue2-v0.1.6`），v1 已归档到 `YuE-v1` 分支。
-
 ### data-and-analytics-infra（14）
-_该赛道整体热度虽呈收缩退潮态势，但内部正经历剧烈的范式重组：传统调度与管道创新的关注度明显下滑，重心全面转向支撑大模型自主分析的“上下文与语义基础设施”。开源社区涌现的通用指标规范、GenBI 工具，与 Claude 官方博客力推的企业级 Slack 自助分析实践形成鲜明共振，共同加速 Text-to-SQL 走向兼顾口径一致性与可信追溯的深水区。未来数据基建的核心命题，将演变为通过标准化语义层、深度文档清洗与图谱上下文，为 AI Agent 消费企业全模态数据构筑端到端的确定性通道。_
+_数据与分析基础设施赛道呈现显著升温态势，其演进主线正由传统的“人看报表”全面转向“Agent 消费数据”。开源社区的密集创新与 Anthropic 等前沿厂商的企业落地实践形成强烈共振，推动数据栈全链路重构：上游加速将非结构化文档与异构源提纯为 LLM 友好的高质上下文，中间与消费层则全力补齐统一指标与语义图谱，以消除模型幻觉并支撑可信的自然语言即席分析。未来该赛道正从被动的数据流转编排，向以标准化语义层为枢纽、无缝嵌入智能体协作流的 AI 原生决策基座加速演进。_
 
 - `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
 - `github-trends` [apache/ossie](https://github.com/apache/ossie) — 一套让不同数据平台"对同一个指标说同一种话"的开放规范。今天你在 BI 工具里定义的"月活跃用户"，到了 AI 助手、数据仓库、报表工具里往往各算各的口径；Ossie 想用一份厂商中立的 JSON/YAML 规范，把指标、维度、关系这些"语义元数据"标准化，作为跨平台的单一事实源。
@@ -388,7 +393,7 @@ _该赛道整体热度虽呈收缩退潮态势，但内部正经历剧烈的范�
 - `github-trends` [sngyai/Sequoia-X](https://github.com/sngyai/Sequoia-X) — 一个每天收盘后自动跑一遍的 A 股扫描器。它按几套预设的技术形态（海龟突破、高窄旗形、涨停洗盘、RPS 强度、定增监控等）把全市场股票筛一遍，把符合条件的票推到你的飞书群里。它不下单、不管仓位，只负责把候选名单送到你眼前。
 
 ### agent-deliverables-and-artifacts（8）
-_尽管轻量展示型 Artifacts 的探索热度较前期有所退潮，但该赛道正经历显著的专业化收敛与结构下沉。一方面 Claude 官方博客接连将交付物升级为贯穿开发周期的动态共享看板与品牌化设计系统，另一方面开源社区也在同步押注为 Coding Agent 量身定制的单文件 HTML/SVG、可编辑 PPTX 以及 CAD 脚本等技能包。跨源信号表明，交付物形态正迅速脱离独立的演示型 SaaS，全面转向深度寄生于终端 Agent 工作流、可直接进入工业生产的高保真成果交付。_
+_当前 AI 智能体正加速从“文本与代码片段生成”跃迁为“端到端终态交付物（Artifacts）”的创造者，Claude 官方博客将可视化制品与品牌设计系统深度内建，而 GitHub 开源社区则密集涌现各类垂直交付技能包，形成官方平台与民间生态的双向共振。交付物形态已显著跨越初级的图文混排，全面拓展至零构建单文件 SVG 架构图、原生可编辑 PPTX、高精排版学术论文乃至工业级 CAD 实体建模等高度专业化领域。该赛道整体热度保持稳健，其结构性演进清晰指向：以智能体为中枢，直接穿透格式屏障，产出开箱即用、可直接消费与协作的高价值生产级资产。_
 
 - `github-trends` [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad) — 一套给 AI 编码 agent（Claude Code / Codex）用的"技能包"，让 agent 能用自然语言或图片直接生成、检查、切片和交付 CAD 模型、机器人描述文件（URDF/SDF）和硬件设计产物，基于 Build123d + OpenCASCADE，配套网站 cadskills.xyz。
 - `claude-blog` [Claude Design now stays on brand for daily work](https://claude.com/blog/claude-design-stays-on-brand-for-daily-work) — Claude Design now sticks to your design system across projects, works fluidly with Claude Code, lets you edit directly on the canvas, and connects to more tools you already use. It has a new home in the sidebar on the Claude desktop app; you can also find it at [claude.ai/design](https://claude.ai/design).
@@ -400,7 +405,7 @@ _尽管轻量展示型 Artifacts 的探索热度较前期有所退潮，但该�
 - `github-trends` [jihe520/MathModelAgent](https://github.com/jihe520/MathModelAgent) — 数学建模竞赛的全流程 agent。丢进去一道赛题，它做问题分析、选模型、写代码、画图，最后用 Typst 或 LaTeX 排版出一份能直接提交的 PDF 论文。目标赛事写得很明确：国赛 CUMCM、华数杯、华为杯、美赛 MCM/ICM。
 
 ### games-and-emulators（8）
-_游戏与模拟器赛道近期呈现显著的社区驱动升温态势，技术主线正从传统的黑盒虚拟机模拟，加速迈向经典游戏的反编译原生重构与现代主机硬件直跑翻译层。社区普遍运用 Rust、现代 C# 及 Web 自托管栈，掀起了经典沙盒服务端高性能重构与跨端 ROM 资产库标准化的热潮。伴随商业游戏源码的主动释出与 Shader 级深度渲染拦截技术的成熟，开源力量正从表层打补丁转向引擎底座共建与全链路画质调优，展现出接管并延续老游戏生命周期的系统性趋势。_
+_游戏与模拟器赛道近期热度显著回升，技术重心正加速从传统的黑盒模拟与外挂式修改，向「反编译原生移植」以及用现代系统级语言（如 Rust、C#）重构底层基础设施演进。社区的技术介入点已深度下沉至图形管线与着色器层面，在探索次世代主机指令/GPU 翻译的同时，能够直接接管现代渲染管线实现无损画质重构；加之商业游戏源码的主动开放与自托管游戏库的普及，推动整个赛道由零散的逆向破解走向规范化、高自主权的游戏生态保全与二次开发。_
 
 - `github-trends` [k1tbyte/Wand-Enhancer](https://github.com/k1tbyte/Wand-Enhancer) — 给 WeMod（Wand）游戏修改器桌面端打补丁的第三方增强扩展。核心卖点是 Remote Web Panel——手机扫 QR 在局域网远程启停游戏/控制修改功能，并支持注入自定义 JS 脚本到渲染进程。
 - `github-trends` [par274/sharpemu](https://github.com/par274/sharpemu) — 一个纯 C#/.NET 从零编写的实验性 PlayStation 5 模拟器。因为 PS5 用 Zen2 x86-64 CPU，指令可直跑宿主 CPU，它走「翻译层」路线——只模拟 RDNA2 GPU，与早期 shadPS4 思路一致。
@@ -414,3 +419,6 @@ _游戏与模拟器赛道近期呈现显著的社区驱动升温态势，技术�
 ### hardware-and-embedded（2）
 - `github-trends` [NawfalMotii79/PLFM_RADAR](https://github.com/NawfalMotii79/PLFM_RADAR) — 一个人把一整套 10.5 GHz 雷达的设计资料全部开源了——电路原理图、PCB 布线、FPGA 代码、单片机固件、上位机界面，一样不留。项目代号 AERIS-10，目标是让大学实验室、无人机团队和业余射频爱好者能自己造一台以往要几十万美元的相控阵雷达。作者是摩洛哥卡萨布兰卡的一位电子工程师，为这个项目还新注册了公司。
 - `github-trends` [pollen-robotics/microduck_rl](https://github.com/pollen-robotics/microduck_rl) — 教一只机器鸭子走路的训练代码。Microduck 是 Hugging Face 旗下 Pollen Robotics 卖的 25 厘米、800 克、$399 的双足鸭子机器人；这个仓库让你在自己电脑的 GPU 上用仿真让虚拟鸭子反复练习走路、摔倒爬起、踢球、前滚翻，练好后把模型导出成 ONNX 刷进真机。
+
+### productivity-and-business-apps（1）
+- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
