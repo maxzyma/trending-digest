@@ -1,0 +1,637 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:23c0b9deb13248ca6c14c08c0d7893f408ee532c43dfec41ffb279041602b100",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "claude-blog-zh.v1",
+  "title": "智能体编程正在给 CI 带来压力。以下是我们在 Anthropic 扩展测试影响分析的方法",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "AI 正在革新持续集成（CI）"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Anthropic 的工程师平均每季度交付的代码量是 2021-2025 年间的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/institute/recursive-self-improvement"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "8 倍"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。其中 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/institute/recursive-self-improvement"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "80% 的代码"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "由 Claude 编写，它在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "审查和批准 PR 方面同样"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "发挥着很大的作用。 "
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除此之外，我们代码库中的测试数量增长了 10 倍，而我们只增加了少量工程师。这一切导致 CI 作业数量在六个月内增长了 25 倍（如果你想核对这个数字，并非每个测试都会在每个 PR 上运行，我稍后会解释）。"
+        }
+      ]
+    },
+    "b005": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这曾多次险些让我们的测试影响分析服务不堪重负。为了避免自己成为下一个瓶颈，我们把整套东西推倒重来，重新构想了该服务的架构应该是什么样子。但通往那一步的道路颇为坎坷，起初是三个快速修复方案，它们的有效期分别只有 70 天、29 天，以及不到一天。"
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着智能体持续加速代码生成与审查，扩展 CI 将成为越来越多工程团队很快要面对的挑战。我预计，随着运行智能体的团队产出更多 PR 和更多测试，横向扩展的测试选择架构将成为行业标准。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在本文中，我将讨论我们如何在 Anthropic 扩展我们的测试影响分析服务，以及我通过惨痛教训学到的一课：永远要为指数级增长做好准备。那些具体的扩展技术——购买更大的机器、并行化进程，或者重启服务（是的，这招至今依然出奇地管用）——都很常见，"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "并不是本文希望你从中获得的洞见。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " "
+        }
+      ]
+    },
+    "b009": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "关键在于，这些技术手段如今换来的时间，只是一年前的一小部分。另一方面，彻底重构并完全重新设计一项服务所花的时间同样只是过去的一小部分，而且既然写代码不再是瓶颈，这种做法现在要可持续得多。"
+        }
+      ]
+    },
+    "b010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你越是能够预见这种压力，并规划好架构将如何随之演进，就越少把时间浪费在治标不治本的权宜之计上。"
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "测试影响分析架构"
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我的许多同行所在的组织，每次变更"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "仍然会"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "运行全部测试。这种做法在一定规模内行得通，但无法扩展：CI 门禁会变得越来越漫长、昂贵且不可信。"
+        }
+      ]
+    },
+    "b013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "此外，人类很擅长判断哪些测试失败与自己无关，而智能体则需要更多上下文和指引。当它们拿到一组特定的有效测试时，就能更有效地自我验证和迭代。"
+        }
+      ]
+    },
+    "b014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Anthropic，我们构建了一个确定性的测试影响分析（或称测试选择）服务，它会根据以往的运行表现和软件包相关性，确定每次变更需要运行哪些测试。这并不是一种罕见的做法，市面上也有一类厂商提供该领域的产品。"
+        }
+      ]
+    },
+    "b015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们的服务依赖于两个确定性组件保持同步："
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个“监听器”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "会记录每次 CI 运行的测试结果。"
+        }
+      ]
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "“选择器”"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "读取测试结果历史，并决定在哪些已打开的 PR 上运行哪些测试。"
+        }
+      ]
+    },
+    "b019": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种方式是有效的，但当每秒都有多个 CI 任务在运行时，监听器就会越来越跟不上 PR 队列。对于"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/the-ai-native-sdlc-playbook"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "以 AI 为核心的 SDLC"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 来说，即使是很小的延迟也可能造成很大的影响。例如，监听器 20 分钟的滞后，可能意味着有数万条测试更新没有被应用到选择器上。"
+        }
+      ]
+    },
+    "b020": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "如果一个有问题的变更被合入"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，那么测试就会开始对其他所有人报错，从而引发多次不必要的排查。"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "如果某个依赖项开始出现不稳定（flaky）情况"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，那么不稳定的红色构建就会开始阻塞合并。"
+        }
+      ]
+    },
+    "b022": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "如果某个测试被修复或新增了一个测试"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，在监听器追赶上来之前它都不会运行，这有可能导致回归问题。"
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "所有这些都在单个进程中运行，因为要为每个测试保留一份运行历史，就需要由单个写入者来写入结果。这个 v0 设计使我们无法进行水平分片。"
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "坎坷的重新设计之路"
+        }
+      ]
+    },
+    "b026": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "到去年十月，该服务已经显现出吃紧的迹象，我们连续两天被呼叫告警。"
+        }
+      ]
+    },
+    "b027": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "补丁 1：更大的机器"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第一个修复很简单：我们把运行该服务的核心数翻了一倍。我们也知道这只是权宜之计。"
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "即便趋势线已经很清晰，归属权却依然模糊。没人愿意再接手一块基础设施。而且，CI 团队还有更重要的事情要处理。"
+        }
+      ]
+    },
+    "b031": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "补丁 2：分片"
+        }
+      ]
+    },
+    "b032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "到这个阶段，该服务监听器积压的延迟已经频繁地把我们呼叫起来。为了推动一些长期修复，我在内部版本的 Claude Tag 中开启了一个长期运行的会话，专门用于监控这个服务。每当监听器延迟积压超过 50,000 个任务时，Claude 就会提醒我，并接着我们之前的对话继续讨论下一步该怎么做。"
+        }
+      ]
+    },
+    "b033": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这种状态持续了好几个月，不用反复向它重述以往的尝试或上下文，这一点很有帮助。Claude 常常主张彻底重构，但我们通常还是选择再打一个补丁。"
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "到了二月，CI 任务的指数级增长再次让这个服务不堪重负。这一次，我们决定做并行化。"
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "监听器并不需要用单一写入者来正确排序测试结果，它需要的是每个 package 一个单一写入者，从而为我们代码库的每个部分正确排序测试结果。Claude 为我们生成了代码，把每个 package 的状态拆分到一个分片中，各自拥有独立的 worker。"
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们同样清楚这个修复只是权宜之计，但没想到它只为我们争取到了 29 天。"
+        }
+      ]
+    },
+    "b038": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "补丁 3：每日重启"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "到了三月，在大多数工作日的午后，这个进程就会触及内存上限。我们再次寻找快速修复方案，但是："
+        }
+      ]
+    },
+    "b041": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们只找到了四个 bug。"
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "把内存分配器换掉这种快速取巧的做法毫无效果。我们当时试图优化垃圾回收，但那并不是真正的解法。"
+        }
+      ]
+    },
+    "b043": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们不想冒险对一个已经处于重负载下的单例做内存剖析。"
+        }
+      ]
+    },
+    "b044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重启为我们争取到的时间还不到一天。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们还发现，每日重启导致该服务逐渐落后得越来越多。当它落后超过一小时时（这种情况发生过好几次），大量任务结果没有被监听器记录下来。"
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "需要说明的是，这并不意味着那些 PR 从未跑过 CI，也不意味着未经测试的代码被推到了生产环境。它意味着的是，监听器没有收到部分结果，于是我们的测试选择组件在决定哪些测试要在 PR 上运行、哪些不运行时用的是陈旧数据。这在大多数情况下表现为：我们跑了一些本来就极其不稳定、或者在各处普遍失败的测试。"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重新设计"
+        }
+      ]
+    },
+    "b049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "是时候（其实早就该）重新设计这个服务了，于是我们采纳了 Claude 的建议：我们给测试选择服务配了一个数据库，准确地说是一个内存数据存储。这样一来，我们实际上把原先由单例承担的一大块内存内处理工作卸载了出去。"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "现在，任何一个监听器 worker 都可以处理任何结果，把它追加到内存存储中的一个日志（journal）里，然后继续下一个，不必在内存中保留任何东西——无状态，因此可以水平扩展。一个小型的独立消费者进程每隔几秒把日志汇总成按测试维度的历史记录，选择器就能快速查到相关的结果历史。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这套分布式架构的运行成本更高，但相比一个摇摇欲坠的单例，它更容易扩展、也更容易做内存剖析。这个项目由一名工程师花了三周完成。放在一年前，大概要接近一个季度。"
+        }
+      ]
+    },
+    "b054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "其中有一些精细调优（确定日志规模和 worker 数量），基本上由 Claude 自主完成，而我们的服务自那以后一直保持稳定。"
+        }
+      ]
+    },
+    "b055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果重来一次我会怎么做"
+        }
+      ]
+    },
+    "b056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果我被送回 2025 年 10 月，以我现在所掌握的认识，我会用不同的方式来处理这个项目以及其他项目。"
+        }
+      ]
+    },
+    "b057": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第一个不同之处是，我会把 AI 的指数级增长考虑进去。随着每位工程师平均使用的 agent 数量上升，以及加速 PR 审批的手段变得更成熟，CI 任务会呈指数级增加。"
+        }
+      ]
+    },
+    "b058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这在 Anthropic 已经逐渐改变了 PR 的形态，因为 Claude 更倾向于提交更小、更细粒度的 PR（这也是不该对每个 PR 都跑全部测试的又一个很好的理由）。其结果就是单日内的 CI 任务变多了。同时，由于 agent 会在夜间和周末持续提交，活动量的下限被抬高了，但它依然呈突发性，因为相当大一部分 PR 仍由人类工程师推动和审批。"
+        }
+      ]
+    },
+    "b059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我给工程团队的建议是，无论你是自建还是采购，都要假设你的架构在两个季度内会面对 25 倍的负载。「过度工程」这个概念正开始略微淡出，或者至少这条门槛正在大幅上移。只要预算允许，你现在可以在 v0 的设计中就按感知规模的 10—20 倍来预留余量。"
+        }
+      ]
+    },
+    "b060": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为你的服务植入观测能力，让它们成为 Claude 的眼睛和耳朵。这使 Claude 能够逐步爬坡改进、渐进式地修复问题，比我们手动操作更出色也更快速。尤其要确保进入的 CI 作业数量与产出的数量相等。"
+        }
+      ]
+    },
+    "b061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从一开始就不要把状态放进进程里。我还建议避免以单实例方式运行任何关键服务，除非你能对它以及任何金丝雀变更进行度量。CI 的演进速度太快了，别无他法。"
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "额外的 CI 资源"
+        }
+      ]
+    },
+    "b063": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我还写过我们如何使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/ai-ci-cd-on-call"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude Tag 加速 CI 值班"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（测试版）。"
+        }
+      ]
+    }
+  }
+}
