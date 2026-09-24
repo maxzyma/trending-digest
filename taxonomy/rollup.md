@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-09-23）
+# 跨源主题聚类 — 同类与升温（2026-09-24）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,10 +6,10 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| desktop-and-media-apps | ↑升温 | 10 | 5 | 27 | 27 | github+claude | canonical |
-| coding-agents-and-harnesses | ↑升温 | 9 | 8 | 49 | 46 | github+claude+lilian | canonical |
-| dev-infra-and-tooling | ↓退潮 | 6 | 9 | 56 | 53 | github+claude | canonical |
-| agent-frameworks-and-platforms | ↑升温 | 5 | 4 | 37 | 36 | github+claude+lilian | canonical |
+| desktop-and-media-apps | ↑升温 | 9 | 5 | 27 | 27 | github+claude | canonical |
+| coding-agents-and-harnesses | ↑升温 | 8 | 7 | 49 | 46 | github+claude+lilian | canonical |
+| dev-infra-and-tooling | ↓退潮 | 6 | 8 | 56 | 53 | github+claude | canonical |
+| agent-frameworks-and-platforms | ↑升温 | 5 | 3 | 37 | 36 | github+claude+lilian | canonical |
 | agent-skills-and-plugins | →持稳 | 5 | 5 | 35 | 34 | github+claude | canonical |
 | networking-and-security | →持稳 | 5 | 5 | 32 | 29 | github+claude+lilian | canonical |
 | learning-and-curated-resources | ↓退潮 | 4 | 6 | 82 | 82 | github+claude+lilian | canonical |
