@@ -1,6 +1,6 @@
 # Centrally manage authorization for MCP connectors
 
-> 来源：Lil'Log / Anthropic，2026-06-18
+> 来源：Claude Blog / Anthropic，2026-06-18
 > 原文链接：https://claude.com/blog/enterprise-managed-auth
 
 Admins can now provision MCP connectors for their whole organization through their identity provider, starting with Okta. Users get connector access automatically on first login, with authorization configured centrally by their organization.

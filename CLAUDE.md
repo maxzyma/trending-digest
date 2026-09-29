@@ -1,6 +1,6 @@
 # Trending Digest
 
-为中文技术读者归档公开技术资源（当前：Claude 官方博客）的中文双语译读，并通过 Jekyll 提供带索引的公开阅读站。本仓承接**公开内容产物与展示契约**；抓取、译读、调度、凭据和运行状态归仓外处理引擎与私有编排层。
+为中文技术读者归档公开技术资源（当前：Claude 官方博客、Manus 官方博客、技术演讲与访谈）的中文双语译读，并通过 Jekyll 提供带索引的公开阅读站。本仓承接**公开内容产物与展示契约**；抓取、译读、调度、凭据和运行状态归仓外处理引擎与私有编排层。
 
 ## 仓库职责边界
 
@@ -27,14 +27,14 @@
 |------|------|
 | `sources/<source>/` | 内容源：生产者写入的 canonical 归档包 |
 | `taxonomy/` | 跨源主题聚类数据（编排层写入），构建期物化成 `/taxonomy/` 页面 |
-| `pages/` | 独立入口页（`/claude-blog/`、`/talks/`），各自带显式 `permalink` |
+| `pages/` | 独立入口页（`/claude-blog/`、`/manus-blog/`、`/talks/`），各自带显式 `permalink`；pipeline 源入口页只写 front matter，共用 `_layouts/source-index.html` |
 | `index.md`、`_layouts/`、`_data/`、`_config.yml` | Jekyll 站点：门户首页、布局、信源卡、构建配置 |
 | `scripts/` | 构建期物化与 fail-loud 校验 |
 | `specs/` | 设计与契约 |
 | `docs/` | 运维与对外契约 |
 | `TODO.md` | 待办 |
 
-**三处同名不可互换**：`sources/claude-blog/` 是内容源，`_claude_blog/` 是构建期物化的 gitignored collection（由 `scripts/prepare-collections.sh` 生成），`pages/claude-blog.html` 是 `/claude-blog/` 的入口页。`talks` 同理。
+**三处同名不可互换**：`sources/claude-blog/` 是内容源，`_claude_blog/` 是构建期物化的 gitignored collection（由 `scripts/prepare-collections.sh` 生成），`pages/claude-blog.html` 是 `/claude-blog/` 的入口页。`manus-blog`、`talks` 同理。claude-blog 与 manus-blog 共用 `_layouts/article-post.html`、`_layouts/source-index.html`，来源名称取自 `_data/sources.yml`；新增同构 pipeline 源不另建 layout。
 
 ## 文档结构
 

@@ -1,6 +1,6 @@
 # A field guide to Claude Fable 5: Finding your unknowns
 
-> 来源：Lil'Log / Anthropic，2026-07-06
+> 来源：Claude Blog / Anthropic，2026-07-06
 > 原文链接：https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns
 
 When working with Claude Code, I’m often reminded of the difference between the map and the territory.

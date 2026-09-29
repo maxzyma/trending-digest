@@ -1,6 +1,6 @@
 # Harnessing Claude’s intelligence
 
-> 来源：Lil'Log / Anthropic，2026-04-02
+> 来源：Claude Blog / Anthropic，2026-04-02
 > 原文链接：https://claude.com/blog/harnessing-claudes-intelligence
 
 One of Anthropic’s co-founders, Chris Olah, [says](https://www.darioamodei.com/post/the-urgency-of-interpretability) that generative AI systems like Claude are grown more than they are built. Researchers set the conditions to direct growth, but the exact structure or capabilities that emerge aren’t always predictable.

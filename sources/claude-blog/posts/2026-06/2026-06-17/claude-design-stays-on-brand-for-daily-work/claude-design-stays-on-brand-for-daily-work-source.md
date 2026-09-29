@@ -1,6 +1,6 @@
 # Claude Design now stays on brand for daily work
 
-> 来源：Lil'Log / Anthropic，2026-06-17
+> 来源：Claude Blog / Anthropic，2026-06-17
 > 原文链接：https://claude.com/blog/claude-design-stays-on-brand-for-daily-work
 
 ![](https://cdn.prod.website-files.com/68a44d4040f98a4adf2207b6/6a32d4f7ae9712d1f8ef661e_Claude-Design-beta-static.webp)

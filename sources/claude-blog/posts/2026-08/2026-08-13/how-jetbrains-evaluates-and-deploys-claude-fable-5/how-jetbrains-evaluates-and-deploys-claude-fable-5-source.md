@@ -1,6 +1,6 @@
 # Securing the frontier: How JetBrains evaluates and deploys Claude Fable 5
 
-> 来源：Lil'Log / Anthropic，2026-08-13
+> 来源：Claude Blog / Anthropic，2026-08-13
 > 原文链接：https://claude.com/blog/how-jetbrains-evaluates-and-deploys-claude-fable-5
 
 JetBrains builds the tools developers use worldwide, from IntelliJ IDEA and PyCharm to the Kotlin programming language, serving more than 12.5 million active users and 88 of the Fortune Global 100. Vladislav Tankov, CTO at JetBrains, spoke with Anthropic about how his team evaluates new models, decides when to use Claude Fable 5, and thinks about data retention and safeguards when working with frontier models.

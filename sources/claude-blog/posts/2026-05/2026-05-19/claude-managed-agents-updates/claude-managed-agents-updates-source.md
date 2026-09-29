@@ -1,6 +1,6 @@
 # New in Claude Managed Agents: self-hosted sandboxes and MCP tunnels
 
-> 来源：Lil'Log / Anthropic，2026-05-19
+> 来源：Claude Blog / Anthropic，2026-05-19
 > 原文链接：https://claude.com/blog/claude-managed-agents-updates
 
 Starting today, Claude Managed Agents can operate in a sandbox you control and connect to your private Model Context Protocol (MCP) servers. Both the sandbox where an agent executes tools and the services it reaches run within the established boundaries of your enterprise, under your security and runtime controls.

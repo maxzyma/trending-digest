@@ -1,6 +1,6 @@
 # Zero risk isn't the job: a CISO's guide to agentic AI
 
-> 来源：Lil'Log / Anthropic，2026-07-17
+> 来源：Claude Blog / Anthropic，2026-07-17
 > 原文链接：https://claude.com/blog/ciso-guide-to-agentic-ai
 
 Security leaders are being asked to approve agentic AI use cases that did not even exist a few months ago. Boards want to know whether any of it is governed, and somewhere in your organization, an employee has already connected an agent to something without telling you.

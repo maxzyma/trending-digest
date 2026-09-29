@@ -1,6 +1,6 @@
 # How an Anthropic field marketer uses Claude Code to send weekly personalized updates to every sales rep
 
-> 来源：Lil'Log / Anthropic，2026-08-24
+> 来源：Claude Blog / Anthropic，2026-08-24
 > 原文链接：https://claude.com/blog/how-an-anthropic-field-marketer-uses-claude-code-to-send-weekly-personalized-updates-to-every-sales-rep
 
 One of the biggest challenges I’ve faced as a marketer is keeping the sales team up to date with everything that’s going on in the field. Most marketers know the hallway conversation where a sales rep says, “Oh, I never heard about that event” (or that new whitepaper, that webinar) and you realize you’ve missed a chance to share the latest work with sales reps, and in turn, your customers. 

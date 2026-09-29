@@ -1,6 +1,6 @@
 # How Outtake built a cyber investigator on Claude
 
-> 来源：Lil'Log / Anthropic，2026-07-22
+> 来源：Claude Blog / Anthropic，2026-07-22
 > 原文链接：https://claude.com/blog/how-outtake-built-a-cyber-investigator-on-claude
 
 *In our series, ***How startups build with Claude,** we highlight how startups are transforming their industries with AI. In this article, we share how Outtake built an autonomous cyber investigator that detects, investigates, and dismantles digital threats, from cloned login pages to entire adversarial networks.

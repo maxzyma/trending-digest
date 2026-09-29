@@ -1,6 +1,6 @@
 # Running auto mode in production
 
-> 来源：Lil'Log / Anthropic，2026-08-07
+> 来源：Claude Blog / Anthropic，2026-08-07
 > 原文链接：https://claude.com/blog/auto-mode-in-production
 
 [Auto mode is now the default](http://claude.com/blog/auto-mode-default-in-claude-code) setting in Claude Code. Instead of asking you to approve every command an agent wants to run, a classifier evaluates each action and blocks ones that look potentially harmful. 

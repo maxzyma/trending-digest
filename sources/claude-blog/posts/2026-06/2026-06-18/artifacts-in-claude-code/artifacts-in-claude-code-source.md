@@ -1,6 +1,6 @@
 # Claude Code now supports artifacts
 
-> 来源：Lil'Log / Anthropic，2026-06-18
+> 来源：Claude Blog / Anthropic，2026-06-18
 > 原文链接：https://claude.com/blog/artifacts-in-claude-code
 
 Starting today, Claude Code can capture work progress as an artifact, which turn Claude Code's work into live, shareable visual pages— including PR walkthroughs, system explainers, dashboards, and release checklists—that update themselves as your session works.

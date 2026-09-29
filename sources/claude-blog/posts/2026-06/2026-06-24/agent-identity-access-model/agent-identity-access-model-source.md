@@ -1,6 +1,6 @@
 # Agent identity in Claude Tag: a new access model for autonomous, team-wide AI
 
-> 来源：Lil'Log / Anthropic，2026-06-24
+> 来源：Claude Blog / Anthropic，2026-06-24
 > 原文链接：https://claude.com/blog/agent-identity-access-model
 
 For an AI agent to do its best work on a human-agent team, it needs access to the same tools, documents, and context humans have. 

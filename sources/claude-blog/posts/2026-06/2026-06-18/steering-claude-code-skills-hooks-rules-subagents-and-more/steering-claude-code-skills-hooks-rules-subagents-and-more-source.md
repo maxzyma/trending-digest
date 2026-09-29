@@ -1,6 +1,6 @@
 # Steering Claude Code: CLAUDE.md files, skills, hooks, rules, subagents and more
 
-> 来源：Lil'Log / Anthropic，2026-06-18
+> 来源：Claude Blog / Anthropic，2026-06-18
 > 原文链接：https://claude.com/blog/steering-claude-code-skills-hooks-rules-subagents-and-more
 
 Claude is built to work the way you work, and in Claude Code you can customize it. 

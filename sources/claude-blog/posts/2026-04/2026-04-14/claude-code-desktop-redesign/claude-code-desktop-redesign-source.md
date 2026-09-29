@@ -1,6 +1,6 @@
 # Redesigning Claude Code on desktop for parallel agents
 
-> 来源：Lil'Log / Anthropic，2026-04-14
+> 来源：Claude Blog / Anthropic，2026-04-14
 > 原文链接：https://claude.com/blog/claude-code-desktop-redesign
 
 It includes a new sidebar for managing multiple sessions, a drag-and-drop layout for arranging your workspace, an integrated terminal and file editor, plus performance and quality-of-life improvements.

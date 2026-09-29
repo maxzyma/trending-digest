@@ -1,6 +1,6 @@
 # Bringing MCP 2026-07-28 to Claude
 
-> 来源：Lil'Log / Anthropic，2026-07-28
+> 来源：Claude Blog / Anthropic，2026-07-28
 > 原文链接：https://claude.com/blog/bringing-mcp-2026-07-28-to-claude
 
 The fifth spec release of the Model Context Protocol, [MCP 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)**,** is live today. The latest spec moves MCP to a stateless core, while hardening authorization and graduating official extensions. Support is being rolled out across Claude products.  

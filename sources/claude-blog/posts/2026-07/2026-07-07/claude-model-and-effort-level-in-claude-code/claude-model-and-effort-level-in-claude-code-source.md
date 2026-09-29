@@ -1,6 +1,6 @@
 # Choosing a Claude model and effort level in Claude Code
 
-> 来源：Lil'Log / Anthropic，2026-07-07
+> 来源：Claude Blog / Anthropic，2026-07-07
 > 原文链接：https://claude.com/blog/claude-model-and-effort-level-in-claude-code
 
 **Key takeaways**:

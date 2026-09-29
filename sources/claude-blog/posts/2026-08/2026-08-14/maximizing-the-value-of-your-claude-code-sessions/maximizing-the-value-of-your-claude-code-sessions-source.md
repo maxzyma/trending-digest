@@ -1,6 +1,6 @@
 # Maximizing the value of your Claude Code sessions
 
-> 来源：Lil'Log / Anthropic，2026-08-14
+> 来源：Claude Blog / Anthropic，2026-08-14
 > 原文链接：https://claude.com/blog/maximizing-the-value-of-your-claude-code-sessions
 
 ### TL;DR

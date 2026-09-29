@@ -1,6 +1,6 @@
 # Building effective human-agent teams
 
-> 来源：Lil'Log / Anthropic，2026-06-24
+> 来源：Claude Blog / Anthropic，2026-06-24
 > 原文链接：https://claude.com/blog/building-effective-human-agent-teams
 
 Working with AI used to mean one person interfacing with a single chat window. Over time, AI has become increasingly capable at handling complex, long-running work, like coding, research, and financial analysis. With this, we’ve seen many new ways to use AI—from the terminal and IDE to spreadsheets and decks—but the work has still very much been a “single-player” experience: one human worked with one agent to accomplish individual tasks. 

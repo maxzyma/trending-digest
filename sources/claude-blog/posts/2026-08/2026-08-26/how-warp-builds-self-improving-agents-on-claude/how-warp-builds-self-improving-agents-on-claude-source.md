@@ -1,6 +1,6 @@
 # How Warp builds self-improving agents on Claude
 
-> 来源：Lil'Log / Anthropic，2026-08-26
+> 来源：Claude Blog / Anthropic，2026-08-26
 > 原文链接：https://claude.com/blog/how-warp-builds-self-improving-agents-on-claude
 
 *In our series, , we highlight how startups are transforming their industries with AI. In this article, we share how Warp turned stateless user feedback into a self-improvement loop for its agents.*

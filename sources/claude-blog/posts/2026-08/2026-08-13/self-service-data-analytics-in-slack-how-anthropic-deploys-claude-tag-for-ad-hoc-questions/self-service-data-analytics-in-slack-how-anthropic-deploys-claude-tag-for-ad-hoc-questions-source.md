@@ -1,6 +1,6 @@
 # Self-service data analytics in Slack: how Anthropic deploys Claude Tag for ad-hoc questions
 
-> 来源：Lil'Log / Anthropic，2026-08-13
+> 来源：Claude Blog / Anthropic，2026-08-13
 > 原文链接：https://claude.com/blog/self-service-data-analytics-in-slack-how-anthropic-deploys-claude-tag-for-ad-hoc-questions
 
 In our [previous post](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude), we described how we enabled Claude to answer data analytics questions with ~95% accuracy through three primary artifacts: 

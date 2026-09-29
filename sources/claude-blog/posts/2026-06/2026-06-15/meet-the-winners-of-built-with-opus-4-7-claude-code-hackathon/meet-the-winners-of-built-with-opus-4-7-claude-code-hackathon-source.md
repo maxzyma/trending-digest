@@ -1,6 +1,6 @@
 # Meet the winners of the Built with Opus 4.7 Claude Code hackathon
 
-> 来源：Lil'Log / Anthropic，2026-06-15
+> 来源：Claude Blog / Anthropic，2026-06-15
 > 原文链接：https://claude.com/blog/meet-the-winners-of-built-with-opus-4-7-claude-code-hackathon
 
 Last week, we hosted [Claude Build Day](https://cerebralvalley.ai/e/claude-startups-build-day), our latest hackathon where builders got together in San Francisco to put their ideas to work using Claude Opus 4.8. 

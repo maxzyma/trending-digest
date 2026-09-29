@@ -1,6 +1,6 @@
 # Introducing the Claude apps gateway for Amazon Bedrock and Google Cloud
 
-> 来源：Lil'Log / Anthropic，2026-06-29
+> 来源：Claude Blog / Anthropic，2026-06-29
 > 原文链接：https://claude.com/blog/introducing-the-claude-apps-gateway
 
 Today, we're introducing the Claude apps gateway for Amazon Bedrock and Google Cloud. Previously, running Claude Code on these platforms has meant provisioning a cloud credential per developer, manually pushing settings to every laptop, and standing up separate tooling to see per-developer spend. The gateway is a self-hosted control plane that gives you corporate SSO login, centrally enforced policy, role-based access, and per-user cost attribution for Claude Code.

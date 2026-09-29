@@ -1,6 +1,6 @@
 # Meet the winners of our Claude Opus 4.8 Build Day hackathon
 
-> 来源：Lil'Log / Anthropic，2026-06-17
+> 来源：Claude Blog / Anthropic，2026-06-17
 > 原文链接：https://claude.com/blog/meet-the-winners-of-our-claude-opus-4-8-build-day-hackathon
 
 On June 13, we brought more than 300 founders and builders to San Francisco for a 12-hour hackathon with Claude Opus 4.8. More than 1,500 people had applied; 310 took part, many traveling from around the world, each with $500 in credits and one day to turn an idea into a working demo.

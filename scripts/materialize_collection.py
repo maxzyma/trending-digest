@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Materialize the claude_blog Jekyll collection from the archive content source.
+"""Materialize the same-repo Jekyll collections from the archive content sources.
 
 The archive stores each article as a self-contained canonical package under
-``sources/claude-blog/posts/YYYY-MM/YYYY-MM-DD/<slug>/`` (canonical.json + raw +
+``sources/<source>/posts/YYYY-MM/YYYY-MM-DD/<slug>/`` (canonical.json + raw +
 translations + rendered markdown variants + metadata.json). The public site must
 render ONLY one reading page per article, so this step selects the single reading
-markdown, injects the front matter the ``claude-blog-post`` layout consumes, and
-writes it to ``_claude_blog/`` under the legacy URL path (``YYYY/MM/YYYY-MM-DD-
-slug.md``) so existing links / Cloudflare routes stay stable. Non-reading files
+markdown, injects the front matter the ``article-post`` layout consumes, and
+writes it to the source's collection dir (e.g. ``_claude_blog/``) under the
+legacy URL path (``YYYY/MM/YYYY-MM-DD-slug.md``) so existing links / Cloudflare
+routes stay stable. Non-reading files
 (canonical.json, raw HTML, translation/editorial JSON, other md variants) are
 never copied into the collection.
 
@@ -38,6 +39,13 @@ SOURCES = (
         "default_category": "Claude Blog",
         "format": "bilingual-paragraph-zh-first",
         "legacy_flat": True,
+    },
+    {
+        "key": "manus-blog",
+        "collection_dir": "_manus_blog",
+        "default_category": "Manus Blog",
+        "format": "bilingual-paragraph-zh-first",
+        "legacy_flat": False,
     },
     {
         "key": "talks",

@@ -28,9 +28,9 @@
 
 `docs/producer-contract.md` 要求 archive adapter 支持 dry-run、写入后校验文章/索引/manifest 一致性。`talks` 这类手动来源当前全靠人工，无自动校验。
 
-## P3 talks 与 claude-blog 的 layout 重复
+## P3 talks 与 pipeline 源的 layout 重复
 
-`_layouts/talk-post.html` 与 `_layouts/claude-blog-post.html` 的 CSS 近乎重复（约 20 行），`pages/talks.html` 与 `pages/claude-blog.html` 同理。当前按外科手术原则未重构；是否抽公共 layout / include 待定。
+pipeline 源（claude-blog、manus-blog）已共用 `_layouts/article-post.html` 与 `_layouts/source-index.html`。`_layouts/talk-post.html`、`pages/talks.html` 仍与之 CSS 近乎重复（约 20 行）；talks 是否并入共用 layout 待定。
 
 ## P3 同仓源 markdown 格式契约未成文
 

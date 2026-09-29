@@ -1,6 +1,6 @@
 # How Anthropic's marketing operations team uses Claude Cowork to automate reporting and campaign builds
 
-> 来源：Lil'Log / Anthropic，2026-07-08
+> 来源：Claude Blog / Anthropic，2026-07-08
 > 原文链接：https://claude.com/blog/how-anthropics-marketing-operations-team-uses-claude-cowork-to-automate-reporting-and-campaign-builds
 
 Marketing operations teams spend a meaningful portion of their time keeping the systems behind marketing programs in step with the business. While automation sits firmly in their purview, a lot of the work is anything but: martech tools don’t integrate cleanly with each other, reports are consolidated manually, landing pages get spun up one at a time. 

@@ -1,6 +1,6 @@
 # A guide to the anatomy of effective commerce agents
 
-> 来源：Lil'Log / Anthropic，2026-09-02
+> 来源：Claude Blog / Anthropic，2026-09-02
 > 原文链接：https://claude.com/blog/the-anatomy-of-effective-commerce-agents
 
 Over the past year, we've worked with teams across the commerce industry — retailers, marketplaces, travel, entertainment, and telecom providers — to build commerce agents using Claude.  

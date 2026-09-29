@@ -1,6 +1,6 @@
 # The Claude Cowork product guide
 
-> 来源：Lil'Log / Anthropic，2026-06-05
+> 来源：Claude Blog / Anthropic，2026-06-05
 > 原文链接：https://claude.com/blog/the-claude-cowork-product-guide
 
 Most AI tools are conversational. You ask a question, you get an answer, and the work of turning that answer into something useful—a deck, a doc, a spreadsheet, an email—is still manual. 

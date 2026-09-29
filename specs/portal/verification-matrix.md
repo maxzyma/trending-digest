@@ -32,7 +32,7 @@
 | TC-UI-BND-002 | ui | boundary | 首页最新流 → 断言不含 github-trending 明细 | SC-09 |
 | TC-UI-BND-003 | ui | boundary | 造空同仓 digest → 断言最新流区块留空/隐藏、首页不报错 | SC-10 |
 | TC-UI-ERR-002 | ui | error | 注入某 digest 缺 published_at → 断言跳过该条 + 构建日志告警 + 其余倒序正常 | SC-22 |
-| TC-UI-FUNC-005 | ui | functional | 渲染 /claude-blog/ → 断言本仓 Jekyll 渲染、CSS/内链前缀正确不错位 | SC-11 |
+| TC-UI-FUNC-005 | ui | functional | 渲染 /claude-blog/、/manus-blog/ → 断言本仓 Jekyll 渲染（manus-blog 允许零篇）、CSS/内链前缀正确不错位 | SC-11 |
 
 ## focus × form 矩阵（单张）
 

@@ -1,6 +1,6 @@
 # T. Rowe Price brings more of Claude to its investment process
 
-> 来源：Lil'Log / Anthropic，2026-09-10
+> 来源：Claude Blog / Anthropic，2026-09-10
 > 原文链接：https://claude.com/blog/t-rowe-price-brings-more-of-claude-to-its-investment-process
 
 T. Rowe Price, a global investment management firm, and Anthropic today [announced the expansion](https://www.prnewswire.com/news-releases/t-rowe-price-works-with-anthropic-to-bring-claude-to-more-of-its-investment-process-302875582.html) of Claude across the firm’s investment organization.  Portfolio managers and analysts at the global investment management firm are working with Claude and Claude Cowork on their research, and its developers are building investment tools with Claude Code.

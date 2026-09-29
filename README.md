@@ -23,7 +23,7 @@ lineage.
 |---|---|
 | `sources/<source>/` | Content sources — the canonical archive packages written by producers |
 | `taxonomy/` | Cross-source theme rollup data written by the aggregation pipeline; rendered at `/taxonomy/` |
-| `pages/` | Standalone site entry pages (`/claude-blog/`, `/talks/`), each with an explicit `permalink` |
+| `pages/` | Standalone site entry pages (`/claude-blog/`, `/manus-blog/`, `/talks/`), each with an explicit `permalink` |
 | `index.md`, `_layouts/`, `_data/`, `_config.yml` | Jekyll site: portal home, layouts, source cards, build config |
 | `scripts/` | Build-time materialization and fail-loud validation |
 | `specs/` | Design and contracts — read before changing the portal, routes, or validation scripts |
@@ -34,13 +34,16 @@ Three directories share the `claude-blog` name by design, and they are not
 interchangeable: `sources/claude-blog/` is the content source, `_claude_blog/`
 is the gitignored collection materialized at build time by
 `scripts/prepare-collections.sh`, and `pages/claude-blog.html` is the entry page
-served at `/claude-blog/`. The same holds for `talks`.
+served at `/claude-blog/`. The same holds for `manus-blog` and `talks`.
+Pipeline sources (`claude-blog`, `manus-blog`) share `_layouts/article-post.html`
+and `_layouts/source-index.html`; the source label comes from `_data/sources.yml`.
 
 ## Sources
 
 | Source | Directory | Mode | Description |
 |---|---|---|---|
 | Claude Blog | `sources/claude-blog/` | pipeline | Chinese reading notes and translations for official Claude Blog posts |
+| Manus Blog | `sources/manus-blog/` | pipeline | Chinese reading notes and translations for official Manus Blog posts |
 | Talks | `sources/talks/` | manual | Chinese translations of technical talks and interviews, hand-selected and hand-translated |
 
 `sources/talks/` is a manual source: there is no upstream canonical article package

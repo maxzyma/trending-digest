@@ -1,6 +1,6 @@
 # Preparing your security program for AI-accelerated offense
 
-> 来源：Lil'Log / Anthropic，2026-04-10
+> 来源：Claude Blog / Anthropic，2026-04-10
 > 原文链接：https://claude.com/blog/preparing-your-security-program-for-ai-accelerated-offense
 
 Earlier this week, we announced Project Glasswing—our urgent attempt to put the strong cybersecurity capabilities of our newest frontier model, Claude Mythos Preview, to use for defensive purposes. In the [announcement](https://www.anthropic.com/glasswing)—and the [accompanying technical blog post](https://red.anthropic.com/2026/mythos-preview/)—we described how AI models are rapidly reducing the required resources, time, and skill required to find and exploit vulnerabilities in software.

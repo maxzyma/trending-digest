@@ -1,6 +1,6 @@
 # Reducing cost and improving performance with Claude Platform
 
-> 来源：Lil'Log / Anthropic，2026-09-08
+> 来源：Claude Blog / Anthropic，2026-09-08
 > 原文链接：https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform
 
 Performance and cost are often viewed as a trade-off: to spend less, you accept worse results. In practice, we've found that many applications using Claude Platform can cut costs without giving up performance with three fixes: maximize the prompt cache hit rate, remove anti-patterns from your prompts when upgrading to frontier Claude models, and calibrate effort to the task. We've put this guidance into the [claude-api skill](https://github.com/anthropics/skills/tree/main/skills/claude-api). In this article, we show how Claude Code with the `claude-api `can often find ways to reduce cost while maintaining or improving performance.

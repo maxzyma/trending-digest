@@ -1,6 +1,6 @@
 # Observability for developers building connectors
 
-> 来源：Lil'Log / Anthropic，2026-06-08
+> 来源：Claude Blog / Anthropic，2026-06-08
 > 原文链接：https://claude.com/blog/observability-for-developers-building-connectors
 
 ### Monitor, debug, and improve connectors

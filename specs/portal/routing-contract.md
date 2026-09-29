@@ -7,7 +7,7 @@
 | 路径模式 | 目标 origin | 机制 | covers |
 |---------|------------|------|--------|
 | `/` | 本仓（trending-diggest）Pages | 直出（Worker 透传/不改写） | SC-04, SC-13 |
-| `/claude-blog/*` | 本仓 Pages | 直出（同仓 Jekyll，baseurl=/claude-blog） | SC-11, SC-12, SC-13 |
+| `/claude-blog/*`、`/manus-blog/*` | 本仓 Pages | 直出（同仓 Jekyll，collection permalink 前缀即挂载路径） | SC-11, SC-12, SC-13 |
 | `/<未来小源>/*` | 本仓 Pages | 直出（同仓再开目录，机制同上） | SC-13 |
 | `/github-trending/*` | github-trending-digest 独立仓 Pages | 反代**保留路径**（不改写 path——github-trending baseurl=/github-trending，其自身链接已含前缀；Worker 仅转发到 origin，不 strip/rewrite） | SC-14, SC-15, SC-16 |
 | `/github-trending/*`（上游不可用） | — | Worker 返回非 200 可辨识错误（5xx/自定义错误页），不污染 `/` 与同仓路径 | SC-24 |

@@ -1,6 +1,6 @@
 # Coding sessions are longer and use more context. Claude Opus 5.5 is built with that in mind.
 
-> 来源：Lil'Log / Anthropic，2026-09-24
+> 来源：Claude Blog / Anthropic，2026-09-24
 > 原文链接：https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context
 
 We estimate Claude Opus 5.5 [costs about 40% less](https://www.anthropic.com/claude-opus-5-5) to run than Opus 5 for typical workloads billed by token. For developers, exactly *how *those savings stack up matters. 

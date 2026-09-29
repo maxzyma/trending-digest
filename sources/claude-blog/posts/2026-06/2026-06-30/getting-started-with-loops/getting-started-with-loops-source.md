@@ -1,6 +1,6 @@
 # Getting started with loops
 
-> 来源：Lil'Log / Anthropic，2026-06-30
+> 来源：Claude Blog / Anthropic，2026-06-30
 > 原文链接：https://claude.com/blog/getting-started-with-loops
 
 There’s a lot of talk right now about "designing loops" instead of prompting your coding agent. If you spend some time on X trying to pin down what a loop actually is, you'll come across multiple different answers. 

@@ -1,6 +1,6 @@
 # The evolution of agentic surfaces: building with Claude Managed Agents
 
-> 来源：Lil'Log / Anthropic，2026-06-10
+> 来源：Claude Blog / Anthropic，2026-06-10
 > 原文链接：https://claude.com/blog/building-with-claude-managed-agents
 
 Getting an agent into production takes more than a good prompt. The agent needs somewhere to run the code it writes, credentials to reach your data, observable sessions, and infrastructure that scales with usage. On the Applied AI team, we work at the intersection of product, research, and the customers building on Claude—and we see the same pattern repeatedly: infrastructure is what separates a prototype from a production agent. All too often, teams burn development cycles on security, state management, permissioning, and harness tuning. 

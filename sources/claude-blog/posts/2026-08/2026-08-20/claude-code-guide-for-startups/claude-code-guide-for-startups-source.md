@@ -1,6 +1,6 @@
 # The Claude Code guide for startups
 
-> 来源：Lil'Log / Anthropic，2026-08-20
+> 来源：Claude Blog / Anthropic，2026-08-20
 > 原文链接：https://claude.com/blog/claude-code-guide-for-startups
 
 **This guide is also available for download** — the same five rules, founder insights, and checklist, laid out for reading offline or sharing with your team.

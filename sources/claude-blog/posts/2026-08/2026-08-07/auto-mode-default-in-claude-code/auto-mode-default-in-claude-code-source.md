@@ -1,6 +1,6 @@
 # Auto mode is now the default in Claude Code for Pro, Max, and Team plans
 
-> 来源：Lil'Log / Anthropic，2026-08-07
+> 来源：Claude Blog / Anthropic，2026-08-07
 > 原文链接：https://claude.com/blog/auto-mode-default-in-claude-code
 
 We're making [auto mode](https://code.claude.com/docs/en/auto-mode-config) the default in Claude Code. Starting on August 14, new sessions on Pro, Max, and Team plans will run in auto mode. If you've already set a different default yourself, you may get a one-time prompt asking whether you want to switch to auto mode. If you have a pinned default, nothing changes for you. The auto mode classifier uses a small number of extra tokens per tool call, and we're no longer charging Claude Code users on Pro, Max, and Team plans for that classifier overhead, effective today.

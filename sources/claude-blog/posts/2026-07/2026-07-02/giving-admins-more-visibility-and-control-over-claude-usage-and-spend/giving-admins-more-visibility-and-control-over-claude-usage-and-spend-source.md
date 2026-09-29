@@ -1,6 +1,6 @@
 # Giving admins more visibility and control over Claude spend
 
-> 来源：Lil'Log / Anthropic，2026-07-02
+> 来源：Claude Blog / Anthropic，2026-07-02
 > 原文链接：https://claude.com/blog/giving-admins-more-visibility-and-control-over-claude-usage-and-spend
 
 We’re introducing richer admin analytics, model-level entitlements, and spend alerts for Claude Enterprise. As Claude takes on increasingly difficult and complex agentic work across the organization, usage and cost patterns look different from a standard chat tool. These controls give admins the visibility to understand how Claude is being used and the tools to manage costs. 

@@ -59,7 +59,7 @@ end
 if File.exist?(config_path)
   config ||= load_yaml(config_path) || {}
   # 挂载子站 = 必需 collection（缺失即子站不渲染，比前缀错位更严重 → 同样 fail-loud）。
-  mounts = { 'claude_blog' => '/claude-blog/', 'talks' => '/talks/' }
+  mounts = { 'claude_blog' => '/claude-blog/', 'manus_blog' => '/manus-blog/', 'talks' => '/talks/' }
   collections = config['collections'] || {}
   mounts.each do |coll, prefix|
     unless collections.key?(coll) && collections[coll].is_a?(Hash)
@@ -79,7 +79,7 @@ end
 
 # ── SC-22（非致命）：同仓小源 digest 缺 published_at 排序键 → stderr 告警但不阻断 ──
 # 最新流会跳过这些条目（portal-home.html where_exp 过滤），此处产出可识别告警关键词供构建日志诊断。
-%w[claude-blog talks].each do |source_key|
+%w[claude-blog manus-blog talks].each do |source_key|
   posts_dir = File.join(ROOT, 'sources', source_key, 'posts')
   next unless Dir.exist?(posts_dir)
 

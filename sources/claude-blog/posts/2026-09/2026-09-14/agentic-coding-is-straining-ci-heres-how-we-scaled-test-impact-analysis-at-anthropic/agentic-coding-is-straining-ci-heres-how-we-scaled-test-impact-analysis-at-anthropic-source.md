@@ -1,6 +1,6 @@
 # Agentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
 
-> 来源：Lil'Log / Anthropic，2026-09-14
+> 来源：Claude Blog / Anthropic，2026-09-14
 > 原文链接：https://claude.com/blog/agentic-coding-is-straining-ci-heres-how-we-scaled-test-impact-analysis-at-anthropic
 
 ### AI is evolving CI 

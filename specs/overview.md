@@ -2,7 +2,7 @@
 
 ## 定位
 
-为中文技术读者，把分散的公开技术资源（Claude 官方博客、演讲/访谈等）归档为中文双语译读的 markdown 库，并通过 `trending.theuntold.ai` 单一入口提供带索引的公开阅读站。
+为中文技术读者，把分散的公开技术资源（Claude 官方博客、Manus 官方博客、演讲/访谈等）归档为中文双语译读的 markdown 库，并通过 `trending.theuntold.ai` 单一入口提供带索引的公开阅读站。
 
 | 用户 | 痛点 | 期望成果 |
 |------|------|---------|
@@ -14,7 +14,7 @@
 **本仓拥有**
 
 - `sources/<source>/posts/` 中文双语译读产物、`manifest.json`（来源与产物 lineage）
-- Jekyll 门户与同仓小源子站（claude-blog、talks）、站点校验脚本
+- Jekyll 门户与同仓小源子站（claude-blog、manus-blog、talks）、站点校验脚本
 - `trending.theuntold.ai` 的自定义域与门户首页
 
 **本仓不含**
@@ -41,7 +41,7 @@ Source ──1:N──→ Post ──1:1──→ RawDocument
 
 | 概念 | 定义 |
 |------|------|
-| Source | 内容来源（claude-blog 自动流水线；talks 手动来源） |
+| Source | 内容来源（claude-blog、manus-blog 自动流水线；talks 手动来源） |
 | RawDocument | 原文快照（HTML / 字幕），默认不公开 |
 | Post | 一篇文章的中文双语译读 markdown |
 | IndexEntry | 索引中指向某 Post 的一行 |

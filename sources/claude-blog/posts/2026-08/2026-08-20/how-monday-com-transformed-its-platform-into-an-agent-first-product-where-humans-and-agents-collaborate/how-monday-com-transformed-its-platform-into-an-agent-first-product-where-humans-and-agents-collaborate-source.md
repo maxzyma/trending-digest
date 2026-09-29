@@ -1,6 +1,6 @@
 # How monday.com transformed its platform into an agent-first product where humans and agents collaborate
 
-> 来源：Lil'Log / Anthropic，2026-08-20
+> 来源：Claude Blog / Anthropic，2026-08-20
 > 原文链接：https://claude.com/blog/how-monday-com-transformed-its-platform-into-an-agent-first-product-where-humans-and-agents-collaborate
 
 More than 250,000 companies, from small and midsize businesses to Fortune 500 organizations, use [monday.com](http://monday.com) to manage their work. When the company launched more than a decade ago, its core product was a visual interface that helped teams automate workflows and manage projects. Today, it has rearchitected its product from the ground up around a human-agent collaboration model where AI is woven into work at every level. With Claude at the core, monday’s new platform handles the technical complexity so customers can work at the AI frontier inside workflows they already know.

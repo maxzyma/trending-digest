@@ -16,7 +16,7 @@
    - 上游 2xx/3xx → 透传上游响应
    - 上游 **4xx（404/410 等）→ 透传**上游（不掩盖真实 not-found，保 SEO 诊断）
    - 上游 **5xx / 网络失败 → Worker 可辨识错误响应**（HTTP 非 200，不透传门户内容）（SC-24）
-4. 其余（`/`、`/claude-blog/*`、未来同仓小源）→ 直出/透传本仓 Pages origin（Worker 不改写）（SC-13）
+4. 其余（`/`、`/claude-blog/*`、`/manus-blog/*`、未来同仓小源）→ 直出/透传本仓 Pages origin（Worker 不改写）（SC-13）
 
 **边界**：
 - 门户根 `/` 命中步骤 4，不被步骤 1/2/3 截获（INV-04 / SC-19）

@@ -1,6 +1,6 @@
 # Claude Managed Agents: get to production 10x faster
 
-> 来源：Lil'Log / Anthropic，2026-04-08
+> 来源：Claude Blog / Anthropic，2026-04-08
 > 原文链接：https://claude.com/blog/claude-managed-agents
 
 Today, we're launching Claude Managed Agents, a suite of composable APIs for building and deploying cloud-hosted agents at scale.

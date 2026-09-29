@@ -1,6 +1,6 @@
 # The new rules of context engineering for Claude 5 generation models
 
-> 来源：Lil'Log / Anthropic，2026-07-24
+> 来源：Claude Blog / Anthropic，2026-07-24
 > 原文链接：https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models
 
 I’ve written previously about how to best [prompt the newest generation of Claude 5 models](https://claude.com/blog/a-field-guide-to-claude-fable-finding-your-unknowns) and work with them iteratively to discover what you want to build.

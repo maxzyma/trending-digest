@@ -1,6 +1,6 @@
 # How people are using Claude Cowork
 
-> 来源：Lil'Log / Anthropic，2026-07-07
+> 来源：Claude Blog / Anthropic，2026-07-07
 > 原文链接：https://claude.com/blog/how-people-are-using-claude-cowork
 
 When we released [Claude Code](https://claude.com/product/claude-code) in 2025, we were surprised at how many non-technical users started playing around with it. People who had never opened the terminal before were using it to create agents that organized folders, deduplicated files, and wrote spreadsheet formulas.

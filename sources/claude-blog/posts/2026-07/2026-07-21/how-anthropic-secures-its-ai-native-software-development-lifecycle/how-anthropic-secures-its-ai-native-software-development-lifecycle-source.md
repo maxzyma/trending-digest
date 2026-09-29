@@ -1,6 +1,6 @@
 # How Anthropic secures its AI-native software development lifecycle
 
-> 来源：Lil'Log / Anthropic，2026-07-21
+> 来源：Claude Blog / Anthropic，2026-07-21
 > 原文链接：https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle
 
 At Anthropic, the amount of code and velocity of deployment have scaled exponentially. Our software engineers on average ship 8x as much code per quarter as they did from 2021 to 2025. 

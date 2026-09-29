@@ -1,6 +1,6 @@
 # Claude in Chrome is generally available
 
-> 来源：Lil'Log / Anthropic，2026-08-26
+> 来源：Claude Blog / Anthropic，2026-08-26
 > 原文链接：https://claude.com/blog/claude-in-chrome-generally-available
 
 Claude in Chrome is now generally available on every paid Claude plan. Claude can now also take actions autonomously in the browser, instead of needing approval for every one. A safety classifier validates each action before it’s performed to ensure it’s safe and matches your request.

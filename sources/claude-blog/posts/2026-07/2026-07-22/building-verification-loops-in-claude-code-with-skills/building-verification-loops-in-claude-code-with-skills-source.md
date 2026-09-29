@@ -1,6 +1,6 @@
 # Building verification loops in Claude Code with skills
 
-> 来源：Lil'Log / Anthropic，2026-07-22
+> 来源：Claude Blog / Anthropic，2026-07-22
 > 原文链接：https://claude.com/blog/building-verification-loops-in-claude-code-with-skills
 
 Most [agentic coding](https://claude.com/blog/introduction-to-agentic-coding) sessions follow a loop: you ask for a change, Claude gathers context, takes action, verifies the results, and if needed, loops back to gather additional context.

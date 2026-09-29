@@ -1,6 +1,6 @@
 # New in Claude Managed Agents: dreaming, outcomes, and multiagent orchestration
 
-> 来源：Lil'Log / Anthropic，2026-05-19
+> 来源：Claude Blog / Anthropic，2026-05-19
 > 原文链接：https://claude.com/blog/new-in-claude-managed-agents
 
 Today we're launching dreaming in Claude Managed Agents as a research preview. Dreaming extends [memory](https://claude.com/blog/claude-managed-agents-memory) by reviewing past sessions to find patterns and help agents self-improve. We're also making outcomes, multiagent orchestration, and webhooks available to developers building with Managed Agents. Together, these updates make agents more capable at handling complex tasks with minimal steering.

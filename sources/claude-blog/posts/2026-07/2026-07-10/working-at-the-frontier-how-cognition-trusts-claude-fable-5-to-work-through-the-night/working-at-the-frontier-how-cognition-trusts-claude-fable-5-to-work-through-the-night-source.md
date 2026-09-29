@@ -1,6 +1,6 @@
 # Working at the frontier: How Cognition trusts Claude Fable 5 to work through the night
 
-> 来源：Lil'Log / Anthropic，2026-07-10
+> 来源：Claude Blog / Anthropic，2026-07-10
 > 原文链接：https://claude.com/blog/working-at-the-frontier-how-cognition-trusts-claude-fable-5-to-work-through-the-night
 
 Cognition is young, even by Silicon Valley standards. It built Devin, its autonomous AI software engineer, in early 2024, at a time when the basic mechanics of an agent barely held together.

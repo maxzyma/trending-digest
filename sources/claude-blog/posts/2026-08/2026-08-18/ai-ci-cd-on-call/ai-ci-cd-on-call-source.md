@@ -1,6 +1,6 @@
 # Claude on call: How Claude Tag serves as Anthropic’s first responder for CI/CD failures
 
-> 来源：Lil'Log / Anthropic，2026-08-18
+> 来源：Claude Blog / Anthropic，2026-08-18
 > 原文链接：https://claude.com/blog/ai-ci-cd-on-call
 
 [Set up your own Claude on-call with our setup kit](https://github.com/anthropics/oncall-kit)*.*

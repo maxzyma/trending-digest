@@ -1,6 +1,6 @@
 # How Anthropic runs large-scale code migrations with Claude Code
 
-> 来源：Lil'Log / Anthropic，2026-07-16
+> 来源：Claude Blog / Anthropic，2026-07-16
 > 原文链接：https://claude.com/blog/ai-code-migration
 
 Code migrations, projects that port a production codebase to a new language, were multi-year endeavors until recently.

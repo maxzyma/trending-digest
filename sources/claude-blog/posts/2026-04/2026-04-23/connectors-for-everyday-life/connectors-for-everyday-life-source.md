@@ -1,6 +1,6 @@
 # New connectors in Claude for everyday life
 
-> 来源：Lil'Log / Anthropic，2026-04-23
+> 来源：Claude Blog / Anthropic，2026-04-23
 > 原文链接：https://claude.com/blog/connectors-for-everyday-life
 
 Today we’re expanding what you can connect to Claude. Alongside the work tools you already use, you can now connect the apps you use throughout your week, including AllTrails, Instacart, Audible, Tripadvisor, Intuit TurboTax, and more. 

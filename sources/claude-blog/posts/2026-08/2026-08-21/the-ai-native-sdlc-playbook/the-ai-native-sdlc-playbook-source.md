@@ -1,6 +1,6 @@
 # The AI-Native SDLC playbook
 
-> 来源：Lil'Log / Anthropic，2026-08-21
+> 来源：Claude Blog / Anthropic，2026-08-21
 > 原文链接：https://claude.com/blog/the-ai-native-sdlc-playbook
 
 ### Code is no longer the bottleneck

@@ -1,6 +1,6 @@
 # Working at the frontier: How Thomson Reuters builds AI for high-stakes professional work
 
-> 来源：Lil'Log / Anthropic，2026-07-08
+> 来源：Claude Blog / Anthropic，2026-07-08
 > 原文链接：https://claude.com/blog/working-at-the-frontier-how-thomson-reuters-builds-ai-for-high--stakes-professional-work
 
 Thomson Reuters, a global content and technology company, has spent more than 175 years building trusted content and technology for professionals and institutions making consequential decisions. Today, that same mission is shaping how the company builds AI for legal, tax, accounting, compliance, and other high-stakes professional workflows.

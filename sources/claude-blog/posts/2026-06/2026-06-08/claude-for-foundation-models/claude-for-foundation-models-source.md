@@ -1,6 +1,6 @@
 # Building intelligent apps for Apple platforms with Claude in the Foundation Models framework
 
-> 来源：Lil'Log / Anthropic，2026-06-08
+> 来源：Claude Blog / Anthropic，2026-06-08
 > 原文链接：https://claude.com/blog/claude-for-foundation-models
 
 Today we're releasing Foundation Models framework support for Claude through a new Swift package that lets Apple developers use Apple's Foundation Models framework to call Claude for more complex workflows.
