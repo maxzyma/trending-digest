@@ -1,0 +1,98 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:d217c901ce92010f45d5a308637323a346ae10b07e1d655e105fb76de785c166",
+  "profile": "bilingual-zh-first.v1",
+  "category": "AI 工程 / 大模型成本优化",
+  "summary": "以 Opus 5.5 为例，拆解 Claude Code 中一项任务的成本由轮次、缓存读取、输出 token 与模型选择四个因素决定，并给出定价变化、effort 与模型搭配、缓存与压实策略以及自行测量成本的方法。",
+  "source_label": "Claude Blog / Anthropic",
+  "key_points": [
+    "在 Claude Code 中，一项任务是一个循环，每一轮都会把此前的全部对话重新发送一次，因此轮次更多的模型即便单价相同也会更贵。",
+    "任务成本由四个因素决定：对话轮次、缓存读取比例、输出 token 类型（含思考 token），以及所选模型的单价。",
+    "Opus 5.5 的 API 标价为每百万输入 token 4 美元、输出 20 美元、缓存读取 0.20 美元，输入与输出比 Opus 5 便宜 20%，缓存读取便宜 60%。",
+    "缓存命中率对输入成本影响最大，同样 280 万输入 token 在无缓存时为 11.20 美元，90% 命中率下约 1.62 美元，96% 命中率下约 0.99 美元。",
+    "在 Opus 5.5 上一个输出 token 的成本是缓存读取的 100 倍，思考过程按输出计费，即便界面只展示摘要也同样收费。",
+    "effort 分为 low、medium、high、xhigh 四级（另有单次会话可用的 max），日常明确范围的工作建议用 medium，机械性编辑用 low，medium 卡住时升到 high。",
+    "更换模型、改动 effort 或思考设置、连接或断开 MCP 服务器、停顿超时以及对话压缩都会清除缓存并触发一次缓存写入。",
+    "建议把 Opus 5.5 作为可监督工作的日常主力，需要长时间无人值守或多子智能体协调时升级到 Fable 5.1，搜索、读日志等查找类子智能体则降级到 Sonnet 或 Haiku。",
+    "/clear 清空对话不产生开销，/compact 保留连续性但消耗一次请求，在 150K token 处压实约需 0.25 美元、约十轮可回本，临近结束时压实则得不偿失。",
+    "一次内部客户支持基准测试显示，迁移到低 effort 的 Opus 5.5 使成本下降约 18%，运行 prompt-audit 移除仪式性指令后再降 9%。",
+    "文中所有数字均为示意，建议用 /usage 查看会话的缓存占比、输出与输入之比及总输入与对话规模之比，并在同一真实任务上对比不同模型的结果。"
+  ],
+  "glossary": [
+    {
+      "term": "token",
+      "translation": "词元",
+      "note": "模型处理文本的最小计费单位，输入、输出与缓存分别按不同价格结算。"
+    },
+    {
+      "term": "prompt caching",
+      "translation": "提示词缓存",
+      "note": "将请求中重复的前缀内容缓存复用，以远低于输入价的费率重复读取。"
+    },
+    {
+      "term": "cache read",
+      "translation": "缓存读取",
+      "note": "命中缓存时按较低费率计费的输入部分，Opus 5.5 上为新鲜输入价格的 5%。"
+    },
+    {
+      "term": "cache write",
+      "translation": "缓存写入",
+      "note": "首次把内容写入缓存的操作，费率高于一次全新读取，五分钟缓存为输入价的 1.25 倍。"
+    },
+    {
+      "term": "cache hit rate",
+      "translation": "缓存命中率",
+      "note": "一次会话输入中来自缓存读取的比例，是决定输入成本的最主要变量。"
+    },
+    {
+      "term": "extended thinking",
+      "translation": "扩展思考",
+      "note": "模型在给出答案前的推理过程，其 token 按输出价格计费。"
+    },
+    {
+      "term": "effort",
+      "translation": "努力程度／推理强度",
+      "note": "控制模型每轮花费多少思考、文本与工具调用 token 的总体档位设置。"
+    },
+    {
+      "term": "turn",
+      "translation": "对话轮次",
+      "note": "智能体循环的一圈，即一次请求，会重新发送迄今为止的全部上下文。"
+    },
+    {
+      "term": "context window",
+      "translation": "上下文窗口",
+      "note": "单次请求中模型可容纳的全部 token 范围，其大小直接影响每轮重发成本。"
+    },
+    {
+      "term": "sub-agent",
+      "translation": "子智能体",
+      "note": "在独立上下文窗口中运行并回传摘要的辅助智能体，可单独指定所用模型。"
+    },
+    {
+      "term": "compaction",
+      "translation": "压实／压缩",
+      "note": "对较早对话历史进行摘要以缩短上下文的机制，可由系统自动触发或用 /compact 手动执行。"
+    },
+    {
+      "term": "MCP server",
+      "translation": "MCP 服务器",
+      "note": "为会话提供外部工具的服务端，其连接状态变化会改变请求开头内容并使缓存失效。"
+    },
+    {
+      "term": "prompt anti-pattern",
+      "translation": "提示词反模式",
+      "note": "为旧模型编写、会诱使新模型写得更多或重复调用工具的冗余指令写法。"
+    },
+    {
+      "term": "plan mode",
+      "translation": "计划模式",
+      "note": "让模型先产出改动方案再执行的运行模式，适合跨文件改动的起步阶段。"
+    },
+    {
+      "term": "Usage and Cost API",
+      "translation": "用量与成本 API",
+      "note": "按模型以及缓存与非缓存 token 拆分团队支出的报表接口。"
+    }
+  ]
+}
