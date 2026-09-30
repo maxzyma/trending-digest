@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-09-29）
+# 跨源主题聚类 — 同类与升温（2026-09-30）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -7,13 +7,13 @@
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
 | dev-infra-and-tooling | ↑升温 | 6 | 5 | 57 | 54 | github+claude | canonical |
-| learning-and-curated-resources | ↓退潮 | 5 | 6 | 84 | 84 | github+claude+lilian | canonical |
-| coding-agents-and-harnesses | ↓退潮 | 5 | 10 | 51 | 48 | github+claude+lilian | canonical |
+| learning-and-curated-resources | →持稳 | 5 | 5 | 84 | 84 | github+claude+lilian | canonical |
 | networking-and-security | ↑升温 | 5 | 2 | 33 | 30 | github+claude+lilian | canonical |
+| coding-agents-and-harnesses | ↓退潮 | 4 | 11 | 51 | 48 | github+claude+lilian | canonical |
 | agent-skills-and-plugins | →持稳 | 4 | 4 | 35 | 34 | github+claude | canonical |
 | agent-frameworks-and-platforms | ↓退潮 | 3 | 5 | 38 | 37 | github+claude+lilian | canonical |
-| desktop-and-media-apps | ↓退潮 | 3 | 11 | 28 | 28 | github+claude | canonical |
 | productivity-and-business-apps | ↑升温 | 3 | 1 | 4 | 4 | github | canonical |
+| desktop-and-media-apps | ↓退潮 | 2 | 12 | 28 | 28 | github+claude | canonical |
 | data-and-analytics-infra | ↑升温 | 2 | 1 | 16 | 16 | github+claude | canonical |
 | ai-video-voice-creative | ↓退潮 | 2 | 3 | 15 | 15 | github+lilian | canonical |
 | agent-deliverables-and-artifacts | ↑升温 | 2 | 1 | 10 | 10 | github+claude | canonical |
@@ -169,6 +169,40 @@ _泛技术资源导航与静态学习清单整体呈现退潮态势，社区对�
 - `claude-blog` [How to prepare for AI-driven code modernization projects](https://claude.com/blog/how-to-prepare-for-ai-driven-code-modernization-projects) — *In our ****Notes from the Field ****series, Anthropic forward deployed engineers share best practices inspired by real customer deployments. In this article, we share our experience managing large code modernization projects.*
 - `github-trends` [cs341-illinois/coursebook](https://github.com/cs341-illinois/coursebook) — 伊利诺伊大学香槟分校（UIUC）"系统编程"课 CS 341（旧编号 CS 241）的官方开源教材。内容从 C 语言讲起，一路讲到进程、线程、同步、内存分配、网络和文件系统，可以在线读，也可以下载 PDF。
 
+### networking-and-security（30）
+_网络与安全赛道热度明显升温，防御重心正经历从传统网络边界向“智能体原生治理与去中心化自治”的结构性跃迁。跨源信号显示，Anthropic 官方对 Agent 身份鉴权与权限管控的密集布局，与开源社区研发面向 Agent 推理调用链的端点审计工具及对抗攻击研究形成了高度共振，驱动零信任体系向模型行为因果层全面重构。而在底层网络端，离网 Mesh 通信与自托管鉴权/VPN 的活跃反映出用户对数据主权与抗审查的强劲需求，整个赛道正呈现出“智能体自主行为治理”与“基础设施去中心化”双轨加速推进的态势。_
+
+- `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
+- `github-trends` [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) — 一个完全不需要互联网的聊天 App。手机之间直接用蓝牙互相连接、并且能多跳中继（最多 7 跳），所以在断网、关网、没有信号的地方，一群人依然可以互相发消息。由 Jack Dorsey（Twitter 联合创始人）做出原型，现在由社区组织 permissionlesstech 维护，风格上刻意做成"IRC 味"。
+- `github-trends` [permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android) — 上面 bitchat（iOS/Swift）的 Android 版本，功能定位相同——蓝牙 mesh、无需互联网的加密聊天，官方称与 iOS 版协议 100% 兼容。
+- `github-trends` [amnezia-vpn/amnezia-client](https://github.com/amnezia-vpn/amnezia-client) — 一个自建 VPN 的客户端。你在自己租的云服务器（AWS、DigitalOcean 等）上一键部署，然后用这个客户端连接——VPN 只属于你自己，没有第三方服务商掌握你的流量。桌面和移动端都有。
+- `github-trends` [uber/ADR](https://github.com/uber/ADR) — 把杀毒软件里的 EDR（端点检测与响应）那一套，搬到 AI agent 上。公司里现在到处是 Cursor、Claude Code、Codex 这类会自己读写文件、调 API、执行命令的 agent，安全团队面对的问题是：传统监控只能看到"某个进程写了一个文件"，看不到"是哪句 prompt、经过什么推理链，最后决定写这个文件的"。ADR 采集的是完整因果链 `prompt → 推理 → 工具调用 → 结果`，让安全团队第一次能回答"这个 agent 刚才为什么这么干"。
+- `github-trends` [goauthentik/authentik](https://github.com/goauthentik/authentik) — 开源的身份认证提供方（IdP）。你自己部署一套，其他应用统统通过它登录，支持 SAML、OAuth2/OIDC、LDAP、SCIM 等主流协议，常被用作 Okta、Auth0 的自托管替代。
+- `github-trends` [opa334/Dopamine](https://github.com/opa334/Dopamine) — iPhone 越狱工具。它利用 iOS 内核漏洞解除系统的安装限制，让用户能装苹果商店之外的软件和系统级插件（tweak）。"semi-untethered"意思是手机重启后越狱状态会失效，需要重新打开 App 激活一次。
+- `claude-blog` [Preparing your security program for AI-accelerated offense](https://claude.com/blog/preparing-your-security-program-for-ai-accelerated-offense) — Earlier this week, we announced Project Glasswing—our urgent attempt to put the strong cybersecurity capabilities of our newest frontier model, Claude Mythos Preview, to use for defensive purposes. In the [announcement](https://www.anthropic.com/glasswing)—and the [accompanying technical blog post](https://red.anthropic.com/2026/mythos-preview/)—we described how AI models are rapidly reducing the 
+- `claude-blog` [Secure access to the Claude Platform with Workload Identity Federation](https://claude.com/blog/workload-identity-federation) — Workload Identity Federation (WIF) is now generally available on the Claude Platform. WIF is compatible with any OIDC-compliant identity provider and covers all Claude API endpoints, including when accessing the endpoints through our first-party SDKs and Claude Code.
+- `claude-blog` [Centrally manage authorization for MCP connectors](https://claude.com/blog/enterprise-managed-auth) — Admins can now provision MCP connectors for their whole organization through their identity provider, starting with Okta. Users get connector access automatically on first login, with authorization configured centrally by their organization.
+- `claude-blog` [Agent identity in Claude Tag: a new access model for autonomous, team-wide AI](https://claude.com/blog/agent-identity-access-model) — For an AI agent to do its best work on a human-agent team, it needs access to the same tools, documents, and context humans have.
+- `claude-blog` [Zero risk isn't the job: a CISO's guide to agentic AI](https://claude.com/blog/ciso-guide-to-agentic-ai) — Security leaders are being asked to approve agentic AI use cases that did not even exist a few months ago. Boards want to know whether any of it is governed, and somewhere in your organization, an employee has already connected an agent to something without telling you.
+- `claude-blog` [How Anthropic secures its AI-native software development lifecycle](https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle) — At Anthropic, the amount of code and velocity of deployment have scaled exponentially. Our software engineers on average ship 8x as much code per quarter as they did from 2021 to 2025.
+- `lilian-weng` [Adversarial Attacks on LLMs](https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/) — The use of large language models in the real world has strongly accelerated by the launch of ChatGPT. We (including my team at OpenAI, shoutout to them) have invested a lot of effort to build default safe behavior into the model during the alignment process (e.g. via [RLHF](https://openai.com/research/learning-to-summarize-with-human-feedback)). However, adversarial attacks or jailbreak prompts co
+- `github-trends` [vxcontrol/pentagi](https://github.com/vxcontrol/pentagi) — 一个"全自动 AI 渗透测试"agent 系统。你用自然语言下发一个测试目标，它由一个 orchestrator 协调 researcher / developer / executor 三类子 agent，在 Docker 沙箱里跑 Kali Linux + nmap/metasploit/sqlmap 等 20 余款安全工具，自动完成侦察和漏洞利用。
+- `github-trends` [imthenachoman/How-To-Secure-A-Linux-Server](https://github.com/imthenachoman/How-To-Secure-A-Linux-Server) — 一份持续演进的 Linux 服务器安全加固指南（SSH、防火墙、入侵检测、账户与权限等），是社区长期引用的经典 how-to 文档型仓库。
+- `github-trends` [megadose/holehe](https://github.com/megadose/holehe) — 给一个邮箱地址，它自动跑到 120 多个网站上"假装点忘记密码"，从各站响应的细微差别反推这个邮箱在哪些平台注册过，有些站还能带出被打码的备用邮箱或手机尾号。全程不给目标发邮件、不惊动本人。
+- `github-trends` [amadeusprotocol/node](https://github.com/amadeusprotocol/node) — 一条加密货币公链的节点软件。这条链叫 AMA Protocol，代币是 $AMA，它的核心卖点是"挖矿别浪费算力"——传统比特币式挖矿让矿机反复算无意义的哈希，AMA 想让矿工改去算 AI 里最常用的矩阵乘法（MatMul），顺手把算力变成"有用的 AI 计算"。它同时自称是"给 agent 用的隐私 Layer 1"，区块 500ms、WASM 智能合约、BLS12-381 签名。注意这个仓库的 GitHub **description 是空的**，语言标签写 Rust，但实际代码是 Rust（约 675KB，做性能敏感的 NIF）+ Elixir/Erlang（约 495KB，节点主体 `amadeusd`，OTP 应用名 `:ama`）的混合体，只读仓库首页无法判断它是什么。
+- `github-trends` [Tencent/AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) — 腾讯朱雀实验室开源的 AI 系统安全自检平台。你公司里跑着一堆 AI 基础设施（Ollama、vLLM、ComfyUI、n8n、Triton）和一堆 agent 用的 MCP server、Agent Skills——这个工具就是拿来扫它们有没有已知漏洞、有没有被投毒、会不会泄凭证。Docker 起一个 Web UI（localhost:8088），也拆成独立 CLI（`pip install aig-skill-scan` / mcp-scan / agent-scan）方便进 CI。
+- `github-trends` [zedeus/nitter](https://github.com/zedeus/nitter) — Twitter/X 的第三方只读前端。你把 `x.com/someone` 换成 `nitter.net/someone` 就能看同一个人的推文，不用登录、没有 JS 追踪、没有广告，还能给任何账号生成 RSS 订阅。它是 Invidious（YouTube 的同类前端）在 Twitter 侧的对应物，2019 年发布，长期是隐私社区和 RSS 用户读推特的默认方式。
+- `github-trends` [tailscale/tailcat](https://github.com/tailscale/tailcat) — Tailscale 官方出的一个小工具，作用像 `netcat`（在两台机器之间开一根管子传数据），但这根管子跑在 Tailscale 的加密网络技术上。跟完整的 Tailscale 不同，它**不需要你注册账号、不需要管理员权限、不会改你机器的路由表和 DNS**——一端启动后打印出一个短 token，另一端拿这个 token 就能连上。
+- `github-trends` [NationalSecurityAgency/ghidra](https://github.com/NationalSecurityAgency/ghidra) — NSA 开源的软件逆向工程框架，2019 年发布，是 IDA Pro 之外事实上的主流免费替代品。反汇编、反编译、脚本化分析一整套，安全研究、恶意样本分析、固件审计的标准工具之一。
+- `github-trends` [kaifcodec/user-scanner](https://github.com/kaifcodec/user-scanner) — 一个只靠一个邮箱地址或一个用户名，就去 455 个网站上查"这个人在哪儿注册过"的命令行工具。跑一次，它会告诉你这个用户名在哪些平台被占用、这个邮箱在哪些服务注册过、有没有出现在已知的数据泄露库里。
+- `github-trends` [bikini/exploitarium](https://github.com/bikini/exploitarium) — 一个匿名研究者（handle `bikini`）把自己发现的软件漏洞攻击样例（PoC）打包公开的仓库，覆盖 libssh2、FFmpeg、Firefox、Ghidra、Docker、QEMU、nmap、Redis 等 40 多个主流开源项目。关键在于披露方式：**绝大多数漏洞未事先通知厂商、没有 CVE**，作者在 README 里明说自己发布时都没报过，让读者自己去报、CVE 归报的人。
+- `github-trends` [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux) — 俄语区的反封锁代理工具。README 自称"网络协议栈研究工具"，那是免责措辞；实质是 Go 写的用户态 TCP 隧道加 SOCKS5 客户端，配合自建 VPS 出口节点。
+- `github-trends` [MG1937/ASC](https://github.com/MG1937/ASC) — 一个专攻大体积 Android 安装包的反编译前端。做安全研究的人要在一个 APK 里找某个类、某段硬编码密钥、或者某个方法被谁调用过，常用的是 jadx——但 jadx 要先把整个包解压、再建全局索引，遇到几百兆的商业 App 就非常慢甚至直接内存溢出。ASC 换了条路：不建索引，直接在压缩流里定位目标，找到之后只把相关的字节码和它的依赖抽出来，在内存里拼一个最小的 DEX 再反编译。
+- `github-trends` [cilium/cilium](https://github.com/cilium/cilium) — Kubernetes 集群的网络层。它用 eBPF 直接在 Linux 内核里处理容器之间的连通、访问策略和流量观测，替掉传统那套 iptables 规则。属于 CNCF 已毕业项目（2023-10-11），不是新面孔——只是今天才第一次进入本 tracker。
+- `github-trends` [cloudflare/quiche](https://github.com/cloudflare/quiche) — Cloudflare 用 Rust 写的 QUIC 和 HTTP/3 协议实现。QUIC 是取代 TCP+TLS 的新一代传输协议，HTTP/3 跑在它上面——你今天访问的大量网站，最后一跳就是这类实现在处理。quiche 既是库（给别人嵌进自己的服务器/客户端），也是 Cloudflare 边缘网络自己在用的那一套。
+- `github-trends` [mvt-project/mvt](https://github.com/mvt-project/mvt) — 一个命令行取证工具。你把 iPhone 的 iTunes 备份，或 Android 的 bugreport 交给它，它拿这些数据去比对已公开的商业间谍软件痕迹清单（Pegasus、Predator、Graphite、NoviSpy 等），然后告诉你这台手机上有没有被这些软件打过的迹象。它由国际特赦组织（Amnesty International）安全实验室开发，2021 年在震动全球的 Pegasus Project 调查中首次公开。项目自己反复强调：这是给技术人员和调查员用的取证工具，**不是给普通人自查手机的杀毒软件**。
+- `claude-blog` [Giving companies more control over their AI agents, with NVIDIA](https://claude.com/blog/giving-companies-more-control-over-their-ai-agents-with-nvidia) — NVIDIA today announced the [Open Agent Safety Platform](https://nvidianews.nvidia.com/news/open-agent-safety-platform), an open software platform and reference system design for strengthening AI security. Anthropic has collaborated with NVIDIA to bring additional layers of security and control to the agent stack.
+
 ### coding-agents-and-harnesses（48）
 _编码 Agent 赛道整体热度呈现边际退潮，但内部正经历从“交互式终端套壳”向“生产级 Harness 治理”的深刻结构演变。官方博客对执行循环（loops）、规则钩子与多会话并行的聚焦，与开源社区密集涌现破坏性拦截护栏、后台沙箱隔离及代码图谱设施的动作高度共振。整个赛道正脱离单纯的提示词驱动模式，加速收敛为具备强安全边界、上下文掌控与异步自主交付能力的系统级软件工程基础设施。_
 
@@ -220,40 +254,6 @@ _编码 Agent 赛道整体热度呈现边际退潮，但内部正经历从“交
 - `github-trends` [yynxxxxx/Codex-X](https://github.com/yynxxxxx/Codex-X) — 一个给 OpenAI Codex 桌面端/CLI 配的可视化管理面板（Rust + Tauri 桌面应用）。它把原本要手改 TOML 配置的事变成点界面：切换 Provider 和 API 端点、同步会话、管理 Skills 和 MCP、注入自定义提示词。中文界面，面向国内开发者。
 - `github-trends` [mvschwarz/openrig](https://github.com/mvschwarz/openrig) — 一个让 Claude Code、Codex 等多个编程 agent 组成"小团队"一起干活的调度工具。你用一个配置文件写好"谁当组长、谁负责什么"，一条命令把整组 agent 拉起来。
 - `claude-blog` [Coding sessions are longer and use more context. Claude Opus 5.5 is built with that in mind.](https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context) — We estimate Claude Opus 5.5 [costs about 40% less](https://www.anthropic.com/claude-opus-5-5) to run than Opus 5 for typical workloads billed by token. For developers, exactly *how *those savings stack up matters.
-
-### networking-and-security（30）
-_网络与安全赛道热度明显升温，防御重心正经历从传统网络边界向“智能体原生治理与去中心化自治”的结构性跃迁。跨源信号显示，Anthropic 官方对 Agent 身份鉴权与权限管控的密集布局，与开源社区研发面向 Agent 推理调用链的端点审计工具及对抗攻击研究形成了高度共振，驱动零信任体系向模型行为因果层全面重构。而在底层网络端，离网 Mesh 通信与自托管鉴权/VPN 的活跃反映出用户对数据主权与抗审查的强劲需求，整个赛道正呈现出“智能体自主行为治理”与“基础设施去中心化”双轨加速推进的态势。_
-
-- `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
-- `github-trends` [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) — 一个完全不需要互联网的聊天 App。手机之间直接用蓝牙互相连接、并且能多跳中继（最多 7 跳），所以在断网、关网、没有信号的地方，一群人依然可以互相发消息。由 Jack Dorsey（Twitter 联合创始人）做出原型，现在由社区组织 permissionlesstech 维护，风格上刻意做成"IRC 味"。
-- `github-trends` [permissionlesstech/bitchat-android](https://github.com/permissionlesstech/bitchat-android) — 上面 bitchat（iOS/Swift）的 Android 版本，功能定位相同——蓝牙 mesh、无需互联网的加密聊天，官方称与 iOS 版协议 100% 兼容。
-- `github-trends` [amnezia-vpn/amnezia-client](https://github.com/amnezia-vpn/amnezia-client) — 一个自建 VPN 的客户端。你在自己租的云服务器（AWS、DigitalOcean 等）上一键部署，然后用这个客户端连接——VPN 只属于你自己，没有第三方服务商掌握你的流量。桌面和移动端都有。
-- `github-trends` [uber/ADR](https://github.com/uber/ADR) — 把杀毒软件里的 EDR（端点检测与响应）那一套，搬到 AI agent 上。公司里现在到处是 Cursor、Claude Code、Codex 这类会自己读写文件、调 API、执行命令的 agent，安全团队面对的问题是：传统监控只能看到"某个进程写了一个文件"，看不到"是哪句 prompt、经过什么推理链，最后决定写这个文件的"。ADR 采集的是完整因果链 `prompt → 推理 → 工具调用 → 结果`，让安全团队第一次能回答"这个 agent 刚才为什么这么干"。
-- `github-trends` [goauthentik/authentik](https://github.com/goauthentik/authentik) — 开源的身份认证提供方（IdP）。你自己部署一套，其他应用统统通过它登录，支持 SAML、OAuth2/OIDC、LDAP、SCIM 等主流协议，常被用作 Okta、Auth0 的自托管替代。
-- `github-trends` [opa334/Dopamine](https://github.com/opa334/Dopamine) — iPhone 越狱工具。它利用 iOS 内核漏洞解除系统的安装限制，让用户能装苹果商店之外的软件和系统级插件（tweak）。"semi-untethered"意思是手机重启后越狱状态会失效，需要重新打开 App 激活一次。
-- `claude-blog` [Preparing your security program for AI-accelerated offense](https://claude.com/blog/preparing-your-security-program-for-ai-accelerated-offense) — Earlier this week, we announced Project Glasswing—our urgent attempt to put the strong cybersecurity capabilities of our newest frontier model, Claude Mythos Preview, to use for defensive purposes. In the [announcement](https://www.anthropic.com/glasswing)—and the [accompanying technical blog post](https://red.anthropic.com/2026/mythos-preview/)—we described how AI models are rapidly reducing the 
-- `claude-blog` [Secure access to the Claude Platform with Workload Identity Federation](https://claude.com/blog/workload-identity-federation) — Workload Identity Federation (WIF) is now generally available on the Claude Platform. WIF is compatible with any OIDC-compliant identity provider and covers all Claude API endpoints, including when accessing the endpoints through our first-party SDKs and Claude Code.
-- `claude-blog` [Centrally manage authorization for MCP connectors](https://claude.com/blog/enterprise-managed-auth) — Admins can now provision MCP connectors for their whole organization through their identity provider, starting with Okta. Users get connector access automatically on first login, with authorization configured centrally by their organization.
-- `claude-blog` [Agent identity in Claude Tag: a new access model for autonomous, team-wide AI](https://claude.com/blog/agent-identity-access-model) — For an AI agent to do its best work on a human-agent team, it needs access to the same tools, documents, and context humans have.
-- `claude-blog` [Zero risk isn't the job: a CISO's guide to agentic AI](https://claude.com/blog/ciso-guide-to-agentic-ai) — Security leaders are being asked to approve agentic AI use cases that did not even exist a few months ago. Boards want to know whether any of it is governed, and somewhere in your organization, an employee has already connected an agent to something without telling you.
-- `claude-blog` [How Anthropic secures its AI-native software development lifecycle](https://claude.com/blog/how-anthropic-secures-its-ai-native-software-development-lifecycle) — At Anthropic, the amount of code and velocity of deployment have scaled exponentially. Our software engineers on average ship 8x as much code per quarter as they did from 2021 to 2025.
-- `lilian-weng` [Adversarial Attacks on LLMs](https://lilianweng.github.io/posts/2023-10-25-adv-attack-llm/) — The use of large language models in the real world has strongly accelerated by the launch of ChatGPT. We (including my team at OpenAI, shoutout to them) have invested a lot of effort to build default safe behavior into the model during the alignment process (e.g. via [RLHF](https://openai.com/research/learning-to-summarize-with-human-feedback)). However, adversarial attacks or jailbreak prompts co
-- `github-trends` [vxcontrol/pentagi](https://github.com/vxcontrol/pentagi) — 一个"全自动 AI 渗透测试"agent 系统。你用自然语言下发一个测试目标，它由一个 orchestrator 协调 researcher / developer / executor 三类子 agent，在 Docker 沙箱里跑 Kali Linux + nmap/metasploit/sqlmap 等 20 余款安全工具，自动完成侦察和漏洞利用。
-- `github-trends` [imthenachoman/How-To-Secure-A-Linux-Server](https://github.com/imthenachoman/How-To-Secure-A-Linux-Server) — 一份持续演进的 Linux 服务器安全加固指南（SSH、防火墙、入侵检测、账户与权限等），是社区长期引用的经典 how-to 文档型仓库。
-- `github-trends` [megadose/holehe](https://github.com/megadose/holehe) — 给一个邮箱地址，它自动跑到 120 多个网站上"假装点忘记密码"，从各站响应的细微差别反推这个邮箱在哪些平台注册过，有些站还能带出被打码的备用邮箱或手机尾号。全程不给目标发邮件、不惊动本人。
-- `github-trends` [amadeusprotocol/node](https://github.com/amadeusprotocol/node) — 一条加密货币公链的节点软件。这条链叫 AMA Protocol，代币是 $AMA，它的核心卖点是"挖矿别浪费算力"——传统比特币式挖矿让矿机反复算无意义的哈希，AMA 想让矿工改去算 AI 里最常用的矩阵乘法（MatMul），顺手把算力变成"有用的 AI 计算"。它同时自称是"给 agent 用的隐私 Layer 1"，区块 500ms、WASM 智能合约、BLS12-381 签名。注意这个仓库的 GitHub **description 是空的**，语言标签写 Rust，但实际代码是 Rust（约 675KB，做性能敏感的 NIF）+ Elixir/Erlang（约 495KB，节点主体 `amadeusd`，OTP 应用名 `:ama`）的混合体，只读仓库首页无法判断它是什么。
-- `github-trends` [Tencent/AI-Infra-Guard](https://github.com/Tencent/AI-Infra-Guard) — 腾讯朱雀实验室开源的 AI 系统安全自检平台。你公司里跑着一堆 AI 基础设施（Ollama、vLLM、ComfyUI、n8n、Triton）和一堆 agent 用的 MCP server、Agent Skills——这个工具就是拿来扫它们有没有已知漏洞、有没有被投毒、会不会泄凭证。Docker 起一个 Web UI（localhost:8088），也拆成独立 CLI（`pip install aig-skill-scan` / mcp-scan / agent-scan）方便进 CI。
-- `github-trends` [zedeus/nitter](https://github.com/zedeus/nitter) — Twitter/X 的第三方只读前端。你把 `x.com/someone` 换成 `nitter.net/someone` 就能看同一个人的推文，不用登录、没有 JS 追踪、没有广告，还能给任何账号生成 RSS 订阅。它是 Invidious（YouTube 的同类前端）在 Twitter 侧的对应物，2019 年发布，长期是隐私社区和 RSS 用户读推特的默认方式。
-- `github-trends` [tailscale/tailcat](https://github.com/tailscale/tailcat) — Tailscale 官方出的一个小工具，作用像 `netcat`（在两台机器之间开一根管子传数据），但这根管子跑在 Tailscale 的加密网络技术上。跟完整的 Tailscale 不同，它**不需要你注册账号、不需要管理员权限、不会改你机器的路由表和 DNS**——一端启动后打印出一个短 token，另一端拿这个 token 就能连上。
-- `github-trends` [NationalSecurityAgency/ghidra](https://github.com/NationalSecurityAgency/ghidra) — NSA 开源的软件逆向工程框架，2019 年发布，是 IDA Pro 之外事实上的主流免费替代品。反汇编、反编译、脚本化分析一整套，安全研究、恶意样本分析、固件审计的标准工具之一。
-- `github-trends` [kaifcodec/user-scanner](https://github.com/kaifcodec/user-scanner) — 一个只靠一个邮箱地址或一个用户名，就去 455 个网站上查"这个人在哪儿注册过"的命令行工具。跑一次，它会告诉你这个用户名在哪些平台被占用、这个邮箱在哪些服务注册过、有没有出现在已知的数据泄露库里。
-- `github-trends` [bikini/exploitarium](https://github.com/bikini/exploitarium) — 一个匿名研究者（handle `bikini`）把自己发现的软件漏洞攻击样例（PoC）打包公开的仓库，覆盖 libssh2、FFmpeg、Firefox、Ghidra、Docker、QEMU、nmap、Redis 等 40 多个主流开源项目。关键在于披露方式：**绝大多数漏洞未事先通知厂商、没有 CVE**，作者在 README 里明说自己发布时都没报过，让读者自己去报、CVE 归报的人。
-- `github-trends` [p1neappleXpress/OpenFlux](https://github.com/p1neappleXpress/OpenFlux) — 俄语区的反封锁代理工具。README 自称"网络协议栈研究工具"，那是免责措辞；实质是 Go 写的用户态 TCP 隧道加 SOCKS5 客户端，配合自建 VPS 出口节点。
-- `github-trends` [MG1937/ASC](https://github.com/MG1937/ASC) — 一个专攻大体积 Android 安装包的反编译前端。做安全研究的人要在一个 APK 里找某个类、某段硬编码密钥、或者某个方法被谁调用过，常用的是 jadx——但 jadx 要先把整个包解压、再建全局索引，遇到几百兆的商业 App 就非常慢甚至直接内存溢出。ASC 换了条路：不建索引，直接在压缩流里定位目标，找到之后只把相关的字节码和它的依赖抽出来，在内存里拼一个最小的 DEX 再反编译。
-- `github-trends` [cilium/cilium](https://github.com/cilium/cilium) — Kubernetes 集群的网络层。它用 eBPF 直接在 Linux 内核里处理容器之间的连通、访问策略和流量观测，替掉传统那套 iptables 规则。属于 CNCF 已毕业项目（2023-10-11），不是新面孔——只是今天才第一次进入本 tracker。
-- `github-trends` [cloudflare/quiche](https://github.com/cloudflare/quiche) — Cloudflare 用 Rust 写的 QUIC 和 HTTP/3 协议实现。QUIC 是取代 TCP+TLS 的新一代传输协议，HTTP/3 跑在它上面——你今天访问的大量网站，最后一跳就是这类实现在处理。quiche 既是库（给别人嵌进自己的服务器/客户端），也是 Cloudflare 边缘网络自己在用的那一套。
-- `github-trends` [mvt-project/mvt](https://github.com/mvt-project/mvt) — 一个命令行取证工具。你把 iPhone 的 iTunes 备份，或 Android 的 bugreport 交给它，它拿这些数据去比对已公开的商业间谍软件痕迹清单（Pegasus、Predator、Graphite、NoviSpy 等），然后告诉你这台手机上有没有被这些软件打过的迹象。它由国际特赦组织（Amnesty International）安全实验室开发，2021 年在震动全球的 Pegasus Project 调查中首次公开。项目自己反复强调：这是给技术人员和调查员用的取证工具，**不是给普通人自查手机的杀毒软件**。
-- `claude-blog` [Giving companies more control over their AI agents, with NVIDIA](https://claude.com/blog/giving-companies-more-control-over-their-ai-agents-with-nvidia) — NVIDIA today announced the [Open Agent Safety Platform](https://nvidianews.nvidia.com/news/open-agent-safety-platform), an open software platform and reference system design for strengthening AI security. Anthropic has collaborated with NVIDIA to bring additional layers of security and control to the agent stack.
 
 ### agent-skills-and-plugins（34）
 _Agent 技能与插件赛道整体热度虽呈微幅退潮，但底层正经历从早期“单点工具大水漫灌”向“深度工程化收敛”的结构转变。一方面，官方博客加速推进 MCP 协议的规范演进与通用应用集成；另一方面，开源社区同步将重心转向基于 SKILL.md 规范的精准上下文管理、知识图谱导航与反平庸的 UI/设计质量门禁。跨源信号表明，生态正从浅层 API 包装全面转向具备确定性约束、持久化状态与深度领域知识的专业自主工作流。_
@@ -334,6 +334,14 @@ _Agent 框架与平台赛道在数量上虽呈现退潮收敛，但底层正经�
 - `github-trends` [google/ax](https://github.com/google/ax) — Google 官方开源的"agent 版 Kubernetes"。你写一个 YAML 文件，声明"我要跑一个什么任务、它需要哪些代码仓库和工具、允许它访问哪些网站、用哪个模型"，ax 就负责把它塞进沙箱、把 Git 仓库和 MCP server 预装好、把出网流量锁到白名单里，然后调度起来。CLI 刻意做成 `kubectl` 的形状——`ax apply -f task.yaml`、`ax watch`、`ax ssh`，用过 Kubernetes 的人几乎不用学。它明确不是 ADK / LangGraph 那类"写 agent 逻辑"的框架，作者本人在 HN 澄清过：ax 是作业编排层。
 - `github-trends` [strands-agents/harness-sdk](https://github.com/strands-agents/harness-sdk) — AWS 出品的 agent 开发工具包，原名 Strands Agents SDK。开发者用它写 AI agent：定义模型、工具和任务，SDK 负责让模型循环地思考、调用工具、拿结果再继续，直到把事做完。这次改名后，同一个仓里同时放 Python 和 TypeScript 两套实现，并配了一个命令行工具 harness-cli。
 
+### productivity-and-business-apps（4）
+_该赛道近期呈现显著的爆发式升温，开源社区正掀起一场以「私有化部署与数据主权」对抗商业 SaaS 席位制收费的替代潮。从覆盖全业务链的一体化企业后台，到多模型聚合网关与多 Agent 驱动的垂类决策辅助，团队正加速将核心业务流与最新大模型能力深度嵌合进自有基础设施中。伴随经典单机生产力工具的再度升温，赛道整体演进方向正明确指向“本地优先、模型解耦、成本可控”的自主型生产力生态。_
+
+- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
+- `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
+- `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
+- `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
+
 ### desktop-and-media-apps（28）
 _桌面与媒体应用赛道在经历整体数量退潮的同时，正呈现出显著的两极分化。开源社区加速向“极端本地优先与数据主权”收拢，大量项目聚焦于纯端侧小模型运行、无遥测硬件控制及局域网闭环，全面弱化对中心化云服务的依赖；与之相对，大厂官方博客则释放出桌面端作为“企业级超级入口”的信号，致力于将多 Agent 协作、代码工具与云基础设施深度整合进单一客户端。该赛道正告别泛效率工具的粗放增长，分化演进为捍卫端侧隐私的极客轻工具与承载前沿智能体的重型工作台两大阵营。_
 
@@ -365,14 +373,6 @@ _桌面与媒体应用赛道在经历整体数量退潮的同时，正呈现出�
 - `github-trends` [peetzweg/opendisplay](https://github.com/peetzweg/opendisplay) — 把闲置的 iPhone、iPad 或旧 Mac 变成 Mac 的第二块显示器。插上数据线或连到同一个 WiFi，设备就出现在系统的"显示器排列"里，是一块真实的扩展屏而不是投屏画面，还能当触摸板用（点按、拖拽、双指滚动）。
 - `github-trends` [abue-ammar/tinycast](https://github.com/abue-ammar/tinycast) — 一个 macOS 上的启动器——按个快捷键弹出搜索框，可以搜应用、翻剪贴板历史、管窗口、跑 Apple 快捷指令、接大模型聊天。定位就是 Raycast 的免费原生替代品。
 - `github-trends` [InfinityLoop1308/PipePipe](https://github.com/InfinityLoop1308/PipePipe) — 一个 Android 上的第三方视频客户端，可以不装 Google 服务、不登录账号、不看广告地看 YouTube，也支持 BiliBili、NicoNico 等站点。它从知名开源客户端 NewPipe 分叉而来，加了更多"好用"的功能。
-
-### productivity-and-business-apps（4）
-_该赛道近期呈现显著的爆发式升温，开源社区正掀起一场以「私有化部署与数据主权」对抗商业 SaaS 席位制收费的替代潮。从覆盖全业务链的一体化企业后台，到多模型聚合网关与多 Agent 驱动的垂类决策辅助，团队正加速将核心业务流与最新大模型能力深度嵌合进自有基础设施中。伴随经典单机生产力工具的再度升温，赛道整体演进方向正明确指向“本地优先、模型解耦、成本可控”的自主型生产力生态。_
-
-- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
-- `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
-- `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
-- `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
 
 ### data-and-analytics-infra（16）
 _数据与分析基础设施赛道呈现显著的升温态势，其核心重心正从“服务人类看报表”向“为 AI 提供可信上下文”加速演进。开源社区中指标语义层、上下文图谱与高性能数据清洗工具的密集涌现，与 Anthropic 官方博客验证并力推的企业级自助式数据分析实践形成强共振。整个赛道正向“统一语义中间件与 Agent 友好型底层管线”深度收敛，旨在彻底解决大模型消费异构数据时口径漂移与难以溯源的可靠性鸿沟。_
