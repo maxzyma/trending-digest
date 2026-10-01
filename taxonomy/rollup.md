@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-09-30）
+# 跨源主题聚类 — 同类与升温（2026-10-01）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,15 +6,15 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↑升温 | 6 | 5 | 57 | 54 | github+claude | canonical |
-| learning-and-curated-resources | →持稳 | 5 | 5 | 84 | 84 | github+claude+lilian | canonical |
-| networking-and-security | ↑升温 | 5 | 2 | 33 | 30 | github+claude+lilian | canonical |
-| coding-agents-and-harnesses | ↓退潮 | 4 | 11 | 51 | 48 | github+claude+lilian | canonical |
-| agent-skills-and-plugins | →持稳 | 4 | 4 | 35 | 34 | github+claude | canonical |
+| dev-infra-and-tooling | ↑升温 | 8 | 6 | 60 | 57 | github+claude | canonical |
+| learning-and-curated-resources | ↑升温 | 5 | 4 | 84 | 84 | github+claude+lilian | canonical |
+| agent-skills-and-plugins | ↑升温 | 5 | 4 | 36 | 35 | github+claude | canonical |
+| networking-and-security | ↑升温 | 5 | 3 | 34 | 31 | github+claude+lilian | canonical |
+| coding-agents-and-harnesses | ↓退潮 | 4 | 10 | 51 | 48 | github+claude+lilian | canonical |
 | agent-frameworks-and-platforms | ↓退潮 | 3 | 5 | 38 | 37 | github+claude+lilian | canonical |
-| productivity-and-business-apps | ↑升温 | 3 | 1 | 4 | 4 | github | canonical |
-| desktop-and-media-apps | ↓退潮 | 2 | 12 | 28 | 28 | github+claude | canonical |
-| data-and-analytics-infra | ↑升温 | 2 | 1 | 16 | 16 | github+claude | canonical |
+| data-and-analytics-infra | ↑升温 | 3 | 1 | 17 | 17 | github+claude | canonical |
+| productivity-and-business-apps | ↑升温 | 3 | 2 | 5 | 5 | github+claude | canonical |
+| desktop-and-media-apps | ↓退潮 | 2 | 11 | 28 | 28 | github+claude | canonical |
 | ai-video-voice-creative | ↓退潮 | 2 | 3 | 15 | 15 | github+lilian | canonical |
 | agent-deliverables-and-artifacts | ↑升温 | 2 | 1 | 10 | 10 | github+claude | canonical |
 | games-and-emulators | →持稳 | 1 | 1 | 9 | 9 | github | canonical |
@@ -23,7 +23,7 @@
 
 ## 各主题项目清单
 
-### dev-infra-and-tooling（54）
+### dev-infra-and-tooling（57）
 _开发者基础设施与工具链赛道持续升温，正经历从云端依赖向重塑“本地开发体验（DX）”的结构性转变。一方面，面对 AI 生成代码带来的吞吐压力，社区正密集将 PR 审查、分支堆叠与文件管理等复杂交互打包搬入终端（TUI），以构建极速闭环的本地流水线；另一方面，从架构即代码 DSL 到离线 LSP 工具链，自托管与隐私优先正深度渗透日常研发流程，推动工具形态向确定性、低延迟和数据本地可控方向演进。_
 
 - `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
@@ -80,6 +80,9 @@ _开发者基础设施与工具链赛道持续升温，正经历从云端依赖�
 - `github-trends` [supabase/supabase](https://github.com/supabase/supabase) — 开源的 Firebase 替代品——Postgres 加上认证、存储、实时订阅、边缘函数和管理面板，可托管也可自部署。2019 年建仓，首次进入本 tracker。
 - `github-trends` [higgsfield-ai/higgsfield](https://github.com/higgsfield-ai/higgsfield) — 一个用来在自有 GPU 集群上训练超大模型的调度框架。写法上很讨巧——在训练函数上加一个 `@experiment` 装饰器，它就帮你把任务分发到多台机器、处理 FSDP/ZeRO-3 分片，还能从 GitHub Actions 界面上点按钮触发。定位是"比 Slurm+DeepSpeed 好用的那一层壳"。
 - `github-trends` [vercel-labs/scriptc](https://github.com/vercel-labs/scriptc) — 一个把 TypeScript 代码直接编译成原生可执行程序的编译器。写法还是 TypeScript，产物却像 C 写出来的小程序：不需要装 Node，体积很小，启动极快。
+- `github-trends` [oblien/openship](https://github.com/oblien/openship) — 装在你自己服务器上的"一键部署平台"。代码推上去，它自动构建、上线、配域名和 HTTPS 证书，体验接近 Vercel，但机器和账单在你自己手里。可以用桌面 App、自托管服务端，或官方托管的 Openship Cloud。
+- `github-trends` [rakyll/hey](https://github.com/rakyll/hey) — 一个很小的命令行压测工具：给一个网址连续发大量请求，统计响应时间分布和成功率，用来快速看服务扛不扛得住。可以当作老牌 ApacheBench（`ab`）的替代品。
+- `github-trends` [firebase/firebase-ios-sdk](https://github.com/firebase/firebase-ios-sdk) — Google Firebase 的苹果平台开发包。iOS、macOS 等 App 用它接入 Firebase 的登录、数据库（Firestore）、推送、崩溃统计和 AI 能力等云服务。
 
 ### learning-and-curated-resources（84）
 _泛技术资源导航与静态学习清单整体呈现退潮态势，社区对纯链接汇总的关注显著降温，促使该赛道发生明显的实用主义转型。GitHub 端留存的高热度项目正从传统的“阅读型指南”快速演进为配套可运行代码的工程样例，甚至主动将知识库封装为 MCP 协议服务以适配 AI 编程助手。与此同时，官方博客的重心也全面倒向黑客松构建与一线自动化实战，跨源信号表明技术学习的重心已从“按图索骥的长线知识储备”彻底转向“由 AI 工具驱动的即时上手与实战交付”。_
@@ -169,7 +172,46 @@ _泛技术资源导航与静态学习清单整体呈现退潮态势，社区对�
 - `claude-blog` [How to prepare for AI-driven code modernization projects](https://claude.com/blog/how-to-prepare-for-ai-driven-code-modernization-projects) — *In our ****Notes from the Field ****series, Anthropic forward deployed engineers share best practices inspired by real customer deployments. In this article, we share our experience managing large code modernization projects.*
 - `github-trends` [cs341-illinois/coursebook](https://github.com/cs341-illinois/coursebook) — 伊利诺伊大学香槟分校（UIUC）"系统编程"课 CS 341（旧编号 CS 241）的官方开源教材。内容从 C 语言讲起，一路讲到进程、线程、同步、内存分配、网络和文件系统，可以在线读，也可以下载 PDF。
 
-### networking-and-security（30）
+### agent-skills-and-plugins（35）
+_Agent 技能与插件赛道整体热度虽呈微幅退潮，但底层正经历从早期“单点工具大水漫灌”向“深度工程化收敛”的结构转变。一方面，官方博客加速推进 MCP 协议的规范演进与通用应用集成；另一方面，开源社区同步将重心转向基于 SKILL.md 规范的精准上下文管理、知识图谱导航与反平庸的 UI/设计质量门禁。跨源信号表明，生态正从浅层 API 包装全面转向具备确定性约束、持久化状态与深度领域知识的专业自主工作流。_
+
+- `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
+- `github-trends` [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) — 一个给 AI 编码助手用的「知识图谱 skill」。它把一整个代码文件夹（含 SQL schema、脚本、文档甚至图片视频）解析成可查询的知识图谱，让 Claude Code、Codex、Cursor 等在检索代码前先查图谱来导航，宣称能在大型仓库里省下大量 token。
+- `github-trends` [ibelick/ui-skills](https://github.com/ibelick/ui-skills) — 一个给 AI 编码助手挂"UI 质量约束"的技能目录 + 路由层。作者是知名设计师 ibelick（motion-primitives、prompt-kit 作者）。它想解决 AI 生成 UI"平庸、千篇一律"的问题：`npx ui-skills start` 后，agent 会按需加载若干 skill 来打磨界面。
+- `github-trends` [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) — 一个本地优先（local-first）的代码智能图谱工具，通过 MCP 和 CLI 为你的代码库建立持久化结构地图，让 AI 编码工具"只读关键部分"，官方宣称在代码审查与大仓工作流中可显著压缩上下文 token。
+- `github-trends` [KnockOutEZ/wigolo](https://github.com/KnockOutEZ/wigolo) — 一个面向 AI 编码 agent 的本地优先"网络入口"，通过 MCP 提供搜索、抓取、爬取与调研能力，主打无需 API key、无需云、每次查询 $0，目前处于公开 beta。
+- `github-trends` [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) — 由商业 agent 工具厂商 Composio 维护的 Claude Skills 精选清单（awesome list），同时捆绑其 Rube MCP / connect-apps，可让 Claude 通过 Composio 连 500+ SaaS 执行真实动作（发邮件、建 issue、发 Slack）。
+- `github-trends` [virgiliojr94/book-to-skill](https://github.com/virgiliojr94/book-to-skill) — 把一本技术书的 PDF 自动加工成 Claude Code 的"技能包"。加工完之后，你在写代码时可以让 agent 按需翻到相关章节，而不是把整本书塞进对话。
+- `github-trends` [zhaoxuya520/reverse-skill](https://github.com/zhaoxuya520/reverse-skill) — 给 AI 编码客户端（Claude Code / Cursor / Cline / Kiro）装的一套"安全工作流路由包"。你把一个 APK、一个二进制、一段加密 JS 或一道 CTF 题丢给 AI，它替 AI 决定该用 jadx 还是 IDA、自动把需要的工具链和 MCP 服务拉起来，并强制这次分析走一遍授权确认、证据链记录、时间线和报告输出。
+- `github-trends` [NomaDamas/k-skill](https://github.com/NomaDamas/k-skill) — 一个"让 AI agent 变成韩国人"的技能包合集，130+ 个 SKILL.md，一条 `npx skills add NomaDamas/k-skill --all -g` 装完。
+- `github-trends` [danielmiessler/LifeOS](https://github.com/danielmiessler/LifeOS) — 装在 Claude Code 之上的一层"个人操作系统"。你先写一份叫 TELOS 的文件描述自己的目标、身份和问题清单，系统再用一组 skills、hooks 和记忆检索把这些上下文常驻到每次对话里，配一个叫 Pulse 的面板显示当前状态。作者把它的定位描述为"爬山法"：不断把你从 Current State 推向 Ideal State。
+- `claude-blog` [New connectors in Claude for everyday life](https://claude.com/blog/connectors-for-everyday-life) — Today we’re expanding what you can connect to Claude. Alongside the work tools you already use, you can now connect the apps you use throughout your week, including AllTrails, Instacart, Audible, Tripadvisor, Intuit TurboTax, and more.
+- `claude-blog` [Bringing MCP 2026-07-28 to Claude](https://claude.com/blog/bringing-mcp-2026-07-28-to-claude) — The fifth spec release of the Model Context Protocol, [MCP 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)**,** is live today. The latest spec moves MCP to a stateless core, while hardening authorization and graduating official extensions. Support is being rolled out across Claude products.
+- `github-trends` [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp) — 把 Unity 编辑器接到 AI 助手的 MCP 桥。装上后，你能用自然语言让 Claude/Cursor/VS Code 等 AI 直接在 Unity 里建场景、改 GameObject、编辑 C# 脚本、管理资产、跑测试、构建——共 47 个 MCP 工具入口。
+- `github-trends` [OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files) — 一套让 AI coding agent"用文件系统当记忆"做计划的 skill。它把任务计划写进持久化的 markdown（task_plan.md 等），这样 agent 即使遇到 context loss 或 `/clear` 也不会丢失计划，还带确定性完成门禁和多 agent 共享状态。走 SKILL.md 标准，兼容 Claude Code/Codex/Cursor 等 60+ agent。
+- `github-trends` [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills) — 一个超大 skill 合集——号称 337（文档站已称 345）个 skill，覆盖工程、营销、产品、合规、C 级顾问、研究、财务等 17 个领域，含 30+ agent、70+ 自定义命令，兼容 Claude Code/Codex/Gemini CLI/Cursor 等 13 个编码 agent。
+- `github-trends` [bradautomates/claude-video](https://github.com/bradautomates/claude-video) — 一个让 Claude"看"视频的 Claude Code skill。你敲 `/watch <链接或路径> "问题"`，它自动取字幕、按需下载视频、抽取关键帧、做带时间戳的转录，再把帧图 + 文字一起交给 Claude 回答。支持 YouTube/TikTok/Loom/X 和本地文件。
+- `github-trends` [wonderwhy-er/DesktopCommanderMCP](https://github.com/wonderwhy-er/DesktopCommanderMCP) — 一个给 Claude Desktop 用的 MCP 服务器，让 Claude 直接获得本地终端命令执行、文件系统搜索、diff 式文件编辑的能力——相当于把桌面版 Claude 从"聊天助手"变成能动手操作本机的编码/自动化 agent。
+- `github-trends` [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) — 一个把知名品牌设计系统（色板、字体、间距、组件状态等）抽取成 DESIGN.md 文件的合集。你把某个品牌的 DESIGN.md 丢进项目根目录，Claude Code / Cursor / Copilot / Gemini CLI 等编码 agent 就能据此生成"有该品牌质感"的 UI。
+- `github-trends` [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills) — Google Labs 出品的 Agent Skills 技能库，配合 Stitch（Gemini 驱动的 UI 设计工具）的 MCP server，让 Claude Code / Cursor / Gemini CLI 等编码 agent 能直接调用 Stitch 生成界面设计并转成代码（React / React Native / shadcn 等）。注意：属 Google Labs 实验项目，非 Google 官方支持产品。
+- `github-trends` [anthropics/skills](https://github.com/anthropics/skills) — Anthropic 官方维护的 Agent Skills 公共仓库——存放"技能"这种东西本身的官方样例和参考实现。所谓 skill，就是给 AI agent 的一份写在 markdown 里的操作手册（SKILL.md + 配套脚本、参考资料），agent 需要做某类任务时按需加载它，而不是把所有知识都塞进上下文。
+- `github-trends` [cactus-compute/needle](https://github.com/cactus-compute/needle) — 一个 14MB 的超小模型（45M 参数、2-bit 量化），只干一件事——把自然语言变成函数调用（工具调用、设备控制、结构化抽取）。不聊天、不写文章，请求超出已声明的工具范围就返回空调用 `[]`。
+- `github-trends` [cursor/plugins](https://github.com/cursor/plugins) — Cursor（那个基于 VS Code 改的 AI 编程编辑器）官方开的仓库，用来定义"插件"这个东西该长什么样，并把官方自己做的插件放进去当范例。可以理解成 Cursor 版的应用商店规格书 + 官方样板间：里面既有格式规范（`schemas/`、`.cursor-plugin/`），也有 `create-plugin` 这种脚手架，还有 14 个官方插件目录（`orchestrate` 编排、`pr-review-canvas` PR 评审、`cursor-team-kit` 团队工具包、`continual-learning`、`teaching` 等）。
+- `github-trends` [anthropics/claude-plugins-community](https://github.com/anthropics/claude-plugins-community) — Anthropic 官方维护的 Claude Code / Claude Cowork 社区插件市场的只读镜像。它本身不是代码库，而是一份清单：`.claude-plugin/marketplace.json` 里目前登记了 2,282 个社区插件的名称、仓库地址和版本。插件提交走 clau.de/plugin-directory-submission，仓库这边由夜间同步任务把审核通过的条目刷进来。
+- `github-trends` [AgriciDaniel/claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) — 一套让 Claude Code 自动整理你 Obsidian 笔记库的模板。你把任何素材（网页、PDF、随手记）丢进指定目录，Claude 读完之后自动写摘要、建双向链接、归档到对应主题下，最终产出的是**你自己拥有的纯 Markdown 文件**，不是某个云服务里的数据库。作者把它称为"自组织的 AI 第二大脑"，实现思路参考 Karpathy 提出的 LLM Wiki 模式。
+- `github-trends` [ConardLi/garden-skills](https://github.com/ConardLi/garden-skills) — 中文开发者 ConardLi 的个人 skill 合集，5 个 skill 打包一起发：网页设计（`web-design-engineer`）、讲解式视频演示（`web-video-presentation`）、图像生成（`gpt-image-2`）、知识库检索（`kb-retriever`）、文章排版（`beautiful-article`）。不是收录别人 skill 的清单，是作者自己写的、自己在用的那一套。
+- `github-trends` [handsomestWei/patent-disclosure-skill](https://github.com/handsomestWei/patent-disclosure-skill) — 一个中文的 Claude Code / Cursor 技能包，把"我做了个项目，想申请专利"变成流水线：扫描你的设计文档和代码 → 挖出可申请的专利点 → 去国家知识产权局的公布公告站查新 → 生成带框图的交底书 Word。另外能把晦涩的公开专利翻成大白话笔记存进 Obsidian，还有审查意见答复（OA）草稿模式。
+- `github-trends` [blader/humanizer](https://github.com/blader/humanizer) — 一个给 Claude Code 之类 agent 用的技能包，作用是把 AI 写出来的文字改得不像 AI 写的——去掉那些典型痕迹：三项并列的排比、"值得注意的是"这类过渡套话、过度对仗的句式、模棱两可的限定语。它本身没有代码，整个仓库就是一份 456 行的 `SKILL.md` 加 README，总共 149 KB。
+- `github-trends` [humanlayer/skills](https://github.com/humanlayer/skills) — HumanLayer 公司（12-factor agents 一文作者 dexhorthy 创办，产品是 CodeLayer）公开的 5 个 Claude Code skill 合集，用 `npx skills add humanlayer/skills --skill <name>` 单个安装。五个 skill 分别是：`show-me`（让 agent 用图和代码骨架代替大段文字解释）、`improve-claude-md`（用 `<important if>` 块重写 CLAUDE.md 提高指令遵循度）、`design-control-loop` 与 `build-iterated-agentic-loop`（生成定时跑 coding agent 的 GitHub Actions 闭环）、`narrow-react-prop-types`（按实际代码路径收窄 React 组件 pr
+- `github-trends` [jo-inc/camofox-browser](https://github.com/jo-inc/camofox-browser) — 一个跑在服务器上的"反检测浏览器服务"。AI agent 通过 HTTP 请求告诉它去打开哪个网页、点哪里，它在后台用一个伪装成普通人电脑的 Firefox 访问，然后把网页内容整理成精简的可访问性树（而不是整页 HTML）交还给 agent。它不是浏览器本身，而是把 Camoufox（daijro 维护的 Firefox 反指纹改版）包成 Node REST API 的一层壳，首次启动时会下载约 300MB 的 Camoufox 引擎。
+- `github-trends` [SnailSploit/Claude-Red](https://github.com/SnailSploit/Claude-Red) — 78 个 `SKILL.md` 文件组成的攻击性安全技能库，按 23 个类别划分（Web、活动目录、无线、云、漏洞开发、EDR 规避、C2、反取证等）。克隆进 `~/.claude/skills/` 后，Claude 会根据对话内容自动加载对应"攻击面专家"人设。它不含任何工具代码，本质是提示词方法论库。
+- `github-trends` [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) — 一个给编码 agent 用的"安全审计流程说明书"。你把它装进 Claude Code、Codex 这类 agent，然后指向自己的代码仓库，agent 会按它规定的多个阶段依次走：先摸清代码结构，再找可疑点，再自己验证这些可疑点是不是真的能被利用，最后输出一份格式固定、机器可读的 `findings.json`。它本身几乎不含代码逻辑——整个仓库 143KB，主体是 markdown 提示词加少量脚本。
+- `github-trends` [Tencent/BrowserSkill](https://github.com/Tencent/BrowserSkill) — 让 AI agent 借用你电脑上那个已经登录好的真实浏览器干活，而不是另起一个空白的自动化浏览器。装法是一个命令行工具加一个浏览器扩展；任何"能跑 shell 命令"的 agent（Claude Code、Cursor、Codex 等）都能调它。
+- `github-trends` [tradesdontlie/tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) — 把 AI 助手接到你本机**已经装好、已经登录**的 TradingView 桌面版上，让它替你看图、改 Pine Script、画关键位、建价格提醒、跑历史回放。它不连 TradingView 的服务器、不抓数据、不下真单——走的是 Chromium 类应用自带的调试接口（CDP），而且那个调试端口默认关闭，必须你自己加 `--remote-debugging-port=9222` 才生效。前提是你有 TradingView 的付费订阅。
+- `github-trends` [superdesigndev/treg](https://github.com/superdesigndev/treg) — 给 AI agent 用的"工具总代理"。用它的类比：OpenRouter 让你一个 token 调所有模型，treg 想让你一个 token 调所有工具——60 多家厂商、约 3,000 个 API 端点（SEO 外链数据、社媒趋势、人企信息富化、广告、爬虫、图像视频生成），按次计费，低到一分钱，**你不需要去每家注册账号**，因为 treg 自己持有那些订阅。第二半功能是团队密钥托管：把你自己的 API key、OAuth 连接、厂商 CLI、SKILL.md 注册进去，队友的 agent 能调用，但明文凭据不离开服务端。托管站是 treg.to，也可以自托管。
+- `github-trends` [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) — MCP（Model Context Protocol，让 AI 应用以统一方式连接外部工具和数据的协议）官方维护的一组示范服务，包括文件系统、Git、记忆、网页抓取、时间等。开发者可以直接拿来试用，也可以照着写自己的 MCP 服务。
+
+### networking-and-security（31）
 _网络与安全赛道热度明显升温，防御重心正经历从传统网络边界向“智能体原生治理与去中心化自治”的结构性跃迁。跨源信号显示，Anthropic 官方对 Agent 身份鉴权与权限管控的密集布局，与开源社区研发面向 Agent 推理调用链的端点审计工具及对抗攻击研究形成了高度共振，驱动零信任体系向模型行为因果层全面重构。而在底层网络端，离网 Mesh 通信与自托管鉴权/VPN 的活跃反映出用户对数据主权与抗审查的强劲需求，整个赛道正呈现出“智能体自主行为治理”与“基础设施去中心化”双轨加速推进的态势。_
 
 - `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
@@ -202,6 +244,7 @@ _网络与安全赛道热度明显升温，防御重心正经历从传统网络�
 - `github-trends` [cloudflare/quiche](https://github.com/cloudflare/quiche) — Cloudflare 用 Rust 写的 QUIC 和 HTTP/3 协议实现。QUIC 是取代 TCP+TLS 的新一代传输协议，HTTP/3 跑在它上面——你今天访问的大量网站，最后一跳就是这类实现在处理。quiche 既是库（给别人嵌进自己的服务器/客户端），也是 Cloudflare 边缘网络自己在用的那一套。
 - `github-trends` [mvt-project/mvt](https://github.com/mvt-project/mvt) — 一个命令行取证工具。你把 iPhone 的 iTunes 备份，或 Android 的 bugreport 交给它，它拿这些数据去比对已公开的商业间谍软件痕迹清单（Pegasus、Predator、Graphite、NoviSpy 等），然后告诉你这台手机上有没有被这些软件打过的迹象。它由国际特赦组织（Amnesty International）安全实验室开发，2021 年在震动全球的 Pegasus Project 调查中首次公开。项目自己反复强调：这是给技术人员和调查员用的取证工具，**不是给普通人自查手机的杀毒软件**。
 - `claude-blog` [Giving companies more control over their AI agents, with NVIDIA](https://claude.com/blog/giving-companies-more-control-over-their-ai-agents-with-nvidia) — NVIDIA today announced the [Open Agent Safety Platform](https://nvidianews.nvidia.com/news/open-agent-safety-platform), an open software platform and reference system design for strengthening AI security. Anthropic has collaborated with NVIDIA to bring additional layers of security and control to the agent stack.
+- `github-trends` [NVIDIA/OpenShell](https://github.com/NVIDIA/OpenShell) — 给 AI agent 用的"安全隔离舱"。agent 在里面可以读写文件、装依赖、调用外部服务，但能碰哪些目录、能连哪些网址、能用哪把密钥，都由一份策略文件事先规定；越界的操作在系统内核层面就被拦下。策略修改前，还会用形式化方法检查新策略会不会意外开出危险权限。
 
 ### coding-agents-and-harnesses（48）
 _编码 Agent 赛道整体热度呈现边际退潮，但内部正经历从“交互式终端套壳”向“生产级 Harness 治理”的深刻结构演变。官方博客对执行循环（loops）、规则钩子与多会话并行的聚焦，与开源社区密集涌现破坏性拦截护栏、后台沙箱隔离及代码图谱设施的动作高度共振。整个赛道正脱离单纯的提示词驱动模式，加速收敛为具备强安全边界、上下文掌控与异步自主交付能力的系统级软件工程基础设施。_
@@ -255,44 +298,6 @@ _编码 Agent 赛道整体热度呈现边际退潮，但内部正经历从“交
 - `github-trends` [mvschwarz/openrig](https://github.com/mvschwarz/openrig) — 一个让 Claude Code、Codex 等多个编程 agent 组成"小团队"一起干活的调度工具。你用一个配置文件写好"谁当组长、谁负责什么"，一条命令把整组 agent 拉起来。
 - `claude-blog` [Coding sessions are longer and use more context. Claude Opus 5.5 is built with that in mind.](https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context) — We estimate Claude Opus 5.5 [costs about 40% less](https://www.anthropic.com/claude-opus-5-5) to run than Opus 5 for typical workloads billed by token. For developers, exactly *how *those savings stack up matters.
 
-### agent-skills-and-plugins（34）
-_Agent 技能与插件赛道整体热度虽呈微幅退潮，但底层正经历从早期“单点工具大水漫灌”向“深度工程化收敛”的结构转变。一方面，官方博客加速推进 MCP 协议的规范演进与通用应用集成；另一方面，开源社区同步将重心转向基于 SKILL.md 规范的精准上下文管理、知识图谱导航与反平庸的 UI/设计质量门禁。跨源信号表明，生态正从浅层 API 包装全面转向具备确定性约束、持久化状态与深度领域知识的专业自主工作流。_
-
-- `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
-- `github-trends` [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) — 一个给 AI 编码助手用的「知识图谱 skill」。它把一整个代码文件夹（含 SQL schema、脚本、文档甚至图片视频）解析成可查询的知识图谱，让 Claude Code、Codex、Cursor 等在检索代码前先查图谱来导航，宣称能在大型仓库里省下大量 token。
-- `github-trends` [ibelick/ui-skills](https://github.com/ibelick/ui-skills) — 一个给 AI 编码助手挂"UI 质量约束"的技能目录 + 路由层。作者是知名设计师 ibelick（motion-primitives、prompt-kit 作者）。它想解决 AI 生成 UI"平庸、千篇一律"的问题：`npx ui-skills start` 后，agent 会按需加载若干 skill 来打磨界面。
-- `github-trends` [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) — 一个本地优先（local-first）的代码智能图谱工具，通过 MCP 和 CLI 为你的代码库建立持久化结构地图，让 AI 编码工具"只读关键部分"，官方宣称在代码审查与大仓工作流中可显著压缩上下文 token。
-- `github-trends` [KnockOutEZ/wigolo](https://github.com/KnockOutEZ/wigolo) — 一个面向 AI 编码 agent 的本地优先"网络入口"，通过 MCP 提供搜索、抓取、爬取与调研能力，主打无需 API key、无需云、每次查询 $0，目前处于公开 beta。
-- `github-trends` [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) — 由商业 agent 工具厂商 Composio 维护的 Claude Skills 精选清单（awesome list），同时捆绑其 Rube MCP / connect-apps，可让 Claude 通过 Composio 连 500+ SaaS 执行真实动作（发邮件、建 issue、发 Slack）。
-- `github-trends` [virgiliojr94/book-to-skill](https://github.com/virgiliojr94/book-to-skill) — 把一本技术书的 PDF 自动加工成 Claude Code 的"技能包"。加工完之后，你在写代码时可以让 agent 按需翻到相关章节，而不是把整本书塞进对话。
-- `github-trends` [zhaoxuya520/reverse-skill](https://github.com/zhaoxuya520/reverse-skill) — 给 AI 编码客户端（Claude Code / Cursor / Cline / Kiro）装的一套"安全工作流路由包"。你把一个 APK、一个二进制、一段加密 JS 或一道 CTF 题丢给 AI，它替 AI 决定该用 jadx 还是 IDA、自动把需要的工具链和 MCP 服务拉起来，并强制这次分析走一遍授权确认、证据链记录、时间线和报告输出。
-- `github-trends` [NomaDamas/k-skill](https://github.com/NomaDamas/k-skill) — 一个"让 AI agent 变成韩国人"的技能包合集，130+ 个 SKILL.md，一条 `npx skills add NomaDamas/k-skill --all -g` 装完。
-- `github-trends` [danielmiessler/LifeOS](https://github.com/danielmiessler/LifeOS) — 装在 Claude Code 之上的一层"个人操作系统"。你先写一份叫 TELOS 的文件描述自己的目标、身份和问题清单，系统再用一组 skills、hooks 和记忆检索把这些上下文常驻到每次对话里，配一个叫 Pulse 的面板显示当前状态。作者把它的定位描述为"爬山法"：不断把你从 Current State 推向 Ideal State。
-- `claude-blog` [New connectors in Claude for everyday life](https://claude.com/blog/connectors-for-everyday-life) — Today we’re expanding what you can connect to Claude. Alongside the work tools you already use, you can now connect the apps you use throughout your week, including AllTrails, Instacart, Audible, Tripadvisor, Intuit TurboTax, and more.
-- `claude-blog` [Bringing MCP 2026-07-28 to Claude](https://claude.com/blog/bringing-mcp-2026-07-28-to-claude) — The fifth spec release of the Model Context Protocol, [MCP 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28)**,** is live today. The latest spec moves MCP to a stateless core, while hardening authorization and graduating official extensions. Support is being rolled out across Claude products.
-- `github-trends` [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp) — 把 Unity 编辑器接到 AI 助手的 MCP 桥。装上后，你能用自然语言让 Claude/Cursor/VS Code 等 AI 直接在 Unity 里建场景、改 GameObject、编辑 C# 脚本、管理资产、跑测试、构建——共 47 个 MCP 工具入口。
-- `github-trends` [OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files) — 一套让 AI coding agent"用文件系统当记忆"做计划的 skill。它把任务计划写进持久化的 markdown（task_plan.md 等），这样 agent 即使遇到 context loss 或 `/clear` 也不会丢失计划，还带确定性完成门禁和多 agent 共享状态。走 SKILL.md 标准，兼容 Claude Code/Codex/Cursor 等 60+ agent。
-- `github-trends` [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills) — 一个超大 skill 合集——号称 337（文档站已称 345）个 skill，覆盖工程、营销、产品、合规、C 级顾问、研究、财务等 17 个领域，含 30+ agent、70+ 自定义命令，兼容 Claude Code/Codex/Gemini CLI/Cursor 等 13 个编码 agent。
-- `github-trends` [bradautomates/claude-video](https://github.com/bradautomates/claude-video) — 一个让 Claude"看"视频的 Claude Code skill。你敲 `/watch <链接或路径> "问题"`，它自动取字幕、按需下载视频、抽取关键帧、做带时间戳的转录，再把帧图 + 文字一起交给 Claude 回答。支持 YouTube/TikTok/Loom/X 和本地文件。
-- `github-trends` [wonderwhy-er/DesktopCommanderMCP](https://github.com/wonderwhy-er/DesktopCommanderMCP) — 一个给 Claude Desktop 用的 MCP 服务器，让 Claude 直接获得本地终端命令执行、文件系统搜索、diff 式文件编辑的能力——相当于把桌面版 Claude 从"聊天助手"变成能动手操作本机的编码/自动化 agent。
-- `github-trends` [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) — 一个把知名品牌设计系统（色板、字体、间距、组件状态等）抽取成 DESIGN.md 文件的合集。你把某个品牌的 DESIGN.md 丢进项目根目录，Claude Code / Cursor / Copilot / Gemini CLI 等编码 agent 就能据此生成"有该品牌质感"的 UI。
-- `github-trends` [google-labs-code/stitch-skills](https://github.com/google-labs-code/stitch-skills) — Google Labs 出品的 Agent Skills 技能库，配合 Stitch（Gemini 驱动的 UI 设计工具）的 MCP server，让 Claude Code / Cursor / Gemini CLI 等编码 agent 能直接调用 Stitch 生成界面设计并转成代码（React / React Native / shadcn 等）。注意：属 Google Labs 实验项目，非 Google 官方支持产品。
-- `github-trends` [anthropics/skills](https://github.com/anthropics/skills) — Anthropic 官方维护的 Agent Skills 公共仓库——存放"技能"这种东西本身的官方样例和参考实现。所谓 skill，就是给 AI agent 的一份写在 markdown 里的操作手册（SKILL.md + 配套脚本、参考资料），agent 需要做某类任务时按需加载它，而不是把所有知识都塞进上下文。
-- `github-trends` [cactus-compute/needle](https://github.com/cactus-compute/needle) — 一个 14MB 的超小模型（45M 参数、2-bit 量化），只干一件事——把自然语言变成函数调用（工具调用、设备控制、结构化抽取）。不聊天、不写文章，请求超出已声明的工具范围就返回空调用 `[]`。
-- `github-trends` [cursor/plugins](https://github.com/cursor/plugins) — Cursor（那个基于 VS Code 改的 AI 编程编辑器）官方开的仓库，用来定义"插件"这个东西该长什么样，并把官方自己做的插件放进去当范例。可以理解成 Cursor 版的应用商店规格书 + 官方样板间：里面既有格式规范（`schemas/`、`.cursor-plugin/`），也有 `create-plugin` 这种脚手架，还有 14 个官方插件目录（`orchestrate` 编排、`pr-review-canvas` PR 评审、`cursor-team-kit` 团队工具包、`continual-learning`、`teaching` 等）。
-- `github-trends` [anthropics/claude-plugins-community](https://github.com/anthropics/claude-plugins-community) — Anthropic 官方维护的 Claude Code / Claude Cowork 社区插件市场的只读镜像。它本身不是代码库，而是一份清单：`.claude-plugin/marketplace.json` 里目前登记了 2,282 个社区插件的名称、仓库地址和版本。插件提交走 clau.de/plugin-directory-submission，仓库这边由夜间同步任务把审核通过的条目刷进来。
-- `github-trends` [AgriciDaniel/claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) — 一套让 Claude Code 自动整理你 Obsidian 笔记库的模板。你把任何素材（网页、PDF、随手记）丢进指定目录，Claude 读完之后自动写摘要、建双向链接、归档到对应主题下，最终产出的是**你自己拥有的纯 Markdown 文件**，不是某个云服务里的数据库。作者把它称为"自组织的 AI 第二大脑"，实现思路参考 Karpathy 提出的 LLM Wiki 模式。
-- `github-trends` [ConardLi/garden-skills](https://github.com/ConardLi/garden-skills) — 中文开发者 ConardLi 的个人 skill 合集，5 个 skill 打包一起发：网页设计（`web-design-engineer`）、讲解式视频演示（`web-video-presentation`）、图像生成（`gpt-image-2`）、知识库检索（`kb-retriever`）、文章排版（`beautiful-article`）。不是收录别人 skill 的清单，是作者自己写的、自己在用的那一套。
-- `github-trends` [handsomestWei/patent-disclosure-skill](https://github.com/handsomestWei/patent-disclosure-skill) — 一个中文的 Claude Code / Cursor 技能包，把"我做了个项目，想申请专利"变成流水线：扫描你的设计文档和代码 → 挖出可申请的专利点 → 去国家知识产权局的公布公告站查新 → 生成带框图的交底书 Word。另外能把晦涩的公开专利翻成大白话笔记存进 Obsidian，还有审查意见答复（OA）草稿模式。
-- `github-trends` [blader/humanizer](https://github.com/blader/humanizer) — 一个给 Claude Code 之类 agent 用的技能包，作用是把 AI 写出来的文字改得不像 AI 写的——去掉那些典型痕迹：三项并列的排比、"值得注意的是"这类过渡套话、过度对仗的句式、模棱两可的限定语。它本身没有代码，整个仓库就是一份 456 行的 `SKILL.md` 加 README，总共 149 KB。
-- `github-trends` [humanlayer/skills](https://github.com/humanlayer/skills) — HumanLayer 公司（12-factor agents 一文作者 dexhorthy 创办，产品是 CodeLayer）公开的 5 个 Claude Code skill 合集，用 `npx skills add humanlayer/skills --skill <name>` 单个安装。五个 skill 分别是：`show-me`（让 agent 用图和代码骨架代替大段文字解释）、`improve-claude-md`（用 `<important if>` 块重写 CLAUDE.md 提高指令遵循度）、`design-control-loop` 与 `build-iterated-agentic-loop`（生成定时跑 coding agent 的 GitHub Actions 闭环）、`narrow-react-prop-types`（按实际代码路径收窄 React 组件 pr
-- `github-trends` [jo-inc/camofox-browser](https://github.com/jo-inc/camofox-browser) — 一个跑在服务器上的"反检测浏览器服务"。AI agent 通过 HTTP 请求告诉它去打开哪个网页、点哪里，它在后台用一个伪装成普通人电脑的 Firefox 访问，然后把网页内容整理成精简的可访问性树（而不是整页 HTML）交还给 agent。它不是浏览器本身，而是把 Camoufox（daijro 维护的 Firefox 反指纹改版）包成 Node REST API 的一层壳，首次启动时会下载约 300MB 的 Camoufox 引擎。
-- `github-trends` [SnailSploit/Claude-Red](https://github.com/SnailSploit/Claude-Red) — 78 个 `SKILL.md` 文件组成的攻击性安全技能库，按 23 个类别划分（Web、活动目录、无线、云、漏洞开发、EDR 规避、C2、反取证等）。克隆进 `~/.claude/skills/` 后，Claude 会根据对话内容自动加载对应"攻击面专家"人设。它不含任何工具代码，本质是提示词方法论库。
-- `github-trends` [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) — 一个给编码 agent 用的"安全审计流程说明书"。你把它装进 Claude Code、Codex 这类 agent，然后指向自己的代码仓库，agent 会按它规定的多个阶段依次走：先摸清代码结构，再找可疑点，再自己验证这些可疑点是不是真的能被利用，最后输出一份格式固定、机器可读的 `findings.json`。它本身几乎不含代码逻辑——整个仓库 143KB，主体是 markdown 提示词加少量脚本。
-- `github-trends` [Tencent/BrowserSkill](https://github.com/Tencent/BrowserSkill) — 让 AI agent 借用你电脑上那个已经登录好的真实浏览器干活，而不是另起一个空白的自动化浏览器。装法是一个命令行工具加一个浏览器扩展；任何"能跑 shell 命令"的 agent（Claude Code、Cursor、Codex 等）都能调它。
-- `github-trends` [tradesdontlie/tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) — 把 AI 助手接到你本机**已经装好、已经登录**的 TradingView 桌面版上，让它替你看图、改 Pine Script、画关键位、建价格提醒、跑历史回放。它不连 TradingView 的服务器、不抓数据、不下真单——走的是 Chromium 类应用自带的调试接口（CDP），而且那个调试端口默认关闭，必须你自己加 `--remote-debugging-port=9222` 才生效。前提是你有 TradingView 的付费订阅。
-- `github-trends` [superdesigndev/treg](https://github.com/superdesigndev/treg) — 给 AI agent 用的"工具总代理"。用它的类比：OpenRouter 让你一个 token 调所有模型，treg 想让你一个 token 调所有工具——60 多家厂商、约 3,000 个 API 端点（SEO 外链数据、社媒趋势、人企信息富化、广告、爬虫、图像视频生成），按次计费，低到一分钱，**你不需要去每家注册账号**，因为 treg 自己持有那些订阅。第二半功能是团队密钥托管：把你自己的 API key、OAuth 连接、厂商 CLI、SKILL.md 注册进去，队友的 agent 能调用，但明文凭据不离开服务端。托管站是 treg.to，也可以自托管。
-
 ### agent-frameworks-and-platforms（37）
 _Agent 框架与平台赛道在数量上虽呈现退潮收敛，但底层正经历从“概念验证式编排”向“生产级基础设施”的深刻结构转变。Anthropic 官方博客力推的托管沙箱、内置记忆与 MCP 连接，与开源社区在权限治理、云端执行环境（如云电脑）及长程状态管理上的探索高度呼应，显示出能力下沉为基建的强信号。赛道演进重心已从单纯探究“如何构建单体 Agent”，全面转向解决多智能体组织协同、合规审计以及企业级环境中的持久化交付与控制。_
 
@@ -334,13 +339,35 @@ _Agent 框架与平台赛道在数量上虽呈现退潮收敛，但底层正经�
 - `github-trends` [google/ax](https://github.com/google/ax) — Google 官方开源的"agent 版 Kubernetes"。你写一个 YAML 文件，声明"我要跑一个什么任务、它需要哪些代码仓库和工具、允许它访问哪些网站、用哪个模型"，ax 就负责把它塞进沙箱、把 Git 仓库和 MCP server 预装好、把出网流量锁到白名单里，然后调度起来。CLI 刻意做成 `kubectl` 的形状——`ax apply -f task.yaml`、`ax watch`、`ax ssh`，用过 Kubernetes 的人几乎不用学。它明确不是 ADK / LangGraph 那类"写 agent 逻辑"的框架，作者本人在 HN 澄清过：ax 是作业编排层。
 - `github-trends` [strands-agents/harness-sdk](https://github.com/strands-agents/harness-sdk) — AWS 出品的 agent 开发工具包，原名 Strands Agents SDK。开发者用它写 AI agent：定义模型、工具和任务，SDK 负责让模型循环地思考、调用工具、拿结果再继续，直到把事做完。这次改名后，同一个仓里同时放 Python 和 TypeScript 两套实现，并配了一个命令行工具 harness-cli。
 
-### productivity-and-business-apps（4）
+### data-and-analytics-infra（17）
+_数据与分析基础设施赛道呈现显著的升温态势，其核心重心正从“服务人类看报表”向“为 AI 提供可信上下文”加速演进。开源社区中指标语义层、上下文图谱与高性能数据清洗工具的密集涌现，与 Anthropic 官方博客验证并力推的企业级自助式数据分析实践形成强共振。整个赛道正向“统一语义中间件与 Agent 友好型底层管线”深度收敛，旨在彻底解决大模型消费异构数据时口径漂移与难以溯源的可靠性鸿沟。_
+
+- `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
+- `github-trends` [apache/ossie](https://github.com/apache/ossie) — 一套让不同数据平台"对同一个指标说同一种话"的开放规范。今天你在 BI 工具里定义的"月活跃用户"，到了 AI 助手、数据仓库、报表工具里往往各算各的口径；Ossie 想用一份厂商中立的 JSON/YAML 规范，把指标、维度、关系这些"语义元数据"标准化，作为跨平台的单一事实源。
+- `github-trends` [Canner/WrenAI](https://github.com/Canner/WrenAI) — 面向 AI agent 的开源 GenBI（生成式 BI）平台，通过一层"开放上下文层 + 治理"把自然语言问题转成可信的仪表盘、图表和 SQL，支持 BigQuery、Snowflake、PostgreSQL、ClickHouse、Redshift、Databricks 等 20+ 数据源。
+- `github-trends` [OtterMind/Chat2DB](https://github.com/OtterMind/Chat2DB) — 一个数据库图形客户端（类似 Navicat、DBeaver），额外加了 AI：可以用自然语言问"上个月订单最多的客户是谁"，它生成 SQL、解释 SQL、优化 SQL。支持 30+ 种数据库，包括 MySQL、Oracle、PostgreSQL、SQL Server、ClickHouse。
+- `github-trends` [opengeos/GeoLibre](https://github.com/opengeos/GeoLibre) — 一个在浏览器里就能打开的地图分析软件。过去要装 QGIS 或买 ArcGIS Online 才能做的事——加载卫星影像、叠图层、查属性、出图——现在打开网页就能做，也能装成桌面/移动端应用，甚至嵌进 Jupyter notebook。
+- `github-trends` [hello245m/free-stockdb](https://github.com/hello245m/free-stockdb) — 一个装在自己电脑上的"A 股行情数据库"。双击一个更新程序，它把整个 A 股市场的日线、周线、月线和 1/5/15/30 分钟 K 线下载到本机文件夹；再双击另一个程序，本机就起了一个数据服务（默认 `127.0.0.1:7899`）。之后你想查行情，可以用 Python、HTTP 接口、Excel/WPS 公式、浏览器网页，甚至让 Claude/Cursor 通过 MCP 直接问它。
+- `github-trends` [firecrawl/pdf-inspector](https://github.com/firecrawl/pdf-inspector) — 一个判断「这份 PDF 到底是不是扫描件」的 Rust 库。给它一个 PDF，它在几十毫秒内告诉你：这是原生文本型、纯扫描图片型、图文混合，还是介于之间；并按页给出「这页需不需要 OCR」的建议。顺带它也能把文本型 PDF 抽成带位置信息的文字，或者直接转成干净的 Markdown（标题、列表、表格、代码块、多栏阅读顺序都识别）。由 Firecrawl 团队开发，除 Rust 外还提供 Python、Node.js 和浏览器 WebAssembly 三套绑定。
+- `github-trends` [semantica-agi/semantica](https://github.com/semantica-agi/semantica) — 一个给 AI 系统用的"语义底座"。它把企业里散在各处的数据（数据库、文档、网页、代码仓）抽成实体和关系，建成一张可查询的知识图谱 / 上下文图谱，并且记录每个结论是从哪条数据、经哪一步推理得出来的。README 的自我定位是"给 AI agent 用的开源版 Palantir"。
+- `github-trends` [google-deepmind/weathernext](https://github.com/google-deepmind/weathernext) — DeepMind 天气预报模型的统一开源仓库。它不是新建的——就是原来的 `graphcast` 仓库改名而来（创建日期仍是 2023-07-14，旧地址 302 跳转到这里）。现在里面放着 WeatherNext 2（0.25°、约 30km 分辨率的通用预报模型）、WeatherNext Cyclones（热带气旋专用）、Cyclones Mini（1° 简化版，能在免费 Colab 上跑），原来的 GraphCast 和 GenCast 被降级成 legacy 放进 `docs/`。
+- `github-trends` [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) — 面向 LLM 场景的开源网页抓取/清洗工具，把网页转成对大模型友好的干净 markdown/结构化数据，是 RAG 和 agent 数据管线里被广泛引用的事实级组件之一。
+- `github-trends` [malisper/pgrust](https://github.com/malisper/pgrust) — 一个用 Rust 从零重写的 PostgreSQL，磁盘格式兼容 Postgres 18.3（可直接从现有数据目录启动）。作者 Michael Malis（前 Heap CEO）主要靠 AI 编码代理（自述 8 个并行 Codex 账号、约 45 万行代码）生成，目标是让 Postgres 内部更易改造——去掉 VACUUM、内置连接池、换用线程/连接模型。
+- `github-trends` [infiniflow/ragflow](https://github.com/infiniflow/ragflow) — 开源 RAG 引擎——把企业里的 PDF、扫描件、表格、幻灯片先做深度文档解析和 OCR，切成带结构信息的块，再配上引用可溯源的检索问答，近两年又叠加了 agent 编排能力。
+- `claude-blog` [Self-service data analytics in Slack: how Anthropic deploys Claude Tag for ad-hoc questions](https://claude.com/blog/self-service-data-analytics-in-slack-how-anthropic-deploys-claude-tag-for-ad-hoc-questions) — In our [previous post](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude), we described how we enabled Claude to answer data analytics questions with ~95% accuracy through three primary artifacts:
+- `github-trends` [sngyai/Sequoia-X](https://github.com/sngyai/Sequoia-X) — 一个每天收盘后自动跑一遍的 A 股扫描器。它按几套预设的技术形态（海龟突破、高窄旗形、涨停洗盘、RPS 强度、定增监控等）把全市场股票筛一遍，把符合条件的票推到你的飞书群里。它不下单、不管仓位，只负责把候选名单送到你眼前。
+- `github-trends` [Tencent/WeKnora](https://github.com/Tencent/WeKnora) — 一套可以自己部署的文档知识库系统。你把 PDF、Word、Notion 页面之类的原始文档丢进去，它做三件事：变成能被问答检索的知识库（RAG）、提供一个会自己多步推理的问答 agent、以及生成一份能自我维护的 Wiki。
+- `github-trends` [docling-project/docling](https://github.com/docling-project/docling) — 一个把各种办公文档"翻译"成 AI 能读的格式的工具。你手里有一堆 PDF 合同、Word 报告、PPT 和扫描件，想让大模型回答关于它们的问题，中间缺的就是这一步——把版面、标题层级、表格、图表、公式都识别出来，输出成结构化的 Markdown 或 JSON。Docling 做的就是这一步，一条命令或几行 Python 就能跑，也能起成一个 HTTP 服务（docling-serve）。
+- `github-trends` [t8y2/dbx](https://github.com/t8y2/dbx) — 一个很小（约 25 MB）的数据库管理工具，一个软件就能连 MySQL、PostgreSQL、Redis、MongoDB、DuckDB、达梦、OceanBase 等 100 多种数据库。有桌面版、网页版（Docker）和命令行版，还内置 AI 助手帮你写 SQL，并能作为 MCP 服务让 Claude Code、Cursor 等 AI 编程工具直接查库。
+
+### productivity-and-business-apps（5）
 _该赛道近期呈现显著的爆发式升温，开源社区正掀起一场以「私有化部署与数据主权」对抗商业 SaaS 席位制收费的替代潮。从覆盖全业务链的一体化企业后台，到多模型聚合网关与多 Agent 驱动的垂类决策辅助，团队正加速将核心业务流与最新大模型能力深度嵌合进自有基础设施中。伴随经典单机生产力工具的再度升温，赛道整体演进方向正明确指向“本地优先、模型解耦、成本可控”的自主型生产力生态。_
 
 - `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
 - `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
 - `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
 - `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
+- `claude-blog` [Agents you can coach: how Asana builds human-agent teams with Claude](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude) — *This is the third post in our series on building human-agent teams. The *[first](https://claude.com/blog/building-effective-human-agent-teams)* shared what we’ve learned working with multiplayer AI at Anthropic. The *[second](https://claude.com/blog/turning-conversation-into-knowledge-how-slack-builds-human-agent-teams)* shared how Slack turns workplace conversation into the context agents need. 
 
 ### desktop-and-media-apps（28）
 _桌面与媒体应用赛道在经历整体数量退潮的同时，正呈现出显著的两极分化。开源社区加速向“极端本地优先与数据主权”收拢，大量项目聚焦于纯端侧小模型运行、无遥测硬件控制及局域网闭环，全面弱化对中心化云服务的依赖；与之相对，大厂官方博客则释放出桌面端作为“企业级超级入口”的信号，致力于将多 Agent 协作、代码工具与云基础设施深度整合进单一客户端。该赛道正告别泛效率工具的粗放增长，分化演进为捍卫端侧隐私的极客轻工具与承载前沿智能体的重型工作台两大阵营。_
@@ -373,26 +400,6 @@ _桌面与媒体应用赛道在经历整体数量退潮的同时，正呈现出�
 - `github-trends` [peetzweg/opendisplay](https://github.com/peetzweg/opendisplay) — 把闲置的 iPhone、iPad 或旧 Mac 变成 Mac 的第二块显示器。插上数据线或连到同一个 WiFi，设备就出现在系统的"显示器排列"里，是一块真实的扩展屏而不是投屏画面，还能当触摸板用（点按、拖拽、双指滚动）。
 - `github-trends` [abue-ammar/tinycast](https://github.com/abue-ammar/tinycast) — 一个 macOS 上的启动器——按个快捷键弹出搜索框，可以搜应用、翻剪贴板历史、管窗口、跑 Apple 快捷指令、接大模型聊天。定位就是 Raycast 的免费原生替代品。
 - `github-trends` [InfinityLoop1308/PipePipe](https://github.com/InfinityLoop1308/PipePipe) — 一个 Android 上的第三方视频客户端，可以不装 Google 服务、不登录账号、不看广告地看 YouTube，也支持 BiliBili、NicoNico 等站点。它从知名开源客户端 NewPipe 分叉而来，加了更多"好用"的功能。
-
-### data-and-analytics-infra（16）
-_数据与分析基础设施赛道呈现显著的升温态势，其核心重心正从“服务人类看报表”向“为 AI 提供可信上下文”加速演进。开源社区中指标语义层、上下文图谱与高性能数据清洗工具的密集涌现，与 Anthropic 官方博客验证并力推的企业级自助式数据分析实践形成强共振。整个赛道正向“统一语义中间件与 Agent 友好型底层管线”深度收敛，旨在彻底解决大模型消费异构数据时口径漂移与难以溯源的可靠性鸿沟。_
-
-- `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
-- `github-trends` [apache/ossie](https://github.com/apache/ossie) — 一套让不同数据平台"对同一个指标说同一种话"的开放规范。今天你在 BI 工具里定义的"月活跃用户"，到了 AI 助手、数据仓库、报表工具里往往各算各的口径；Ossie 想用一份厂商中立的 JSON/YAML 规范，把指标、维度、关系这些"语义元数据"标准化，作为跨平台的单一事实源。
-- `github-trends` [Canner/WrenAI](https://github.com/Canner/WrenAI) — 面向 AI agent 的开源 GenBI（生成式 BI）平台，通过一层"开放上下文层 + 治理"把自然语言问题转成可信的仪表盘、图表和 SQL，支持 BigQuery、Snowflake、PostgreSQL、ClickHouse、Redshift、Databricks 等 20+ 数据源。
-- `github-trends` [OtterMind/Chat2DB](https://github.com/OtterMind/Chat2DB) — 一个数据库图形客户端（类似 Navicat、DBeaver），额外加了 AI：可以用自然语言问"上个月订单最多的客户是谁"，它生成 SQL、解释 SQL、优化 SQL。支持 30+ 种数据库，包括 MySQL、Oracle、PostgreSQL、SQL Server、ClickHouse。
-- `github-trends` [opengeos/GeoLibre](https://github.com/opengeos/GeoLibre) — 一个在浏览器里就能打开的地图分析软件。过去要装 QGIS 或买 ArcGIS Online 才能做的事——加载卫星影像、叠图层、查属性、出图——现在打开网页就能做，也能装成桌面/移动端应用，甚至嵌进 Jupyter notebook。
-- `github-trends` [hello245m/free-stockdb](https://github.com/hello245m/free-stockdb) — 一个装在自己电脑上的"A 股行情数据库"。双击一个更新程序，它把整个 A 股市场的日线、周线、月线和 1/5/15/30 分钟 K 线下载到本机文件夹；再双击另一个程序，本机就起了一个数据服务（默认 `127.0.0.1:7899`）。之后你想查行情，可以用 Python、HTTP 接口、Excel/WPS 公式、浏览器网页，甚至让 Claude/Cursor 通过 MCP 直接问它。
-- `github-trends` [firecrawl/pdf-inspector](https://github.com/firecrawl/pdf-inspector) — 一个判断「这份 PDF 到底是不是扫描件」的 Rust 库。给它一个 PDF，它在几十毫秒内告诉你：这是原生文本型、纯扫描图片型、图文混合，还是介于之间；并按页给出「这页需不需要 OCR」的建议。顺带它也能把文本型 PDF 抽成带位置信息的文字，或者直接转成干净的 Markdown（标题、列表、表格、代码块、多栏阅读顺序都识别）。由 Firecrawl 团队开发，除 Rust 外还提供 Python、Node.js 和浏览器 WebAssembly 三套绑定。
-- `github-trends` [semantica-agi/semantica](https://github.com/semantica-agi/semantica) — 一个给 AI 系统用的"语义底座"。它把企业里散在各处的数据（数据库、文档、网页、代码仓）抽成实体和关系，建成一张可查询的知识图谱 / 上下文图谱，并且记录每个结论是从哪条数据、经哪一步推理得出来的。README 的自我定位是"给 AI agent 用的开源版 Palantir"。
-- `github-trends` [google-deepmind/weathernext](https://github.com/google-deepmind/weathernext) — DeepMind 天气预报模型的统一开源仓库。它不是新建的——就是原来的 `graphcast` 仓库改名而来（创建日期仍是 2023-07-14，旧地址 302 跳转到这里）。现在里面放着 WeatherNext 2（0.25°、约 30km 分辨率的通用预报模型）、WeatherNext Cyclones（热带气旋专用）、Cyclones Mini（1° 简化版，能在免费 Colab 上跑），原来的 GraphCast 和 GenCast 被降级成 legacy 放进 `docs/`。
-- `github-trends` [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) — 面向 LLM 场景的开源网页抓取/清洗工具，把网页转成对大模型友好的干净 markdown/结构化数据，是 RAG 和 agent 数据管线里被广泛引用的事实级组件之一。
-- `github-trends` [malisper/pgrust](https://github.com/malisper/pgrust) — 一个用 Rust 从零重写的 PostgreSQL，磁盘格式兼容 Postgres 18.3（可直接从现有数据目录启动）。作者 Michael Malis（前 Heap CEO）主要靠 AI 编码代理（自述 8 个并行 Codex 账号、约 45 万行代码）生成，目标是让 Postgres 内部更易改造——去掉 VACUUM、内置连接池、换用线程/连接模型。
-- `github-trends` [infiniflow/ragflow](https://github.com/infiniflow/ragflow) — 开源 RAG 引擎——把企业里的 PDF、扫描件、表格、幻灯片先做深度文档解析和 OCR，切成带结构信息的块，再配上引用可溯源的检索问答，近两年又叠加了 agent 编排能力。
-- `claude-blog` [Self-service data analytics in Slack: how Anthropic deploys Claude Tag for ad-hoc questions](https://claude.com/blog/self-service-data-analytics-in-slack-how-anthropic-deploys-claude-tag-for-ad-hoc-questions) — In our [previous post](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude), we described how we enabled Claude to answer data analytics questions with ~95% accuracy through three primary artifacts:
-- `github-trends` [sngyai/Sequoia-X](https://github.com/sngyai/Sequoia-X) — 一个每天收盘后自动跑一遍的 A 股扫描器。它按几套预设的技术形态（海龟突破、高窄旗形、涨停洗盘、RPS 强度、定增监控等）把全市场股票筛一遍，把符合条件的票推到你的飞书群里。它不下单、不管仓位，只负责把候选名单送到你眼前。
-- `github-trends` [Tencent/WeKnora](https://github.com/Tencent/WeKnora) — 一套可以自己部署的文档知识库系统。你把 PDF、Word、Notion 页面之类的原始文档丢进去，它做三件事：变成能被问答检索的知识库（RAG）、提供一个会自己多步推理的问答 agent、以及生成一份能自我维护的 Wiki。
-- `github-trends` [docling-project/docling](https://github.com/docling-project/docling) — 一个把各种办公文档"翻译"成 AI 能读的格式的工具。你手里有一堆 PDF 合同、Word 报告、PPT 和扫描件，想让大模型回答关于它们的问题，中间缺的就是这一步——把版面、标题层级、表格、图表、公式都识别出来，输出成结构化的 Markdown 或 JSON。Docling 做的就是这一步，一条命令或几行 Python 就能跑，也能起成一个 HTTP 服务（docling-serve）。
 
 ### ai-video-voice-creative（15）
 _音视频与多模态创意赛道在底座模型集中爆发后热度边际退潮，正经历从“前沿算法探索”向“本地工程落地”的结构性转变。前沿研究博客对视频扩散底层机理的系统复盘与社区实践形成鲜明呼应与承接，开源重心已全面转向摆脱云端 API 依赖与按量订阅，集中涌现出主打数据不出机、极低算力开销的离线配音套件与桌面级开源剪辑工具。整个赛道正告别以单点生成为核心的奇观演示，加速收敛为注重端侧可用性、隐私自持与工作流整合的创作者个人基础设施。_
