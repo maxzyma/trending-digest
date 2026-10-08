@@ -1,0 +1,1113 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:8538c764668fed3a7d9755fc35e3d1c67c9a0b1692c2f7893a4be451a7a3b57f",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "claude-blog-zh.v1",
+  "title": "用 Claude 自动化评测设计与爬山式优化",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评估可以反映你的应用或技能在特定任务上的表现。但设计评估，以及在不自欺欺人的前提下提升评估表现，都并非易事。我们已在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/skills/tree/main/skills/claude-api"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "claude-api 技能"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中补充了这两方面的指导。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "借助该技能，你可以运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api build-eval"
+        },
+        {
+          "type": "text",
+          "text": " 在代码库中构建评估，并运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api hillclimb"
+        },
+        {
+          "type": "text",
+          "text": " 依据该评估改进你的应用，每次只做一处改动，同时用一组留出的样例来发现过拟合。"
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本文首先介绍良好评测设计与爬山式迭代优化（hillclimbing）的原则，然后展示搭载 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-api"
+        },
+        {
+          "type": "text",
+          "text": " skill 的 Claude Code 如何应用这些原则。最后，我们将通过几个示例来演示这些命令。"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评测设计"
+        }
+      ]
+    },
+    "b005": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设计良好的评估通常具备几个共同要素（图 1）："
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "评估任务应反映生产环境。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "从你在“生产环境”中关心的任务里抽样，也就是你所测试的能力或应用将被实际使用的场景。有时任务被选中，只是因为它们容易生成或容易评分。但重要的是确保任务分布代表你"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "真正"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "关心的内容。"
+        }
+      ]
+    },
+    "b007": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "更强的模型和更多的思考会带来更好的表现"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。能力更强的模型和更高的投入程度（effort level）通常应在评估中表现更好。如果并非如此，往往是任务存在歧义或评分器校准不当拖累了表现。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "前沿模型仍有“过得去”的提升空间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。能力最强的模型在最高推理强度下，在该评测上的得分也应远低于 100%，否则你就无法可靠地判断各种改动对性能的影响。重要的是，这一差距不应源于无法完成或含义模糊的任务：一个常见的迹象是，某个任务无论重复运行多少次，在每次评测中都会失败。好的任务应当满足：两位领域专家会得出相同的判定，并且评分器所检查的每一项内容都已在任务中明确说明。"
+        }
+      ]
+    },
+    "b009": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "运行间方差低"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。高方差通常源于设计不佳、含义模糊的任务，或是对相同输出给出不同判定的评分器。方差也可能隐藏在配置中。例如，effort 设置可能没有被一致地应用。此外，环境也会影响评估结果：先前试验遗留的状态（某个文件、一段 git 历史）可能会直接把答案交给智能体。"
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对抗采样"
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型的能力是参差不齐的。如果你因为当今模型在某些用例上失败而选择它们，那么你就是在对单个模型能力曲面的低谷进行采样（图 2）。这样一来，评估最终衡量的可能是该模型的失败指纹，而不是对你的应用而言本质上困难或有价值的任务。"
+        }
+      ]
+    },
+    "b014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "挑选困难用例，应以人类判断其困难为依据：一个有用的检验标准是，在纳入某项任务之前，你能说出它为什么困难。纳入那些源自生产流量、缺陷报告或工单的、你的应用中的具体失败案例。不过，不要盲目信任用户流量：用户有时只会尝试他们预期能成功的操作，因此严格从用户流量中抽取的任务分布可能会偏向简单。"
+        }
+      ]
+    },
+    "b015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "/CLAUDE-API BUILD-EVAL"
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "claude-api skill 中的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "build-eval"
+        },
+        {
+          "type": "text",
+          "text": " 命令将这些原则转化为一套引导式工作流。当你在 Claude Code 中运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api build-eval"
+        },
+        {
+          "type": "text",
+          "text": " 时，Claude 会向你提问以了解需求，在你的代码库中构建评估，并在特定节点暂停以等待你的批准。"
+        }
+      ]
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "设计示例"
+        }
+      ]
+    },
+    "b018": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude 会按以下顺序帮助你采样输入以构建评估："
+        }
+      ]
+    },
+    "b019": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "生产环境的对话记录，但要先问清数据保留期限和敏感数据的处理要求。"
+        }
+      ]
+    },
+    "b020": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "缺陷报告和支持工单。"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由你亲手编写的五到十个用例。"
+        }
+      ]
+    },
+    "b022": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从你的代码库中合成的用例。"
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该 skill 优先使用生产流量，但也可以基于你提供的少量真实示例生成合成数据。该 skill 会指示 Claude 生成一个简单的页面，向你展示每一条输入，并等待你确认。作为示例，下面展示了一个电子邮件路由应用的输入集，skill 可能会请用户审阅这些输入（图 3）。"
+        }
+      ]
+    },
+    "b026": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "验证评分器"
+        }
+      ]
+    },
+    "b027": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "确定输入之后，Claude 会提出一个与你的应用输出相匹配、成本最低的评分器："
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "程序化验证"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：如果输出的可能范围受到限制，就使用基于代码的检查（精确匹配、来自固定集合的标签、符合 schema 的 JSON、通过的测试）。"
+        }
+      ]
+    },
+    "b029": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "LLM 作为评判者（LLM-as-judge）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：如果输出空间是开放式的，即存在许多有效答案但质量标准明确，它就会默认采用这类检查。在这种情况下，由第二个模型读取输入、输出以及一份以可核查陈述（而非 1 到 5 分的量表）写成的评分细则，并返回一个分数及其推理过程。如果你有可供比较的基线，评判模型则会以随机顺序读取两个输入，且不会被告知哪一个是基线，然后选出更好的那个。评判模型由你来选择，并且它不应是你正在测试的那个模型。"
+        }
+      ]
+    },
+    "b031": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude 会对少量案例进行评分，并询问你是否会对其中任何一个给出不同的分数（图 4）。一般来说，在信任你的评估器之前，务必先"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "阅读一部分已评分的对话记录样本"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "；评分失误是评估配置出错最常见的原因之一。"
+        }
+      ]
+    },
+    "b032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当你完成对评分器的验证后，该技能会告诉你评估集的规模（用例数 × 重复次数 × 模型数，以及大致需要多长时间），运行基线，并输出带置信区间的分数。你会得到：用例、评分器、运行器、每个用例对应的一行 JSON 和一份完整对话记录，以及一个简单的页面，列出每个用例的分数并附上指向其对话记录的链接。如果你想看到比这个页面更多的内容（例如图表），只需提出要求，Claude 就会在它旁边额外生成一个页面。默认情况下，这些额外页面都是静态文件，在本地打开，不会从网络加载任何内容。"
+        }
+      ]
+    },
+    "b034": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "诊断检查"
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在上述基线运行期间，Claude 会检查以下几项内容："
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "评分器"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：Claude 对同一输出运行两次评分器，并报告判定结果是否发生了变化。"
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "基础设施检查"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：Claude 会检查超时、API 错误和被截断的回答，确保基础设施噪声不会被误当作模型方差。"
+        }
+      ]
+    },
+    "b038": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "提升空间"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：如果基线得分已达到约 95% 或更高，该技能会向用户发出警告，并提示爬山优化应着眼于探索成本或延迟，而非质量。"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "爬山法"
+        }
+      ]
+    },
+    "b041": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "既然你已经有了一种可靠的方法来评估应用在某项任务上的表现，就可以着手改进它了。爬山法（hillclimbing）是调优 effort 或提示词等参数的有效方法，这些参数需要在成本与性能之间做出权衡。以下是选择在哪些地方应用它的一些通用建议："
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "低成本迭代"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " - 修改你在爬山式优化中所聚焦的那个对象，应当是低成本的（无论是时间、费用还是精力）。许多内部项目和客户都将爬山式优化的重点放在文本上，例如提示词和技能。这些内容易于修改，也易于回滚。相比之下，在爬山式优化过程中对智能体 harness 进行开放式修改，可能涉及大量的代码改动。"
+        }
+      ]
+    },
+    "b043": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "可归因"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " - 评估分数的变化应当能够归因于你在爬山优化过程中所修改的那个层面。例如，已有多个成功的爬山优化应用聚焦于技能触发。其评估指标（技能的触发率）与正在被修改的技能描述直接关联。"
+        }
+      ]
+    },
+    "b044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "目标范围明确"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " - 一种常见的失败模式是：在没有仔细考虑评估还剩多少提升空间的情况下，提出一个开放式的性能改进请求；如果评估已接近饱和，或者任务范围界定不清（例如，开放式地要求更新 harness），工作就更容易陷入停滞。在各类工作中，成本通常都是一个很好的目标：即使评估已经饱和，你仍然可以让 Claude "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "寻找降低成本的方法"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，同时保持性能不变。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "过拟合"
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "即使是设计良好的评估，也很少能与你在生产环境中真正关心的任务分布完全吻合。因此，对评估\"过拟合\"是一个常见问题，其结果是系统在评估上的表现优于在生产流量上的表现。"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "评估“泄漏”进你的 harness（即模型周围的代码，包括提示词、工具以及调用 Claude 的循环）的方式有很多。例如，假设某个评估任务能从 OCR 中获益，但 OCR 在你的生产任务中却很少有用。评估 harness 可能会给你的应用添加一个 OCR 工具，这会提升基准测试成绩，却对生产毫无影响。更广泛地说，爬山式优化（hillclimbing）可能会向 harness 添加一些功能，专门处理你所选特定评估样例中的边缘情况。这些 harness 上的新增内容会提高你的评估分数，却无法转化为生产中的改进（图 5）。"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有三件事可以帮助解决这个问题："
+        }
+      ]
+    },
+    "b051": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "拆分用例"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。使用一个爬山优化器可以读取的训练集，以及一个它从未见过的测试集。如果训练集得分提升而测试集得分停滞不前，这就是过拟合的常见警示信号。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "绝不要把失败内容粘贴进提示词"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。如果爬山优化器会读取失败的运行记录，它就绝不应把失败内容粘贴进提示词。"
+        }
+      ]
+    },
+    "b053": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "从结构上让答案处于模型无法触及的位置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。模型有时会通过直接找到评估答案来“奖励作弊”（reward hack）。"
+        }
+      ]
+    },
+    "b055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "正如下文所述，claude-api 技能会替你应用这些原则。"
+        }
+      ]
+    },
+    "b056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "/CLAUDE-API 爬山式迭代优化"
+        }
+      ]
+    },
+    "b057": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "claude-api 技能中的 hillclimb 命令将这些原则转化为一套引导式工作流。当你在 Claude Code 中运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api hillclimb"
+        },
+        {
+          "type": "text",
+          "text": " 时，Claude 会针对给定的评估进行迭代改进。你可以选择允许它做出哪些更改，包括："
+        }
+      ]
+    },
+    "b058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你的系统提示词"
+        }
+      ]
+    },
+    "b059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Skills 或指令文件"
+        }
+      ]
+    },
+    "b060": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "工具描述"
+        }
+      ]
+    },
+    "b061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模型选择、effort 级别及其他 API 参数"
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你的 harness 代码"
+        }
+      ]
+    },
+    "b064": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "开始之前，Claude 会询问你想优化什么（例如性能，或在性能保持不变的前提下优化成本），然后将评估集随机划分为测试集和训练集。如果目标是成本，它会考虑"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "几个常见的成本驱动因素"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，包括提示缓存、审查提示词与所选模型的兼容性，以及选择模型和 effort 设置。"
+        }
+      ]
+    },
+    "b065": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在第一轮开始之前，Claude 会检查评测的噪声（仅凭偶然因素分数可能波动的幅度）是否小于你会据以采取行动的最小改进幅度；如果不是，它会明确指出这一点，并建议增加重复次数或用例。"
+        }
+      ]
+    },
+    "b066": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每一轮中，Claude 会阅读上一轮的训练转录记录，并以补丁形式提出一项修改。它每一轮都瞄准那些效果能够超出评估噪声的修改：从根源上修复失败的行为（例如，重写导致该行为的段落，或补充缺失的规则），而不是仅仅改写某一行措辞。随后，它用打过补丁的修改运行评估。此时，Claude 会进行一项检查：如果 "
+        },
+        {
+          "type": "inline_code",
+          "text": "train"
+        },
+        {
+          "type": "text",
+          "text": " 集有所提升而 "
+        },
+        {
+          "type": "inline_code",
+          "text": "test"
+        },
+        {
+          "type": "text",
+          "text": " 集持平，Claude 会怀疑出现了过拟合并回滚该补丁。如果出现退化，Claude 也会回滚。如果训练集和测试集都有提升，它就保留该补丁（图 6）。"
+        }
+      ]
+    },
+    "b068": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当分数连续两三轮停滞不前时，Claude 会逐一查看剩余的每个训练集失败案例，并按原因进行归类。如果任何单一修复所能带来的提升都不会超过评测本身的噪声，它也会提前执行这一步，并建议增加重复次数或用例，而不是把轮次耗费在小到无法测量的改动上。这一步可以发现含义模糊的评测用例、测试框架错误或不同运行之间的波动。"
+        }
+      ]
+    },
+    "b069": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "只有真正的失败案例才会被纳入后续的爬山优化轮次。"
+        }
+      ]
+    },
+    "b070": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "爬山优化完成后，Claude 会将你的代码保留在针对你的目标、在测试集上表现最好的那个版本。它会报告测试结果相对于基线的表现，并附上置信区间（图 7）。如果提升幅度在噪声范围之内，它会如实说明，并建议不要合并。"
+        }
+      ]
+    },
+    "b072": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "示例"
+        }
+      ]
+    },
+    "b073": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过爬山法降低成本"
+        }
+      ]
+    },
+    "b074": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们在一个"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "内部客户支持基准测试"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "上运行了 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api hillclimb"
+        },
+        {
+          "type": "text",
+          "text": "，目标是降低成本并提升性能。该基准测试包含 44 个工单，其中 30 个用于搜索，14 个留作保留集。初始配置为 Opus 4.8、默认（high）effort 设置，在搜索工单上的决策准确率为 74.4%，每个工单的 token 成本为 4.6 美分。"
+        }
+      ]
+    },
+    "b075": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "爬山式优化首先审查了提示词，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.com/blog/reducing-cost-and-improving-performance-with-claude-platform"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "删除了"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "强制性的工具调用流程、草稿推理步骤以及相互矛盾的规则。随后，它尝试在低推理强度下使用 Opus 5.5。这一配置以 87.8% 的准确率越过了基线准确率门槛，并将成本降至每张工单 1.9 美分，不到初始成本的一半。"
+        }
+      ]
+    },
+    "b076": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "节省的部分原因来自 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.dev/blog/getting-the-most-out-of-opus-5-5/"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Opus 5.5 的定价"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：其输入和输出 token 的价格比 Opus 4.8 低 20%，缓存读取的价格低 60%。由于 Opus 5.5 达到了标准，爬坡优化随后降低一个档位，检验更便宜的模型能否同样达标。低投入（low effort）模式下的 Sonnet 5 得分大致相同，为 88.9%，成本约为一半，即每张工单 1 美分（图 8）。"
+        }
+      ]
+    },
+    "b077": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最后，Claude 通过加入路由规则和退款上限交叉引用改进了提示词，使 Sonnet 5 在成本大致不变的情况下达到 98.9%。在搜索过程中从未见过的 14 个留出工单上，最终配置的得分为 90.5%，而原始设置为 78.6%，成本约为后者的五分之一。"
+        }
+      ]
+    },
+    "b078": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "通过爬山法提升性能"
+        }
+      ]
+    },
+    "b079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另一个例子是我们的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/skills/tree/main/skills/claude-api"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "claude-api"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " skill，它提供了使用我们 API 的指导，以及与 Claude 协作的通用技巧（包括本文讨论的子命令）。我们希望确保该 skill 能够正确实现调用我们 API 的代码，因此基于我们的文档构建了一个评估集来测试该 skill。"
+        }
+      ]
+    },
+    "b080": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们的评估中，该技能最初的得分为 66%。我们让 hillclimber 能够访问文档和我们的 SDK，使 Claude 能够发现错误并自行纠正（图 9）。Claude 发现该技能缺少对八项功能的覆盖。"
+        }
+      ]
+    },
+    "b081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在技能中为它们添加相应章节后，性能提升到了 74%。随后，它又发现了 C# 和 Java 类型表中的错误，将性能进一步提升到 77%。"
+        }
+      ]
+    },
+    "b082": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在分数连续两轮停滞不前之后，Claude 分析了剩余的失败案例，并按根本原因进行了归类。常规的一轮会针对最常见的失败做一处修改。而这一步不做任何修改，只是将所有剩余的失败按原因分类。这一反思步骤在以下几个方面很有用："
+        }
+      ]
+    },
+    "b083": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在对一批失败案例进行综合分析后，hillclimber 发现技能内容本身并不缺失，问题在于 Claude 写出的仍是旧版的 API 形式（例如来自其训练先验）。为解决这一问题，hillclimber 在技能文件靠前的位置添加了一张表格，引导 Claude 从它记忆中的旧写法转向当前写法：例如，从使用固定 token 预算的扩展思考（API 现已在近期的 Opus 模型上拒绝这种用法）转向自适应思考，以及从旧版的网页搜索和网页抓取工具转向当前版本。它还把 C# 和 Java 中关于避免使用固定预算思考的警告移到了各自的自适应思考示例之前。这使性能提升到了 80%。"
+        }
+      ]
+    },
+    "b084": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有些任务即便补上了明显的内容缺口，表现也始终没有提升，这说明示例或评分器本身存在缺陷。其中一个任务要求编写捕获一种错误类型的代码，而它的评分器却要求至少三层的错误链。Claude 重新措辞了这个任务。另一个评分器的说明与我们的文档相互矛盾，而对真实 API 的测试表明文档是对的。解决这些问题，再加上对技能的更多修改，使表现提升到约 88%。"
+        }
+      ]
+    },
+    "b086": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "入门指南"
+        }
+      ]
+    },
+    "b087": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "注意："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "请先运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude update"
+        },
+        {
+          "type": "text",
+          "text": "。claude-api skill 随 Claude Code 一同提供，因此更新后即可获得这些命令的最新版本。"
+        }
+      ]
+    },
+    "b089": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后，在 Claude Code 中："
+        }
+      ]
+    },
+    "b091": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这些子命令可以通过 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/skills/tree/main/skills/claude-api"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "claude-api skill"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 在 Claude Code 中直接使用："
+        }
+      ]
+    },
+    "b092": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果你想为某个特定问题生成评估集，可以运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api build-eval"
+        },
+        {
+          "type": "text",
+          "text": "。你可以通过提供示例（例如 trace）来引导它。Claude 会运用本文分享的指导原则来设计示例和评分器，并确保由你来审批这些示例和评分器。"
+        }
+      ]
+    },
+    "b093": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果你已有一套评估，并希望 Claude 在你的目标指引下（例如提升性能，或在性能不变的前提下降低成本）对其进行改进，请运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/claude-api hillclimb"
+        },
+        {
+          "type": "text",
+          "text": "。Claude 会运用本文分享的指导方法，在分数攀升过程中检查是否存在过拟合，并检查评估本身是否存在缺陷，例如评分器把看似正确的答案判为错误，或测试框架出错；这些检查会在第一轮之前进行，也会在分数停滞不前时进行。"
+        }
+      ]
+    },
+    "b094": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "特别感谢 Misha Khalman 在技能开发方面的贡献。感谢 Misha Khalman、Michael Segner、Matt Bell、Matt Thanabalan 和 Punit Shah 提供的审阅、贡献和产品支持。"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
