@@ -1,0 +1,2660 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "claude-blog:getting-started-with-claude-code-mods",
+  "source": {
+    "canonical_url": "https://claude.dev/blog/getting-started-with-claude-code-mods/",
+    "site": "claude-blog",
+    "author": "Anthropic",
+    "published_at": "2026-10-01T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:06bfd429c6d2e47140fa9f9c13663ce36f3be11a34d08eb9874929336de739bb",
+    "fetched_at": "2026-10-09T02:25:44.401599+00:00",
+    "parser_version": "claude-blog.v1"
+  },
+  "content": {
+    "title": "Getting started with Claude Code mods",
+    "title_en": "Getting started with Claude Code mods",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "b001",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A mod is a small JavaScript or TypeScript file that runs inside your Claude Code session. It can watch what's happening, change what Claude Code does, or draw its own UI, in the terminal or the desktop app. You don't need to learn the API to try one. Run "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude"
+          },
+          {
+            "type": "text",
+            "text": ", then describe the mod you want. Allow hot reload when it asks, and the mod shows up when the turn ends."
+          }
+        ]
+      },
+      {
+        "id": "b002",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Claude Code already lets you change a lot about how it behaves: settings, permission rules, slash commands, skills and a status line. Mods go further: they can rewrite or replace what Claude Code does, and draw custom UI. Under the hood, mods are hooks that ship inside plugins, and each one sees every event in your session as it happens."
+          }
+        ]
+      },
+      {
+        "id": "b003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "That makes mods a way to fit Claude Code to how you work. You can add a readout you check all the time, put a guard in front of the commands that make you nervous, or build a review view for how you like to read changes."
+          }
+        ]
+      },
+      {
+        "id": "b004",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This guide builds one mod from an empty folder, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Token Weather"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", a live forecast of the context window drawn above the prompt. It's about 80 lines. Then it tours two larger mods, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Blast Radius"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Replay Theater"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", to show what else the API can do. The finished code for all three is in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "anthropics/claude-code-playground"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b005",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/eaee11951bbed827ef89ee535abfbbed7277b67a65044ea277ade9e9acd1d3b5.png",
+          "alt": "A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns."
+        }
+      },
+      {
+        "id": "b006",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Claude Code 2.1.287 or later."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Mods are on by default, so there's nothing to turn on. The API can change between releases. Each time Claude Code loads a mod, it writes the type declarations for your build into the mod's "
+          },
+          {
+            "type": "inline_code",
+            "text": ".claude-plugin/types/"
+          },
+          {
+            "type": "text",
+            "text": " folder, and those are the authority for your version."
+          }
+        ]
+      },
+      {
+        "id": "b007",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "HOW A MOD WORKS"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b008",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A mod is a Claude Code plugin whose behavior lives in a JavaScript or TypeScript module:"
+          }
+        ]
+      },
+      {
+        "id": "b012",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b009",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The folder is a normal plugin, with a "
+              },
+              {
+                "type": "inline_code",
+                "text": ".claude-plugin/plugin.json"
+              },
+              {
+                "type": "text",
+                "text": " manifest."
+              }
+            ]
+          },
+          {
+            "id": "b010",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "inline_code",
+                "text": "hooks/hooks.json"
+              },
+              {
+                "type": "text",
+                "text": " names one module under "
+              },
+              {
+                "type": "inline_code",
+                "text": "modules"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "b011",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The module exports "
+              },
+              {
+                "type": "inline_code",
+                "text": "register(on, options)"
+              },
+              {
+                "type": "text",
+                "text": ". Inside it, "
+              },
+              {
+                "type": "inline_code",
+                "text": "on(event, matcher?, hook)"
+              },
+              {
+                "type": "text",
+                "text": " adds a hook."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b013",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Every hook has the same shape:"
+          }
+        ]
+      },
+      {
+        "id": "b014",
+        "type": "code",
+        "attrs": {
+          "code": "on(\"tool.call\", { tool: \"Bash\" }, async ($, e, next) => {\n  // $    the mods API: ui, session, state, store, fs, process, clock, http, tool, command, model, ...\n  // e    this event's input, as plain data\n  // next passes e to the other plugins and then to Claude Code's own behavior\n  return next(e);\n});",
+          "language": ""
+        }
+      },
+      {
+        "id": "b015",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Hooks form a chain, like middleware. Yours runs, "
+          },
+          {
+            "type": "inline_code",
+            "text": "next(e)"
+          },
+          {
+            "type": "text",
+            "text": " hands the event to the next plugin, and at the bottom Claude Code does what it would have done anyway. A hook can do one of three things:"
+          }
+        ]
+      },
+      {
+        "id": "b016",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Move",
+            "How",
+            "Example"
+          ],
+          "rows": [
+            [
+              "Observe",
+              "const r = await next(e); /* look */ return r",
+              "Record every file edit. Take a reading after each turn."
+            ],
+            [
+              "Rewrite",
+              "return next({ ...e, command: safer })",
+              "Change what the rest of the chain sees."
+            ],
+            [
+              "Answer",
+              "return { deny: \"…\" } without calling next",
+              "Refuse a tool call. Serve a command or a tool yourself."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "b017",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The events cover tool calls, the prompt as submitted, turns starting and finishing, the session starting and ending, slash commands, and "
+          },
+          {
+            "type": "inline_code",
+            "text": "ui.render"
+          },
+          {
+            "type": "text",
+            "text": ": every piece of the interface as it's drawn. The module runs in a sandbox of its own, with no DOM and no Node, so everything outside it goes through "
+          },
+          {
+            "type": "inline_code",
+            "text": "$"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b018",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "How this differs from settings hooks."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " A settings hook runs a shell command for each event and passes JSON over stdin and stdout. A mod is loaded once and stays in the session. It can keep state, draw UI that updates as events happen, and call back into Claude Code: open a pane, run a process, register a slash command, or register a tool the model can call."
+          }
+        ]
+      },
+      {
+        "id": "b019",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Claude Code uses them itself."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Some of Claude Code's own features are built as mods, including AGENTS.md support and the "
+          },
+          {
+            "type": "inline_code",
+            "text": "/diff"
+          },
+          {
+            "type": "text",
+            "text": " pane beside the conversation. Their source, with tests, is in the public "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/claude-code"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "anthropics/claude-code"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " repository under "
+          },
+          {
+            "type": "inline_code",
+            "text": "mods/"
+          },
+          {
+            "type": "text",
+            "text": ", so you can read how the team builds them."
+          }
+        ]
+      },
+      {
+        "id": "b020",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "BUILD YOUR FIRST MOD: TOKEN WEATHER"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b021",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Token Weather reads how full the context window is after each turn and draws one line above the prompt: a weather icon, the percentage, the tokens used out of the window, a small chart of recent turns, and how much the last turn added."
+          }
+        ]
+      },
+      {
+        "id": "b022",
+        "type": "table",
+        "attrs": {
+          "headers": [
+            "Used",
+            "Forecast"
+          ],
+          "rows": [
+            [
+              "under 25%",
+              "☀ Clear"
+            ],
+            [
+              "25–49%",
+              "☁ Cloudy"
+            ],
+            [
+              "50–74%",
+              "☂ Showers"
+            ],
+            [
+              "75–89%",
+              "☇ Storm"
+            ],
+            [
+              "90% and up",
+              "↯ Compact soon"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "b023",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here it is in a real session. Each turn reads more files, and the band fills from ☀ Clear to ☂ Showers to ☇ Storm:"
+          }
+        ]
+      },
+      {
+        "id": "b024",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The shortcut: let Claude build it"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b025",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "You can skip the six steps. Claude Code knows how to write mods, so you can describe the one you want and let it do the work. Start a session with "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude"
+          },
+          {
+            "type": "text",
+            "text": " and paste the prompt below:"
+          }
+        ]
+      },
+      {
+        "id": "b026",
+        "type": "code",
+        "attrs": {
+          "code": "Make me a Claude Code mod called token-weather: a live forecast of my context window, shown in the band above the prompt.\n\nWhat it should show, on one line:\n- A weather icon and word for how full the context window is: under 25% ☀ Clear (yellow), 25–49% ☁ Cloudy (cyan), 50–74% ☂ Showers (blue), 75–89% ☇ Storm (magenta), 90% and up ↯ Compact soon (red).\n- The percentage used, then the tokens used out of the window, like \"134.4k / 200k\".\n- A small chart of the last 12 turns, drawn with ▁▂▃▄▅▆▇█.\n- How much the last turn added, like \"▲ +98.3k last turn\".\n\nIt should update after every turn.",
+          "language": ""
+        }
+      },
+      {
+        "id": "b027",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Claude asks once whether to turn on hot reloading for the session. Allow it, and the band appears above the prompt when Claude's turn ends. From then on, every change reloads in place, so you can keep asking for tweaks (\"make Storm start at 70%\", \"add the dollar cost at the end\") and watch the band change. The mod loads only in this session, and its folder is cleaned up later, so to keep it, copy the folder out and install it like any plugin ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://claude.dev/blog/getting-started-with-claude-code-mods/#step-6-share-it"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Step 6"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ")."
+          }
+        ]
+      },
+      {
+        "id": "b028",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Notice that the prompt only describes what you want to see. You don't need to know the API to write one. Claude Code's built-in guide for writing mods covers the how: where to keep state so it survives a reload, how to check the plugin with "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude plugin validate"
+          },
+          {
+            "type": "text",
+            "text": ", and which events to hook. Change the \"What it should show\" lines and it's your mod, not ours."
+          }
+        ]
+      },
+      {
+        "id": "b029",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If you'd rather see how it's put together first, or want to check what Claude wrote, read on."
+          }
+        ]
+      },
+      {
+        "id": "b030",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Step 1: Create the folder"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b031",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Check that your Claude Code is new enough:"
+          }
+        ]
+      },
+      {
+        "id": "b032",
+        "type": "code",
+        "attrs": {
+          "code": "claude --version   # 2.1.287 or later",
+          "language": ""
+        }
+      },
+      {
+        "id": "b033",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Create this layout:"
+          }
+        ]
+      },
+      {
+        "id": "b034",
+        "type": "code",
+        "attrs": {
+          "code": "token-weather/\n├── .claude-plugin/\n│   ├── plugin.json\n│   └── types/            (written by Claude Code when it loads the mod)\n├── hooks/\n│   ├── hooks.json\n│   └── token-weather.mjs\n├── types/\n│   └── index.d.ts        (added in step 3)\n└── tests/\n    └── token-weather.test.ts   (added in step 5)",
+          "language": ""
+        }
+      },
+      {
+        "id": "b035",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": ".claude-plugin/plugin.json"
+          },
+          {
+            "type": "text",
+            "text": " is a standard plugin manifest:"
+          }
+        ]
+      },
+      {
+        "id": "b036",
+        "type": "code",
+        "attrs": {
+          "code": "{\n  \"name\": \"token-weather\",\n  \"version\": \"0.1.0\",\n  \"description\": \"A live forecast of the context window, drawn above the prompt.\",\n  \"author\": { \"name\": \"You\" }\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b037",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "hooks/hooks.json"
+          },
+          {
+            "type": "text",
+            "text": " points at the module. A mod has exactly one:"
+          }
+        ]
+      },
+      {
+        "id": "b038",
+        "type": "code",
+        "attrs": {
+          "code": "{\n  \"modules\": [\"./token-weather.mjs\"]\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b039",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Step 2: Draw something"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b040",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The band directly above the prompt is a component called "
+          },
+          {
+            "type": "inline_code",
+            "text": "AbovePrompt"
+          },
+          {
+            "type": "text",
+            "text": ". Claude Code draws nothing there itself, so it's a good first target. Hook its "
+          },
+          {
+            "type": "inline_code",
+            "text": "ui.render"
+          },
+          {
+            "type": "text",
+            "text": " event and return a tree of elements:"
+          }
+        ]
+      },
+      {
+        "id": "b041",
+        "type": "code",
+        "attrs": {
+          "code": "// hooks/token-weather.mjs\nexport function register(on) {\n  on(\"ui.render\", { component: \"AbovePrompt\" }, ($, e, next) => {\n    const { Box, Text } = $.ui.resolve(e);\n    return Box({\n      paddingX: 1,\n      children: [Text({ color: \"yellow\", bold: true, children: \"☀  Clear skies\" })],\n    });\n  });\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b042",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The elements aren't globals. "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.ui.resolve(e)"
+          },
+          {
+            "type": "text",
+            "text": " returns the constructors for the surface being drawn, because each surface Claude Code draws on supports a slightly different set. JSX works too, with "
+          },
+          {
+            "type": "inline_code",
+            "text": "h"
+          },
+          {
+            "type": "text",
+            "text": " as the factory."
+          }
+        ]
+      },
+      {
+        "id": "b043",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Start a session with the plugin loaded:"
+          }
+        ]
+      },
+      {
+        "id": "b044",
+        "type": "code",
+        "attrs": {
+          "code": "claude --plugin-dir ./token-weather",
+          "language": ""
+        }
+      },
+      {
+        "id": "b045",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "\"☀ Clear skies\" appears above the prompt. Keep the session open. The folder is watched, so every save reloads the module in place, with no restart. That quick feedback loop is most of what makes mods fun to write."
+          }
+        ]
+      },
+      {
+        "id": "b046",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Tip:"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Once you know the shape, describe the next mod to Claude the way "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://claude.dev/blog/getting-started-with-claude-code-mods/#the-shortcut-let-claude-build-it"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the shortcut"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " does. It writes the plugin to a folder that hot-reloads in the same session."
+          }
+        ]
+      },
+      {
+        "id": "b047",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Step 3: Read real numbers and keep them in "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.state"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b048",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "$.session.usage()"
+          },
+          {
+            "type": "text",
+            "text": " returns the same figures as the status line. "
+          },
+          {
+            "type": "inline_code",
+            "text": "context.tokens"
+          },
+          {
+            "type": "text",
+            "text": " is the input the last response was answered over, "
+          },
+          {
+            "type": "inline_code",
+            "text": "context.window"
+          },
+          {
+            "type": "text",
+            "text": " is the model's window, and "
+          },
+          {
+            "type": "inline_code",
+            "text": "context.percent"
+          },
+          {
+            "type": "text",
+            "text": " is one over the other. The call is free: it only sends a token-count request if you ask for a "
+          },
+          {
+            "type": "inline_code",
+            "text": "breakdown"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b049",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Take a reading when the session starts and after every turn:"
+          }
+        ]
+      },
+      {
+        "id": "b050",
+        "type": "code",
+        "attrs": {
+          "code": "on(\"session.start\", async ($, e, next) => {\n  const result = await next(e);\n  await takeReading($);\n  return result;\n});\n\non(\"turn.complete\", async ($, e, next) => {\n  const result = await next(e);\n  if (!e.agentId) {\n    await takeReading($); // main-loop turns only, not subagents\n  }\n  return result;\n});",
+          "language": ""
+        }
+      },
+      {
+        "id": "b051",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Both hooks call "
+          },
+          {
+            "type": "inline_code",
+            "text": "next(e)"
+          },
+          {
+            "type": "text",
+            "text": " first and then observe. Neither one changes what happens."
+          }
+        ]
+      },
+      {
+        "id": "b052",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Where to keep the readings."
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " A module-level "
+          },
+          {
+            "type": "inline_code",
+            "text": "let readings = []"
+          },
+          {
+            "type": "text",
+            "text": " looks like the obvious choice, but a hot reload is a fresh load: "
+          },
+          {
+            "type": "inline_code",
+            "text": "register"
+          },
+          {
+            "type": "text",
+            "text": " runs again, "
+          },
+          {
+            "type": "inline_code",
+            "text": "session.start"
+          },
+          {
+            "type": "text",
+            "text": " fires again, and module variables start over. Put the history in "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.state"
+          },
+          {
+            "type": "text",
+            "text": " instead. It holds named values in the host for the whole session, and they survive reloads."
+          }
+        ]
+      },
+      {
+        "id": "b053",
+        "type": "code",
+        "attrs": {
+          "code": "// Held by the host, so the history survives a hot reload of this file.\nconst readings = { plugin: \"token-weather\", key: \"readings\" };\n\nasync function takeReading($) {\n  const { context } = await $.session.usage();\n  if (!context?.window) return;\n  const tokens = context.tokens ?? 0;\n  const percent = context.percent ?? Math.round((tokens / context.window) * 100);\n  const { value: history = [] } = await $.state.get(readings);\n  await $.state.set(readings, [...history, { tokens, window: context.window, percent }].slice(-HISTORY));\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b054",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A state value is declared in the plugin's "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "type contract"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which is a small "
+          },
+          {
+            "type": "inline_code",
+            "text": ".d.ts"
+          },
+          {
+            "type": "text",
+            "text": " file the manifest points to. Add "
+          },
+          {
+            "type": "inline_code",
+            "text": "types/index.d.ts"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "b055",
+        "type": "code",
+        "attrs": {
+          "code": "export type TokenWeatherReading = { tokens: number; window: number; percent: number };\n\ndeclare module \"claude-code\" {\n  interface PluginState {\n    \"token-weather\": { readings: TokenWeatherReading[] };\n  }\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b056",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then add "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"types\": \"./types/index.d.ts\""
+          },
+          {
+            "type": "text",
+            "text": " to "
+          },
+          {
+            "type": "inline_code",
+            "text": "plugin.json"
+          },
+          {
+            "type": "text",
+            "text": ". If you skip this step, "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude plugin validate"
+          },
+          {
+            "type": "text",
+            "text": " stops you with an error that names the fix: "
+          },
+          {
+            "type": "inline_code",
+            "text": "token-weather.readings is not declared: the manifest's types contract must name it in interface PluginState { … }"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b057",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In return, you get redraws for free. A "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.state.get"
+          },
+          {
+            "type": "text",
+            "text": " made while a render hook runs subscribes that drawing, so every later "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.state.set"
+          },
+          {
+            "type": "text",
+            "text": " redraws the band. You never call "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.ui.invalidate"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b058",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Step 4: Draw the forecast"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b059",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here is the whole module:"
+          }
+        ]
+      },
+      {
+        "id": "b060",
+        "type": "code",
+        "attrs": {
+          "code": "// Token Weather: a live forecast of the context window, above the prompt.\n\nconst HISTORY = 12;\nconst BARS = \"▁▂▃▄▅▆▇█\";\nconst FORECAST = [\n  { upTo: 25, icon: \"☀\", word: \"Clear\", color: \"yellow\" },\n  { upTo: 50, icon: \"☁\", word: \"Cloudy\", color: \"cyan\" },\n  { upTo: 75, icon: \"☂\", word: \"Showers\", color: \"blue\" },\n  { upTo: 90, icon: \"☇\", word: \"Storm\", color: \"magenta\" },\n  { upTo: Infinity, icon: \"↯\", word: \"Compact soon\", color: \"red\" },\n];\n\n// Held by the host, so the history survives a hot reload of this file.\nconst readings = { plugin: \"token-weather\", key: \"readings\" };\n\nexport function register(on) {\n  on(\"session.start\", async ($, e, next) => {\n    const result = await next(e);\n    await takeReading($);\n    return result;\n  });\n\n  on(\"turn.complete\", async ($, e, next) => {\n    const result = await next(e);\n    if (!e.agentId) {\n      await takeReading($); // main-loop turns only, not subagents\n    }\n    return result;\n  });\n\n  on(\"ui.render\", { component: \"AbovePrompt\" }, async ($, e, next) => {\n    const { value: history = [] } = await $.state.get(readings);\n    if (e.props.hasSurvey || history.length === 0) {\n      return next(e);\n    }\n    const { Box, Text } = $.ui.resolve(e);\n    return band(Box, Text, history, e.props.bodyColumns);\n  });\n}\n\nasync function takeReading($) {\n  const { context } = await $.session.usage();\n  if (!context?.window) return;\n  const tokens = context.tokens ?? 0;\n  const percent = context.percent ?? Math.round((tokens / context.window) * 100);\n  const { value: history = [] } = await $.state.get(readings);\n  await $.state.set(readings, [...history, { tokens, window: context.window, percent }].slice(-HISTORY));\n}\n\nfunction band(Box, Text, history, columns) {\n  const now = history[history.length - 1];\n  const f = FORECAST.find((b) => now.percent < b.upTo);\n  const parts = [\n    Text({ color: f.color, bold: true, children: `${f.icon}  ${f.word}` }),\n    Text({ children: `  ${now.percent}% of context` }),\n    Text({ dimColor: true, children: `  ${short(now.tokens)} / ${short(now.window)}` }),\n  ];\n  if (columns >= 60) {\n    parts.push(Text({ dimColor: true, children: \"   last turns \" }));\n    parts.push(Text({ color: f.color, children: sparkline(history) }));\n    if (history.length > 1) {\n      parts.push(Text({ dimColor: true, children: trend(history) }));\n    }\n  }\n  return Box({ flexDirection: \"row\", paddingX: 1, children: parts });\n}\n\nfunction sparkline(history) {\n  const top = Math.max(...history.map((r) => r.tokens), 1);\n  return history.map((r) => BARS[Math.floor((r.tokens / top) * (BARS.length - 1))]).join(\"\");\n}\n\nfunction trend(history) {\n  const delta = history[history.length - 1].tokens - history[history.length - 2].tokens;\n  if (delta === 0) return \"  steady\";\n  return delta > 0 ? `  ▲ +${short(delta)} last turn` : `  ▼ ${short(-delta)} last turn`;\n}\n\nfunction short(n) {\n  if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;\n  if (n >= 1_000) return `${+(n / 1_000).toFixed(1)}k`;\n  return String(n);\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b061",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Three details are worth copying into your own mods:"
+          }
+        ]
+      },
+      {
+        "id": "b065",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b062",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The component's props are on "
+                  },
+                  {
+                    "type": "inline_code",
+                    "text": "e.props"
+                  },
+                  {
+                    "type": "text",
+                    "text": "."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_code",
+                "text": "hasSurvey"
+              },
+              {
+                "type": "text",
+                "text": " tells you a survey wants the band, so the hook yields to it with "
+              },
+              {
+                "type": "inline_code",
+                "text": "next(e)"
+              },
+              {
+                "type": "text",
+                "text": ". "
+              },
+              {
+                "type": "inline_code",
+                "text": "bodyColumns"
+              },
+              {
+                "type": "text",
+                "text": " is the band's real width, which is narrower than the terminal while a pane is docked beside the transcript. Size the tree to it. Only "
+              },
+              {
+                "type": "inline_code",
+                "text": "e.component"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "e.surface"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "e.requestId"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_code",
+                "text": "e.viewport"
+              },
+              {
+                "type": "text",
+                "text": " sit at the top level of "
+              },
+              {
+                "type": "inline_code",
+                "text": "e"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "b063",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Pass when you have nothing to draw."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Returning "
+              },
+              {
+                "type": "inline_code",
+                "text": "next(e)"
+              },
+              {
+                "type": "text",
+                "text": " gives the band back to Claude Code and to other mods."
+              }
+            ]
+          },
+          {
+            "id": "b064",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Use single-width symbols, not emoji."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " ☀ ☁ ☂ ☇ ↯ line up in every terminal font."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b066",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Save the file and the running session picks it up. After a few turns that read large files, the band moves from Clear to Showers to Storm, as in the recording at the start of this section."
+          }
+        ]
+      },
+      {
+        "id": "b067",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Step 5: Validate and test"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b068",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "claude plugin validate"
+          },
+          {
+            "type": "text",
+            "text": " reads the manifest and the module's source the same way Claude Code will, and reports what the module hooks and calls:"
+          }
+        ]
+      },
+      {
+        "id": "b069",
+        "type": "code",
+        "attrs": {
+          "code": "$ claude plugin validate ./token-weather\n  > types ./types/index.d.ts declares state: token-weather.readings\n  > ./token-weather.mjs hooks: session.start, turn.complete, ui.render{component=AbovePrompt}\n  > ./token-weather.mjs calls: $.session.usage (via takeReading), $.state.get, $.state.set (via takeReading), $.ui.resolve\n  > ./token-weather.mjs state writes: token-weather.readings\n  > ./token-weather.mjs state reads: token-weather.readings\n√ Validation passed",
+          "language": ""
+        }
+      },
+      {
+        "id": "b070",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "claude plugin test"
+          },
+          {
+            "type": "text",
+            "text": " runs the plugin's "
+          },
+          {
+            "type": "inline_code",
+            "text": "*.test.ts"
+          },
+          {
+            "type": "text",
+            "text": " files against the real Claude Code runtime. Hooks that a test registers with "
+          },
+          {
+            "type": "inline_code",
+            "text": "on"
+          },
+          {
+            "type": "text",
+            "text": " run "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "after"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " the mod in the chain and stub what Claude Code would answer, so you control exactly what "
+          },
+          {
+            "type": "inline_code",
+            "text": "$.session.usage()"
+          },
+          {
+            "type": "text",
+            "text": " returns:"
+          }
+        ]
+      },
+      {
+        "id": "b071",
+        "type": "code",
+        "attrs": {
+          "code": "// tests/token-weather.test.ts\nimport { describe, expect, test } from \"claude-code/testing\";\n\ndescribe(\"token-weather\", () => {\n  test(\"the band follows the context window\", async ($, on) => {\n    // Hooks registered here run after the mod and stub what Claude Code would answer.\n    let tokens = 36_100;\n    on(\"session.start\", ($, e) => ({ cwd: e.cwd }));\n    on(\"session.usage\", () => ({\n      value: { startedAt: 0, rateLimits: [], context: { tokens, window: 200_000, percent: Math.round(tokens / 2_000) } },\n    }));\n    on(\"turn.complete\", () => ({ text: \"\" }));\n\n    await $.session.start({ surface: \"terminal\", isInteractive: true, cwd: \"/work\" } as any);\n    const ui = await $.ui.mount({\n      plugin: \"token-weather\",\n      surface: \"terminal\",\n      component: \"AbovePrompt\",\n      props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120 },\n    } as any);\n    expect(await ui.find({ type: \"Text\", text: /Clear/ })).toBeDefined();\n\n    tokens = 134_400;\n    await $.turn.complete({ reason: \"answer\", answer: \"ok\", durationMs: 1 } as any);\n    expect(await ui.find({ type: \"Text\", text: /Showers/ })).toBeDefined();\n    expect(await ui.find({ type: \"Text\", text: /67% of context/ })).toBeDefined();\n    expect(await ui.find({ type: \"Text\", text: /▲ \\+98\\.3k last turn/ })).toBeDefined();\n    await ui.unmount();\n  });\n});",
+          "language": ""
+        }
+      },
+      {
+        "id": "b072",
+        "type": "code",
+        "attrs": {
+          "code": "$ claude plugin test ./token-weather\n(pass) token-weather > the band follows the context window\n 1 pass\n 0 fail",
+          "language": ""
+        }
+      },
+      {
+        "id": "b073",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The test also checks the redraw behavior from step 3. The band updates after "
+          },
+          {
+            "type": "inline_code",
+            "text": "turn.complete"
+          },
+          {
+            "type": "text",
+            "text": " without the mod ever asking for a redraw."
+          }
+        ]
+      },
+      {
+        "id": "b074",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Step 6: Share it"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b075",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A mod is a plugin, so it ships the same way. Put it in a marketplace, which can be as simple as a folder with a "
+          },
+          {
+            "type": "inline_code",
+            "text": ".claude-plugin/marketplace.json"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "b076",
+        "type": "code",
+        "attrs": {
+          "code": "{\n  \"name\": \"my-mods\",\n  \"owner\": { \"name\": \"You\" },\n  \"plugins\": [{ \"name\": \"token-weather\", \"source\": \"./token-weather\" }]\n}",
+          "language": ""
+        }
+      },
+      {
+        "id": "b077",
+        "type": "code",
+        "attrs": {
+          "code": "claude plugin marketplace add ./my-mods\nclaude plugin install token-weather@my-mods --scope user",
+          "language": ""
+        }
+      },
+      {
+        "id": "b078",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To compare your version with a finished one, see "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/token-weather"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "the complete Token Weather mod"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in anthropics/claude-code-playground."
+          }
+        ]
+      },
+      {
+        "id": "b079",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SHARING YOUR MOD"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b080",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A mod is a Claude Code plugin, so you share it the same way as any other plugin, and there's nothing new to learn. Put the mod in a GitHub repo with a marketplace file and that repo becomes your marketplace. Anyone can install from it, and you can update it with a normal push."
+          }
+        ]
+      },
+      {
+        "id": "b081",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Installing takes three commands in Claude Code:"
+          }
+        ]
+      },
+      {
+        "id": "b082",
+        "type": "code",
+        "attrs": {
+          "code": "/plugin marketplace add your-org/my-mods\n/plugin install token-weather@my-mods\n/reload-plugins",
+          "language": ""
+        }
+      },
+      {
+        "id": "b083",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The mod starts when you reload. If it doesn't show up, restart Claude Code."
+          }
+        ]
+      },
+      {
+        "id": "b084",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A mod is code that runs inside Claude Code on your machine, with the same access Claude Code has, and it's written by its publisher, not Anthropic. So install mods the way you'd install a package: read the repo first and only install from people you trust. Nothing gets installed until you run the command."
+          }
+        ]
+      },
+      {
+        "id": "b085",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The Claude directory accepts plugins that include mods, and you can submit yours at "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://claude.ai/directory/manage"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "claude.ai/directory/manage"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", so people can find it without a link from you."
+          }
+        ]
+      },
+      {
+        "id": "b086",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "TWO MORE MODS"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b087",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Token Weather only watches and draws. The next two mods step into events, open panes, and take input."
+          }
+        ]
+      },
+      {
+        "id": "b088",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The complete code for both is in anthropics/claude-code-playground: "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/blast-radius"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Blast Radius"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/replay-theater"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Replay Theater"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", each with a README that explains how it was built."
+          }
+        ]
+      },
+      {
+        "id": "b089",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Blast Radius: see what a risky command would change before it runs"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b090",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When Claude calls Bash with "
+          },
+          {
+            "type": "inline_code",
+            "text": "rm -rf"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_code",
+            "text": "git reset --hard"
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "inline_code",
+            "text": "git clean"
+          },
+          {
+            "type": "text",
+            "text": ", a force push, or a database migration, Blast Radius holds the call. It works out what the command would touch and opens a pane with "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Proceed"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Cancel"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Press "
+          },
+          {
+            "type": "inline_code",
+            "text": "2"
+          },
+          {
+            "type": "text",
+            "text": " and Claude gets a refusal with the reason. Press "
+          },
+          {
+            "type": "inline_code",
+            "text": "1"
+          },
+          {
+            "type": "text",
+            "text": " and the command runs as written."
+          }
+        ]
+      },
+      {
+        "id": "b091",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It uses three hooks: "
+          },
+          {
+            "type": "inline_code",
+            "text": "tool.call"
+          },
+          {
+            "type": "text",
+            "text": " on Bash, and "
+          },
+          {
+            "type": "inline_code",
+            "text": "ui.render"
+          },
+          {
+            "type": "text",
+            "text": " on "
+          },
+          {
+            "type": "inline_code",
+            "text": "Pane"
+          },
+          {
+            "type": "text",
+            "text": " and on "
+          },
+          {
+            "type": "inline_code",
+            "text": "AbovePrompt"
+          },
+          {
+            "type": "text",
+            "text": ". The core of it is the \"answer\" move from the table above:"
+          }
+        ]
+      },
+      {
+        "id": "b092",
+        "type": "code",
+        "attrs": {
+          "code": "on(\"tool.call\", { tool: \"Bash\" }, async ($, e, next) => {\n  const risk = classify(String(e.command ?? \"\"));\n  if (risk === null) return next(e);                 // everything else runs as normal\n\n  const report = await measure($, risk, await $.session.cwd());  // git status, git clean -n, du, ...\n  held = { command: e.command, risk, report, decision: null };\n  const opened = await $.ui.open({ id: \"blast-radius\", title: \"Blast Radius\", focus: true });\n  if (!opened.isPlaced) held.where = \"band\";         // too narrow for a pane: draw above the prompt\n\n  while (held.decision === null && !next.signal.aborted) {\n    await $.process.run([\"sleep\", \"0.25\"]);          // time inside $ calls doesn't count against the hook's time limit\n  }\n  if (held.decision === \"proceed\") return next(e);   // let it run\n  return { deny: `Blast Radius held this command: the user pressed Cancel. It would have: ${report.summary}.` };\n});",
+          "language": ""
+        }
+      },
+      {
+        "id": "b093",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What it teaches:"
+          }
+        ]
+      },
+      {
+        "id": "b098",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b094",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "inline_code",
+                    "text": "$.process.run"
+                  },
+                  {
+                    "type": "text",
+                    "text": " for dry runs."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The report comes from the tools' own commands: "
+              },
+              {
+                "type": "inline_code",
+                "text": "git status --porcelain"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "git clean -n"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "git log HEAD..origin/main"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "showmigrations"
+              },
+              {
+                "type": "text",
+                "text": ". Arguments go in as an argv array, so nothing in a path is run as shell code."
+              }
+            ]
+          },
+          {
+            "id": "b095",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Holding a call."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " A hook gets 10 seconds of its own time per dispatch, but time spent waiting inside a "
+              },
+              {
+                "type": "inline_code",
+                "text": "$"
+              },
+              {
+                "type": "text",
+                "text": " call doesn't count. The loop waits on short "
+              },
+              {
+                "type": "inline_code",
+                "text": "sleep"
+              },
+              {
+                "type": "text",
+                "text": " processes until a button's "
+              },
+              {
+                "type": "inline_code",
+                "text": "onPress"
+              },
+              {
+                "type": "text",
+                "text": " sets the decision, and it gives up when "
+              },
+              {
+                "type": "inline_code",
+                "text": "next.signal"
+              },
+              {
+                "type": "text",
+                "text": " aborts (you pressed Esc)."
+              }
+            ]
+          },
+          {
+            "id": "b096",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Buttons with hotkeys."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_code",
+                "text": "Button({ label: \"Proceed\", hotkey: \"1\", onPress })"
+              },
+              {
+                "type": "text",
+                "text": " works by click, by Tab and Enter, or by the digit."
+              }
+            ]
+          },
+          {
+            "id": "b097",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Degrade to the band."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The terminal docks a pane beside the transcript when it's wide enough. When "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.ui.open"
+              },
+              {
+                "type": "text",
+                "text": " answers "
+              },
+              {
+                "type": "inline_code",
+                "text": "isPlaced: false"
+              },
+              {
+                "type": "text",
+                "text": ", the same report is drawn above the prompt:"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b099",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/ac53d89fc2dbe36603c30639b12fdc7edcfba5072b9b417e656a65a2d196cc37.png",
+          "alt": "A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices."
+        }
+      },
+      {
+        "id": "b100",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It's a safety net, not a permission system. It reads the command text, so "
+          },
+          {
+            "type": "inline_code",
+            "text": "$(…)"
+          },
+          {
+            "type": "text",
+            "text": ", aliases and scripts that call "
+          },
+          {
+            "type": "inline_code",
+            "text": "rm"
+          },
+          {
+            "type": "text",
+            "text": " get past it. Use permission rules for a hard block."
+          }
+        ]
+      },
+      {
+        "id": "b101",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Replay Theater: step through the last turn's edits"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b102",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "While a turn runs, Replay Theater records every Edit and Write call: the file, plus the text before and after. When the turn ends, a hint appears above the prompt. Press "
+          },
+          {
+            "type": "inline_code",
+            "text": "r"
+          },
+          {
+            "type": "text",
+            "text": " (or type "
+          },
+          {
+            "type": "inline_code",
+            "text": "/replay"
+          },
+          {
+            "type": "text",
+            "text": ") and a pane walks through the edits one diff at a time, with a strip of numbered steps and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Prev"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Next"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Close"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " buttons."
+          }
+        ]
+      },
+      {
+        "id": "b103",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "It never blocks or changes an edit. It observes:"
+          }
+        ]
+      },
+      {
+        "id": "b104",
+        "type": "code",
+        "attrs": {
+          "code": "on(\"tool.call\", async ($, e, next) => {\n  if (EDIT_TOOLS.has(e.tool)) state.pending.push(...(await stepsFor($, e)));  // old/new text → diff\n  return next(e);                                                              // the edit runs untouched\n});\n\non(\"turn.start\", ($, e, next) => { if (!e.agentId) state.pending = []; return next(e); });\n\non(\"turn.complete\", async ($, e, next) => {\n  const r = await next(e);\n  if (!e.agentId && state.pending.length) state.replay = state.pending;       // one replay per turn\n  return r;\n});\n\non(\"session.start\", async ($, e, next) => {\n  const r = await next(e);\n  await $.command.register({ name: \"replay\", description: \"Step through the last turn's file edits\" });\n  return r;\n});\non(\"command.run\", { command: \"replay\" }, async ($, e) => ({ text: (await openReplay($)) ? \"Replaying\" : \"No edits\" }));",
+          "language": ""
+        }
+      },
+      {
+        "id": "b105",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "What it teaches:"
+          }
+        ]
+      },
+      {
+        "id": "b110",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b106",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Pairing events."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_code",
+                "text": "turn.start"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_code",
+                "text": "turn.complete"
+              },
+              {
+                "type": "text",
+                "text": " bracket the edits into one replay per turn, and "
+              },
+              {
+                "type": "inline_code",
+                "text": "e.agentId"
+              },
+              {
+                "type": "text",
+                "text": " keeps subagent turns out of the grouping."
+              }
+            ]
+          },
+          {
+            "id": "b107",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Registering a slash command."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.command.register"
+              },
+              {
+                "type": "text",
+                "text": " in "
+              },
+              {
+                "type": "inline_code",
+                "text": "session.start"
+              },
+              {
+                "type": "text",
+                "text": ", then answer it on "
+              },
+              {
+                "type": "inline_code",
+                "text": "command.run"
+              },
+              {
+                "type": "text",
+                "text": "."
+              }
+            ]
+          },
+          {
+            "id": "b108",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Reading files."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " For a Write, "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.fs.read"
+              },
+              {
+                "type": "text",
+                "text": " gets the old contents just before the write lands, so the diff is real."
+              }
+            ]
+          },
+          {
+            "id": "b109",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Placement is the surface's job."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " In fullscreen the pane docks on the right. At 80 columns it opens inline above the prompt. The mod draws the same tree either way."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b111",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/bb2b908077c752f4e43672b5d5e7b0d262756bf27303d0884634cd142487f996.png",
+          "alt": "A tall terminal window with a magenta-bordered box above the prompt: a numbered step strip, the file greet.js, a one-line diff, and Prev, Next and Close buttons."
+        }
+      },
+      {
+        "id": "b112",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "FOUR HABITS WORTH KEEPING"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b117",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b113",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Lean on the types Claude Code writes for you."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Each time it loads your mod, Claude Code writes the declarations for your build into the mod's "
+              },
+              {
+                "type": "inline_code",
+                "text": ".claude-plugin/types/"
+              },
+              {
+                "type": "text",
+                "text": " folder, so your editor and "
+              },
+              {
+                "type": "inline_code",
+                "text": "tsc -p"
+              },
+              {
+                "type": "text",
+                "text": " work with no extra step. They're the reference for every event, every method on "
+              },
+              {
+                "type": "inline_code",
+                "text": "$"
+              },
+              {
+                "type": "text",
+                "text": " and every element's props."
+              }
+            ]
+          },
+          {
+            "id": "b114",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Read props from "
+                  },
+                  {
+                    "type": "inline_code",
+                    "text": "e.props"
+                  },
+                  {
+                    "type": "text",
+                    "text": "."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " "
+              },
+              {
+                "type": "inline_code",
+                "text": "hasSurvey"
+              },
+              {
+                "type": "text",
+                "text": ", "
+              },
+              {
+                "type": "inline_code",
+                "text": "bodyColumns"
+              },
+              {
+                "type": "text",
+                "text": " and the rest live there, not on "
+              },
+              {
+                "type": "inline_code",
+                "text": "e"
+              },
+              {
+                "type": "text",
+                "text": " itself."
+              }
+            ]
+          },
+          {
+            "id": "b115",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Plan for hot reload."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Every save runs "
+              },
+              {
+                "type": "inline_code",
+                "text": "register"
+              },
+              {
+                "type": "text",
+                "text": " and "
+              },
+              {
+                "type": "inline_code",
+                "text": "session.start"
+              },
+              {
+                "type": "text",
+                "text": " again, so keep data in "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.state"
+              },
+              {
+                "type": "text",
+                "text": ", not in module variables."
+              }
+            ]
+          },
+          {
+            "id": "b116",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "When a drawing doesn't show, read the log."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Run "
+              },
+              {
+                "type": "inline_code",
+                "text": "claude --debug"
+              },
+              {
+                "type": "text",
+                "text": " and look for a line saying a hook returned a tree that does not validate."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b118",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "WHAT WILL YOU MOD?"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b119",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The three mods here came from one question each: "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "how full is my context?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "what is this command about to delete?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "what did Claude just change?"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " Your questions will be different, and that's the point. Some ideas to start from:"
+          }
+        ]
+      },
+      {
+        "id": "b125",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b120",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A cost or rate-limit meter from "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.session.usage()"
+              },
+              {
+                "type": "text",
+                "text": ", as a status line with "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.ui.status"
+              }
+            ]
+          },
+          {
+            "id": "b121",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A "
+              },
+              {
+                "type": "inline_code",
+                "text": "prompt.submit"
+              },
+              {
+                "type": "text",
+                "text": " hook that adds your team's conventions to every prompt"
+              }
+            ]
+          },
+          {
+            "id": "b122",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A pane that lists the files Claude read this session, as a live map of what it has seen"
+              }
+            ]
+          },
+          {
+            "id": "b123",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A focus timer that sends a toast with "
+              },
+              {
+                "type": "inline_code",
+                "text": "$.ui.toast"
+              },
+              {
+                "type": "text",
+                "text": " when a long turn finishes"
+              }
+            ]
+          },
+          {
+            "id": "b124",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A "
+              },
+              {
+                "type": "inline_code",
+                "text": "tool.call"
+              },
+              {
+                "type": "text",
+                "text": " guard tuned to your stack, such as production kubectl contexts or "
+              },
+              {
+                "type": "inline_code",
+                "text": "terraform apply"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b126",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Share what you build"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b127",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Made a mod you now use every day? Post it on X or LinkedIn with a GIF or a screenshot of it running, so other developers can see what's possible. Put the plugin in a marketplace ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://claude.dev/blog/getting-started-with-claude-code-mods/#sharing-your-mod"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Sharing your mod"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and link to it, so anyone who likes it can install it with three commands."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "getting-started-with-claude-code-mods",
+    "source_slug": "getting-started-with-claude-code-mods",
+    "source_profile": "claude-blog.v1",
+    "source_counts": {
+      "heading": 16,
+      "image": 3,
+      "table": 2,
+      "code": 20
+    },
+    "categories": [],
+    "intro_paragraph_count": 5
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/eaee11951bbed827ef89ee535abfbbed7277b67a65044ea277ade9e9acd1d3b5.png",
+      "alt": "A one-line terminal band cycling through three forecasts, a yellow sun for Clear, a blue umbrella for Showers and a pink lightning bolt for Storm, each with its token count out of 200k and a small bar chart of recent turns."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/ac53d89fc2dbe36603c30639b12fdc7edcfba5072b9b417e656a65a2d196cc37.png",
+      "alt": "A terminal with no side pane: a yellow-bordered box above the prompt shows the command, the two files with uncommitted changes it would discard, and numbered Proceed and Cancel choices."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/bb2b908077c752f4e43672b5d5e7b0d262756bf27303d0884634cd142487f996.png",
+      "alt": "A tall terminal window with a magenta-bordered box above the prompt: a numbered step strip, the file greet.js, a one-line diff, and Prev, Next and Close buttons."
+    }
+  ]
+}

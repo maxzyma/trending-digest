@@ -1,0 +1,2222 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:06bfd429c6d2e47140fa9f9c13663ce36f3be11a34d08eb9874929336de739bb",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "claude-blog-zh.v1",
+  "title": "Claude Code mods 入门",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "mod 是一个在 Claude Code 会话中运行的小型 JavaScript 或 TypeScript 文件。它可以观察正在发生的事情、改变 Claude Code 的行为，或者在终端或桌面应用中绘制自己的 UI。试用 mod 并不需要先学习 API。运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude"
+        },
+        {
+          "type": "text",
+          "text": "，然后描述你想要的 mod。在系统询问时允许热重载，mod 就会在本轮对话结束时出现。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude Code 已经允许你对其行为进行大量定制：设置、权限规则、斜杠命令、技能以及状态栏。Mods 则更进一步：它们可以改写或替换 Claude Code 的行为，并绘制自定义 UI。在底层，mods 是随插件一同发布的 hooks，每个 mod 都能实时看到你会话中发生的每一个事件。"
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这使得 mods 成为让 Claude Code 适配你工作方式的一种途径。你可以添加一个自己时常查看的状态读数，在那些让你不放心的命令前设置一道防护，或者按照你喜欢的阅读变更的方式，构建一个审查视图。"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本指南将从一个空文件夹开始构建一个 mod："
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Token Weather"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，它会在提示符上方绘制上下文窗口的实时预报，代码约 80 行。随后，我们会浏览两个更大的 mod："
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Blast Radius"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Replay Theater"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以展示该 API 还能做些什么。这三个 mod 的完整代码都在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "anthropics/claude-code-playground"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中。"
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude Code 2.1.287 或更高版本。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Mods 默认处于启用状态，因此无需手动开启。API 可能会在不同版本之间发生变化。每次 Claude Code 加载 mod 时，都会将适用于你当前构建版本的类型声明写入该 mod 的 "
+        },
+        {
+          "type": "inline_code",
+          "text": ".claude-plugin/types/"
+        },
+        {
+          "type": "text",
+          "text": " 文件夹中，这些声明是你所用版本的权威依据。"
+        }
+      ]
+    },
+    "b007": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "模组的工作原理"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "mod 是一种 Claude Code 插件，其行为由一个 JavaScript 或 TypeScript 模块实现："
+        }
+      ]
+    },
+    "b009": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该文件夹是一个普通插件，带有 "
+        },
+        {
+          "type": "inline_code",
+          "text": ".claude-plugin/plugin.json"
+        },
+        {
+          "type": "text",
+          "text": " 清单文件。"
+        }
+      ]
+    },
+    "b010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "hooks/hooks.json"
+        },
+        {
+          "type": "text",
+          "text": " 指定 "
+        },
+        {
+          "type": "inline_code",
+          "text": "modules"
+        },
+        {
+          "type": "text",
+          "text": " 下的一个模块。"
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该模块导出 "
+        },
+        {
+          "type": "inline_code",
+          "text": "register(on, options)"
+        },
+        {
+          "type": "text",
+          "text": "。在其内部，"
+        },
+        {
+          "type": "inline_code",
+          "text": "on(event, matcher?, hook)"
+        },
+        {
+          "type": "text",
+          "text": " 添加了一个钩子。"
+        }
+      ]
+    },
+    "b013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每个 hook 的结构都相同："
+        }
+      ]
+    },
+    "b015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "钩子像中间件一样构成一条链。你的钩子先运行，"
+        },
+        {
+          "type": "inline_code",
+          "text": "next(e)"
+        },
+        {
+          "type": "text",
+          "text": " 将事件交给下一个插件，到了链的最底端，Claude Code 会执行它原本就会执行的操作。一个钩子可以做以下三件事之一："
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "移动",
+          "如何",
+          "示例"
+        ],
+        "rows": [
+          [
+            "观察",
+            "const r = await next(e); /* 查看 */ return r",
+            "记录每一次文件编辑。每轮结束后读取一次状态。"
+          ],
+          [
+            "重写",
+            "return next({ ...e, command: safer })",
+            "改变链中后续环节所看到的内容。"
+          ],
+          [
+            "答案",
+            "返回 { deny: \"…\" }，且不调用 next",
+            "拒绝某次工具调用。自行处理某个命令或工具。"
+          ]
+        ]
+      }
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这些事件涵盖工具调用、提交时的提示词、轮次的开始与结束、会话的开始与结束、斜杠命令，以及 "
+        },
+        {
+          "type": "inline_code",
+          "text": "ui.render"
+        },
+        {
+          "type": "text",
+          "text": "：即界面绘制出来的每一个部分。该模块运行在自己独立的沙箱中，没有 DOM，也没有 Node，因此与外部的一切交互都要通过 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$"
+        },
+        {
+          "type": "text",
+          "text": " 进行。"
+        }
+      ]
+    },
+    "b018": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "这与 settings hooks 有何不同。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "settings hook 会针对每个事件运行一条 shell 命令，并通过 stdin 和 stdout 传递 JSON。mod 则只加载一次，并在整个会话中持续存在。它可以保持状态，绘制随事件发生而更新的 UI，还能回调 Claude Code：打开一个窗格、运行一个进程、注册一个斜杠命令，或者注册一个可供模型调用的工具。"
+        }
+      ]
+    },
+    "b019": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude Code 自身也在使用它们。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Claude Code 自己的一些功能就是以 mod 的形式构建的，包括 AGENTS.md 支持以及对话旁边的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/diff"
+        },
+        {
+          "type": "text",
+          "text": " 窗格。它们的源代码连同测试都位于公开的 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/claude-code"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "anthropics/claude-code"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 仓库的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "mods/"
+        },
+        {
+          "type": "text",
+          "text": " 下，你可以借此了解团队是如何构建它们的。"
+        }
+      ]
+    },
+    "b020": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "构建你的第一个模组：TOKEN WEATHER"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Token Weather 会在每轮对话结束后读取上下文窗口的占用情况，并在提示符上方绘制一行信息：一个天气图标、占用百分比、已用 token 数与窗口总量之比、最近几轮的小型图表，以及上一轮新增了多少 token。"
+        }
+      ]
+    },
+    "b022": {
+      "status": "translated",
+      "inlines": [],
+      "attrs": {
+        "headers": [
+          "已使用",
+          "预测"
+        ],
+        "rows": [
+          [
+            "低于 25%",
+            "☀ 晴"
+          ],
+          [
+            "25–49%",
+            "☁ 多云"
+          ],
+          [
+            "50–74%",
+            "☂ 阵雨"
+          ],
+          [
+            "75–89%",
+            "☇ 风暴"
+          ],
+          [
+            "90% 及以上",
+            "↯ 即将压缩"
+          ]
+        ]
+      }
+    },
+    "b023": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "下面是它在真实会话中的样子。每一轮都会读取更多文件，色带随之从 ☀ 晴朗变为 ☂ 阵雨，再变为 ☇ 风暴："
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "捷径：让 Claude 来构建"
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你可以跳过这六个步骤。Claude Code 知道如何编写 mod，所以你只需描述你想要的 mod，让它来完成工作。用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude"
+        },
+        {
+          "type": "text",
+          "text": " 启动一个会话，然后粘贴下面的提示词："
+        }
+      ]
+    },
+    "b027": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude 会询问一次是否为本次会话开启热重载。允许后，当 Claude 的回合结束时，状态条会出现在提示符上方。从那以后，每次改动都会就地重新加载，因此你可以继续提出微调要求（“让 Storm 从 70% 开始”“在末尾加上美元花费”），并看着状态条随之变化。该 mod 只在本次会话中加载，其文件夹稍后会被清理；如果想保留它，请把文件夹复制出来，然后像安装任何插件一样安装它（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.dev/blog/getting-started-with-claude-code-mods/#step-6-share-it"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "第 6 步"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）。"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "请注意，这个提示词只描述了你希望看到的内容。你不需要了解 API 就能写出它。Claude Code 内置的 mod 编写指南会负责具体做法：把状态保存在哪里才能在重新加载后保留下来，如何用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude plugin validate"
+        },
+        {
+          "type": "text",
+          "text": " 检查插件，以及应该挂接哪些事件。修改“What it should show”那几行，它就成了你自己的 mod，而不是我们的。"
+        }
+      ]
+    },
+    "b029": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果你想先了解它是如何搭建起来的，或者想检查 Claude 写了什么，请继续阅读。"
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第 1 步：创建文件夹"
+        }
+      ]
+    },
+    "b031": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "检查你的 Claude Code 版本是否足够新："
+        }
+      ]
+    },
+    "b033": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "创建如下布局："
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": ".claude-plugin/plugin.json"
+        },
+        {
+          "type": "text",
+          "text": " 是一个标准的插件清单："
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "hooks/hooks.json"
+        },
+        {
+          "type": "text",
+          "text": " 指向该模块。一个 mod 有且仅有一个："
+        }
+      ]
+    },
+    "b039": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第 2 步：画点东西"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提示符正上方的那一栏是一个名为 "
+        },
+        {
+          "type": "inline_code",
+          "text": "AbovePrompt"
+        },
+        {
+          "type": "text",
+          "text": " 的组件。Claude Code 自身不会在那里绘制任何内容，因此它很适合作为第一个改造目标。挂钩它的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "ui.render"
+        },
+        {
+          "type": "text",
+          "text": " 事件，并返回一棵元素树："
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这些元素并不是全局变量。"
+        },
+        {
+          "type": "inline_code",
+          "text": "$.ui.resolve(e)"
+        },
+        {
+          "type": "text",
+          "text": " 会返回当前所绘制界面对应的构造函数，因为 Claude Code 所绘制的每种界面支持的元素集合都略有不同。JSX 同样可用，以 "
+        },
+        {
+          "type": "inline_code",
+          "text": "h"
+        },
+        {
+          "type": "text",
+          "text": " 作为工厂函数。"
+        }
+      ]
+    },
+    "b043": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "启动一个加载了该插件的会话："
+        }
+      ]
+    },
+    "b045": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "提示符上方会出现“☀ Clear skies”。保持会话开启。该文件夹处于监视状态，因此每次保存都会就地重新加载模块，无需重启。正是这种快速的反馈循环，让编写模组充满乐趣。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "提示："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "一旦你了解了它的结构，就可以像"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.dev/blog/getting-started-with-claude-code-mods/#the-shortcut-let-claude-build-it"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "该快捷方式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "那样向 Claude 描述下一个模组。它会把插件写入一个可在同一会话中热重载的文件夹。"
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第 3 步：读取真实数值，并将其保存在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.state"
+        },
+        {
+          "type": "text",
+          "text": " 中"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "$.session.usage()"
+        },
+        {
+          "type": "text",
+          "text": " 返回的数值与状态栏相同。"
+        },
+        {
+          "type": "inline_code",
+          "text": "context.tokens"
+        },
+        {
+          "type": "text",
+          "text": " 是上一次响应所基于的输入，"
+        },
+        {
+          "type": "inline_code",
+          "text": "context.window"
+        },
+        {
+          "type": "text",
+          "text": " 是模型的上下文窗口，"
+        },
+        {
+          "type": "inline_code",
+          "text": "context.percent"
+        },
+        {
+          "type": "text",
+          "text": " 则是前者与后者之比。该调用不产生费用：只有当你请求 "
+        },
+        {
+          "type": "inline_code",
+          "text": "breakdown"
+        },
+        {
+          "type": "text",
+          "text": " 时，它才会发送一次 token 计数请求。"
+        }
+      ]
+    },
+    "b049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在会话开始时以及每一轮之后进行一次读数："
+        }
+      ]
+    },
+    "b051": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "两个钩子都会先调用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "next(e)"
+        },
+        {
+          "type": "text",
+          "text": "，然后再进行观察。它们都不会改变实际发生的事情。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "读数存放在哪里。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "模块级的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "let readings = []"
+        },
+        {
+          "type": "text",
+          "text": " 看起来是显而易见的选择，但热重载是一次全新的加载："
+        },
+        {
+          "type": "inline_code",
+          "text": "register"
+        },
+        {
+          "type": "text",
+          "text": " 会再次运行，"
+        },
+        {
+          "type": "inline_code",
+          "text": "session.start"
+        },
+        {
+          "type": "text",
+          "text": " 会再次触发，模块变量也会从头开始。因此应把历史记录放在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.state"
+        },
+        {
+          "type": "text",
+          "text": " 中。它在宿主中为整个会话保存命名值，这些值在重载后依然保留。"
+        }
+      ]
+    },
+    "b054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "状态值在插件的"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "类型契约"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中声明，类型契约是 manifest 所指向的一个小型 "
+        },
+        {
+          "type": "inline_code",
+          "text": ".d.ts"
+        },
+        {
+          "type": "text",
+          "text": " 文件。添加 "
+        },
+        {
+          "type": "inline_code",
+          "text": "types/index.d.ts"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "b056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后将 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"types\": \"./types/index.d.ts\""
+        },
+        {
+          "type": "text",
+          "text": " 添加到 "
+        },
+        {
+          "type": "inline_code",
+          "text": "plugin.json"
+        },
+        {
+          "type": "text",
+          "text": " 中。如果跳过这一步，"
+        },
+        {
+          "type": "inline_code",
+          "text": "claude plugin validate"
+        },
+        {
+          "type": "text",
+          "text": " 会报错并中止，错误信息会指明修复方法："
+        },
+        {
+          "type": "inline_code",
+          "text": "token-weather.readings is not declared: the manifest's types contract must name it in interface PluginState { … }"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b057": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "作为回报，重绘是免费的。在渲染钩子运行期间进行的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.state.get"
+        },
+        {
+          "type": "text",
+          "text": " 会让该绘制订阅它，因此之后每一次 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.state.set"
+        },
+        {
+          "type": "text",
+          "text": " 都会重绘该色带。你永远不需要调用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.ui.invalidate"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第 4 步：绘制预测图"
+        }
+      ]
+    },
+    "b059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下是完整的模块："
+        }
+      ]
+    },
+    "b061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "有三个细节值得借鉴到你自己的模组中："
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "组件的 props 位于 "
+            },
+            {
+              "type": "inline_code",
+              "text": "e.props"
+            },
+            {
+              "type": "text",
+              "text": " 上。"
+            }
+          ]
+        },
+        {
+          "type": "inline_code",
+          "text": "hasSurvey"
+        },
+        {
+          "type": "text",
+          "text": " 会告诉你有调查问卷需要占用该区域，因此 hook 会通过 "
+        },
+        {
+          "type": "inline_code",
+          "text": "next(e)"
+        },
+        {
+          "type": "text",
+          "text": " 将其让出。"
+        },
+        {
+          "type": "inline_code",
+          "text": "bodyColumns"
+        },
+        {
+          "type": "text",
+          "text": " 是该区域的实际宽度；当有面板停靠在对话记录旁边时，它会比终端更窄。请根据它来确定组件树的尺寸。只有 "
+        },
+        {
+          "type": "inline_code",
+          "text": "e.component"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "e.surface"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "e.requestId"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "e.viewport"
+        },
+        {
+          "type": "text",
+          "text": " 位于 "
+        },
+        {
+          "type": "inline_code",
+          "text": "e"
+        },
+        {
+          "type": "text",
+          "text": " 的顶层。"
+        }
+      ]
+    },
+    "b063": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "没有内容要绘制时就放行。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "返回 "
+        },
+        {
+          "type": "inline_code",
+          "text": "next(e)"
+        },
+        {
+          "type": "text",
+          "text": " 会把该区域交还给 Claude Code 和其他 mod。"
+        }
+      ]
+    },
+    "b064": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "使用单宽字符符号，而不是 emoji。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " ☀ ☁ ☂ ☇ ↯ 在任何终端字体中都能对齐。"
+        }
+      ]
+    },
+    "b066": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "保存文件后，正在运行的会话就会加载它。经过几轮读取大文件的对话后，状态带会从 Clear 变为 Showers，再变为 Storm，正如本节开头的录屏所示。"
+        }
+      ]
+    },
+    "b067": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第 5 步：验证与测试"
+        }
+      ]
+    },
+    "b068": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "claude plugin validate"
+        },
+        {
+          "type": "text",
+          "text": " 会以与 Claude Code 相同的方式读取清单文件和模块源码，并报告该模块挂载了哪些钩子、调用了哪些内容："
+        }
+      ]
+    },
+    "b070": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "claude plugin test"
+        },
+        {
+          "type": "text",
+          "text": " 会在真实的 Claude Code 运行时中运行插件的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "*.test.ts"
+        },
+        {
+          "type": "text",
+          "text": " 文件。测试通过 "
+        },
+        {
+          "type": "inline_code",
+          "text": "on"
+        },
+        {
+          "type": "text",
+          "text": " 注册的 hook 会在调用链中排在该 mod "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "之后"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "运行，并模拟 Claude Code 本应返回的响应，因此你可以精确控制 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.session.usage()"
+        },
+        {
+          "type": "text",
+          "text": " 的返回内容："
+        }
+      ]
+    },
+    "b073": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该测试还会检查第 3 步中的重绘行为。在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "turn.complete"
+        },
+        {
+          "type": "text",
+          "text": " 之后，band 会自动更新，而 mod 无需主动请求重绘。"
+        }
+      ]
+    },
+    "b074": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "第 6 步：分享"
+        }
+      ]
+    },
+    "b075": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "mod 本身就是一个插件，因此发布方式也相同。把它放进一个 marketplace 即可，marketplace 可以简单到只是一个包含 "
+        },
+        {
+          "type": "inline_code",
+          "text": ".claude-plugin/marketplace.json"
+        },
+        {
+          "type": "text",
+          "text": " 的文件夹："
+        }
+      ]
+    },
+    "b078": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如需将你的版本与完成版进行对比，请参阅 anthropics/claude-code-playground 中"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/token-weather"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "完整的 Token Weather mod"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分享你的模组"
+        }
+      ]
+    },
+    "b080": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "mod 本质上就是一个 Claude Code 插件，因此分享方式与其他任何插件完全相同，无需学习任何新东西。把 mod 放进一个带有 marketplace 文件的 GitHub 仓库，这个仓库就成了你的 marketplace。任何人都可以从中安装，而你只需正常 push 即可更新它。"
+        }
+      ]
+    },
+    "b081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Claude Code 中安装只需三条命令："
+        }
+      ]
+    },
+    "b083": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "重新加载后，该 mod 即会启动。如果没有出现，请重启 Claude Code。"
+        }
+      ]
+    },
+    "b084": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "mod 是在你本机的 Claude Code 内部运行的代码，拥有与 Claude Code 相同的访问权限，并且由其发布者而非 Anthropic 编写。因此，安装 mod 时应像安装软件包一样谨慎：先阅读代码仓库，只安装来自你信任之人的 mod。在你运行该命令之前，不会安装任何内容。"
+        }
+      ]
+    },
+    "b085": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude 目录接受包含 mods 的插件，你可以在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.ai/directory/manage"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "claude.ai/directory/manage"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 提交你的插件，这样即使没有你提供的链接，人们也能找到它。"
+        }
+      ]
+    },
+    "b086": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "另外两项改动"
+        }
+      ]
+    },
+    "b087": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Token Weather 只负责观察和绘制。接下来的两个 mod 则会介入事件、打开窗格并接收输入。"
+        }
+      ]
+    },
+    "b088": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "两者的完整代码都在 anthropics/claude-code-playground 中："
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/blast-radius"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Blast Radius"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/replay-theater"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Replay Theater"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，每个都附有一份 README，说明其构建过程。"
+        }
+      ]
+    },
+    "b089": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Blast Radius：在高风险命令运行之前，查看它将会改变什么"
+        }
+      ]
+    },
+    "b090": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当 Claude 调用 Bash 执行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "rm -rf"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "git reset --hard"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "git clean"
+        },
+        {
+          "type": "text",
+          "text": "、强制推送或数据库迁移时，Blast Radius 会拦下这次调用。它会推算出该命令将影响哪些内容，并打开一个带有 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Proceed"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Cancel"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 的窗格。按下 "
+        },
+        {
+          "type": "inline_code",
+          "text": "2"
+        },
+        {
+          "type": "text",
+          "text": "，Claude 会收到一条附带原因的拒绝；按下 "
+        },
+        {
+          "type": "inline_code",
+          "text": "1"
+        },
+        {
+          "type": "text",
+          "text": "，命令则按原样执行。"
+        }
+      ]
+    },
+    "b091": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它使用了三个 hook："
+        },
+        {
+          "type": "inline_code",
+          "text": "tool.call"
+        },
+        {
+          "type": "text",
+          "text": " on Bash, and "
+        },
+        {
+          "type": "inline_code",
+          "text": "ui.render"
+        },
+        {
+          "type": "text",
+          "text": " on "
+        },
+        {
+          "type": "inline_code",
+          "text": "Pane"
+        },
+        {
+          "type": "text",
+          "text": " and on "
+        },
+        {
+          "type": "inline_code",
+          "text": "AbovePrompt"
+        },
+        {
+          "type": "text",
+          "text": ". The core of it is the \"answer\" move from the table above:"
+        }
+      ]
+    },
+    "b093": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它教授的内容："
+        }
+      ]
+    },
+    "b094": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "$.process.run"
+            },
+            {
+              "type": "text",
+              "text": " 用于试运行（dry run）。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "报告来自各工具自身的命令："
+        },
+        {
+          "type": "inline_code",
+          "text": "git status --porcelain"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "git clean -n"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "git log HEAD..origin/main"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "showmigrations"
+        },
+        {
+          "type": "text",
+          "text": "。参数以 argv 数组的形式传入，因此路径中的任何内容都不会被当作 shell 代码执行。"
+        }
+      ]
+    },
+    "b095": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "挂起调用。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "每次分派时，hook 自身有 10 秒的运行时间，但在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$"
+        },
+        {
+          "type": "text",
+          "text": " 调用内部等待所花的时间不计入其中。循环会等待短暂的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "sleep"
+        },
+        {
+          "type": "text",
+          "text": " 进程，直到某个按钮的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "onPress"
+        },
+        {
+          "type": "text",
+          "text": " 设置了决策；当 "
+        },
+        {
+          "type": "inline_code",
+          "text": "next.signal"
+        },
+        {
+          "type": "text",
+          "text": " 中止时（即你按下了 Esc），循环便会放弃等待。"
+        }
+      ]
+    },
+    "b096": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "带快捷键的按钮。"
+            }
+          ]
+        },
+        {
+          "type": "inline_code",
+          "text": "Button({ label: \"Proceed\", hotkey: \"1\", onPress })"
+        },
+        {
+          "type": "text",
+          "text": " 可以通过点击、Tab 加 Enter 或数字键来触发。"
+        }
+      ]
+    },
+    "b097": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "退化为横条显示。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "当终端足够宽时，会在对话记录旁停靠一个窗格。当 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.ui.open"
+        },
+        {
+          "type": "text",
+          "text": " 返回 "
+        },
+        {
+          "type": "inline_code",
+          "text": "isPlaced: false"
+        },
+        {
+          "type": "text",
+          "text": " 时，同样的报告会绘制在提示符上方："
+        }
+      ]
+    },
+    "b100": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它是一张安全网，而不是权限系统。它读取的是命令文本，因此 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$(…)"
+        },
+        {
+          "type": "text",
+          "text": "、别名以及调用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "rm"
+        },
+        {
+          "type": "text",
+          "text": " 的脚本都能绕过它。如需硬性拦截，请使用权限规则。"
+        }
+      ]
+    },
+    "b101": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "回放剧场：逐步查看上一轮的编辑"
+        }
+      ]
+    },
+    "b102": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在一轮对话运行期间，Replay Theater 会记录每一次 Edit 和 Write 调用：包括文件本身，以及修改前后的文本。当这一轮结束时，提示框上方会出现一条提示。按下 "
+        },
+        {
+          "type": "inline_code",
+          "text": "r"
+        },
+        {
+          "type": "text",
+          "text": "（或输入 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/replay"
+        },
+        {
+          "type": "text",
+          "text": "），就会打开一个窗格，逐个 diff 地带你回顾这些编辑，窗格中有一排带编号的步骤条，以及 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Prev"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Next"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Close"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 按钮。"
+        }
+      ]
+    },
+    "b103": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它从不阻止或更改任何编辑，只做观察："
+        }
+      ]
+    },
+    "b105": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它教授的内容："
+        }
+      ]
+    },
+    "b106": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "配对事件。"
+            }
+          ]
+        },
+        {
+          "type": "inline_code",
+          "text": "turn.start"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "turn.complete"
+        },
+        {
+          "type": "text",
+          "text": " 将编辑操作框定为每轮一次重放，而 "
+        },
+        {
+          "type": "inline_code",
+          "text": "e.agentId"
+        },
+        {
+          "type": "text",
+          "text": " 则将子代理的轮次排除在分组之外。"
+        }
+      ]
+    },
+    "b107": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "注册斜杠命令。"
+            }
+          ]
+        },
+        {
+          "type": "inline_code",
+          "text": "$.command.register"
+        },
+        {
+          "type": "text",
+          "text": "（位于 "
+        },
+        {
+          "type": "inline_code",
+          "text": "session.start"
+        },
+        {
+          "type": "text",
+          "text": " 中），然后在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "command.run"
+        },
+        {
+          "type": "text",
+          "text": " 上对其作出响应。"
+        }
+      ]
+    },
+    "b108": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "读取文件。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对于 Write 操作，"
+        },
+        {
+          "type": "inline_code",
+          "text": "$.fs.read"
+        },
+        {
+          "type": "text",
+          "text": " 会在写入生效前一刻获取旧内容，因此 diff 是真实的。"
+        }
+      ]
+    },
+    "b109": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "放置位置由界面层负责。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在全屏模式下，面板停靠在右侧。在 80 列宽度下，它会以内联方式在提示符上方展开。无论哪种情况，mod 绘制的都是同一棵树。"
+        }
+      ]
+    },
+    "b112": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "值得保持的四个习惯"
+        }
+      ]
+    },
+    "b113": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "善用 Claude Code 为你生成的类型。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "每次加载你的 mod 时，Claude Code 都会把与你的构建相对应的声明写入该 mod 的 "
+        },
+        {
+          "type": "inline_code",
+          "text": ".claude-plugin/types/"
+        },
+        {
+          "type": "text",
+          "text": " 文件夹，因此你的编辑器和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "tsc -p"
+        },
+        {
+          "type": "text",
+          "text": " 无需任何额外步骤即可直接使用。它们是每个事件、"
+        },
+        {
+          "type": "inline_code",
+          "text": "$"
+        },
+        {
+          "type": "text",
+          "text": " 上的每个方法以及每个元素 props 的参考依据。"
+        }
+      ]
+    },
+    "b114": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "从 "
+            },
+            {
+              "type": "inline_code",
+              "text": "e.props"
+            },
+            {
+              "type": "text",
+              "text": " 读取 props。"
+            }
+          ]
+        },
+        {
+          "type": "inline_code",
+          "text": "hasSurvey"
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "inline_code",
+          "text": "bodyColumns"
+        },
+        {
+          "type": "text",
+          "text": " 等属性都位于其中，而不是直接位于 "
+        },
+        {
+          "type": "inline_code",
+          "text": "e"
+        },
+        {
+          "type": "text",
+          "text": " 本身上。"
+        }
+      ]
+    },
+    "b115": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "为热重载做好规划。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "每次保存都会重新运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "register"
+        },
+        {
+          "type": "text",
+          "text": " 和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "session.start"
+        },
+        {
+          "type": "text",
+          "text": "，因此要把数据保存在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.state"
+        },
+        {
+          "type": "text",
+          "text": " 中，而不是模块变量里。"
+        }
+      ]
+    },
+    "b116": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "图形没有显示时，请查看日志。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "运行 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude --debug"
+        },
+        {
+          "type": "text",
+          "text": "，查找提示某个 hook 返回的树未通过校验的那一行。"
+        }
+      ]
+    },
+    "b118": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "你会改造什么？"
+        }
+      ]
+    },
+    "b119": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这里的三个改造各自源于一个问题："
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "我的上下文用了多少？"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "、"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "这条命令将要删除什么？"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，以及"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude 刚才改了什么？"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "你的问题会有所不同，而这正是关键所在。以下是一些可以作为起点的想法："
+        }
+      ]
+    },
+    "b120": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "来自 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.session.usage()"
+        },
+        {
+          "type": "text",
+          "text": " 的费用或速率限制计量器，以带有 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.ui.status"
+        },
+        {
+          "type": "text",
+          "text": " 的状态栏形式呈现"
+        }
+      ]
+    },
+    "b121": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个 "
+        },
+        {
+          "type": "inline_code",
+          "text": "prompt.submit"
+        },
+        {
+          "type": "text",
+          "text": " 钩子，可将团队的约定添加到每个提示词中"
+        }
+      ]
+    },
+    "b122": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个列出 Claude 在本次会话中读取过的文件的面板，以实时地图的形式呈现它已看过的内容"
+        }
+      ]
+    },
+    "b123": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个专注计时器，在长轮次结束时通过 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$.ui.toast"
+        },
+        {
+          "type": "text",
+          "text": " 发送弹窗通知"
+        }
+      ]
+    },
+    "b124": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个针对你的技术栈调校的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "tool.call"
+        },
+        {
+          "type": "text",
+          "text": " 防护，例如生产环境的 kubectl 上下文或 "
+        },
+        {
+          "type": "inline_code",
+          "text": "terraform apply"
+        }
+      ]
+    },
+    "b126": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "分享你的作品"
+        }
+      ]
+    },
+    "b127": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "做了一个自己每天都在用的 mod？把它发到 X 或 LinkedIn 上，附上运行效果的 GIF 或截图，让其他开发者看看还能做到什么。把插件放进 marketplace（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://claude.dev/blog/getting-started-with-claude-code-mods/#sharing-your-mod"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "分享你的 mod"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）并附上链接，这样任何喜欢它的人只需三条命令就能安装。"
+        }
+      ]
+    }
+  }
+}
