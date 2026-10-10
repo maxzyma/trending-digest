@@ -1,0 +1,1768 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "claude-blog:building-effective-agent-automations",
+  "source": {
+    "canonical_url": "https://claude.dev/blog/building-effective-agent-automations/",
+    "site": "claude-blog",
+    "author": "Anthropic",
+    "published_at": "2026-10-08T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:0787985b58047140cf5e426277c3b640ab00018689a6edc893e3b8cdb76964ec",
+    "fetched_at": "2026-10-10T02:25:38.632083+00:00",
+    "parser_version": "claude-blog.v1"
+  },
+  "content": {
+    "title": "Building effective agent automations",
+    "title_en": "Building effective agent automations",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "b001",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As AI accelerates our work, it's getting harder to keep up. At Anthropic, simple agent automations are frequently used to help. They often run on a schedule, gather context in the background, and proactively tell us what we need to know. But it’s difficult to build effective agent automations: they can lose access to a source without anyone noticing or fail to follow our preferences."
+          }
+        ]
+      },
+      {
+        "id": "b002",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Using "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/overview"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Claude Managed Agents"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (beta), we built a reference implementation that reads custom sources (e.g., Slack and GitHub repos) on a schedule, tracks what changed since the last run, and posts what you need to know (e.g., to Slack). In this article, we walk through each step, share a reference implementation, and provide a command to run in Claude Code that configures the agent for you."
+          }
+        ]
+      },
+      {
+        "id": "b003",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GET THE CODE"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b004",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The reference implementation is "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/anthropics/claude-quickstarts/tree/main/managed-agents/daily-brief"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". For an interactive walkthrough, run the command below in Claude Code. The "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude-api"
+          },
+          {
+            "type": "text",
+            "text": " skill can help set up the agent following the guidance in this article:"
+          }
+        ]
+      },
+      {
+        "id": "b005",
+        "type": "code",
+        "attrs": {
+          "code": "/claude-api managed-agents-onboard https://claude.dev/blog/building-effective-agent-automations/",
+          "language": ""
+        }
+      },
+      {
+        "id": "b006",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For this reference implementation, you need a Slack app ("
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://api.slack.com/apps?new_app=1&manifest_yaml=display_information%3A%0A%20%20name%3A%20Daily%20brief%0A%20%20description%3A%20Posts%20one%20short%20brief%20each%20weekday%20morning.%0Afeatures%3A%0A%20%20bot_user%3A%0A%20%20%20%20display_name%3A%20Daily%20brief%0A%20%20%20%20always_online%3A%20false%0A%20%20app_home%3A%0A%20%20%20%20home_tab_enabled%3A%20false%0A%20%20%20%20messages_tab_enabled%3A%20true%0A%20%20%20%20messages_tab_read_only_enabled%3A%20true%0Aoauth_config%3A%0A%20%20scopes%3A%0A%20%20%20%20bot%3A%0A%20%20%20%20%20%20-%20channels%3Ahistory%0A%20%20%20%20%20%20-%20chat%3Awrite%0Asettings%3A%0A%20%20org_deploy_enabled%3A%20false%0A%20%20socket_mode_enabled%3A%20false%0A%20%20token_rotation_enabled%3A%20false%0A"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "create it from the manifest"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ") and a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/settings/personal-access-tokens/new"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GitHub token"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The provided files (shown below) are configuration for Claude API resources, including the agent, its environment, memory stores, vault, and deployment."
+          }
+        ]
+      },
+      {
+        "id": "b007",
+        "type": "code",
+        "attrs": {
+          "code": "daily-brief/\n├── agent.md                        model, tools, instructions\n├── deployment.md                   schedule, time zone, budget, input message\n├── environment.yaml                network allowlist\n├── memory_store_preferences.yaml   user preferences\n├── memory_store_state.yaml         the agent's bookmarks, ledger, notes, and run records\n├── vault.yaml                      the vault that holds the credentials\n├── claude-lock.json                resource IDs, written by ant apply\n└── slack/manifest.yaml             one bot app",
+          "language": ""
+        }
+      },
+      {
+        "id": "b008",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/cli/apply"
+            },
+            "children": [
+              {
+                "type": "inline_code",
+                "text": "ant apply"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", a command in the ant CLI, reads these files, creates the resources in your Claude API workspace (where the platform stores and runs them), and records the IDs in "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude-lock.json"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b009",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "We'll use this command in the sections below. Once configured, the automation runs on a schedule on Anthropic's infrastructure, so nothing has to stay running on your machine."
+          }
+        ]
+      },
+      {
+        "id": "b010",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "OVERVIEW"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b011",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent we’ll build has six components, covered in this order:"
+          }
+        ]
+      },
+      {
+        "id": "b018",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b012",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Sources - A named list of places to read"
+              }
+            ]
+          },
+          {
+            "id": "b013",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Destination - One place the agent may write"
+              }
+            ]
+          },
+          {
+            "id": "b014",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Agent - The model, tools, and run steps in agent.md"
+              }
+            ]
+          },
+          {
+            "id": "b015",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Schedule - A cron schedule"
+              }
+            ]
+          },
+          {
+            "id": "b016",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Memory - Your preferences and the agent's own memory"
+              }
+            ]
+          },
+          {
+            "id": "b017",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Guardrails - Read-only access wherever the agent only reads, and a spending cap per run"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b019",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/fdbe45db5e3ce9afbb00bf62f87e64078a683800bc492d4ac6cf716a2d313a00.png",
+          "alt": "Architecture of the agent: a schedule wakes the agent, which reads from its sources and posts a brief to one destination for the reader. Memory holds the agent's state and the reader's preferences, and guardrails surround the agent."
+        }
+      },
+      {
+        "id": "b020",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SOURCES"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b021",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent reads two default sources: Slack channels and GitHub pull requests. The channels and repos are listed in your "
+          },
+          {
+            "type": "inline_code",
+            "text": "preferences"
+          },
+          {
+            "type": "text",
+            "text": " file. The template can be extended to use other sources."
+          }
+        ]
+      },
+      {
+        "id": "b022",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/d8508de61bb90f3bfccf6184dd3d7cbe9c65e2e76bd00477efd1620e3910dae7.png",
+          "alt": "The architecture diagram with Sources highlighted. The sources are read-only, reached through MCP or HTTPS with credentials from a vault, and feed the agent."
+        }
+      },
+      {
+        "id": "b023",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Give the agent its own, scoped credentials"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b024",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/overview"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Managed Agents"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", credentials live in "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/vaults"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "vaults"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The agent can reference these credentials but the real values stay in the vault, outside the sandbox where Claude's code runs (see "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.anthropic.com/engineering/managed-agents"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://x.com/katelyn_lesse/status/2099315903884415400"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "here"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "):"
+          }
+        ]
+      },
+      {
+        "id": "b027",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b025",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MCP servers (GitHub)."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The agent calls MCP tools through a proxy that runs outside the sandbox. The proxy finds the vault credential whose URL matches the server’s."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b026",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The shell (Slack)."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The agent calls the Slack API with curl using the bash tool inside the sandbox. The sandbox only holds an opaque placeholder, "
+              },
+              {
+                "type": "inline_code",
+                "text": "$SLACK_BOT_TOKEN"
+              },
+              {
+                "type": "text",
+                "text": ". As the request leaves the sandbox, the platform swaps in the real token for hosts you allow."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b028",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Create the vault using the "
+          },
+          {
+            "type": "inline_code",
+            "text": "ant"
+          },
+          {
+            "type": "text",
+            "text": " CLI and the template file in the repo:"
+          }
+        ]
+      },
+      {
+        "id": "b029",
+        "type": "code",
+        "attrs": {
+          "code": "ant apply vault.yaml",
+          "language": ""
+        }
+      },
+      {
+        "id": "b030",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This creates the vault in your Claude API workspace, where the platform stores it, and records its ID in "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude-lock.json"
+          },
+          {
+            "type": "text",
+            "text": ". Then add each credential to the vault with the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "TypeScript SDK"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Here is an example showing addition of the Slack credential:"
+          }
+        ]
+      },
+      {
+        "id": "b031",
+        "type": "code",
+        "attrs": {
+          "code": "const vaultId = process.env.VAULT_ID!; // the vault's ID, from claude-lock.json\n\nawait client.beta.vaults.credentials.create(vaultId, {\n  display_name: \"SLACK_BOT_TOKEN\",\n  auth: {\n    type: \"environment_variable\",\n    secret_name: \"SLACK_BOT_TOKEN\",\n    secret_value: process.env.SLACK_BOT_TOKEN!,\n    networking: { type: \"limited\", allowed_hosts: [\"slack.com\"] },\n    injection_location: { header: true },\n  },\n});",
+          "language": ""
+        }
+      },
+      {
+        "id": "b032",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After creating the vault and adding each credential, attach the vault to the deployment. Copy the vault ID from "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude-lock.json"
+          },
+          {
+            "type": "text",
+            "text": " into "
+          },
+          {
+            "type": "inline_code",
+            "text": "vault_ids"
+          },
+          {
+            "type": "text",
+            "text": " in the deployment file, "
+          },
+          {
+            "type": "inline_code",
+            "text": "deployment.md"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b033",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Read from where you left off"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b034",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A common mistake is asking the agent to read a fixed window like \""
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "the last 24 hours"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ".\" A late run leaves a gap and an early run repeats items. Instead, give the agent a bookmark per source. At the end of each run, the agent writes the timestamp of the newest item it read from each source to one file, "
+          },
+          {
+            "type": "inline_code",
+            "text": "bookmarks.json"
+          },
+          {
+            "type": "text",
+            "text": ", with an entry per source: "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"slack\": \"2026-09-14T13:02:11Z\""
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b035",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The next run starts from those bookmarks, so its window stretches or shrinks to cover everything since the last run. The bookmarks live in the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/memory"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "memory store"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " called "
+          },
+          {
+            "type": "inline_code",
+            "text": "state"
+          },
+          {
+            "type": "text",
+            "text": ": a folder of text files that the platform mounts into every run's sandbox under "
+          },
+          {
+            "type": "inline_code",
+            "text": "/mnt/memory/"
+          },
+          {
+            "type": "text",
+            "text": " and keeps between runs. The agent reads and writes it with its ordinary file tools, and the instructions in "
+          },
+          {
+            "type": "inline_code",
+            "text": "agent.md"
+          },
+          {
+            "type": "text",
+            "text": " tell it how."
+          }
+        ]
+      },
+      {
+        "id": "b036",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Don't mistake a failed read for a quiet day"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b037",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If an MCP server is down or its token has expired, the run still starts, just without that server's tools. The session logs an error, but the agent sees nothing from that source and reports \"nothing new.\""
+          }
+        ]
+      },
+      {
+        "id": "b038",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Three rules in "
+          },
+          {
+            "type": "inline_code",
+            "text": "agent.md"
+          },
+          {
+            "type": "text",
+            "text": " help fix this. When a source fails, the agent will: keep the source’s bookmark where it is, write the brief from the other sources, and end the brief with one line naming what it couldn't read (\"pull requests unavailable this run\"), so the reader is made aware."
+          }
+        ]
+      },
+      {
+        "id": "b039",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "DESTINATION"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b040",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Our template posts to one Slack channel, with a dated post each time it runs."
+          }
+        ]
+      },
+      {
+        "id": "b041",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/15481dc4dff01b4a613e8ff36039bc14036ab97781eddeaf749746533b97bd16.png",
+          "alt": "The architecture diagram with Destination highlighted. After a check that today's brief isn't already posted, the agent posts to one destination, which delivers the brief to the reader."
+        }
+      },
+      {
+        "id": "b042",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent posts to Slack using the bash tool in its sandbox, using the same bot token it reads with."
+          }
+        ]
+      },
+      {
+        "id": "b043",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Nothing has to approve the post. The agent sends it with a bash command, and the built-in bash tool runs without asking for approval by default. "
+          },
+          {
+            "type": "inline_code",
+            "text": "slack.com"
+          },
+          {
+            "type": "text",
+            "text": " is also on the allowlist of the agent's "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/environments"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "environment"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the sandbox it runs in. The post is one request:"
+          }
+        ]
+      },
+      {
+        "id": "b044",
+        "type": "code",
+        "attrs": {
+          "code": "curl -s https://slack.com/api/chat.postMessage \\\n  -H \"Authorization: Bearer $SLACK_BOT_TOKEN\" \\\n  -H \"Content-Type: application/json; charset=utf-8\" \\\n  -d '{\"channel\": \"C0123456789\", \"text\": \"Daily brief, Tue Sep 15 ...\"}'",
+          "language": ""
+        }
+      },
+      {
+        "id": "b045",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Confirm the post landed before recording it"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b046",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Once a post is confirmed, the agent updates its ledger of reported items and its bookmarks. If those records don't match what was actually posted, two things can go wrong. If the agent records a post that never landed, the bookmarks move on and those items are never reported. If it posts again because it isn't sure the first post landed, readers get the same brief twice."
+          }
+        ]
+      },
+      {
+        "id": "b047",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Three rules in "
+          },
+          {
+            "type": "inline_code",
+            "text": "agent.md"
+          },
+          {
+            "type": "text",
+            "text": " prevent this. First, the agent looks for today's title in the channel's recent messages and doesn't post if the edition is already there. Second, the post counts as sent only if Slack returns "
+          },
+          {
+            "type": "inline_code",
+            "text": "\"ok\": true"
+          },
+          {
+            "type": "text",
+            "text": " and a message ts. Third, the agent updates the ledger and bookmarks only after that confirmation. If the result is unclear, it marks the run \"maybe posted\" and changes nothing else, so nothing is lost."
+          }
+        ]
+      },
+      {
+        "id": "b048",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent keeps a run record in its memory store ("
+          },
+          {
+            "type": "inline_code",
+            "text": "runs/<date>.md"
+          },
+          {
+            "type": "text",
+            "text": "). It marks the run \"posting\" before the post, then \"posted\" with the message ID, or \"maybe posted.\""
+          }
+        ]
+      },
+      {
+        "id": "b049",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "AGENT"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b050",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In Claude Managed Agents, an "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/agent-setup"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "agent"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a versioned configuration: a model, a system prompt, and tools. Each run follows its run steps and stops."
+          }
+        ]
+      },
+      {
+        "id": "b051",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/8b00d803c6eee8a1c6419c15961f688cba2f6fbff5031e1bd0539725cba1780b.png",
+          "alt": "The architecture diagram with the Agent highlighted: a model plus a prompt that holds the run loop and the judgement rules."
+        }
+      },
+      {
+        "id": "b052",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In our reference implementation, the agent configuration is "
+          },
+          {
+            "type": "inline_code",
+            "text": "agent.md"
+          },
+          {
+            "type": "text",
+            "text": ":"
+          }
+        ]
+      },
+      {
+        "id": "b053",
+        "type": "code",
+        "attrs": {
+          "code": "---\nname: Daily brief\nmodel: claude-sonnet-5-5\nmcp_servers:\n  - type: url\n    name: github\n    url: https://api.githubcopilot.com/mcp/\ntools:\n  - type: agent_toolset_20260401\n    configs:\n      - name: web_search\n        enabled: false\n      - name: web_fetch\n        enabled: false\n  - type: mcp_toolset\n    mcp_server_name: github\n    default_config:\n      permission_policy:\n        type: always_allow\n---\n\n[Eight numbered run steps; the full text is in agent.md in the repo.]",
+          "language": ""
+        }
+      },
+      {
+        "id": "b054",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The frontmatter supplies the agent name, model, tools, and MCP servers. The body provides the agent instructions. MCP tools ask for approval by default and nobody is there to give it, so the GitHub toolset is set to "
+          },
+          {
+            "type": "inline_code",
+            "text": "always_allow"
+          },
+          {
+            "type": "text",
+            "text": " and the GitHub token is "
+          },
+          {
+            "type": "inline_code",
+            "text": "read-only"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b055",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Keep the brief short"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b056",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "agent.md"
+          },
+          {
+            "type": "text",
+            "text": " steers Claude toward brevity:"
+          }
+        ]
+      },
+      {
+        "id": "b057",
+        "type": "code",
+        "attrs": {
+          "code": "4. Decide. An item earns a line when the reader would act on it today, or it changes a decision they are about to make. When unsure, leave it out. Most days that is a few items, sometimes none. A count (\"12 open reviews\") is not an item; link the ones that are blocked. An item already in the ledger and still open is carried as one marked line (\"still waiting, day 3\"), not re-reported; a closed item is dropped without comment. Do not bring back a topic the preferences file has retired.",
+          "language": ""
+        }
+      },
+      {
+        "id": "b058",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Re-check anything still open right before posting"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b059",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Items can change between when the agent reads sources and when it posts. Just before posting, "
+          },
+          {
+            "type": "inline_code",
+            "text": "agent.md"
+          },
+          {
+            "type": "text",
+            "text": " instructs the agent to re-check the live status of each item:"
+          }
+        ]
+      },
+      {
+        "id": "b060",
+        "type": "code",
+        "attrs": {
+          "code": "5. Verify. The world moved while you read. For every item you will report, re-check its live source just before posting: resolved since you read it, drop it; still open but changed, fix the line; cannot confirm, drop it and list it in the run record's cuts. One stale \"still waiting on you\" costs more trust than ten missing items, so never hedge an item's status: assert it or drop it. Every link is copied from the source's own link field (a pull request's html_url, a Slack permalink), never assembled by hand.",
+          "language": ""
+        }
+      },
+      {
+        "id": "b061",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "SCHEDULE"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b062",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With Claude Managed Agents, the agent is only a configuration file; a "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/scheduled-deployments"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "deployment"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " runs it. The deployment names the agent, environment, and the first message of each run. It also holds the schedule, vault, memory stores, and budget. Each time the schedule fires, the platform starts a fresh agent "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/sessions"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "session"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b063",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/a206f78f34b18dcf7a51bc9bca1acaaf3b68df80ee4034ff521cfbf353af7bc5.png",
+          "alt": "The architecture diagram with Schedule highlighted: a scheduled deployment that wakes the agent for each run."
+        }
+      },
+      {
+        "id": "b064",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In our template, the deployment is captured in "
+          },
+          {
+            "type": "inline_code",
+            "text": "deployment.md"
+          },
+          {
+            "type": "text",
+            "text": ", with the first message as its body:"
+          }
+        ]
+      },
+      {
+        "id": "b065",
+        "type": "code",
+        "attrs": {
+          "code": "---\nname: Daily brief\nagent: ./agent.md\nenvironment_id: ./environment.yaml\nschedule:\n  type: cron\n  expression: \"32 7 * * 1-5\"\n  timezone: America/New_York\nvault_ids: [vlt_...]   # the vault you create under Sources\nresources:\n  - path: ./memory_store_preferences.yaml\n    access: read_only\n    instructions: The reader's preferences. Re-read them every run. Never write here.\n  - path: ./memory_store_state.yaml\n    access: read_write\n    instructions: Your state. Bookmarks, ledger, notes, proposals, and run records.\n\n---\n\nWrite today's brief.\nThe reader's time zone is America/New_York. Work out every date in that zone.\n\nFollow your run steps in order. Today's edition is titled \"Daily brief, <weekday> <month> <day>\".",
+          "language": ""
+        }
+      },
+      {
+        "id": "b066",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This creates the deployment with the agent, environment and memory stores it names by path."
+          }
+        ]
+      },
+      {
+        "id": "b067",
+        "type": "code",
+        "attrs": {
+          "code": "ant apply deployment.md",
+          "language": ""
+        }
+      },
+      {
+        "id": "b068",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To test it without waiting for the schedule, start a run by hand with "
+          },
+          {
+            "type": "inline_code",
+            "text": "ant beta:deployments run --deployment-id <id>"
+          },
+          {
+            "type": "text",
+            "text": ", using the ID from "
+          },
+          {
+            "type": "inline_code",
+            "text": "claude-lock.json"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b069",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Compute dates in your time zone"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b070",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A common bug is the agent calling this morning \"yesterday\" because it computes dates in the server's time zone. In "
+          },
+          {
+            "type": "inline_code",
+            "text": "deployment.md"
+          },
+          {
+            "type": "text",
+            "text": ", the "
+          },
+          {
+            "type": "inline_code",
+            "text": "timezone"
+          },
+          {
+            "type": "text",
+            "text": " field sets when the run fires and the second line of the body tells the agent which zone to use for dates."
+          }
+        ]
+      },
+      {
+        "id": "b071",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "MEMORY"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b072",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Each run starts in a fresh sandbox with no memory of the last one. Without memory, feedback doesn't stick. However, stale memory can confuse the agent: it reports an item as still waiting after it was resolved, or drops one that's still open because it was \"already reported.\""
+          }
+        ]
+      },
+      {
+        "id": "b073",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/30e51eab0381bb583fe355fe412162b4e8868643b8d58b2c76c4aa2d0eafea57.png",
+          "alt": "The architecture diagram with Memory highlighted. State is what the agent reads and writes, and Preferences is what the reader writes and the agent only reads."
+        }
+      },
+      {
+        "id": "b074",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Our template keeps two "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/memory"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "memory stores"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", the folders mounted under /mnt/memory/ (see Sources):"
+          }
+        ]
+      },
+      {
+        "id": "b077",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b075",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "preferences"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (yours, read-only to the agent): which channels and repos to read, what to leave out, the length cap, the destination, and when to stop."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b076",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "state"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " (the agent's, read-write): the bookmarks, a ledger of what it reported, one record per run, changes it proposes to your preferences, and notes on how each source behaves (\"returns only the newest 50 items\")."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b078",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "inline_code",
+            "text": "ant apply deployment.md"
+          },
+          {
+            "type": "text",
+            "text": " creates the preferences store, but not the file in it. Before the first run, write your preferences.md there with the repo's "
+          },
+          {
+            "type": "inline_code",
+            "text": "scripts/seed-preferences.sh"
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b079",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Re-read your preferences at the start of every run"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b080",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A common problem occurs when a copy of the preferences is baked into the prompt, which keeps applying rules you've already changed. Have the agent read the file fresh every run. If it can't read the file, it should stop and say so instead of running on defaults."
+          }
+        ]
+      },
+      {
+        "id": "b081",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Keep a ledger of what you've already reported, and report the change"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b082",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent keeps a ledger, "
+          },
+          {
+            "type": "inline_code",
+            "text": "ledger.md"
+          },
+          {
+            "type": "text",
+            "text": ", of every item it has reported, so the brief doesn't repeat itself. Each line records when the item was reported, where it came from, an ID that doesn't change (a Slack message timestamp or a pull request number), and its last known status:"
+          }
+        ]
+      },
+      {
+        "id": "b083",
+        "type": "code",
+        "attrs": {
+          "code": "2026-09-09 slack:C0123456789 1788963600.000100 refund thread: customer waiting on a decision\n2026-09-11 github 481 review blocked, day 2 (still waiting)\n2026-09-11 slack:C0234567891 1789117333.000300 enterprise escalation: owner named, in progress",
+          "language": ""
+        }
+      },
+      {
+        "id": "b084",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GUARDRAILS"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b085",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Because our automation runs in the “background” on a schedule, we set limits on what the agent can do and what it can spend."
+          }
+        ]
+      },
+      {
+        "id": "b086",
+        "type": "image",
+        "attrs": {
+          "url": "https://claude.dev/media/746533f20f4e2bf093d08a04f368a8c5eca739de6579c384e9742b86d5385f50.png",
+          "alt": "The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches."
+        }
+      },
+      {
+        "id": "b087",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Limits on what it can do"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b088",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agent reads messages and issues that other people wrote, and that text can be interpreted as instructions. Limit what the agent could do if it followed them. In our example, the GitHub token and the "
+          },
+          {
+            "type": "inline_code",
+            "text": "preferences"
+          },
+          {
+            "type": "text",
+            "text": " store are read-only, and the environment only reaches the hosts on its allowlist. A planted instruction can still change what the brief says, including through the notes the agent keeps between runs. It can't write to GitHub or edit your rules."
+          }
+        ]
+      },
+      {
+        "id": "b089",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Slack is the exception: the same token posts, so invite the bot only where it needs to read or post."
+          }
+        ]
+      },
+      {
+        "id": "b090",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Set the spending cap from real runs"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b091",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A spending cap protects you from runaway costs. Start at three to five times the cost of a normal run, then tighten it as you see real numbers. A run that hits its cap pauses instead of failing, so a cap set too low looks like a brief that went quiet. The cap is the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/managed-agents/budgets"
+            },
+            "children": [
+              {
+                "type": "inline_code",
+                "text": "budget"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in "
+          },
+          {
+            "type": "inline_code",
+            "text": "deployment.md"
+          },
+          {
+            "type": "text",
+            "text": ". Every run gets the full amount, and a run that reaches it pauses with a "
+          },
+          {
+            "type": "inline_code",
+            "text": "budget_reached"
+          },
+          {
+            "type": "text",
+            "text": " stop reason:"
+          }
+        ]
+      },
+      {
+        "id": "b092",
+        "type": "code",
+        "attrs": {
+          "code": "budget:\n  type: limit\n  max_list_cost:\n    amount: \"500\" # a string, in cents: \"500\" is $5.00\n    currency: USD",
+          "language": ""
+        }
+      },
+      {
+        "id": "b093",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "GETTING STARTED"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b094",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Our reference implementation comes down to six rules:"
+          }
+        ]
+      },
+      {
+        "id": "b101",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b095",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Read each source from a bookmark, not a fixed time window."
+              }
+            ]
+          },
+          {
+            "id": "b096",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Report a failed read as unreadable, never as a quiet day."
+              }
+            ]
+          },
+          {
+            "id": "b097",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Re-check every item right before posting."
+              }
+            ]
+          },
+          {
+            "id": "b098",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Count a post as sent only when Slack confirms it, then update bookmarks and ledger."
+              }
+            ]
+          },
+          {
+            "id": "b099",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Re-read your preferences every run, from a store the agent can't edit."
+              }
+            ]
+          },
+          {
+            "id": "b100",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Give the agent read-only access wherever it only reads, and cap what each run can spend."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b102",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Claude Code can walk you through the guidance provided in this article. First, update:"
+          }
+        ]
+      },
+      {
+        "id": "b103",
+        "type": "code",
+        "attrs": {
+          "code": "claude update",
+          "language": ""
+        }
+      },
+      {
+        "id": "b104",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Then, use the claude-api skill:"
+          }
+        ]
+      },
+      {
+        "id": "b105",
+        "type": "code",
+        "attrs": {
+          "code": "/claude-api managed-agents-onboard https://claude.dev/blog/building-effective-agent-automations/",
+          "language": ""
+        }
+      },
+      {
+        "id": "b106",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The claude-api skill reads this post, proposes a setup, writes the files to an agents/ folder in your project, and creates the resources with ant apply. Treat this as a starting point, and customize the agent for your sources, destination, or memory preferences."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "building-effective-agent-automations",
+    "source_slug": "building-effective-agent-automations",
+    "source_profile": "claude-blog.v1",
+    "source_counts": {
+      "heading": 20,
+      "image": 7,
+      "table": 0,
+      "code": 14
+    },
+    "categories": [],
+    "intro_paragraph_count": 2
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/fdbe45db5e3ce9afbb00bf62f87e64078a683800bc492d4ac6cf716a2d313a00.png",
+      "alt": "Architecture of the agent: a schedule wakes the agent, which reads from its sources and posts a brief to one destination for the reader. Memory holds the agent's state and the reader's preferences, and guardrails surround the agent."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/d8508de61bb90f3bfccf6184dd3d7cbe9c65e2e76bd00477efd1620e3910dae7.png",
+      "alt": "The architecture diagram with Sources highlighted. The sources are read-only, reached through MCP or HTTPS with credentials from a vault, and feed the agent."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/15481dc4dff01b4a613e8ff36039bc14036ab97781eddeaf749746533b97bd16.png",
+      "alt": "The architecture diagram with Destination highlighted. After a check that today's brief isn't already posted, the agent posts to one destination, which delivers the brief to the reader."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/8b00d803c6eee8a1c6419c15961f688cba2f6fbff5031e1bd0539725cba1780b.png",
+      "alt": "The architecture diagram with the Agent highlighted: a model plus a prompt that holds the run loop and the judgement rules."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/a206f78f34b18dcf7a51bc9bca1acaaf3b68df80ee4034ff521cfbf353af7bc5.png",
+      "alt": "The architecture diagram with Schedule highlighted: a scheduled deployment that wakes the agent for each run."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/30e51eab0381bb583fe355fe412162b4e8868643b8d58b2c76c4aa2d0eafea57.png",
+      "alt": "The architecture diagram with Memory highlighted. State is what the agent reads and writes, and Preferences is what the reader writes and the agent only reads."
+    },
+    {
+      "type": "image",
+      "url": "https://claude.dev/media/746533f20f4e2bf093d08a04f368a8c5eca739de6579c384e9742b86d5385f50.png",
+      "alt": "The architecture diagram with Guardrails highlighted: a boundary around the agent with caps on turns, time and spend, and a heartbeat that someone watches."
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:0787985b58047140cf5e426277c3b640ab00018689a6edc893e3b8cdb76964ec",
+  "profile": "bilingual-zh-first.v1",
+  "category": "AI 工程 / 智能体自动化",
+  "summary": "Anthropic 以一个基于 Claude Managed Agents 的每日简报参考实现，讲解如何按计划读取 Slack 与 GitHub 等信息源、追踪变化并可靠地发布到 Slack，同时通过记忆与护栏机制保证其准确、安全且成本可控。",
+  "source_label": "Claude Blog / Anthropic",
+  "key_points": [
+    "该参考实现由来源、目的地、智能体、调度、记忆和护栏六个组件构成，通过 ant apply 在 Claude API 工作区中创建资源，并在 Anthropic 基础设施上按计划运行，无需本地常驻程序。",
+    "凭据存放在 vault 中，真实值始终位于沙箱之外：MCP 工具经由沙箱外代理匹配凭据，Slack 请求则在离开沙箱时由平台将占位符替换为真实令牌。",
+    "智能体不按“过去 24 小时”这类固定时间窗口读取，而是为每个来源维护书签，记录上次读到的最新条目时间戳，使每次运行恰好覆盖自上次以来的全部内容。",
+    "当某个来源读取失败时，智能体保持该来源书签不动，用其他来源撰写简报，并在末尾注明未能读取的内容，避免把读取失败误报为“没有新内容”。",
+    "只有当 Slack 返回 \"ok\": true 及消息 ts 后才算发布成功并更新书签与台账；发帖前会检查当天简报是否已发布，结果不明确时标记为“可能已发布”且不做其他改动。",
+    "发布前智能体会重新检查每个条目的实时状态，且 agent.md 会引导输出保持简短。",
+    "部署负责指定智能体、环境、首条消息、调度、凭据库、记忆存储和预算，每次调度触发都会启动全新会话，并需显式指定时区以避免日期计算错误。",
+    "记忆分为两个存储：对智能体只读的 preferences 存放用户偏好，可读写的 state 存放书签、已报告内容台账、偏好修改建议和来源行为笔记；智能体每次运行都应重新读取偏好，读取失败则停止。",
+    "由于智能体会读取可能含有注入指令的外部文本，应将 GitHub 令牌和偏好存储设为只读、限制网络允许列表，并只把 Slack 机器人邀请到必要频道。",
+    "每次运行的支出上限建议先设为正常运行成本的三到五倍再逐步收紧，达到上限的运行会以 budget_reached 原因暂停而非失败。"
+  ],
+  "glossary": [
+    {
+      "term": "Agentic Automation",
+      "translation": "智能体自动化",
+      "note": "由 AI 智能体按计划在后台自主收集信息并执行任务的自动化流程。"
+    },
+    {
+      "term": "Claude Managed Agents",
+      "translation": "Claude 托管智能体",
+      "note": "Anthropic 提供的在其基础设施上配置、运行和调度智能体的平台服务。"
+    },
+    {
+      "term": "Vault",
+      "translation": "凭据库",
+      "note": "存放智能体凭据的安全存储，真实值保留在运行沙箱之外。"
+    },
+    {
+      "term": "MCP (Model Context Protocol)",
+      "translation": "模型上下文协议",
+      "note": "让模型通过标准化服务器接口调用外部工具和数据源的协议。"
+    },
+    {
+      "term": "Sandbox",
+      "translation": "沙箱",
+      "note": "智能体执行代码和工具调用的隔离运行环境。"
+    },
+    {
+      "term": "Bookmark",
+      "translation": "书签",
+      "note": "记录每个来源上次读取到的最新条目时间戳，用作下次读取的起点。"
+    },
+    {
+      "term": "Ledger",
+      "translation": "台账",
+      "note": "记录智能体已报告条目及其最后已知状态的文件，用于避免重复报告。"
+    },
+    {
+      "term": "Memory Store",
+      "translation": "记忆存储",
+      "note": "挂载到每次运行沙箱中、跨运行持久保留的文本文件夹。"
+    },
+    {
+      "term": "Deployment",
+      "translation": "部署",
+      "note": "指定智能体、环境、首条消息、调度、凭据和预算并负责实际运行智能体的配置。"
+    },
+    {
+      "term": "Cron Schedule",
+      "translation": "cron 调度计划",
+      "note": "用 cron 表达式定义任务定时触发规则的调度方式。"
+    },
+    {
+      "term": "Guardrails",
+      "translation": "护栏机制",
+      "note": "限制智能体权限范围和花费的约束措施。"
+    },
+    {
+      "term": "Prompt Injection",
+      "translation": "提示词注入",
+      "note": "外部文本中夹带的内容被模型误当作指令执行的风险。"
+    },
+    {
+      "term": "Allowlist",
+      "translation": "允许列表",
+      "note": "限定运行环境可访问的主机范围的白名单。"
+    },
+    {
+      "term": "Budget",
+      "translation": "预算",
+      "note": "为每次运行设置的支出上限，触达后运行以 budget_reached 原因暂停。"
+    },
+    {
+      "term": "Frontmatter",
+      "translation": "前置元数据",
+      "note": "位于 Markdown 文件开头、用于声明名称、模型、工具等配置的元数据块。"
+    }
+  ]
+}

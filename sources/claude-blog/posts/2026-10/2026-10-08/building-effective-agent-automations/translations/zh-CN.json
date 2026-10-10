@@ -1,0 +1,1335 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:0787985b58047140cf5e426277c3b640ab00018689a6edc893e3b8cdb76964ec",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "claude-blog-zh.v1",
+  "title": "构建高效的智能体自动化",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "随着 AI 加快了我们的工作节奏，跟上进度变得越来越难。在 Anthropic，我们经常借助简单的智能体自动化来应对。它们通常按计划定时运行，在后台收集上下文，并主动告诉我们需要了解的信息。但要构建有效的智能体自动化并不容易：它们可能在无人察觉的情况下失去对某个信息源的访问权限，或者未能遵循我们的偏好。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/overview"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Claude Managed Agents"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（beta）构建了一个参考实现：它按计划读取自定义信息源（例如 Slack 和 GitHub 仓库），追踪自上次运行以来发生的变化，并将你需要了解的内容发布出去（例如发布到 Slack）。在本文中，我们将逐步讲解每个环节，分享一个参考实现，并提供一条可在 Claude Code 中运行的命令，帮你自动完成该智能体的配置。"
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "获取代码"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考实现见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/anthropics/claude-quickstarts/tree/main/managed-agents/daily-brief"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。如需交互式演练，请在 Claude Code 中运行下方命令。"
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-api"
+        },
+        {
+          "type": "text",
+          "text": " skill 可以按照本文的指导帮助你搭建该 agent："
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于这个参考实现，你需要一个 Slack 应用（"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://api.slack.com/apps?new_app=1&manifest_yaml=display_information%3A%0A%20%20name%3A%20Daily%20brief%0A%20%20description%3A%20Posts%20one%20short%20brief%20each%20weekday%20morning.%0Afeatures%3A%0A%20%20bot_user%3A%0A%20%20%20%20display_name%3A%20Daily%20brief%0A%20%20%20%20always_online%3A%20false%0A%20%20app_home%3A%0A%20%20%20%20home_tab_enabled%3A%20false%0A%20%20%20%20messages_tab_enabled%3A%20true%0A%20%20%20%20messages_tab_read_only_enabled%3A%20true%0Aoauth_config%3A%0A%20%20scopes%3A%0A%20%20%20%20bot%3A%0A%20%20%20%20%20%20-%20channels%3Ahistory%0A%20%20%20%20%20%20-%20chat%3Awrite%0Asettings%3A%0A%20%20org_deploy_enabled%3A%20false%0A%20%20socket_mode_enabled%3A%20false%0A%20%20token_rotation_enabled%3A%20false%0A"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "通过清单创建"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）和一个 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://github.com/settings/personal-access-tokens/new"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "GitHub 令牌"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。所提供的文件（如下所示）是 Claude API 资源的配置，包括智能体、其运行环境、记忆存储、密钥库和部署。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/cli/apply"
+          },
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "ant apply"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是 ant CLI 中的一个命令，它会读取这些文件，在你的 Claude API 工作区（平台存储和运行这些资源的地方）中创建相应资源，并将其 ID 记录到 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-lock.json"
+        },
+        {
+          "type": "text",
+          "text": " 中。"
+        }
+      ]
+    },
+    "b009": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们将在下文各节中使用此命令。配置完成后，该自动化任务会按计划在 Anthropic 的基础设施上运行，因此你的机器上无需保持任何程序运行。"
+        }
+      ]
+    },
+    "b010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "概述"
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们将要构建的智能体由六个组件构成，按以下顺序依次介绍："
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Sources - 一组具名的读取位置列表"
+        }
+      ]
+    },
+    "b013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Destination - 智能体可以写入的唯一位置"
+        }
+      ]
+    },
+    "b014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Agent - agent.md 中的模型、工具和运行步骤"
+        }
+      ]
+    },
+    "b015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Schedule - 一个 cron 调度计划"
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Memory——你的偏好与智能体自身的记忆"
+        }
+      ]
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "护栏机制 - 凡是智能体只需读取的地方都只授予只读权限，并为每次运行设置花费上限"
+        }
+      ]
+    },
+    "b020": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "参考来源"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该智能体默认读取两个来源：Slack 频道和 GitHub 拉取请求。这些频道和仓库列在你的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "preferences"
+        },
+        {
+          "type": "text",
+          "text": " 文件中。你也可以扩展该模板以使用其他来源。"
+        }
+      ]
+    },
+    "b023": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "为智能体配备专属的、限定权限范围的凭证"
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/overview"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "Managed Agents"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中，凭据存放在 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/vaults"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "vault"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 中。智能体可以引用这些凭据，但真实值始终保留在 vault 里，位于运行 Claude 代码的沙箱之外（参见"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/engineering/managed-agents"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://x.com/katelyn_lesse/status/2099315903884415400"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "此处"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "）："
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "MCP 服务器（GitHub）。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "智能体通过一个运行在沙箱外部的代理调用 MCP 工具。该代理会查找 URL 与该服务器 URL 相匹配的保险库凭据。\n"
+        }
+      ]
+    },
+    "b026": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "Shell（Slack）。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "智能体在沙箱内使用 bash 工具，通过 curl 调用 Slack API。沙箱中只保存一个不透明的占位符 "
+        },
+        {
+          "type": "inline_code",
+          "text": "$SLACK_BOT_TOKEN"
+        },
+        {
+          "type": "text",
+          "text": "。当请求离开沙箱时，平台会针对你允许的主机将其替换为真实令牌。\n"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "使用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "ant"
+        },
+        {
+          "type": "text",
+          "text": " CLI 和仓库中的模板文件创建 vault："
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这会在你的 Claude API 工作区中创建该保管库（由平台负责存储），并将其 ID 记录在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-lock.json"
+        },
+        {
+          "type": "text",
+          "text": " 中。然后使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "TypeScript SDK"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 将每个凭据添加到该保管库中。下面是一个添加 Slack 凭据的示例："
+        }
+      ]
+    },
+    "b032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "After creating the vault and adding each credential, attach the vault to the deployment. Copy the vault ID from "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-lock.json"
+        },
+        {
+          "type": "text",
+          "text": " into "
+        },
+        {
+          "type": "inline_code",
+          "text": "vault_ids"
+        },
+        {
+          "type": "text",
+          "text": " in the deployment file, "
+        },
+        {
+          "type": "inline_code",
+          "text": "deployment.md"
+        },
+        {
+          "type": "text",
+          "text": "."
+        }
+      ]
+    },
+    "b033": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从上次中断的地方继续阅读"
+        }
+      ]
+    },
+    "b034": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个常见的错误是让智能体读取一个固定的时间窗口，比如“"
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "过去 24 小时"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "”。运行晚了会留下空档，运行早了又会重复读取条目。正确的做法是为每个来源分配一个书签。每次运行结束时，智能体把它从每个来源读到的最新条目的时间戳写入同一个文件 "
+        },
+        {
+          "type": "inline_code",
+          "text": "bookmarks.json"
+        },
+        {
+          "type": "text",
+          "text": "，每个来源对应一条记录："
+        },
+        {
+          "type": "inline_code",
+          "text": "\"slack\": \"2026-09-14T13:02:11Z\""
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "下一次运行会从这些书签处开始，因此它的时间窗口会相应拉长或缩短，以覆盖自上次运行以来的全部内容。这些书签存放在名为 "
+        },
+        {
+          "type": "inline_code",
+          "text": "state"
+        },
+        {
+          "type": "text",
+          "text": " 的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/memory"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "记忆存储"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中：这是一个由文本文件组成的文件夹，平台会将其挂载到每次运行的沙箱中的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "/mnt/memory/"
+        },
+        {
+          "type": "text",
+          "text": " 下，并在多次运行之间保留。智能体使用其常规的文件工具读写它，而 "
+        },
+        {
+          "type": "inline_code",
+          "text": "agent.md"
+        },
+        {
+          "type": "text",
+          "text": " 中的指令会告诉它具体该怎么做。"
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "别把读取失败误当成风平浪静的一天"
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果某个 MCP 服务器宕机或其令牌已过期，运行仍会启动，只是不带该服务器的工具。会话会记录一条错误，但智能体从该来源看不到任何内容，于是报告“没有新内容”。"
+        }
+      ]
+    },
+    "b038": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "agent.md"
+        },
+        {
+          "type": "text",
+          "text": " 中的三条规则有助于解决这个问题。当某个数据源失败时，agent 会：将该数据源的书签保持在原处，用其他数据源撰写简报，并在简报末尾用一行文字注明它未能读取的内容（“本次运行无法获取 pull request”），以便让读者知晓。"
+        }
+      ]
+    },
+    "b039": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "目的地"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们的模板会发布到一个 Slack 频道，每次运行时都会发布一条带日期的帖子。"
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该 agent 在其沙箱中通过 bash 工具向 Slack 发帖，所用的 bot token 与它读取消息时使用的相同。"
+        }
+      ]
+    },
+    "b043": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "发布这条帖子不需要经过任何审批。智能体通过一条 bash 命令发送它，而内置的 bash 工具默认无需审批即可运行。"
+        },
+        {
+          "type": "inline_code",
+          "text": "slack.com"
+        },
+        {
+          "type": "text",
+          "text": " 也在该智能体"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/environments"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "环境"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（即其运行所在的沙箱）的允许列表中。发布帖子只需一个请求："
+        }
+      ]
+    },
+    "b045": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "先确认帖子已成功发布，再进行记录"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一旦确认帖子已发布，智能体就会更新其已报告条目的台账和书签。如果这些记录与实际发布的内容不一致，就可能出现两种问题。如果智能体记录了一条实际上并未发出的帖子，书签就会继续前移，而那些条目将永远不会被报告。如果智能体因为不确定第一条帖子是否已发出而再次发布，读者就会收到两份相同的简报。"
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "agent.md"
+        },
+        {
+          "type": "text",
+          "text": " 中的三条规则可以防止这种情况。第一，智能体会在频道的近期消息中查找今天的标题，如果该期内容已经发布，就不再发帖。第二，只有当 Slack 返回 "
+        },
+        {
+          "type": "inline_code",
+          "text": "\"ok\": true"
+        },
+        {
+          "type": "text",
+          "text": " 和消息 ts 时，才算发送成功。第三，智能体只在得到这一确认后才更新台账和书签。如果结果不明确，它会将本次运行标记为“可能已发布”，且不做其他任何改动，因此不会丢失任何内容。"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "该智能体会在其记忆存储（"
+        },
+        {
+          "type": "inline_code",
+          "text": "runs/<date>.md"
+        },
+        {
+          "type": "text",
+          "text": "）中保存一份运行记录。它在发帖前将本次运行标记为“发布中”，之后再标记为附带消息 ID 的“已发布”，或者标记为“可能已发布”。"
+        }
+      ]
+    },
+    "b049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Claude Managed Agents 中，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/agent-setup"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "agent"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 是一种带版本的配置，由模型、系统提示词和工具组成。每次运行都会按其运行步骤执行，然后停止。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们的参考实现中，智能体配置为 "
+        },
+        {
+          "type": "inline_code",
+          "text": "agent.md"
+        },
+        {
+          "type": "text",
+          "text": "："
+        }
+      ]
+    },
+    "b054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "frontmatter 提供智能体名称、模型、工具和 MCP 服务器，正文则提供智能体指令。MCP 工具默认需要审批，但运行时无人在场批准，因此将 GitHub 工具集设置为 "
+        },
+        {
+          "type": "inline_code",
+          "text": "always_allow"
+        },
+        {
+          "type": "text",
+          "text": "，并将 GitHub 令牌设置为 "
+        },
+        {
+          "type": "inline_code",
+          "text": "read-only"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "保持简报简短"
+        }
+      ]
+    },
+    "b056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "agent.md"
+        },
+        {
+          "type": "text",
+          "text": " 会引导 Claude 趋向简洁："
+        }
+      ]
+    },
+    "b058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "发布前，再检查一遍仍未解决的事项"
+        }
+      ]
+    },
+    "b059": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从智能体读取来源到发布内容之间，条目的状态可能会发生变化。在发布前的最后一刻，"
+        },
+        {
+          "type": "inline_code",
+          "text": "agent.md"
+        },
+        {
+          "type": "text",
+          "text": " 会指示智能体重新检查每个条目的实时状态："
+        }
+      ]
+    },
+    "b061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "调度"
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在 Claude Managed Agents 中，智能体只是一个配置文件；由"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/scheduled-deployments"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "部署"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来运行它。部署指定了智能体、环境以及每次运行的第一条消息，还包含调度计划、凭据库、记忆存储和预算。每当调度触发时，平台都会启动一个全新的智能体"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/sessions"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "会话"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b064": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在我们的模板中，部署记录在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "deployment.md"
+        },
+        {
+          "type": "text",
+          "text": " 中，以第一条消息作为其正文："
+        }
+      ]
+    },
+    "b066": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这会创建该部署，并包含它按路径引用的 agent、环境和记忆存储。"
+        }
+      ]
+    },
+    "b068": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果想在不等待计划触发的情况下进行测试，可以使用 "
+        },
+        {
+          "type": "inline_code",
+          "text": "ant beta:deployments run --deployment-id <id>"
+        },
+        {
+          "type": "text",
+          "text": " 手动启动一次运行，所需 ID 取自 "
+        },
+        {
+          "type": "inline_code",
+          "text": "claude-lock.json"
+        },
+        {
+          "type": "text",
+          "text": "。"
+        }
+      ]
+    },
+    "b069": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "按你所在的时区计算日期"
+        }
+      ]
+    },
+    "b070": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个常见的 bug 是智能体把今天早上称为“昨天”，因为它是按服务器所在时区计算日期的。在 "
+        },
+        {
+          "type": "inline_code",
+          "text": "deployment.md"
+        },
+        {
+          "type": "text",
+          "text": " 中，"
+        },
+        {
+          "type": "inline_code",
+          "text": "timezone"
+        },
+        {
+          "type": "text",
+          "text": " 字段设定运行的触发时间，而正文的第二行则告诉智能体在处理日期时应使用哪个时区。"
+        }
+      ]
+    },
+    "b071": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "记忆"
+        }
+      ]
+    },
+    "b072": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每次运行都从一个全新的沙箱开始，不保留上一次运行的任何记忆。没有记忆，反馈就无法留存。然而，过时的记忆也会让智能体困惑：它会把一个已经解决的事项报告为仍在等待中，或者因为某个事项“已经报告过”而将其遗漏，尽管它仍未关闭。"
+        }
+      ]
+    },
+    "b074": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们的模板维护两个"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/memory"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "记忆存储"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，即挂载在 /mnt/memory/ 下的文件夹（参见“来源”）："
+        }
+      ]
+    },
+    "b075": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "偏好设置"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（属于你，对智能体只读）：要读取哪些频道和仓库、哪些内容要排除、长度上限、输出目的地，以及何时停止。\n"
+        }
+      ]
+    },
+    "b076": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "\n"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "state"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "（属于智能体，可读写）：书签、记录其已报告内容的台账（每次运行一条记录）、它对你的偏好提出的修改建议，以及关于每个来源行为特点的笔记（例如“只返回最新的 50 条”）。\n"
+        }
+      ]
+    },
+    "b078": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "inline_code",
+          "text": "ant apply deployment.md"
+        },
+        {
+          "type": "text",
+          "text": " 会创建偏好设置存储目录，但不会在其中创建文件。首次运行之前，请使用该仓库的 "
+        },
+        {
+          "type": "inline_code",
+          "text": "scripts/seed-preferences.sh"
+        },
+        {
+          "type": "text",
+          "text": " 在其中写入你的 preferences.md。"
+        }
+      ]
+    },
+    "b079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每次运行开始时重新读取你的偏好设置"
+        }
+      ]
+    },
+    "b080": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个常见的问题是：偏好设置的副本被固化在提示词中，导致它不断沿用你早已修改过的规则。应让智能体在每次运行时都重新读取该文件。如果无法读取文件，它应当停止运行并明确说明，而不是按默认设置继续执行。"
+        }
+      ]
+    },
+    "b081": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "记录你已经报告过的内容，并报告其中的变化"
+        }
+      ]
+    },
+    "b082": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体会维护一份台账 "
+        },
+        {
+          "type": "inline_code",
+          "text": "ledger.md"
+        },
+        {
+          "type": "text",
+          "text": "，记录它报告过的每一项内容，从而避免简报重复。每一行记录该条目的报告时间、来源、一个固定不变的 ID（Slack 消息时间戳或拉取请求编号），以及它最后已知的状态："
+        }
+      ]
+    },
+    "b084": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "护栏"
+        }
+      ]
+    },
+    "b085": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "由于我们的自动化任务按计划在“后台”运行，我们对智能体能做什么以及能花费多少都设定了限制。"
+        }
+      ]
+    },
+    "b087": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "它能力上的局限"
+        }
+      ]
+    },
+    "b088": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体会读取他人撰写的消息和 issue，而这些文本可能会被解读为指令。因此要限制智能体在遵从这些指令时所能做的事情。在我们的示例中，GitHub 令牌和 "
+        },
+        {
+          "type": "inline_code",
+          "text": "preferences"
+        },
+        {
+          "type": "text",
+          "text": " 存储都是只读的，并且运行环境只能访问其允许列表中的主机。被植入的指令仍然可以改变简报的内容，包括通过智能体在多次运行之间保留的笔记来实现。但它无法写入 GitHub，也无法修改你的规则。"
+        }
+      ]
+    },
+    "b089": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Slack 是个例外：同一个令牌也用于发帖，因此只把机器人邀请到它需要读取或发帖的频道中。"
+        }
+      ]
+    },
+    "b090": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据真实运行数据设定支出上限"
+        }
+      ]
+    },
+    "b091": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "A spending cap protects you from runaway costs. Start at three to five times the cost of a normal run, then tighten it as you see real numbers. A run that hits its cap pauses instead of failing, so a cap set too low looks like a brief that went quiet. The cap is the "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/managed-agents/budgets"
+          },
+          "children": [
+            {
+              "type": "inline_code",
+              "text": "budget"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " in "
+        },
+        {
+          "type": "inline_code",
+          "text": "deployment.md"
+        },
+        {
+          "type": "text",
+          "text": ". Every run gets the full amount, and a run that reaches it pauses with a "
+        },
+        {
+          "type": "inline_code",
+          "text": "budget_reached"
+        },
+        {
+          "type": "text",
+          "text": " stop reason:"
+        }
+      ]
+    },
+    "b093": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "入门指南"
+        }
+      ]
+    },
+    "b094": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "我们的参考实现可以归结为六条规则："
+        }
+      ]
+    },
+    "b095": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "从书签位置读取每个来源，而不是按固定的时间窗口读取。"
+        }
+      ]
+    },
+    "b096": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "读取失败时要报告为无法读取，绝不能当作平静无事的一天。"
+        }
+      ]
+    },
+    "b097": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "发布前再逐项检查一遍。"
+        }
+      ]
+    },
+    "b098": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "只有在 Slack 确认后才将帖子计为已发送，然后更新书签和台账。"
+        }
+      ]
+    },
+    "b099": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每次运行都要重新读取你的偏好设置，并且要从智能体无法编辑的存储中读取。"
+        }
+      ]
+    },
+    "b100": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "凡是只需读取的地方，都只给智能体只读权限，并为每次运行设定支出上限。"
+        }
+      ]
+    },
+    "b102": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "Claude Code 可以带你逐步了解本文提供的指导。首先，进行更新："
+        }
+      ]
+    },
+    "b104": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "然后，使用 claude-api skill："
+        }
+      ]
+    },
+    "b106": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "claude-api 技能会读取这篇文章，提出一套配置方案，将文件写入你项目中的 agents/ 文件夹，并通过 ant apply 创建相应资源。请将其视为一个起点，并根据你的数据源、目标位置或记忆偏好来定制该智能体。"
+        }
+      ]
+    }
+  }
+}
