@@ -2,7 +2,7 @@
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
-> **本周生态**：全生态正加速出清浅层包装与玩具级演示，整体演进全面迈入“生产级工程落地”与“本地自主权夺回”的双轨深水区。产业重心呈现清晰的两极分化：向上收敛于具备严格安全审计、上下文治理与长程协同的企业级 Agent 基础设施，向下则通过算子极致压榨与本地优先（Local-first）架构将复杂推理与创作全流程深度下放至端侧硬件。
+> **本周生态**：本周技术生态加速出清浅层套壳与通用概念泡沫，全面进入以“确定性与可控性”为锚点的工程化深水区。整个演进轨迹清晰地分化为两极：要么向上收敛为兼具安全沙盒、权限治理与长程协同的企业级 Agent 生产基建，要么向下退守为追求极致低成本、隐私不出机与数据主权的本地优先闭环。
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
@@ -24,7 +24,7 @@
 ## 各主题项目清单
 
 ### dev-infra-and-tooling（61）
-_开发者基础设施赛道近期呈现明显的持续升温态势，核心演进方向正由传统重型流水线向“终端体验重塑”与“工程流程精细化”快速聚拢。大厂官方基建与开源社区在此深度共振，一方面推动了针对高频变更的堆叠 PR 工作流与终端代码审查等交互创新，直接响应 AI 辅助生成普及后的下游吞吐痛点；另一方面，富 TUI 工具与“架构即代码”正在重构开发者的日常交互范式。与此同时，本地优先（LSP/离线化）与轻量自托管工具的集中涌现，反映出团队在敏捷提效的同时，正加速夺回对本地数据隐私与核心链路的闭环掌控权。_
+_开发者基础设施与工具链赛道呈现持续升温态势，技术演进正从底层运行时与 CI/CD 稳态，向日常高频工作流的深度现代化与本地化迁移。社区开源与官方工具链呈现协同趋势，一方面在团队协作端共同押注细粒度流转与“一切皆代码”（如堆叠式 PR 和架构即代码），另一方面则将审查、管理等交互密集推向终端（TUI）与离线优先架构。这种结构变化反映出在代码生成效率大幅提升的背景下，开发者生态正加速重塑本地工具，以夺回对研发闭环的掌控力与审查吞吐量。_
 
 - `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
 - `github-trends` [Automattic/harper](https://github.com/Automattic/harper) — 完全离线、隐私优先的英语语法/拼写检查器，作为 Grammarly / LanguageTool 的开源本地替代品，以语言服务器（LSP）形态嵌入各类编辑器。
@@ -89,7 +89,7 @@ _开发者基础设施赛道近期呈现明显的持续升温态势，核心演�
 - `github-trends` [EpicGames/raddebugger](https://github.com/EpicGames/raddebugger) — 一个给 C/C++ 程序员用的图形调试器，作用和 Visual Studio 自带的调试器类似：让程序停在某一行，查看变量、内存、线程和调用栈。它原本由 RAD Game Tools 开发，现归 Epic Games 维护，主要作者是 Ryan Fleury。
 
 ### agent-skills-and-plugins（39）
-_该赛道热度持续升温，呈现出官方协议标准化与社区能力垂直化的双向共振：Claude 官方博客正加固 MCP 底层规范并积极拓展日常生活与工作连接器，而开源社区则围绕 Agent 工作流密集涌现高度分工的即插即用技能包。当前演进轨迹发生显著结构变化，工具开发不再局限于简单的单点 API 封装，而是普遍转向利用代码知识图谱、持久化文件等机制深度治理上下文以压缩 Token 开销，并主动为 UI 和工程输出注入强约束以对抗平庸化。这表明 Agent 技能生态正从被动响应的“外挂工具箱”，加速蜕变为承载领域专家先验、路由复杂任务链并穿透垂直软件环境的结构化外脑。_
+_当前 Agent 技能与插件赛道持续升温，正从早期松散的指令集合加速演进为高度工程化、标准化的外挂基建。跨源信号显示，在官方持续迭代 MCP 协议并拓宽原生应用连接的同时，社区生态正密集将技能包下沉至逆向工程、游戏引擎接入以及 UI 质量约束等垂直领域，推动技能形态从单纯的“工具调用”转向内嵌专家规则的“确定性工作流”。与此同时，基于本地知识图谱索引与文件系统持久化记忆的治理类 Skill 集中爆发，表明该赛道未来的核心演进轨迹在于系统性缓解长上下文 Token 膨胀，并确立跨客户端通用的技能分发标准。_
 
 - `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
 - `github-trends` [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) — 一个给 AI 编码助手用的「知识图谱 skill」。它把一整个代码文件夹（含 SQL schema、脚本、文档甚至图片视频）解析成可查询的知识图谱，让 Claude Code、Codex、Cursor 等在检索代码前先查图谱来导航，宣称能在大型仓库里省下大量 token。
@@ -132,7 +132,7 @@ _该赛道热度持续升温，呈现出官方协议标准化与社区能力垂�
 - `github-trends` [twostraws/SwiftUI-Agent-Skill](https://github.com/twostraws/SwiftUI-Agent-Skill) — 一套给 AI 编程助手看的 SwiftUI 写作规则，名叫"SwiftUI Pro"，作者是 Hacking with Swift 的 Paul Hudson。装上之后，Claude Code、Codex、Cursor 等工具在写或审查 SwiftUI 代码时，会按这套规则检查。
 
 ### coding-agents-and-harnesses（50）
-_编码 Agent 赛道在经历初期的泛用型工具爆发后整体热度有所退潮，但结构上正从粗放的代码生成交互向底层外壳（harness）与工程治理深度演进。开源社区与 Claude 官方博客释放出高度一致的信号：双方不再比拼单轮命令生成，而是同步聚焦于自主执行循环（loops）、多 Session 并行编排、代码图谱检索以及拦截不可逆操作的安全守卫机制。这表明该赛道正加速告别本地脆弱的原型演示，向具备严格安全围栏、沙箱隔离与长程自改进能力的后台自动化生产力基础设施收敛。_
+_编码智能体赛道在新项目涌现量上呈现退潮态势，正从早期的终端对话工具狂热快速收敛至工程化深水区。GitHub 社区生态与 Claude 官方博客在这一阶段表现出高度的跨源共振，双方均将重心从单纯的代码生成转移至「外壳架构（Harness）与运行环境」的重构，密集探索危险命令拦截 Hook、代码图谱检索、长时间自主 Loop 及多会话异步编排。整个赛道正经历从单体 CLI 工具向具备安全防线、后台自主闭环与系统级工作流协同的专业基础设施演进。_
 
 - `github-trends` [Dicklesworthstone/destructive_command_guard](https://github.com/Dicklesworthstone/destructive_command_guard) — 给 AI 编码 agent（Claude Code / Codex / Gemini CLI / Cursor / Aider 等）用的「破坏性命令拦截器」（简称 dcg）。作为 agent 执行命令前的 pre-execution hook，拦截 `git reset --hard`、`rm -rf`、`DROP TABLE` 这类会造成不可逆损失的操作。
 - `github-trends` [ColeMurray/background-agents](https://github.com/ColeMurray/background-agents) — 一个开源的「后台编码 agent」系统——把编码 agent 的会话从本地 localhost 搬到云端沙箱运行，通过 Slack / GitHub PR / Linear / webhook / cron 触发 agent 异步改代码、开 PR。
@@ -186,7 +186,7 @@ _编码 Agent 赛道在经历初期的泛用型工具爆发后整体热度有所
 - `claude-blog` [Claude Code in the cloud: a field guide to cloud sessions](https://claude.dev/blog/claude-code-in-the-cloud/) — You probably run Claude Code in a terminal on your own laptop. That session depends on the laptop in three ways:
 
 ### desktop-and-media-apps（29）
-_桌面与媒体应用赛道整体热度虽呈退潮趋势，但其内部形态正经历深刻的分化与重塑。以 Claude 官方博客为代表的产业力量，正加速将桌面端推向深度集成代码执行与多智能体协同的云端超级工作流中枢；而 GitHub 开源社区的关注点则反向收缩，集体押注于“本地优先（Local-first）”、零遥测与完全自托管的纯单机替代工具。桌面端生态正逐渐告别常规的单点工具型迭代，演化为向上承接全功能云端 AI 生态、向下坚守个人数据自主权的两极分立格局。_
+_桌面与媒体应用赛道热度呈现退潮态势，浅层 GUI 包装器的尝鲜红利逐渐出清，但底层生态正在经历鲜明的结构性分化。跨源信号显示，大模型官方博客正加速将桌面端筑牢为串联云端 Agent 协同与开发工作流的企业级统一入口；而开源社区则集体逆向倒向“极端本地化与数据主权”，集中涌现出纯端侧 AI 会议纪要、零云端外设配置和局域网点对点工具。这表明桌面端正在剥离平庸的中间形态，未来将不可逆地分化为两极：要么向上成为托管多智能体协作的复杂生产力控制台，要么向下退守为完全脱离云端依赖、极致轻量且自主可控的本地基建。_
 
 - `github-trends` [andrewrabert/jellium-desktop](https://github.com/andrewrabert/jellium-desktop) — Jellyfin（开源自托管媒体服务器）的一个非官方桌面客户端，用 Rust 编写。
 - `claude-blog` [The full Claude Desktop experience on AWS, Google Cloud, and Microsoft Foundry](https://claude.com/blog/the-full-claude-desktop-experience-on-aws-google-cloud-and-microsoft-foundry) — Organizations that use Claude Desktop through AWS, Google Cloud, and Microsoft Foundry now get the full Desktop experience — chat, Claude Cowork, and Claude Code, all in one app.
@@ -219,7 +219,7 @@ _桌面与媒体应用赛道整体热度虽呈退潮趋势，但其内部形态�
 - `github-trends` [pablostanley/yoinks](https://github.com/pablostanley/yoinks) — 一个在终端里下载网络视频的小工具。打开后粘贴链接，从列表里选清晰度或只要 MP3 音频，回车就开始下载，界面是全屏的终端菜单而不是一串命令参数。
 
 ### ai-video-voice-creative（18）
-_伴随前沿研究对视频扩散等底层生成架构的系统攻坚，AI 创意赛道正迎来从单点技术验证向全链路生产力爆发的持续升温。开源社区当前正掀起一场深度的「工作流重构」与「全栈端侧化」浪潮，从对标商业剪辑套件的无服务器编辑器，到可在消费级硬件离线运行的语音合成与 3D/全曲生成工具，技术重心正从云端大模型 API 快速下沉为个人电脑上的原生应用。这种跨越视音频的多模态协同与开源平替趋势，预示着创意工具正从高门槛的云端订阅服务加速演进为隐私优先、高度可组合的本地创作基础设施。_
+_随着前沿研究博客对视频扩散模型理论底座的系统性沉淀，开源社区正迎来多模态创意工具链的密集爆发，赛道热度呈现从单点算法验证向可用生产力快速外溢的升温轨迹。当前最显著的结构性变化在于“本地优先与平替潮”，大量社区项目正借助模型轻量化将商业级剪辑套件、跨语言音视频重配及 3D 生成彻底重构为无订阅、隐私不出机的桌面工作流。未来该赛道将进一步深化音视频与 3D 模态的端侧闭环，推动生成式 AI 从辅助特效向全流程自动化创作管线演进。_
 
 - `github-trends` [OpenCut-app/OpenCut](https://github.com/OpenCut-app/OpenCut) — 一个完全开源、在浏览器里就能用的视频剪辑器，定位是「CapCut 的开源替代」。你打开网页就能剪片，不用注册、不用下载客户端，素材也不上传到别人的服务器。
 - `github-trends` [AIEraDev/Clypra](https://github.com/AIEraDev/Clypra) — 一个用 Tauri + React + TypeScript 写的桌面视频剪辑器，定位「免费的 CapCut 替代品」——把付费剪辑软件的常用能力（多轨时间线、剪切、导出）做成本地原生、无水印、无订阅的开源工具。
@@ -241,7 +241,7 @@ _伴随前沿研究对视频扩散等底层生成架构的系统攻坚，AI 创�
 - `github-trends` [storytold/artcraft](https://github.com/storytold/artcraft) — 一个给画师、设计师和影视创作者用的 AI 出图、出视频桌面工作台，有 Windows 和 macOS 版，也能在浏览器里用。和只写提示词不同，用户先在 2D 画布和 3D 场景里摆好道具、角色姿势和机位，再交给模型生成。
 
 ### learning-and-curated-resources（85）
-_泛学习资料与精选资源列表赛道整体呈现降温退潮态势，传统静态知识清单的吸引力明显减弱。与此同时，留存的优质资源正发生结构性演化，从纯文本汇总加速转向“附带可运行环境”的实践代码库，甚至接入 MCP 直接化身为 AI 编程工具的原生上下文知识源。这种转变与官方博客全面聚焦 Claude Code/Cowork 落地黑客松与业务自动化的动向相契合，表明开发者的学习范式正从被动的文档消费，快速演变为即学即用的智能协作与实战交付。_
+_资源导航与学习路线赛道整体呈现热度退潮，但内部正经历从“静态清单索引”向“可运行工程示例、交互式技术书与 MCP 知识库化”的深度形态转变。社区项目中端到端可执行 Agent 合集的走红，与官方博客全面转向 Agent 辅助即时构建的信号形成呼应，表明行业学习范式正从长周期的静态知识储备，加速演进为依托智能体协同的高效动手实操与底层机理探究。_
 
 - `github-trends` [Shubhamsaboo/awesome-llm-apps](https://github.com/Shubhamsaboo/awesome-llm-apps) — 一个「能真正跑起来」的 AI Agent 与 RAG 应用合集——100+ 个可克隆、可定制、可上线的示例项目，覆盖多 agent、RAG、记忆、语音等常见形态。
 - `github-trends` [HenryNdubuaku/maths-cs-ai-compendium](https://github.com/HenryNdubuaku/maths-cs-ai-compendium) — 一份面向「想进顶级 AI Lab」的数学/CS/AI 学习合集，作者把从线性代数到量子 ML、从 SIMD/CUDA/Triton 底层到面试 roadmap 的内容做成 intuition-first（先建直觉）的教材，并附带一个 MCP server 可当 Claude Code/Cursor 的知识库调用。
@@ -330,7 +330,7 @@ _泛学习资料与精选资源列表赛道整体呈现降温退潮态势，传�
 - `claude-blog` [Building effective agent automations](https://claude.dev/blog/building-effective-agent-automations/) — As AI accelerates our work, it's getting harder to keep up. At Anthropic, simple agent automations are frequently used to help. They often run on a schedule, gather context in the background, and proactively tell us what we need to know. But it’s difficult to build effective agent automations: they can lose access to a source without anyone noticing or fail to follow our preferences.
 
 ### agent-frameworks-and-platforms（39）
-_通用 Agent 编排框架的尝鲜热潮正在退潮，赛道重心发生明显的结构性分化，全面转向生产级交付与长时运行工程。官方阵营如 Claude 博客正加速将沙箱、记忆与执行层收敛为云端托管服务，而开源社区则同步转向治理底座与组织级协作——从权限审计、虚拟运行时到带看板的状态控制面，开发者不再执着于玩具级的自主循环，而是致力于解决多 Agent 协同中的交接断层与权限失控。整个赛道正从“如何构建单体 Agent 框架”演化为“如何像管理企业系统与真实员工一样调度、隔离并治理多 Agent 组织”。_
+_通用自主 Agent 框架的概念泡沫正经历明显退潮，赛道重心从早期的 Prompt 提示词循环与玩具级编排，深度转向企业级生产基础设施的结构性重构。开源社区对权限治理、长程状态看板及虚拟沙盒环境的探索，与 Claude 官方博客密集押注托管 Agent、内置记忆层及 MCP 沙盒网络的动作形成清晰共振。未来的 Agent 平台不再比拼简单的自主调用逻辑，而是演进为面向长流程执行的系统底座，核心竞争转向安全隔离、跨会话状态维护以及融入真实团队协同的审计与治理能力。_
 
 - `github-trends` [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) — 一个集成多个 IM 平台、多种 LLM、插件与 AI 能力的 AI Agent 助手与开发框架，自我定位为可自托管的对话机器人平台。
 - `github-trends` [block/buzz](https://github.com/block/buzz) — Block（Jack Dorsey 旗下、Square/Cash App 母公司）开源的团队协作平台，把团队聊天、Git 代码托管和 AI Agent 装进同一套身份体系里——人和 Agent 都被当作"平等成员"参与协作。可以理解为"为 Agent 时代重做的 Slack + GitHub"。
@@ -373,7 +373,7 @@ _通用 Agent 编排框架的尝鲜热潮正在退潮，赛道重心发生明显
 - `claude-blog` [How Cresta turned CX expertise into an agent builder on the Claude Agent SDK](https://claude.com/blog/how-cresta-turned-cx-expertise-into-an-agent-builder-on-the-claude-agent-sdk) — *In our series, ****How startups build with Claude****, we look at the decisions behind AI products. Here, we explore how *[Cresta](https://cresta.com/)* brought its expertise building AI-native customer experience into *[Conductor](https://cresta.com/blog/cresta-conductor-the-agent-for-ai-agent-development)*, an agent that helps developers build and improve other agents.*
 
 ### networking-and-security（31）
-_该赛道整体热度虽呈退潮态势，但内部正经历从传统网络代理与离网通信向 AI 原生安全的深刻结构转移。跨源信号显示，厂商官方博客与前沿开源社区正高度共振于 Agent 场景的防线重构，焦点集中在 MCP 权限管控、工作负载身份联合以及针对自主代理的端点行为因果链审计。未来的网络与安全基建正加速演进为一套以模型与工具交互为核心、深度融合对抗防御与细粒度动态授权的新型治理体系。_
+_尽管该赛道在发声频次上呈现退潮态势，但内部正发生剧烈的结构重塑，前沿重心已从传统网络穿透与端点防护全面转向 AI 原生安全。开源社区对智能体因果链监控的探索，与前沿机构密集布局的 Agent 身份联邦、MCP 权限治理及模型对抗研究形成了显著的跨源共振。这表明赛道演进正快速越过旧式边界防护，将焦点锚定在为具备自主调用能力的 Agent 构建端到端的身份准入、运行时审计与动态防线。_
 
 - `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
 - `github-trends` [permissionlesstech/bitchat](https://github.com/permissionlesstech/bitchat) — 一个完全不需要互联网的聊天 App。手机之间直接用蓝牙互相连接、并且能多跳中继（最多 7 跳），所以在断网、关网、没有信号的地方，一群人依然可以互相发消息。由 Jack Dorsey（Twitter 联合创始人）做出原型，现在由社区组织 permissionlesstech 维护，风格上刻意做成"IRC 味"。
@@ -408,7 +408,7 @@ _该赛道整体热度虽呈退潮态势，但内部正经历从传统网络代�
 - `github-trends` [NVIDIA/OpenShell](https://github.com/NVIDIA/OpenShell) — 给 AI agent 用的"安全隔离舱"。agent 在里面可以读写文件、装依赖、调用外部服务，但能碰哪些目录、能连哪些网址、能用哪把密钥，都由一份策略文件事先规定；越界的操作在系统内核层面就被拦下。策略修改前，还会用形式化方法检查新策略会不会意外开出危险权限。
 
 ### games-and-emulators（10）
-_开源社区在该赛道呈现显著升温态势，技术探索正从传统的全系统指令模拟加速转向“静态重编译、动态指令翻译与反编译原生移植”的深度兼容路线。与此同时，游戏生态的二次开发正向渲染管线底层与系统级架构下沉，涵盖从着色器级实时改写、高性能语言服务端重构到跨移动端指令桥接的全面突破。在官方开源让步与社区高阶逆向能力的共同推动下，跨平台游玩与资产运行的软硬件壁垒正在被加速瓦解。_
+_该赛道近期显著升温，核心范式正经历结构性转变：传统黑盒虚拟机模拟逐步让位于基于源码反编译的跨平台原生移植，以及基于现代硬件同构特性的指令直通与着色器翻译层。开源工程不仅突破了新一代主机模拟与老牌经典移植的技术壁垒，更深入到直接接管渲染管线的着色器级改造，以及利用 Rust 等现代语言对大型游戏服务端的底层重构。整体趋势正从单纯追求“可用运行”转向画质现代重塑、非越狱移动端跨架构运行与资产跨平台化的深度工程探索。_
 
 - `github-trends` [k1tbyte/Wand-Enhancer](https://github.com/k1tbyte/Wand-Enhancer) — 给 WeMod（Wand）游戏修改器桌面端打补丁的第三方增强扩展。核心卖点是 Remote Web Panel——手机扫 QR 在局域网远程启停游戏/控制修改功能，并支持注入自定义 JS 脚本到渲染进程。
 - `github-trends` [par274/sharpemu](https://github.com/par274/sharpemu) — 一个纯 C#/.NET 从零编写的实验性 PlayStation 5 模拟器。因为 PS5 用 Zen2 x86-64 CPU，指令可直跑宿主 CPU，它走「翻译层」路线——只模拟 RDNA2 GPU，与早期 shadPS4 思路一致。
@@ -422,7 +422,7 @@ _开源社区在该赛道呈现显著升温态势，技术探索正从传统的�
 - `github-trends` [boykopovar/AnyPS5](https://github.com/boykopovar/AnyPS5) — 一个把 PS5 游戏"搬"到电脑上运行的工具。它不是模拟器，而是把 PS5 的游戏程序直接改写成 Windows 或 Linux 能运行的程序，再自己补上一套 PS5 系统功能和显卡着色器的翻译。
 
 ### productivity-and-business-apps（6）
-_该赛道整体呈现降温态势，泛AI包装的轻量工具加速出清，技术重心出现明显的结构性分化。开源社区普遍押注“自托管与数据主权”，集中涌现替代高价商业SaaS的私有化一体套件与统一多模型聚合界面；与此同时，Claude官方博客与Asana的案例释放出商业端信号，表明成熟业务系统正越过浅层对话助手，全面向嵌入核心工作流、具备可调教能力的人机协同Agent深水区演进。_
+_该赛道整体热度虽呈退潮之势，但正经历从表层 AI 赋能向务实落地的结构性分流。官方博客与成熟厂商开始联合押注能融入复杂工作流的“人机协作 Agent”，而开源社区则显露出对高昂 SaaS 订阅的防御性反弹，普遍转向强调数据主权与多模型集成的本地自托管方案。这标志着单纯依赖通用模型套壳的生产力概念红利已过，赛道正在深嵌企业核心业务的高阶协同与注重成本控制的私有化底座之间重塑价值边界。_
 
 - `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
 - `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
@@ -432,7 +432,7 @@ _该赛道整体呈现降温态势，泛AI包装的轻量工具加速出清，�
 - `github-trends` [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym) — 一个装在自己服务器上的健身记录 App。可以排每周训练计划、跟着引导做训练（自动休息计时、识别个人纪录、超级组、有氧），并直观显示哪些肌群练过、正在疲劳、或很久没练。
 
 ### inference-and-serving-runtime（20）
-_推理与服务运行时赛道正经历从通用服务框架走向“端侧极致压榨与流量网格化”的结构性升温。在执行层，随着头部云厂商加速推进大模型托管与企业级运行时标准化，开源社区与底层研究正合力向个人与端侧硬件下沉——通过专用注意力算子手写、1-bit 等极端量化以及 SSD 权重流式加载，集中攻克消费级设备本地运行百亿至千亿级 MoE 模型的壁垒。与此同时，充当上游缓冲的协议转换代理与多账号聚合网关在社区快速爆发，标志着该赛道正从单一推理引擎演化为涵盖底层异构算子定制、轻量化本地运行时与上层透明流量治理的完整基础设施体系。_
+_推理与服务运行时赛道呈现出“企业云端托管标准化”与“消费级硬件极限下沉”双轨升温的态势。官方信号显示主流前沿模型正加速融入云巨头的合规基础设施，而开源社区则将经典的推理优化理论推向极端——通过专用内核手写、1-bit 极端量化和 SSD 权重流式加载，全力攻克消费级单机驱动数百亿甚至上千亿参数模型的性能瓶颈。与此同时，兼具多端点聚合、订阅池化与协议自动转换的轻量网关工具迎来爆发，表明开发者正自下而上地利用工程巧思抹平生态割裂，重塑低门槛、低成本的推理路由层。_
 
 - `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
 - `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
@@ -456,7 +456,7 @@ _推理与服务运行时赛道正经历从通用服务框架走向“端侧极�
 - `github-trends` [tile-ai/tilelang](https://github.com/tile-ai/tilelang) — 一门专门用来写"算子"的编程语言。算子是 AI 模型里最底层的计算单元（矩阵乘法、注意力计算等），决定模型在显卡上跑多快。传统上要用 CUDA 手写，门槛很高；TileLang 让工程师用接近 Python 的写法描述计算，再由编译器生成针对 NVIDIA、AMD、华为昇腾等硬件优化过的代码。
 
 ### data-and-analytics-infra（17）
-_通用数据工程基础设施的热度整体处于退潮期，传统的管道编排与存储计算架构已进入成熟平水期，新增探索几乎全数被大语言模型重构。开源社区与 Claude 官方博客在分析消费端形成明确共振，共同押注将自然语言转化为可信查询的“对话式即席分析（GenBI）”，推动企业内部数据消费从静态看板向智能体交互迁移。这促使赛道重心发生结构性转向，不再追求另起炉灶的底层引擎，而是转向围绕指标一致性、文档多模态提取与知识图谱展开的“面向 AI 的语义与上下文治理层”。_
+_传统数据工程与流水线编排的热度整体呈现退潮态势，但赛道内部正经历向“AI 原生自服务分析与语义治理”的结构性重构。Claude 官方博客对企业内即席数据问答实践的复盘，与开源社区中 GenBI 平台及指标规范项目的涌现形成跨源共振，印证了数据底座正在由“面向工程师”向“适配 Agent 上下文”加速转型。未来分析基础设施的演进重心不再是泛化管道的搬运与调度，而是通过标准化的语义层与知识底座，为大模型提供低幻觉、可溯源的企业级单一事实源。_
 
 - `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
 - `github-trends` [apache/ossie](https://github.com/apache/ossie) — 一套让不同数据平台"对同一个指标说同一种话"的开放规范。今天你在 BI 工具里定义的"月活跃用户"，到了 AI 助手、数据仓库、报表工具里往往各算各的口径；Ossie 想用一份厂商中立的 JSON/YAML 规范，把指标、维度、关系这些"语义元数据"标准化，作为跨平台的单一事实源。
@@ -477,14 +477,14 @@ _通用数据工程基础设施的热度整体处于退潮期，传统的管道�
 - `github-trends` [t8y2/dbx](https://github.com/t8y2/dbx) — 一个很小（约 25 MB）的数据库管理工具，一个软件就能连 MySQL、PostgreSQL、Redis、MongoDB、DuckDB、达梦、OceanBase 等 100 多种数据库。有桌面版、网页版（Docker）和命令行版，还内置 AI 助手帮你写 SQL，并能作为 MCP 服务让 Claude Code、Cursor 等 AI 编程工具直接查库。
 
 ### hardware-and-embedded（3）
-_硬件与嵌入式赛道近期呈现出显著的升温态势，开源社区正自下而上掀起一股将工业级、高成本系统向平民化硬件深度下放的浪潮。当前的技术突破不仅覆盖了复杂射频雷达设计资料的端到端开源，更加速了具身智能强化学习与轻量端侧部署在微型机器人上的融合。这标志着嵌入式开发正从传统的固件编写，快速转向以“极低成本芯片+前沿算法集成”为核心的智能化边缘系统生态。_
+_硬件与嵌入式赛道近期呈现出明显的热度回升态势，核心驱动力在于开源生态对高壁垒硬件的激进化平民重构。从微波射频相控阵、具身机器人 Sim2Real 闭环，再到极低成本芯片的单点专用化，社区正在用全栈开放的设计资料与现代算法栈，将以往数十万美元级的专业设备打落至消费级乃至元器件级成本。该赛道正加速由传统的封闭固件开发转向“极端低成本化”与“软件定义硬件”，使边缘智能与工业级硬件的原型验证门槛被彻底击穿。_
 
 - `github-trends` [NawfalMotii79/PLFM_RADAR](https://github.com/NawfalMotii79/PLFM_RADAR) — 一个人把一整套 10.5 GHz 雷达的设计资料全部开源了——电路原理图、PCB 布线、FPGA 代码、单片机固件、上位机界面，一样不留。项目代号 AERIS-10，目标是让大学实验室、无人机团队和业余射频爱好者能自己造一台以往要几十万美元的相控阵雷达。作者是摩洛哥卡萨布兰卡的一位电子工程师，为这个项目还新注册了公司。
 - `github-trends` [pollen-robotics/microduck_rl](https://github.com/pollen-robotics/microduck_rl) — 教一只机器鸭子走路的训练代码。Microduck 是 Hugging Face 旗下 Pollen Robotics 卖的 25 厘米、800 克、$399 的双足鸭子机器人；这个仓库让你在自己电脑的 GPU 上用仿真让虚拟鸭子反复练习走路、摔倒爬起、踢球、前滚翻，练好后把模型导出成 ONNX 刷进真机。
 - `github-trends` [M-Abozaid/esp32-c3-adblock](https://github.com/M-Abozaid/esp32-c3-adblock) — 一块约 2 美元的小芯片做成的家庭广告拦截器。插上电、设成家里网络的 DNS，它就会把广告和跟踪域名的请求挡掉，效果类似常见的 Pi-hole，但不需要树莓派。
 
 ### agent-deliverables-and-artifacts（10）
-_尽管新增热度表面上有所退潮，该赛道正经历从独立展示工具向 Agent 基础设施的深层结构收敛。Claude 官方博客将自更新工件与设计系统深度内建为工作流常驻模块，开源社区则同步向两端分化：一端将 CAD、原生 PPT 及架构图等复杂产物解构为面向 Coding Agent 的轻量技能包，另一端正把 UI 框架与 Office 内核重构为 Agent 专用的渲染与读写底座。交付物正加速摆脱一次性的临时文本形态，全面转向低构建依赖、高保真且原生可编辑的专业工程资产。_
+_该赛道在经历前期的集中爆发后新增热度虽有所放缓，但底层正从泛化的独立生成应用向深度嵌入 Agent 工具链发生结构性沉淀。Anthropic 官方将工件与设计系统原生下沉至终端编码工作流，与开源社区大量涌现的图表、文档、CAD 专用技能包形成跨源共振，显露出“以宿主 Agent 为核心进行外挂扩展”的清晰路径。未来交付物形态正全面告别粗糙的静态图文，加速收敛至单文件 HTML/SVG、可二次编辑的 PPTX 以及强约束组件树等高保真、免构建且可直接用于生产的确定性工程资产。_
 
 - `github-trends` [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad) — 一套给 AI 编码 agent（Claude Code / Codex）用的"技能包"，让 agent 能用自然语言或图片直接生成、检查、切片和交付 CAD 模型、机器人描述文件（URDF/SDF）和硬件设计产物，基于 Build123d + OpenCASCADE，配套网站 cadskills.xyz。
 - `claude-blog` [Claude Design now stays on brand for daily work](https://claude.com/blog/claude-design-stays-on-brand-for-daily-work) — Claude Design now sticks to your design system across projects, works fluidly with Claude Code, lets you edit directly on the canvas, and connects to more tools you already use. It has a new home in the sidebar on the Claude desktop app; you can also find it at [claude.ai/design](https://claude.ai/design).
