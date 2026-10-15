@@ -159,8 +159,8 @@ Temper 背后的理念是：每个构件都应当足够小，小到可以完整�
 
 > “If agents can build software autonomously inside factories with this kind of discipline, maybe we don't need to stop at dark factories. Software built this way starts to feel like an organism we can grow, cultivate, and evolve through feedback, selection, and adaptation,” says Sesh.
 
-| Datadog 团队的最佳实践 |
-| --- |
+| Datadog 团队的最佳实践 |  |
+| --- | --- |
 | 你真正的瓶颈是生成，还是验证？ | 以验证为前提。智能体生成代码的速度早已超过任何团队的审查能力；已生成的内容与已被证明的内容之间的差距，正是各种失效模式不断累积的地方。应该把投入放在这里，而不是追求更高的吞吐量。 |
 | 智能体究竟应该输出什么？ | 对控制逻辑（而非代码）使用规约，对任意代码采用携带证明的方式。将编译和证明放在 LLM 之外——把规约交给一个确定性内核，这样经过验证的产物就是实际运行的产物。 |
 | 你的控制逻辑是显式的，还是散落在代码库各处？ | 把状态机从路由、服务方法和后台任务中抽离出来，将其转化为数据：一张智能体可以在策略约束下读取、修改并热加载的状态转换表。 |
@@ -168,8 +168,8 @@ Temper 背后的理念是：每个构件都应当足够小，小到可以完整�
 
 > 英文原表 / English original
 
-| Best practices from the Datadog team |
-| --- |
+| Best practices from the Datadog team |  |
+| --- | --- |
 | Is your real bottleneck generation or verification? | Assume verification. Agents already produce code faster than any team can review; the gap between what's generated and what's proven is where the failure modes pile up. Invest there, not in more throughput. |
 | What should the agent actually emit? | Specs for control logic (not code), and proof carrying for arbitrary code. Put compilation and proof outside the LLM — hand the spec to a deterministic kernel so the artifact that gets verified is the artifact that runs. |
 | Is your control logic explicit, or scattered across the codebase? | Pull the state machine out of routes, service methods, and background jobs and make it data: a transition table an agent can read, modify, and hot-reload under policy. |

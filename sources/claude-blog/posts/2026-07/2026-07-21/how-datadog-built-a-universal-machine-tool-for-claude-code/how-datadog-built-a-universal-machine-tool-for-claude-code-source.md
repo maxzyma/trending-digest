@@ -73,8 +73,8 @@ The industrial revolution became possible because machine tools made parts compo
 
 “If agents can build software autonomously inside factories with this kind of discipline, maybe we don't need to stop at dark factories. Software built this way starts to feel like an organism we can grow, cultivate, and evolve through feedback, selection, and adaptation,” says Sesh.
 
-| Best practices from the Datadog team |
-| --- |
+| Best practices from the Datadog team |  |
+| --- | --- |
 | Is your real bottleneck generation or verification? | Assume verification. Agents already produce code faster than any team can review; the gap between what's generated and what's proven is where the failure modes pile up. Invest there, not in more throughput. |
 | What should the agent actually emit? | Specs for control logic (not code), and proof carrying for arbitrary code. Put compilation and proof outside the LLM — hand the spec to a deterministic kernel so the artifact that gets verified is the artifact that runs. |
 | Is your control logic explicit, or scattered across the codebase? | Pull the state machine out of routes, service methods, and background jobs and make it data: a transition table an agent can read, modify, and hot-reload under policy. |
