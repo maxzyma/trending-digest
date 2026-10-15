@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-10-14）
+# 跨源主题聚类 — 同类与升温（2026-10-15）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,7 +6,7 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↑升温 | 8 | 6 | 65 | 62 | github+claude | canonical |
+| dev-infra-and-tooling | ↑升温 | 8 | 7 | 67 | 64 | github+claude | canonical |
 | agent-skills-and-plugins | ↓退潮 | 4 | 5 | 40 | 39 | github+claude | canonical |
 | ai-video-voice-creative | ↑升温 | 3 | 2 | 18 | 18 | github+lilian | canonical |
 | coding-agents-and-harnesses | ↓退潮 | 2 | 4 | 53 | 50 | github+claude+lilian | canonical |
@@ -14,16 +14,16 @@
 | desktop-and-media-apps | →持稳 | 2 | 2 | 30 | 29 | github+claude | canonical |
 | inference-and-serving-runtime | ↑升温 | 2 | 0 | 21 | 21 | github+claude+lilian | canonical |
 | learning-and-curated-resources | ↓退潮 | 1 | 5 | 85 | 85 | github+claude+lilian | canonical |
-| networking-and-security | ↓退潮 | 1 | 5 | 34 | 31 | github+claude+lilian | canonical |
-| data-and-analytics-infra | ↓退潮 | 1 | 2 | 17 | 17 | github+claude | canonical |
 | games-and-emulators | →持稳 | 1 | 1 | 10 | 10 | github | canonical |
-| productivity-and-business-apps | ↓退潮 | 1 | 4 | 6 | 6 | github+claude | canonical |
+| productivity-and-business-apps | ↓退潮 | 1 | 3 | 6 | 6 | github+claude | canonical |
 | hardware-and-embedded | ↑升温 | 1 | 0 | 3 | 3 | github | canonical |
+| networking-and-security | ↓退潮 | 0 | 5 | 34 | 31 | github+claude+lilian | canonical |
+| data-and-analytics-infra | ↓退潮 | 0 | 3 | 17 | 17 | github+claude | canonical |
 | agent-deliverables-and-artifacts | ↓退潮 | 0 | 2 | 10 | 10 | github+claude | canonical |
 
 ## 各主题项目清单
 
-### dev-infra-and-tooling（62）
+### dev-infra-and-tooling（64）
 _开发者基础设施与工具链赛道呈现持续升温态势，技术演进正从底层运行时与 CI/CD 稳态，向日常高频工作流的深度现代化与本地化迁移。社区开源与官方工具链呈现协同趋势，一方面在团队协作端共同押注细粒度流转与“一切皆代码”（如堆叠式 PR 和架构即代码），另一方面则将审查、管理等交互密集推向终端（TUI）与离线优先架构。这种结构变化反映出在代码生成效率大幅提升的背景下，开发者生态正加速重塑本地工具，以夺回对研发闭环的掌控力与审查吞吐量。_
 
 - `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
@@ -88,6 +88,8 @@ _开发者基础设施与工具链赛道呈现持续升温态势，技术演进�
 - `github-trends` [tester-army/e2e](https://github.com/tester-army/e2e) — 一个自动化测试框架，用来检查网站和手机 App 的功能是不是正常。写测试时可以像传统工具那样精确地写"点这个按钮、检查这段文字"，也可以直接用一句话告诉 AI "去完成注册流程""确认购物车里有两件商品"，由 AI 自己操作页面。出自 YC 投资的测试公司 TesterArmy。
 - `github-trends` [EpicGames/raddebugger](https://github.com/EpicGames/raddebugger) — 一个给 C/C++ 程序员用的图形调试器，作用和 Visual Studio 自带的调试器类似：让程序停在某一行，查看变量、内存、线程和调用栈。它原本由 RAD Game Tools 开发，现归 Epic Games 维护，主要作者是 Ryan Fleury。
 - `github-trends` [xtool-org/xtool](https://github.com/xtool-org/xtool) — 一个命令行工具，让开发者不用 Mac 也能做 iOS 应用。在 Linux 或 Windows 上写好 Swift 代码后，xtool 负责编译、用 Apple 账号签名，再把应用装到连接的 iPhone 上，完成原本必须在 Mac 上用 Xcode 才能走完的流程。
+- `github-trends` [ifixai-ai/iFixAi](https://github.com/ifixai-ai/iFixAi) — 给 AI Agent 做"体检"的命令行工具。使用者先用配置文件写清楚业务规则和 Agent 能用哪些工具，iFixAi 再对 Agent 发起一组测试，看它有没有越权操作、编造内容、隐瞒风险，或者执行本该被拒绝的动作，最后由另一个模型打分，输出字母等级和报告。
+- `claude-blog` [Agent observability on the Claude Platform](https://claude.com/resources/articles/agent-observability-on-the-claude-platform) — You can now send OpenTelemetry (OTel) traces from Claude Managed Agents, the Messages API, and Claude SDKs to any OTel tool, and follow each step your agents take. If you already send Claude Code or Cowork traces to your observability tool, the agents you build on the Claude Platform can also show up in the same place.
 
 ### agent-skills-and-plugins（39）
 _当前 Agent 技能与插件赛道持续升温，正从早期松散的指令集合加速演进为高度工程化、标准化的外挂基建。跨源信号显示，在官方持续迭代 MCP 协议并拓宽原生应用连接的同时，社区生态正密集将技能包下沉至逆向工程、游戏引擎接入以及 UI 质量约束等垂直领域，推动技能形态从单纯的“工具调用”转向内嵌专家规则的“确定性工作流”。与此同时，基于本地知识图谱索引与文件系统持久化记忆的治理类 Skill 集中爆发，表明该赛道未来的核心演进轨迹在于系统性缓解长上下文 Token 膨胀，并确立跨客户端通用的技能分发标准。_
@@ -398,6 +400,37 @@ _资源导航与学习路线赛道整体呈现热度退潮，但内部正经历�
 - `github-trends` [cs341-illinois/coursebook](https://github.com/cs341-illinois/coursebook) — 伊利诺伊大学香槟分校（UIUC）"系统编程"课 CS 341（旧编号 CS 241）的官方开源教材。内容从 C 语言讲起，一路讲到进程、线程、同步、内存分配、网络和文件系统，可以在线读，也可以下载 PDF。
 - `claude-blog` [Building effective agent automations](https://claude.dev/blog/building-effective-agent-automations/) — As AI accelerates our work, it's getting harder to keep up. At Anthropic, simple agent automations are frequently used to help. They often run on a schedule, gather context in the background, and proactively tell us what we need to know. But it’s difficult to build effective agent automations: they can lose access to a source without anyone noticing or fail to follow our preferences.
 
+### games-and-emulators（10）
+_该赛道近期显著升温，核心范式正经历结构性转变：传统黑盒虚拟机模拟逐步让位于基于源码反编译的跨平台原生移植，以及基于现代硬件同构特性的指令直通与着色器翻译层。开源工程不仅突破了新一代主机模拟与老牌经典移植的技术壁垒，更深入到直接接管渲染管线的着色器级改造，以及利用 Rust 等现代语言对大型游戏服务端的底层重构。整体趋势正从单纯追求“可用运行”转向画质现代重塑、非越狱移动端跨架构运行与资产跨平台化的深度工程探索。_
+
+- `github-trends` [k1tbyte/Wand-Enhancer](https://github.com/k1tbyte/Wand-Enhancer) — 给 WeMod（Wand）游戏修改器桌面端打补丁的第三方增强扩展。核心卖点是 Remote Web Panel——手机扫 QR 在局域网远程启停游戏/控制修改功能，并支持注入自定义 JS 脚本到渲染进程。
+- `github-trends` [par274/sharpemu](https://github.com/par274/sharpemu) — 一个纯 C#/.NET 从零编写的实验性 PlayStation 5 模拟器。因为 PS5 用 Zen2 x86-64 CPU，指令可直跑宿主 CPU，它走「翻译层」路线——只模拟 RDNA2 GPU，与早期 shadPS4 思路一致。
+- `github-trends` [YimMenu/YimMenuV2](https://github.com/YimMenu/YimMenuV2) — 面向《GTA 5: Enhanced》的实验性 mod / 作弊菜单（cheat menu）。玩家把它以 DLL 形式注入游戏，在游戏内弹出一个功能面板，用来改载具、单刷抢劫任务、修改金钱/解锁等。
+- `github-trends` [Pumpkin-MC/Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) — 用 Rust 从零重写的 Minecraft 服务端，目标是让普通人也能低成本托管高性能、省资源的 MC 服务器（对标官方 Java 版和 PaperMC）。
+- `github-trends` [HarbourMasters/Lighthouse](https://github.com/HarbourMasters/Lighthouse) — 1998 年 N64 游戏《Banjo-Kazooie》（班卓熊大冒险）的**原生 PC 移植版**——注意，不是模拟器。社区先把原版游戏反编译成可读的 C 代码，Lighthouse 在此基础上重建出能在 Windows / Linux / macOS 上原生编译运行的程序。HarbourMasters 就是做《塞尔达传说：时之笛》PC 移植（Ship of Harkinian）的那个团队，Lighthouse 是他们在马里奥 64、时之笛、姆吉拉之后的新作。
+- `github-trends` [rommapp/romm](https://github.com/rommapp/romm) — 一个自托管的复古游戏 ROM 管理器 + 播放器。你把自己收藏的 ROM 丢进去，它自动刮削封面/元数据、整理成漂亮的 Web 库，还能通过 EmulatorJS 直接在浏览器里开玩，支持多用户。
+- `github-trends` [SmartlyDressedGames/U3-SDK](https://github.com/SmartlyDressedGames/U3-SDK) — 免费开放世界僵尸生存沙盒游戏 Unturned 的官方源码仓库。开发商 Smartly Dressed Games 于 2026-07-07 把这款日活峰值超过 1 万的老牌游戏源码公开，供玩家和 modder 查看内部实现、提交修复和功能、制作深度 mod 与地图。
+- `github-trends` [clshortfuse/renodx](https://github.com/clshortfuse/renodx) — 给 PC 游戏"修 HDR"的一套开源 mod 引擎。很多游戏在 HDR 显示器上画面发灰发白、亮部细节被压没、UI 又刺眼。RenoDX 不是加一层后期滤镜，而是通过 ReShade 的 add-on 接口直接改写游戏 DX12 的着色器，在游戏把画面压进 SDR 之前接管色调映射，并给用户一套实时滑条——峰值亮度、纸白、对比、饱和、UI 亮度都能单独调。
+- `github-trends` [willfaust/Madeira](https://github.com/willfaust/Madeira) — 一个在没越狱的 iPhone / iPad 上运行 Windows 电脑游戏的研究项目。它把 Windows 兼容层、x86 指令翻译器和图形转换层三样东西塞进一个 iOS App 里。
+- `github-trends` [boykopovar/AnyPS5](https://github.com/boykopovar/AnyPS5) — 一个把 PS5 游戏"搬"到电脑上运行的工具。它不是模拟器，而是把 PS5 的游戏程序直接改写成 Windows 或 Linux 能运行的程序，再自己补上一套 PS5 系统功能和显卡着色器的翻译。
+
+### productivity-and-business-apps（6）
+_该赛道整体热度虽呈退潮之势，但正经历从表层 AI 赋能向务实落地的结构性分流。官方博客与成熟厂商开始联合押注能融入复杂工作流的“人机协作 Agent”，而开源社区则显露出对高昂 SaaS 订阅的防御性反弹，普遍转向强调数据主权与多模型集成的本地自托管方案。这标志着单纯依赖通用模型套壳的生产力概念红利已过，赛道正在深嵌企业核心业务的高阶协同与注重成本控制的私有化底座之间重塑价值边界。_
+
+- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
+- `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
+- `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
+- `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
+- `claude-blog` [Agents you can coach: how Asana builds human-agent teams with Claude](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude) — *This is the third post in our series on building human-agent teams. The *[first](https://claude.com/blog/building-effective-human-agent-teams)* shared what we’ve learned working with multiplayer AI at Anthropic. The *[second](https://claude.com/blog/turning-conversation-into-knowledge-how-slack-builds-human-agent-teams)* shared how Slack turns workplace conversation into the context agents need. 
+- `github-trends` [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym) — 一个装在自己服务器上的健身记录 App。可以排每周训练计划、跟着引导做训练（自动休息计时、识别个人纪录、超级组、有氧），并直观显示哪些肌群练过、正在疲劳、或很久没练。
+
+### hardware-and-embedded（3）
+_硬件与嵌入式赛道近期呈现出明显的热度回升态势，核心驱动力在于开源生态对高壁垒硬件的激进化平民重构。从微波射频相控阵、具身机器人 Sim2Real 闭环，再到极低成本芯片的单点专用化，社区正在用全栈开放的设计资料与现代算法栈，将以往数十万美元级的专业设备打落至消费级乃至元器件级成本。该赛道正加速由传统的封闭固件开发转向“极端低成本化”与“软件定义硬件”，使边缘智能与工业级硬件的原型验证门槛被彻底击穿。_
+
+- `github-trends` [NawfalMotii79/PLFM_RADAR](https://github.com/NawfalMotii79/PLFM_RADAR) — 一个人把一整套 10.5 GHz 雷达的设计资料全部开源了——电路原理图、PCB 布线、FPGA 代码、单片机固件、上位机界面，一样不留。项目代号 AERIS-10，目标是让大学实验室、无人机团队和业余射频爱好者能自己造一台以往要几十万美元的相控阵雷达。作者是摩洛哥卡萨布兰卡的一位电子工程师，为这个项目还新注册了公司。
+- `github-trends` [pollen-robotics/microduck_rl](https://github.com/pollen-robotics/microduck_rl) — 教一只机器鸭子走路的训练代码。Microduck 是 Hugging Face 旗下 Pollen Robotics 卖的 25 厘米、800 克、$399 的双足鸭子机器人；这个仓库让你在自己电脑的 GPU 上用仿真让虚拟鸭子反复练习走路、摔倒爬起、踢球、前滚翻，练好后把模型导出成 ONNX 刷进真机。
+- `github-trends` [M-Abozaid/esp32-c3-adblock](https://github.com/M-Abozaid/esp32-c3-adblock) — 一块约 2 美元的小芯片做成的家庭广告拦截器。插上电、设成家里网络的 DNS，它就会把广告和跟踪域名的请求挡掉，效果类似常见的 Pi-hole，但不需要树莓派。
+
 ### networking-and-security（31）
 _尽管该赛道在发声频次上呈现退潮态势，但内部正发生剧烈的结构重塑，前沿重心已从传统网络穿透与端点防护全面转向 AI 原生安全。开源社区对智能体因果链监控的探索，与前沿机构密集布局的 Agent 身份联邦、MCP 权限治理及模型对抗研究形成了显著的跨源共振。这表明赛道演进正快速越过旧式边界防护，将焦点锚定在为具备自主调用能力的 Agent 构建端到端的身份准入、运行时审计与动态防线。_
 
@@ -453,37 +486,6 @@ _传统数据工程与流水线编排的热度整体呈现退潮态势，但赛�
 - `github-trends` [Tencent/WeKnora](https://github.com/Tencent/WeKnora) — 一套可以自己部署的文档知识库系统。你把 PDF、Word、Notion 页面之类的原始文档丢进去，它做三件事：变成能被问答检索的知识库（RAG）、提供一个会自己多步推理的问答 agent、以及生成一份能自我维护的 Wiki。
 - `github-trends` [docling-project/docling](https://github.com/docling-project/docling) — 一个把各种办公文档"翻译"成 AI 能读的格式的工具。你手里有一堆 PDF 合同、Word 报告、PPT 和扫描件，想让大模型回答关于它们的问题，中间缺的就是这一步——把版面、标题层级、表格、图表、公式都识别出来，输出成结构化的 Markdown 或 JSON。Docling 做的就是这一步，一条命令或几行 Python 就能跑，也能起成一个 HTTP 服务（docling-serve）。
 - `github-trends` [t8y2/dbx](https://github.com/t8y2/dbx) — 一个很小（约 25 MB）的数据库管理工具，一个软件就能连 MySQL、PostgreSQL、Redis、MongoDB、DuckDB、达梦、OceanBase 等 100 多种数据库。有桌面版、网页版（Docker）和命令行版，还内置 AI 助手帮你写 SQL，并能作为 MCP 服务让 Claude Code、Cursor 等 AI 编程工具直接查库。
-
-### games-and-emulators（10）
-_该赛道近期显著升温，核心范式正经历结构性转变：传统黑盒虚拟机模拟逐步让位于基于源码反编译的跨平台原生移植，以及基于现代硬件同构特性的指令直通与着色器翻译层。开源工程不仅突破了新一代主机模拟与老牌经典移植的技术壁垒，更深入到直接接管渲染管线的着色器级改造，以及利用 Rust 等现代语言对大型游戏服务端的底层重构。整体趋势正从单纯追求“可用运行”转向画质现代重塑、非越狱移动端跨架构运行与资产跨平台化的深度工程探索。_
-
-- `github-trends` [k1tbyte/Wand-Enhancer](https://github.com/k1tbyte/Wand-Enhancer) — 给 WeMod（Wand）游戏修改器桌面端打补丁的第三方增强扩展。核心卖点是 Remote Web Panel——手机扫 QR 在局域网远程启停游戏/控制修改功能，并支持注入自定义 JS 脚本到渲染进程。
-- `github-trends` [par274/sharpemu](https://github.com/par274/sharpemu) — 一个纯 C#/.NET 从零编写的实验性 PlayStation 5 模拟器。因为 PS5 用 Zen2 x86-64 CPU，指令可直跑宿主 CPU，它走「翻译层」路线——只模拟 RDNA2 GPU，与早期 shadPS4 思路一致。
-- `github-trends` [YimMenu/YimMenuV2](https://github.com/YimMenu/YimMenuV2) — 面向《GTA 5: Enhanced》的实验性 mod / 作弊菜单（cheat menu）。玩家把它以 DLL 形式注入游戏，在游戏内弹出一个功能面板，用来改载具、单刷抢劫任务、修改金钱/解锁等。
-- `github-trends` [Pumpkin-MC/Pumpkin](https://github.com/Pumpkin-MC/Pumpkin) — 用 Rust 从零重写的 Minecraft 服务端，目标是让普通人也能低成本托管高性能、省资源的 MC 服务器（对标官方 Java 版和 PaperMC）。
-- `github-trends` [HarbourMasters/Lighthouse](https://github.com/HarbourMasters/Lighthouse) — 1998 年 N64 游戏《Banjo-Kazooie》（班卓熊大冒险）的**原生 PC 移植版**——注意，不是模拟器。社区先把原版游戏反编译成可读的 C 代码，Lighthouse 在此基础上重建出能在 Windows / Linux / macOS 上原生编译运行的程序。HarbourMasters 就是做《塞尔达传说：时之笛》PC 移植（Ship of Harkinian）的那个团队，Lighthouse 是他们在马里奥 64、时之笛、姆吉拉之后的新作。
-- `github-trends` [rommapp/romm](https://github.com/rommapp/romm) — 一个自托管的复古游戏 ROM 管理器 + 播放器。你把自己收藏的 ROM 丢进去，它自动刮削封面/元数据、整理成漂亮的 Web 库，还能通过 EmulatorJS 直接在浏览器里开玩，支持多用户。
-- `github-trends` [SmartlyDressedGames/U3-SDK](https://github.com/SmartlyDressedGames/U3-SDK) — 免费开放世界僵尸生存沙盒游戏 Unturned 的官方源码仓库。开发商 Smartly Dressed Games 于 2026-07-07 把这款日活峰值超过 1 万的老牌游戏源码公开，供玩家和 modder 查看内部实现、提交修复和功能、制作深度 mod 与地图。
-- `github-trends` [clshortfuse/renodx](https://github.com/clshortfuse/renodx) — 给 PC 游戏"修 HDR"的一套开源 mod 引擎。很多游戏在 HDR 显示器上画面发灰发白、亮部细节被压没、UI 又刺眼。RenoDX 不是加一层后期滤镜，而是通过 ReShade 的 add-on 接口直接改写游戏 DX12 的着色器，在游戏把画面压进 SDR 之前接管色调映射，并给用户一套实时滑条——峰值亮度、纸白、对比、饱和、UI 亮度都能单独调。
-- `github-trends` [willfaust/Madeira](https://github.com/willfaust/Madeira) — 一个在没越狱的 iPhone / iPad 上运行 Windows 电脑游戏的研究项目。它把 Windows 兼容层、x86 指令翻译器和图形转换层三样东西塞进一个 iOS App 里。
-- `github-trends` [boykopovar/AnyPS5](https://github.com/boykopovar/AnyPS5) — 一个把 PS5 游戏"搬"到电脑上运行的工具。它不是模拟器，而是把 PS5 的游戏程序直接改写成 Windows 或 Linux 能运行的程序，再自己补上一套 PS5 系统功能和显卡着色器的翻译。
-
-### productivity-and-business-apps（6）
-_该赛道整体热度虽呈退潮之势，但正经历从表层 AI 赋能向务实落地的结构性分流。官方博客与成熟厂商开始联合押注能融入复杂工作流的“人机协作 Agent”，而开源社区则显露出对高昂 SaaS 订阅的防御性反弹，普遍转向强调数据主权与多模型集成的本地自托管方案。这标志着单纯依赖通用模型套壳的生产力概念红利已过，赛道正在深嵌企业核心业务的高阶协同与注重成本控制的私有化底座之间重塑价值边界。_
-
-- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
-- `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
-- `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
-- `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
-- `claude-blog` [Agents you can coach: how Asana builds human-agent teams with Claude](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude) — *This is the third post in our series on building human-agent teams. The *[first](https://claude.com/blog/building-effective-human-agent-teams)* shared what we’ve learned working with multiplayer AI at Anthropic. The *[second](https://claude.com/blog/turning-conversation-into-knowledge-how-slack-builds-human-agent-teams)* shared how Slack turns workplace conversation into the context agents need. 
-- `github-trends` [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym) — 一个装在自己服务器上的健身记录 App。可以排每周训练计划、跟着引导做训练（自动休息计时、识别个人纪录、超级组、有氧），并直观显示哪些肌群练过、正在疲劳、或很久没练。
-
-### hardware-and-embedded（3）
-_硬件与嵌入式赛道近期呈现出明显的热度回升态势，核心驱动力在于开源生态对高壁垒硬件的激进化平民重构。从微波射频相控阵、具身机器人 Sim2Real 闭环，再到极低成本芯片的单点专用化，社区正在用全栈开放的设计资料与现代算法栈，将以往数十万美元级的专业设备打落至消费级乃至元器件级成本。该赛道正加速由传统的封闭固件开发转向“极端低成本化”与“软件定义硬件”，使边缘智能与工业级硬件的原型验证门槛被彻底击穿。_
-
-- `github-trends` [NawfalMotii79/PLFM_RADAR](https://github.com/NawfalMotii79/PLFM_RADAR) — 一个人把一整套 10.5 GHz 雷达的设计资料全部开源了——电路原理图、PCB 布线、FPGA 代码、单片机固件、上位机界面，一样不留。项目代号 AERIS-10，目标是让大学实验室、无人机团队和业余射频爱好者能自己造一台以往要几十万美元的相控阵雷达。作者是摩洛哥卡萨布兰卡的一位电子工程师，为这个项目还新注册了公司。
-- `github-trends` [pollen-robotics/microduck_rl](https://github.com/pollen-robotics/microduck_rl) — 教一只机器鸭子走路的训练代码。Microduck 是 Hugging Face 旗下 Pollen Robotics 卖的 25 厘米、800 克、$399 的双足鸭子机器人；这个仓库让你在自己电脑的 GPU 上用仿真让虚拟鸭子反复练习走路、摔倒爬起、踢球、前滚翻，练好后把模型导出成 ONNX 刷进真机。
-- `github-trends` [M-Abozaid/esp32-c3-adblock](https://github.com/M-Abozaid/esp32-c3-adblock) — 一块约 2 美元的小芯片做成的家庭广告拦截器。插上电、设成家里网络的 DNS，它就会把广告和跟踪域名的请求挡掉，效果类似常见的 Pi-hole，但不需要树莓派。
 
 ### agent-deliverables-and-artifacts（10）
 _该赛道在经历前期的集中爆发后新增热度虽有所放缓，但底层正从泛化的独立生成应用向深度嵌入 Agent 工具链发生结构性沉淀。Anthropic 官方将工件与设计系统原生下沉至终端编码工作流，与开源社区大量涌现的图表、文档、CAD 专用技能包形成跨源共振，显露出“以宿主 Agent 为核心进行外挂扩展”的清晰路径。未来交付物形态正全面告别粗糙的静态图文，加速收敛至单文件 HTML/SVG、可二次编辑的 PPTX 以及强约束组件树等高保真、免构建且可直接用于生产的确定性工程资产。_
