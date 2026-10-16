@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-10-15）
+# 跨源主题聚类 — 同类与升温（2026-10-16）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,16 +6,16 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↑升温 | 8 | 7 | 67 | 64 | github+claude | canonical |
-| agent-skills-and-plugins | ↓退潮 | 4 | 5 | 40 | 39 | github+claude | canonical |
+| dev-infra-and-tooling | ↓退潮 | 7 | 8 | 67 | 64 | github+claude | canonical |
+| agent-skills-and-plugins | ↓退潮 | 3 | 6 | 40 | 39 | github+claude | canonical |
 | ai-video-voice-creative | ↑升温 | 3 | 2 | 18 | 18 | github+lilian | canonical |
-| coding-agents-and-harnesses | ↓退潮 | 2 | 4 | 53 | 50 | github+claude+lilian | canonical |
+| coding-agents-and-harnesses | ↓退潮 | 2 | 5 | 55 | 52 | github+claude+lilian | canonical |
 | agent-frameworks-and-platforms | ↓退潮 | 2 | 3 | 40 | 39 | github+claude+lilian | canonical |
 | desktop-and-media-apps | →持稳 | 2 | 2 | 30 | 29 | github+claude | canonical |
 | inference-and-serving-runtime | ↑升温 | 2 | 0 | 21 | 21 | github+claude+lilian | canonical |
 | learning-and-curated-resources | ↓退潮 | 1 | 5 | 85 | 85 | github+claude+lilian | canonical |
 | games-and-emulators | →持稳 | 1 | 1 | 10 | 10 | github | canonical |
-| productivity-and-business-apps | ↓退潮 | 1 | 3 | 6 | 6 | github+claude | canonical |
+| productivity-and-business-apps | ↓退潮 | 1 | 3 | 7 | 7 | github+claude | canonical |
 | hardware-and-embedded | ↑升温 | 1 | 0 | 3 | 3 | github | canonical |
 | networking-and-security | ↓退潮 | 0 | 5 | 34 | 31 | github+claude+lilian | canonical |
 | data-and-analytics-infra | ↓退潮 | 0 | 3 | 17 | 17 | github+claude | canonical |
@@ -156,7 +156,7 @@ _随着前沿研究博客对视频扩散模型理论底座的系统性沉淀，�
 - `github-trends` [Friedrich-M/UniMate](https://github.com/Friedrich-M/UniMate) — 一个让 3D 角色"动起来"的 AI 模型。给它一个已经装好骨骼的 3D 模型（人、狗、鸟、鱼、虫子、蛇，甚至带关节的物体）和一句文字描述，它就生成对应的动作动画。是 SIGGRAPH Asia 2026 论文的官方代码，作者来自普林斯顿、UC Berkeley、MIT、南洋理工。
 - `github-trends` [storytold/artcraft](https://github.com/storytold/artcraft) — 一个给画师、设计师和影视创作者用的 AI 出图、出视频桌面工作台，有 Windows 和 macOS 版，也能在浏览器里用。和只写提示词不同，用户先在 2D 画布和 3D 场景里摆好道具、角色姿势和机位，再交给模型生成。
 
-### coding-agents-and-harnesses（50）
+### coding-agents-and-harnesses（52）
 _编码智能体赛道在新项目涌现量上呈现退潮态势，正从早期的终端对话工具狂热快速收敛至工程化深水区。GitHub 社区生态与 Claude 官方博客在这一阶段表现出高度的跨源共振，双方均将重心从单纯的代码生成转移至「外壳架构（Harness）与运行环境」的重构，密集探索危险命令拦截 Hook、代码图谱检索、长时间自主 Loop 及多会话异步编排。整个赛道正经历从单体 CLI 工具向具备安全防线、后台自主闭环与系统级工作流协同的专业基础设施演进。_
 
 - `github-trends` [Dicklesworthstone/destructive_command_guard](https://github.com/Dicklesworthstone/destructive_command_guard) — 给 AI 编码 agent（Claude Code / Codex / Gemini CLI / Cursor / Aider 等）用的「破坏性命令拦截器」（简称 dcg）。作为 agent 执行命令前的 pre-execution hook，拦截 `git reset --hard`、`rm -rf`、`DROP TABLE` 这类会造成不可逆损失的操作。
@@ -209,6 +209,8 @@ _编码智能体赛道在新项目涌现量上呈现退潮态势，正从早期�
 - `claude-blog` [Coding sessions are longer and use more context. Claude Opus 5.5 is built with that in mind.](https://claude.com/blog/claude-opus-5-5-built-for-coding-sessions-that-use-more-context) — We estimate Claude Opus 5.5 [costs about 40% less](https://www.anthropic.com/claude-opus-5-5) to run than Opus 5 for typical workloads billed by token. For developers, exactly *how *those savings stack up matters.
 - `claude-blog` [Getting started with Claude Code mods](https://claude.dev/blog/getting-started-with-claude-code-mods/) — A mod is a small JavaScript or TypeScript file that runs inside your Claude Code session. It can watch what's happening, change what Claude Code does, or draw its own UI, in the terminal or the desktop app. You don't need to learn the API to try one. Run `claude`, then describe the mod you want. Allow hot reload when it asks, and the mod shows up when the turn ends.
 - `claude-blog` [Claude Code in the cloud: a field guide to cloud sessions](https://claude.dev/blog/claude-code-in-the-cloud/) — You probably run Claude Code in a terminal on your own laptop. That session depends on the laptop in three ways:
+- `claude-blog` [How Datadog built a “universal machine tool” for Claude Code](https://claude.com/blog/how-datadog-built-a-universal-machine-tool-for-claude-code) — Mechanization means agents are doing more of the work now. And industrialization means work becomes repeatable, verifiable, controllable, and scalable. At Datadog, this didn’t happen all at once: the path to Temper led through three other projects, Courier, BitsEvolve, and Helix. Each one exposed the bottleneck for the next, and enabled them to grow their ambition.
+- `claude-blog` [How Block orchestrates Claude Fable across thousands of pull requests](https://claude.com/resources/articles/how-block-orchestrates-claude-fable-across-thousands-of-pull-requests) — Block builds tools that help businesses and individuals participate in the economy, including Square for sellers and Cash App for consumers. Bradley Axen leads AI capabilities at Block, where his team builds end-to-end AI products, including Buzz, an open-source workspace for [human-agent teams (opens in new tab)](https://claude.com/blog/building-effective-human-agent-teams), and partners with the
 
 ### agent-frameworks-and-platforms（39）
 _通用自主 Agent 框架的概念泡沫正经历明显退潮，赛道重心从早期的 Prompt 提示词循环与玩具级编排，深度转向企业级生产基础设施的结构性重构。开源社区对权限治理、长程状态看板及虚拟沙盒环境的探索，与 Claude 官方博客密集押注托管 Agent、内置记忆层及 MCP 沙盒网络的动作形成清晰共振。未来的 Agent 平台不再比拼简单的自主调用逻辑，而是演进为面向长流程执行的系统底座，核心竞争转向安全隔离、跨会话状态维护以及融入真实团队协同的审计与治理能力。_
@@ -414,7 +416,7 @@ _该赛道近期显著升温，核心范式正经历结构性转变：传统黑�
 - `github-trends` [willfaust/Madeira](https://github.com/willfaust/Madeira) — 一个在没越狱的 iPhone / iPad 上运行 Windows 电脑游戏的研究项目。它把 Windows 兼容层、x86 指令翻译器和图形转换层三样东西塞进一个 iOS App 里。
 - `github-trends` [boykopovar/AnyPS5](https://github.com/boykopovar/AnyPS5) — 一个把 PS5 游戏"搬"到电脑上运行的工具。它不是模拟器，而是把 PS5 的游戏程序直接改写成 Windows 或 Linux 能运行的程序，再自己补上一套 PS5 系统功能和显卡着色器的翻译。
 
-### productivity-and-business-apps（6）
+### productivity-and-business-apps（7）
 _该赛道整体热度虽呈退潮之势，但正经历从表层 AI 赋能向务实落地的结构性分流。官方博客与成熟厂商开始联合押注能融入复杂工作流的“人机协作 Agent”，而开源社区则显露出对高昂 SaaS 订阅的防御性反弹，普遍转向强调数据主权与多模型集成的本地自托管方案。这标志着单纯依赖通用模型套壳的生产力概念红利已过，赛道正在深嵌企业核心业务的高阶协同与注重成本控制的私有化底座之间重塑价值边界。_
 
 - `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
@@ -423,6 +425,7 @@ _该赛道整体热度虽呈退潮之势，但正经历从表层 AI 赋能向务
 - `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
 - `claude-blog` [Agents you can coach: how Asana builds human-agent teams with Claude](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude) — *This is the third post in our series on building human-agent teams. The *[first](https://claude.com/blog/building-effective-human-agent-teams)* shared what we’ve learned working with multiplayer AI at Anthropic. The *[second](https://claude.com/blog/turning-conversation-into-knowledge-how-slack-builds-human-agent-teams)* shared how Slack turns workplace conversation into the context agents need. 
 - `github-trends` [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym) — 一个装在自己服务器上的健身记录 App。可以排每周训练计划、跟着引导做训练（自动休息计时、识别个人纪录、超级组、有氧），并直观显示哪些肌群练过、正在疲劳、或很久没练。
+- `claude-blog` [How ABC Legal turned every employee into a builder with Claude Managed Agents](https://claude.com/blog/how-abc-legal-turned-every-employee-into-a-builder-with-claude-managed-agents) — When Brandon Fuller, CTO of ABC Legal, a U.S.-based legal document delivery company, rolled out [Claude Enterprise](https://claude.com/solutions/enterprise) to the company's 1,100 employees earlier this year, something clicked immediately. Teams across the company (service of process, eFiling, and appearance counsel operations, plus marketing, compliance, finance, and more) started building automa
 
 ### hardware-and-embedded（3）
 _硬件与嵌入式赛道近期呈现出明显的热度回升态势，核心驱动力在于开源生态对高壁垒硬件的激进化平民重构。从微波射频相控阵、具身机器人 Sim2Real 闭环，再到极低成本芯片的单点专用化，社区正在用全栈开放的设计资料与现代算法栈，将以往数十万美元级的专业设备打落至消费级乃至元器件级成本。该赛道正加速由传统的封闭固件开发转向“极端低成本化”与“软件定义硬件”，使边缘智能与工业级硬件的原型验证门槛被彻底击穿。_
