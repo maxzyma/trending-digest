@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-10-26）
+# 跨源主题聚类 — 同类与升温（2026-10-27）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,20 +6,20 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↓退潮 | 6 | 8 | 70 | 67 | github+claude | canonical |
+| dev-infra-and-tooling | ↓退潮 | 6 | 7 | 70 | 67 | github+claude | canonical |
 | learning-and-curated-resources | ↑升温 | 4 | 2 | 89 | 89 | github+claude+lilian | canonical |
-| agent-skills-and-plugins | ↓退潮 | 4 | 5 | 44 | 43 | github+claude | canonical |
-| coding-agents-and-harnesses | ↓退潮 | 3 | 4 | 58 | 55 | github+claude+lilian | canonical |
-| agent-frameworks-and-platforms | →持稳 | 2 | 2 | 42 | 41 | github+claude+lilian | canonical |
+| agent-skills-and-plugins | →持稳 | 4 | 4 | 44 | 43 | github+claude | canonical |
+| coding-agents-and-harnesses | →持稳 | 3 | 3 | 58 | 55 | github+claude+lilian | canonical |
+| agent-frameworks-and-platforms | ↑升温 | 3 | 2 | 43 | 42 | github+claude+lilian | canonical |
+| productivity-and-business-apps | ↑升温 | 3 | 2 | 10 | 10 | github+claude | canonical |
 | inference-and-serving-runtime | ↑升温 | 2 | 1 | 22 | 22 | github+claude+lilian | canonical |
-| productivity-and-business-apps | →持稳 | 2 | 2 | 9 | 9 | github+claude | canonical |
-| networking-and-security | ↓退潮 | 1 | 2 | 35 | 32 | github+claude+lilian | canonical |
-| desktop-and-media-apps | ↓退潮 | 1 | 3 | 31 | 30 | github+claude | canonical |
+| networking-and-security | →持稳 | 1 | 1 | 35 | 32 | github+claude+lilian | canonical |
+| desktop-and-media-apps | ↓退潮 | 1 | 2 | 31 | 30 | github+claude | canonical |
 | ai-video-voice-creative | ↓退潮 | 1 | 3 | 19 | 19 | github+lilian | canonical |
-| games-and-emulators | ↓退潮 | 1 | 2 | 11 | 11 | github | canonical |
+| agent-deliverables-and-artifacts | ↑升温 | 1 | 0 | 11 | 11 | github+claude | canonical |
+| games-and-emulators | →持稳 | 1 | 1 | 11 | 11 | github | canonical |
 | hardware-and-embedded | →持稳 | 1 | 1 | 4 | 4 | github | canonical |
 | data-and-analytics-infra | ↓退潮 | 0 | 1 | 17 | 17 | github+claude | canonical |
-| agent-deliverables-and-artifacts | →持稳 | 0 | 0 | 10 | 10 | github+claude | canonical |
 
 ## 各主题项目清单
 
@@ -293,7 +293,7 @@ _编码 agent 赛道热度略有回落（近窗 3 / 前窗 4），但结构正�
 - `github-trends` [google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli) — Google 官方的终端 AI Agent，在命令行里用 Gemini 模型读代码、改文件、跑命令，定位与 Claude Code、Codex CLI 相同。
 - `github-trends` [JetBrains/thinkrail](https://github.com/JetBrains/thinkrail) — JetBrains 孵化器里的开源 IDE，专门给开源命令行编程 Agent “pi” 套一个图形界面。可以装成桌面应用，也可以用命令行启动后在浏览器里打开。不用注册新账号，登录 JetBrains AI 或沿用 pi 自己的鉴权即可。
 
-### agent-frameworks-and-platforms（41）
+### agent-frameworks-and-platforms（42）
 _热度持稳，但赛道重心已从“怎么搭一个 agent”转向“怎么托管、约束和持续运行一群 agent”：社区新项目大多不再造推理循环，而是给 Claude Code、Codex 这类现成编码 agent 套上控制面，补齐持久状态、预算与审批、身份权限、不可篡改审计和云端执行环境；AutoGPT 从自主 agent 转型为编排平台，正是这一迁移的缩影。官方侧同步押注同一层，Claude Managed Agents 接连补上托管运行时、内置记忆、自托管沙箱与私有 MCP 隧道，与社区的 sandbox、memory、governance 方向高度重合，说明“agent 基础设施化”已是共识。另一条结构性变化是 agent 开始被当作组织成员来建模，出现了“AI 员工组织架构”“人机同席协作空间”和面向法律交付物的垂直评测，接下来的竞争焦点很可能落在治理、长时连续性和真实业务交付质量上，而不是框架本身的能力。_
 
 - `github-trends` [AstrBotDevs/AstrBot](https://github.com/AstrBotDevs/AstrBot) — 一个集成多个 IM 平台、多种 LLM、插件与 AI 能力的 AI Agent 助手与开发框架，自我定位为可自托管的对话机器人平台。
@@ -337,6 +337,21 @@ _热度持稳，但赛道重心已从“怎么搭一个 agent”转向“怎么�
 - `claude-blog` [How Cresta turned CX expertise into an agent builder on the Claude Agent SDK](https://claude.com/blog/how-cresta-turned-cx-expertise-into-an-agent-builder-on-the-claude-agent-sdk) — *In our series, ****How startups build with Claude****, we look at the decisions behind AI products. Here, we explore how *[Cresta](https://cresta.com/)* brought its expertise building AI-native customer experience into *[Conductor](https://cresta.com/blog/cresta-conductor-the-agent-for-ai-agent-development)*, an agent that helps developers build and improve other agents.*
 - `claude-blog` [Building agents: When to fold subagents into your main agent loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop) — *If you’ve built an agent in Claude Platform that includes multiple subagents, see which may make sense to fold into the main agent loop using our [migration kit](https://github.com/anthropics/single-agent-loop-kit). It runs a guided workflow to identify your patterns, evaluate alternatives, and verify the best approach. It includes a demo that you can try on a mock system before running on your a
 - `github-trends` [makecindy/cindy](https://github.com/makecindy/cindy) — 一个装在电脑和手机上的 AI 助手客户端。它本身不是新的编程 Agent，而是把 Claude Code、Codex 这些现成的 Agent 放进同一个工作区：一个任务做到一半可以换模型或换 Agent，记忆和技能（Skill）在不同 Agent 之间共用。它还能操作浏览器、电脑和手机，可以从聊天工具或定时任务接活。出品方是游戏公司心动（XD），CEO 黄一孟在 7-26 的 TDW 2026 上发布，他本人是仓库提交最多的作者。
+- `github-trends` [nightly-labs/openbot](https://github.com/nightly-labs/openbot) — 一个桌面软件，让你在自己电脑上同时养几个长期在线的 AI 助手（可接 Codex、Claude、Grok）。每个助手有自己的文件夹和待办队列，可以操作浏览器、互相传文件、互相派活，像一个小团队一样协作。
+
+### productivity-and-business-apps（10）
+_生产力与企业应用赛道热度持稳，但两类源头在押注不同的方向。GitHub 社区集中在“自托管替代”：从一体化企业后台、多模型聊天前端，到求职、盯盘、健身等垂直工具，核心诉求是把数据和成本留在自己手里，并把 AI 作为可插拔组件嵌入现有流程。Claude 官方博客则一致讲述“人机协作团队”的落地案例，从 Asana、ABC Legal 到内部 BDR 用 agent 舰队跑日常工作，强调把 agent 编入组织分工、让非工程员工也能自建流程。两条线正在汇合：工具层走向自主可控，组织层走向 agent 化，下一步的看点是自托管工作台能否原生承载多 agent 协作。_
+
+- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
+- `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
+- `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
+- `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
+- `claude-blog` [Agents you can coach: how Asana builds human-agent teams with Claude](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude) — *This is the third post in our series on building human-agent teams. The *[first](https://claude.com/blog/building-effective-human-agent-teams)* shared what we’ve learned working with multiplayer AI at Anthropic. The *[second](https://claude.com/blog/turning-conversation-into-knowledge-how-slack-builds-human-agent-teams)* shared how Slack turns workplace conversation into the context agents need. 
+- `github-trends` [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym) — 一个装在自己服务器上的健身记录 App。可以排每周训练计划、跟着引导做训练（自动休息计时、识别个人纪录、超级组、有氧），并直观显示哪些肌群练过、正在疲劳、或很久没练。
+- `claude-blog` [How ABC Legal turned every employee into a builder with Claude Managed Agents](https://claude.com/blog/how-abc-legal-turned-every-employee-into-a-builder-with-claude-managed-agents) — When Brandon Fuller, CTO of ABC Legal, a U.S.-based legal document delivery company, rolled out [Claude Enterprise](https://claude.com/solutions/enterprise) to the company's 1,100 employees earlier this year, something clicked immediately. Teams across the company (service of process, eFiling, and appearance counsel operations, plus marketing, compliance, finance, and more) started building automa
+- `claude-blog` [How an Anthropic Japan BDR runs his day with a fleet of Claude agents](https://claude.com/resources/articles/how-an-anthropic-japan-business-development-representative-runs-his-day) — As a business development representative on Anthropic's Japan team, my job is to show Japanese companies how Claude can simplify and automate their workflows, but until earlier this year, most of mine were still manual. I was spending a couple of hours each morning routing and qualifying leads, then writing emails in Japanese or English. In the time I had left, I was updating our CRM, often a day 
+- `github-trends` [strelov1/freehire](https://github.com/strelov1/freehire) — 一个专门给 IT 求职者用的职位搜索引擎，有现成的网站 freehire.me，也可以自己部署。它不从招聘中介或转载网站拿职位，而是直接去各公司自己的招聘页面抓取，把同一个职位的重复发布合并成一条，再让用户按地区、远程或坐班、职级、技能、薪资筛选。搜索之外，它还带简历生成、简历和职位匹配打分、投递进度看板、职位提醒，以及浏览器自动填表扩展。
+- `github-trends` [gitroomhq/postiz-app](https://github.com/gitroomhq/postiz-app) — 一个可以自己部署的社交媒体排期工具，相当于开源版的 Buffer 或 Hootsuite。把要发到 X、LinkedIn、Instagram 等平台的内容排好时间，到点自动发；现在也可以让 AI Agent 通过 MCP、CLI 或 API 直接帮你写和发。
 
 ### inference-and-serving-runtime（22）
 _推理与服务运行时赛道正在升温，社区侧明显分成两极：一端是把数百 B 级 MoE 模型压进个人设备的本地推理（1-bit/三值量化、SSD 流式加载权重、专模专用的手写引擎、硬件适配评估工具），另一端是位于客户端与模型之间的网关和协议翻译层，负责号池聚合、免费额度轮转，以及 OpenAI 与 Anthropic 协议互转。官方博客的信号方向相反：Claude 入驻 Azure Foundry，押注的是托管在企业云内、受治理的分发路径，与社区"本地化 + 绕道聚合"的自发路线形成张力。Lil'Log 2023 年那篇推理优化综述中的量化、蒸馏、注意力加速等手段，如今已从研究清单落地为厂商自研内核（如 FlashKDA）和跨硬件编译底座（Modular 被高通收购）。可见竞争焦点正在下沉到算子与芯片层。整体轨迹是：推理栈从"通用框架跑模型"走向"模型、内核、硬件垂直定制"，同时 API 接入层正在演变为可插拔的中间件市场。_
@@ -363,19 +378,6 @@ _推理与服务运行时赛道正在升温，社区侧明显分成两极：一�
 - `github-trends` [tile-ai/tilelang](https://github.com/tile-ai/tilelang) — 一门专门用来写"算子"的编程语言。算子是 AI 模型里最底层的计算单元（矩阵乘法、注意力计算等），决定模型在显卡上跑多快。传统上要用 CUDA 手写，门槛很高；TileLang 让工程师用接近 Python 的写法描述计算，再由编译器生成针对 NVIDIA、AMD、华为昇腾等硬件优化过的代码。
 - `github-trends` [microsoft/BitNet](https://github.com/microsoft/BitNet) — 微软研究院开源的推理程序 bitnet.cpp，专门运行"1.58 位"大模型。普通模型的每个参数用 16 位数字存储，这类模型每个参数只取 -1、0、1 三个值，体积和内存占用小得多，可以在普通电脑的 CPU 上运行，不需要显卡。
 - `github-trends` [lightseekorg/tokenspeed](https://github.com/lightseekorg/tokenspeed) — 一个把大模型部署成在线服务的推理引擎，和 vLLM、SGLang、TensorRT-LLM 是同一类软件。公司在自己的 GPU 集群上跑开源大模型时，用它接收请求、排队调度、管理显存里的对话缓存，再把生成结果流式返回。项目口号是"性能做到 TensorRT-LLM 的水平，易用性做到 vLLM 的水平"，背后是非营利组织 LightSeek Foundation。
-
-### productivity-and-business-apps（9）
-_生产力与企业应用赛道热度持稳，但两类源头在押注不同的方向。GitHub 社区集中在“自托管替代”：从一体化企业后台、多模型聊天前端，到求职、盯盘、健身等垂直工具，核心诉求是把数据和成本留在自己手里，并把 AI 作为可插拔组件嵌入现有流程。Claude 官方博客则一致讲述“人机协作团队”的落地案例，从 Asana、ABC Legal 到内部 BDR 用 agent 舰队跑日常工作，强调把 agent 编入组织分工、让非工程员工也能自建流程。两条线正在汇合：工具层走向自主可控，组织层走向 agent 化，下一步的看点是自托管工作台能否原生承载多 agent 协作。_
-
-- `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
-- `github-trends` [danny-avila/LibreChat](https://github.com/danny-avila/LibreChat) — 一个可自托管的多模型聊天前端。你自己部署一份，把 OpenAI、Anthropic、Google、Mistral、OpenRouter、Bedrock、本地模型的 key 都接进去，在同一个界面里随时切换模型、共用同一套对话历史和搜索。多用户、带鉴权，团队可以共用一个实例。
-- `github-trends` [ankitects/anki](https://github.com/ankitects/anki) — 间隔重复记忆卡片软件，2012 年建仓，语言学习和医学考试圈的事实标准。这是它第一次进入本 tracker。
-- `github-trends` [TNT-Likely/PanWatch](https://github.com/TNT-Likely/PanWatch) — "盯盘侠"，一个装在自己电脑或服务器上的 AI 盯盘助手。它盯着你持有或关注的 A 股、港股、美股，价格异动时提醒你，并调用多个 AI agent 协作给出分析意见，再把结果推到 Telegram、飞书、钉钉或微信。
-- `claude-blog` [Agents you can coach: how Asana builds human-agent teams with Claude](https://claude.com/blog/agents-you-can-coach-how-asana-builds-human-agent-teams-with-claude) — *This is the third post in our series on building human-agent teams. The *[first](https://claude.com/blog/building-effective-human-agent-teams)* shared what we’ve learned working with multiplayer AI at Anthropic. The *[second](https://claude.com/blog/turning-conversation-into-knowledge-how-slack-builds-human-agent-teams)* shared how Slack turns workplace conversation into the context agents need. 
-- `github-trends` [DuarteSantos8/openGym](https://github.com/DuarteSantos8/openGym) — 一个装在自己服务器上的健身记录 App。可以排每周训练计划、跟着引导做训练（自动休息计时、识别个人纪录、超级组、有氧），并直观显示哪些肌群练过、正在疲劳、或很久没练。
-- `claude-blog` [How ABC Legal turned every employee into a builder with Claude Managed Agents](https://claude.com/blog/how-abc-legal-turned-every-employee-into-a-builder-with-claude-managed-agents) — When Brandon Fuller, CTO of ABC Legal, a U.S.-based legal document delivery company, rolled out [Claude Enterprise](https://claude.com/solutions/enterprise) to the company's 1,100 employees earlier this year, something clicked immediately. Teams across the company (service of process, eFiling, and appearance counsel operations, plus marketing, compliance, finance, and more) started building automa
-- `claude-blog` [How an Anthropic Japan BDR runs his day with a fleet of Claude agents](https://claude.com/resources/articles/how-an-anthropic-japan-business-development-representative-runs-his-day) — As a business development representative on Anthropic's Japan team, my job is to show Japanese companies how Claude can simplify and automate their workflows, but until earlier this year, most of mine were still manual. I was spending a couple of hours each morning routing and qualifying leads, then writing emails in Japanese or English. In the time I had left, I was updating our CRM, often a day 
-- `github-trends` [strelov1/freehire](https://github.com/strelov1/freehire) — 一个专门给 IT 求职者用的职位搜索引擎，有现成的网站 freehire.me，也可以自己部署。它不从招聘中介或转载网站拿职位，而是直接去各公司自己的招聘页面抓取，把同一个职位的重复发布合并成一条，再让用户按地区、远程或坐班、职级、技能、薪资筛选。搜索之外，它还带简历生成、简历和职位匹配打分、投递进度看板、职位提醒，以及浏览器自动填表扩展。
 
 ### networking-and-security（32）
 _该赛道整体热度回落，社区侧仍以代理/自建 VPN、蓝牙 mesh 离线通信、越狱等传统"网络自主与抗审查"工具为主，但已显出结构性转向：uber/ADR 把 EDR 思路搬到 AI agent 上，与 Claude 官方博客密集讨论的 agent 身份、MCP 连接器集中授权、Workload Identity Federation 形成呼应——社区 repo 与官方同时押注"agent 即新的安全主体"。authentik 这类自托管 IdP 的走热也与官方"通过身份提供方统一治理 agent 访问"的路线相互印证，身份层正成为 AI 安全的汇合点。往后看，赛道重心正从"保护人的网络连接"迁移到"约束和审计 agent 的行为与权限"，而 Lil'Log 对 LLM 对抗攻击的研究与官方关于 AI 加速攻击的预警，则提示攻防两端都将围绕模型能力重新定价。_
@@ -470,6 +472,21 @@ _这一赛道的热度已明显回落（近窗仅 1 个新信号，前窗为 3 �
 - `github-trends` [storytold/artcraft](https://github.com/storytold/artcraft) — 一个给画师、设计师和影视创作者用的 AI 出图、出视频桌面工作台，有 Windows 和 macOS 版，也能在浏览器里用。和只写提示词不同，用户先在 2D 画布和 3D 场景里摆好道具、角色姿势和机位，再交给模型生成。
 - `github-trends` [Kruk2/jasna](https://github.com/Kruk2/jasna) — 一个在本机显卡上运行的视频"去马赛克"工具。它先在每一帧里找出打码区域，再用 AI 模型把这块画面补出来贴回原位，画面其他部分不动。支持普通视频、VR180 视频和图片，有图形界面。
 
+### agent-deliverables-and-artifacts（11）
+_Agent 的产出正在从"代码与文本"转向"可直接交付的成品"：社区侧大量以技能包形式挂载在 Claude Code / Codex 上的项目，覆盖架构图、可编辑 .pptx、CAD/URDF、竞赛论文 PDF 等产物；官方侧 Claude Code 推出 artifacts，Claude Design 强化设计系统一致性。两侧在同一方向上押注，即把 agent 的工作结果变成可分享、可编辑的成品。赛道热度近两窗持稳，但结构在变化。生成方式正从自由输出转向受约束输出，例如组件目录 JSON、draw.io XML、原生 pptx 形状。交付格式向单文件 HTML 和原生办公格式收敛，Univer 这类老牌办公内核也重新定位为"agent 的办公 harness"。下一步的竞争焦点可能落在三点：产物能否被人继续编辑、能否贴合品牌与模板、能否随会话实时更新，而不只是"一次性生成得漂亮"。_
+
+- `github-trends` [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad) — 一套给 AI 编码 agent（Claude Code / Codex）用的"技能包"，让 agent 能用自然语言或图片直接生成、检查、切片和交付 CAD 模型、机器人描述文件（URDF/SDF）和硬件设计产物，基于 Build123d + OpenCASCADE，配套网站 cadskills.xyz。
+- `claude-blog` [Claude Design now stays on brand for daily work](https://claude.com/blog/claude-design-stays-on-brand-for-daily-work) — Claude Design now sticks to your design system across projects, works fluidly with Claude Code, lets you edit directly on the canvas, and connects to more tools you already use. It has a new home in the sidebar on the Claude desktop app; you can also find it at [claude.ai/design](https://claude.ai/design).
+- `claude-blog` [Claude Code now supports artifacts](https://claude.com/blog/artifacts-in-claude-code) — Starting today, Claude Code can capture work progress as an artifact, which turn Claude Code's work into live, shareable visual pages— including PR walkthroughs, system explainers, dashboards, and release checklists—that update themselves as your session works.
+- `github-trends` [DayuanJiang/next-ai-draw-io](https://github.com/DayuanJiang/next-ai-draw-io) — 一个用自然语言对话来生成和修改 draw.io 流程图/架构图的 Web 应用——你用自然语言描述需求，AI 直接操作 draw.io 的 XML 出图，也能上传已有图让 AI 复刻改进。
+- `github-trends` [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design) — 给 Claude Code / Codex 用的一个"作图技能包"，不是独立作图软件。装上以后，你让 AI 画架构图、流程图、时序图、状态机、ER 图、泳道图、2×2 象限、飞轮、甘特、雷达等 29 类图，它会直接产出**单文件 HTML + 内联 SVG**——零 JS、零外链图片、零构建，浏览器双击就能看。
+- `github-trends` [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) — 把 PDF / DOCX / URL / Markdown 或者干脆一句话主题交给它，在 Claude Code / Cursor / Codex 里跑一套工作流，直接产出**真正可编辑的 .pptx**——原生形状、页面切换与入场动画、按需生成的数据图表和表格、从演讲者备注合成的语音旁白，还能套用你自己的 pptx 模板。
+- `github-trends` [tt-a1i/archify](https://github.com/tt-a1i/archify) — 一个装进 AI 编程助手里的"画架构图"插件。你用一段中文或英文描述你的系统（比如"用户请求先过 CDN，再进 API 网关，然后分流到三个微服务"），或者直接把一个仓库指给它，它输出一张能直接在浏览器打开的技术图——单个 HTML 文件，带明暗主题切换、动效，可以导出 PNG / SVG / WebM 和 1200×630 的社交分享图。支持五类图：架构、工作流、时序、数据流、生命周期。
+- `github-trends` [jihe520/MathModelAgent](https://github.com/jihe520/MathModelAgent) — 数学建模竞赛的全流程 agent。丢进去一道赛题，它做问题分析、选模型、写代码、画图，最后用 Typst 或 LaTeX 排版出一份能直接提交的 PDF 论文。目标赛事写得很明确：国赛 CUMCM、华数杯、华为杯、美赛 MCM/ICM。
+- `github-trends` [vercel-labs/json-render](https://github.com/vercel-labs/json-render) — Vercel Labs 出的"生成式 UI"框架。你先用 Zod 写一份**组件目录**（Card、Metric、Button…）和允许的动作清单，大模型只能输出引用这些组件的 JSON 树，框架再把这棵 JSON 树渲染成真实界面。已覆盖 React / Vue / Svelte / Solid / React Native / Next / Remotion / react-pdf / react-email / Ink / React Three Fiber。
+- `github-trends` [dream-num/univer](https://github.com/dream-num/univer) — 一套能嵌进你自己产品里的在线办公套件内核——表格、文档、幻灯片、画布、关系表、PDF 都在一个运行时里。它不是一个你打开就能用的网页版 Excel，而是给开发者嵌入用的 SDK：你的产品需要一块"能算公式、能和 Excel 互转、能多人协同"的表格区域，就把它装进去。它是 2022 年开源的老项目（Luckysheet 团队的后续作品），今天上榜的直接原因是重新定位：9 月 18 日 README 换成 "The Office Harness for AI Agents"，主打"让 AI agent 直接读写办公文档"。
+- `github-trends` [alchaincyf/huashu-design](https://github.com/alchaincyf/huashu-design) — 一个装进 Claude Code、Codex、Cursor 等编程 Agent 里的"设计技能"。你用一句中文描述需求，它产出可以直接交付的网页原型、App 原型、可编辑的 PPT、动画或信息图，会先出 6 个候选再挑 3 个方向做完整稿。
+
 ### games-and-emulators（11）
 _该赛道目前完全由 GitHub 社区驱动，Claude 官方博客与 Lil'Log 均无相关信号，属于与 AI 主线基本脱钩的纯社区赛道，近窗热度也在回落（2→1）。热度虽退，结构变化却很清晰：传统「整机模拟」正让位于「翻译层 / 静态重编译 / 反编译原生移植」。PS5 因采用 x86 架构，社区只需翻译 GPU 和系统调用，甚至直接把游戏改写成 PC 程序；N64 老游戏则走反编译后原生重建的路线。另一条暗线是对既有游戏的深度接管与基础设施重写，包括注入式 mod 和作弊菜单、着色器级 HDR 修复、Rust 重写服务端、自托管 ROM 库，以及官方开源老游戏源码，说明社区精力正从「能跑起来」转向「跑得更原生、更可控、更可自托管」。_
 
@@ -513,17 +530,3 @@ _这个赛道的热度正在退潮：近窗没有新项目进入，现有成员�
 - `github-trends` [Tencent/WeKnora](https://github.com/Tencent/WeKnora) — 一套可以自己部署的文档知识库系统。你把 PDF、Word、Notion 页面之类的原始文档丢进去，它做三件事：变成能被问答检索的知识库（RAG）、提供一个会自己多步推理的问答 agent、以及生成一份能自我维护的 Wiki。
 - `github-trends` [docling-project/docling](https://github.com/docling-project/docling) — 一个把各种办公文档"翻译"成 AI 能读的格式的工具。你手里有一堆 PDF 合同、Word 报告、PPT 和扫描件，想让大模型回答关于它们的问题，中间缺的就是这一步——把版面、标题层级、表格、图表、公式都识别出来，输出成结构化的 Markdown 或 JSON。Docling 做的就是这一步，一条命令或几行 Python 就能跑，也能起成一个 HTTP 服务（docling-serve）。
 - `github-trends` [t8y2/dbx](https://github.com/t8y2/dbx) — 一个很小（约 25 MB）的数据库管理工具，一个软件就能连 MySQL、PostgreSQL、Redis、MongoDB、DuckDB、达梦、OceanBase 等 100 多种数据库。有桌面版、网页版（Docker）和命令行版，还内置 AI 助手帮你写 SQL，并能作为 MCP 服务让 Claude Code、Cursor 等 AI 编程工具直接查库。
-
-### agent-deliverables-and-artifacts（10）
-_Agent 的产出正在从"代码与文本"转向"可直接交付的成品"：社区侧大量以技能包形式挂载在 Claude Code / Codex 上的项目，覆盖架构图、可编辑 .pptx、CAD/URDF、竞赛论文 PDF 等产物；官方侧 Claude Code 推出 artifacts，Claude Design 强化设计系统一致性。两侧在同一方向上押注，即把 agent 的工作结果变成可分享、可编辑的成品。赛道热度近两窗持稳，但结构在变化。生成方式正从自由输出转向受约束输出，例如组件目录 JSON、draw.io XML、原生 pptx 形状。交付格式向单文件 HTML 和原生办公格式收敛，Univer 这类老牌办公内核也重新定位为"agent 的办公 harness"。下一步的竞争焦点可能落在三点：产物能否被人继续编辑、能否贴合品牌与模板、能否随会话实时更新，而不只是"一次性生成得漂亮"。_
-
-- `github-trends` [earthtojake/text-to-cad](https://github.com/earthtojake/text-to-cad) — 一套给 AI 编码 agent（Claude Code / Codex）用的"技能包"，让 agent 能用自然语言或图片直接生成、检查、切片和交付 CAD 模型、机器人描述文件（URDF/SDF）和硬件设计产物，基于 Build123d + OpenCASCADE，配套网站 cadskills.xyz。
-- `claude-blog` [Claude Design now stays on brand for daily work](https://claude.com/blog/claude-design-stays-on-brand-for-daily-work) — Claude Design now sticks to your design system across projects, works fluidly with Claude Code, lets you edit directly on the canvas, and connects to more tools you already use. It has a new home in the sidebar on the Claude desktop app; you can also find it at [claude.ai/design](https://claude.ai/design).
-- `claude-blog` [Claude Code now supports artifacts](https://claude.com/blog/artifacts-in-claude-code) — Starting today, Claude Code can capture work progress as an artifact, which turn Claude Code's work into live, shareable visual pages— including PR walkthroughs, system explainers, dashboards, and release checklists—that update themselves as your session works.
-- `github-trends` [DayuanJiang/next-ai-draw-io](https://github.com/DayuanJiang/next-ai-draw-io) — 一个用自然语言对话来生成和修改 draw.io 流程图/架构图的 Web 应用——你用自然语言描述需求，AI 直接操作 draw.io 的 XML 出图，也能上传已有图让 AI 复刻改进。
-- `github-trends` [cathrynlavery/diagram-design](https://github.com/cathrynlavery/diagram-design) — 给 Claude Code / Codex 用的一个"作图技能包"，不是独立作图软件。装上以后，你让 AI 画架构图、流程图、时序图、状态机、ER 图、泳道图、2×2 象限、飞轮、甘特、雷达等 29 类图，它会直接产出**单文件 HTML + 内联 SVG**——零 JS、零外链图片、零构建，浏览器双击就能看。
-- `github-trends` [hugohe3/ppt-master](https://github.com/hugohe3/ppt-master) — 把 PDF / DOCX / URL / Markdown 或者干脆一句话主题交给它，在 Claude Code / Cursor / Codex 里跑一套工作流，直接产出**真正可编辑的 .pptx**——原生形状、页面切换与入场动画、按需生成的数据图表和表格、从演讲者备注合成的语音旁白，还能套用你自己的 pptx 模板。
-- `github-trends` [tt-a1i/archify](https://github.com/tt-a1i/archify) — 一个装进 AI 编程助手里的"画架构图"插件。你用一段中文或英文描述你的系统（比如"用户请求先过 CDN，再进 API 网关，然后分流到三个微服务"），或者直接把一个仓库指给它，它输出一张能直接在浏览器打开的技术图——单个 HTML 文件，带明暗主题切换、动效，可以导出 PNG / SVG / WebM 和 1200×630 的社交分享图。支持五类图：架构、工作流、时序、数据流、生命周期。
-- `github-trends` [jihe520/MathModelAgent](https://github.com/jihe520/MathModelAgent) — 数学建模竞赛的全流程 agent。丢进去一道赛题，它做问题分析、选模型、写代码、画图，最后用 Typst 或 LaTeX 排版出一份能直接提交的 PDF 论文。目标赛事写得很明确：国赛 CUMCM、华数杯、华为杯、美赛 MCM/ICM。
-- `github-trends` [vercel-labs/json-render](https://github.com/vercel-labs/json-render) — Vercel Labs 出的"生成式 UI"框架。你先用 Zod 写一份**组件目录**（Card、Metric、Button…）和允许的动作清单，大模型只能输出引用这些组件的 JSON 树，框架再把这棵 JSON 树渲染成真实界面。已覆盖 React / Vue / Svelte / Solid / React Native / Next / Remotion / react-pdf / react-email / Ink / React Three Fiber。
-- `github-trends` [dream-num/univer](https://github.com/dream-num/univer) — 一套能嵌进你自己产品里的在线办公套件内核——表格、文档、幻灯片、画布、关系表、PDF 都在一个运行时里。它不是一个你打开就能用的网页版 Excel，而是给开发者嵌入用的 SDK：你的产品需要一块"能算公式、能和 Excel 互转、能多人协同"的表格区域，就把它装进去。它是 2022 年开源的老项目（Luckysheet 团队的后续作品），今天上榜的直接原因是重新定位：9 月 18 日 README 换成 "The Office Harness for AI Agents"，主打"让 AI agent 直接读写办公文档"。
