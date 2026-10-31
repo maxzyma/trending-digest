@@ -1,0 +1,209 @@
+# Rebuilding Manus with Manus: What changed, what broke, and how we work now
+
+> 来源：Manus Blog / Manus，2026-10-30
+> 原文链接：https://manus.im/blog/rebuilding-manus-with-manus
+
+*By Tao Zhang, Co-founder and Chief Product Officer, Manus*
+
+In late September, during the final push on Manus 2.0, I sent one of our engineers a few feature requests and bug reports on Slack. Later I went to check how he was getting on. His screen had a row of open agent sessions, some in Manus and some in Codex. I clicked into one. The prompt was my Slack message, pasted word for word.
+
+A year ago, he would have read my message, worked out what I meant, and then written the code. Now an agent reads the request, finds the relevant code, and proposes a change. The engineer's job is to direct the work, check it, and own the result. Most of the time a request is running, not waiting on him. Today, it's common here for one engineer to have 10 to 20 requests moving at once.
+
+I'm proud of how quickly our team has adapted. I'm also uneasy. Is this pace right? What haven't we noticed yet?
+
+We build agents at Manus, so we hold ourselves to two rules. We use our own product for real work. And we keep looking for the places where AI stops working.
+
+I'd like to document what happens inside a company when people and agents work side by side by default. This post covers three teams — engineering, product, and marketing — and it includes what hasn't worked. It's a report of an experiment in progress, not a definition of an "AI-native organization."
+
+**What we've learned so far:**
+
+- There's no halfway point. Adding AI to old ways of working sometimes added noise. Things changed only when the loop closed.
+- Agents need the whole picture. Better context did more for us than better prompts.
+- Trust comes from tests and context, not from model quality alone.
+- Autonomy needs a finish line. Agents can run on their own only when success can be checked. Everywhere else, a person decides.
+- The bottleneck moves. When engineering got faster, deciding what to build became the constraint.
+- The role of people hasn't diminished. It has become more focused on higher-impact things.
+
+### 1. There's no halfway point
+
+Before 2026, we did what most companies did: we added AI to the way we already worked. This meant support would flag issues with an AI summary, engineers used coding assistants, and bots posted analysis in channels. Every piece was useful on its own, but not many of the pieces were connected to one another. Until the loop actually closed, we were simply working the same old way but with a lot of AI talking over each other.
+
+There's a line that we often come back to: software engineering is programming integrated over time. Writing code is easy to measure; keeping a complex product healthy for years is not. A high percentage of AI-written code can mean real progress, or it can mean piling up slop that someone will have to clean up later.
+
+The test we care about is harder. Manus is a complex product that has been live for more than a year. Can it keep improving under new ways of working without collapsing, while each person gets more done? So far the answer is yes.
+
+### 2. Give the agent the whole picture
+
+Like most tech companies, we lost the most time at handoffs. A frontend engineer and a backend engineer would each interpret a request, agree on an interface, and then spend days fixing the mismatches. Two people rarely understand a requirement the same way.
+
+If AI can write code across the stack, could one person own a request end to end? The obstacle was context. Our code lived in separate repositories, so no agent could see the whole system at once.
+
+Our answer to that began with an internal experiment. We wanted to see how far AI could go in building a product with as little human input as possible and almost no hand-written code. The method we developed along the way became the internal tool we now call Manus-mono, or Mono.
+
+Mono doesn't merge our repositories. It's a single entry point plus a manual written for the agent: what each repository does, how they fit together, and how we work. The agent pulls in whatever it needs. We also keep a library of architecture decision records, so every agent session starts with the reasoning behind past decisions, not just the code. When anyone works with an agent, that agent has the context of everyone who came before.
+
+Mono grew in steps, and each step fixed the bottleneck the previous one exposed:
+
+1. See the whole system. We added the business context that no single repository contains, and used Git worktrees for parallel work.
+2. Verify locally. A push to the test environment used to take 5 to 10 minutes. Now the full Manus stack runs on a laptop, and checks take seconds.
+3. Debug production issues. With scoped permissions, Mono can read the logs, configuration, and error reports it needs to diagnose bugs in production.
+4. Run releases end to end. Mono now handles the release steps where work used to stall. People still make the approval decisions.
+5. Test end to end. When verification became the slow part, Mono started running real user flows with test accounts, in a browser and in a mobile simulator.
+
+[Video](https://files.manuscdn.com/assets/dashboard/materials/2026/10/30/b6fca5b3fbf94f09b98a375823a30b8de3db11abb4d67f2a2670eaec54771f0d.mp4)
+
+(How Mono works and how it evolved. Made by a teammate with Manus.)
+
+People sometimes ask whether Mono is a code wiki. Documentation is one part of it, but the rest is everything around the code: how we test, how we release, what we decide and why, and what the agent is and isn't allowed to touch.
+
+Over time, Mono has become a shared knowledge base that gets better as people add to it. For example, our ops engineer got tired of being asked to help with releases, so he wrote the release process into Mono. Now anyone can run a release, and so can the agent, but approval still sits with people who have release rights. I love how the team works: one person fixed his own frustration, which led to the whole company getting a little faster.
+
+The team now assumes that one person can ship a request on every platform. Our mobile team has been seven people this whole time. They maintain four apps across two products and keep pace with web.
+
+Mono spread across the company with no top-down mandate. I think culture explains that as much as the tool does. Testing AI's limits is part of why we exist, and our organization is flat. A tool goes only as far as the organization lets it.
+
+### 3. Close the loop: from a user's bug report to a verified fix
+
+Mono let anyone work on any part of the product. That was half of it. The other half was letting agents find problems on their own.
+
+At most internet companies, a user's bug report passes through support, product, and triage before it reaches an engineer who can fix it.
+
+For us, an internal agent now investigates the report first and traces the issue back to the change that caused it. Then it posts in Slack and tags the engineer who owns that change. The engineer decides whether it's theirs to fix and hands it to their own agent. A separate agent checks the fix by running the tests and flows that matter.
+
+Three agents, three roles: one triages, one does the work, one checks it. The person in the middle makes the calls. A growing share of our engineering work now starts this way, with an agent bringing a problem to a person.
+
+This loop has clear limits. The agent that reads user reports can't change code. It can only investigate and report back to us. Changes come from the engineer's own agent, after the engineer decides. Nothing ships without approval from a person with release rights.
+
+### 4. How we learned to trust agent-written code
+
+For a long time, every change that went into our main branch needed sign-off from one of two senior engineers. We didn't trust AI enough to skip that step. As agents produced more code, that review step became the bottleneck.
+
+On pure coding ability, the models were already strong. We recognized the difference came down to two things. First, people know how to test their work. Second, people have been part of the discussions upstream and downstream, so they know what "right" means for the business. Correct code isn't the same as the correct product.
+
+We addressed both:
+
+- Let agents join the discussion. Each engineer's agent now sits in the Slack threads it has been added to, and follows the context. When someone finally says "Go," the agent already knows what the team decided and why.
+- Let agents test end to end. Working with our backend team, we gave agents the ability to run real flows and regression tests in Manus after each change. As test coverage grew, our trust grew with it.
+
+Today, every change goes through that verification and through a code review bot running the strongest model available, with extra rules for sensitive areas such as payments. The bot replaced the queue, not the human decision. An agent can open a pull request, but it can't merge into our main branch without explicit approval from a person. People still decide what gets built and who can release.
+
+### 5. Autonomy needs an end goal
+
+Trust has limits, and we found this out the hard way.
+
+At one point, everyone was excited about fully autonomous agent loops, so we tried one. An agent collected feedback from our internal feedback channels and started a project for each item. A teammate let it run over a weekend. On Monday morning, more than 200 items were waiting for his decision.
+
+Why not let the agent make those decisions too? Autonomous loops work when the system can check whether the goal has been met. Tests pass or fail; a page loads or it doesn't. Most real work has no such check. A person has to judge whether it's done, and whether it was worth doing at all.
+
+We took two lessons from that weekend. First, people can't make decisions as fast as an unchecked loop creates them. Second, if no one decides whether something should be done, no one owns the result. The bug-fixing loop in section 3 works because tests define success. Product decisions don't have tests, so every product change at Manus still starts with a person deciding whether it's worth doing.
+
+### 6. When engineering got faster, product became the bottleneck
+
+A traditional product process has many handoffs, and priorities drift a little at each one. As coding agents made engineers faster, a new problem appeared: there weren't enough product managers to write good requirements. For the first time, engineering wasn't the constraint.
+
+At Manus, our first fix was to ask a few engineers to become "builders" who own a problem from discovery to launch. Few people had both the technical and product judgment. Next we let PMs change code. That stalled too. The handoffs were still there, and without an engineer's instincts, PMs could change copy and interactions but not the underlying logic.
+
+Mono solved both problems because it carries the rules with it:
+
+- Any change that touches model calls or cost needs the owner's sign-off before code is written.
+- Every change goes through the same review and testing as an engineer's change.
+- Mono can walk through sign-up and payment with test accounts and record each step, so a PM can point to the exact moment something breaks.
+
+Here's what that looks like in practice. A PM working on speech-to-text had Manus benchmark more than 10 models, then chose one. She pulled the frontend code through Mono, built a demo in our design system, and had Manus render each user scenario as an image for her to review. She turned the demo into a video. The plan was clear enough that she built the feature herself, including the web and desktop UI.
+
+People made three decisions along the way. She chose the model. Product and design reviewed the demo. An engineer with release rights reviewed the code. A year ago, none of this would have been possible.
+
+We describe this as moving from human in the loop to human *on* the loop. AI used to do 70-80% of a task and people filled in the rest. Now people set the rules, supervise several agents, check methods and results at key points, step in when needed, and own the outcome.
+
+Some PMs now hand off a short video instead of a written spec or mockups. In a few minutes, it shows the use case, each screen, what each click does, how edge cases behave, and how it all works underneath. For us, design, engineering, and QA agree on what "done" means faster, and the PM explains it once.
+
+[Video](https://files.manuscdn.com/assets/dashboard/materials/2026/10/30/1903e1ee8271507ca42546ece60e872cc1707e9d05b22251b7e949f628b6ab87.mp4)
+
+(Product requirement video for voice input)
+
+Today about half of our PMs ship features on their own, and every PM has committed code. Designers have started too. One PM wrote most of the Manus Studio interface in Manus 2.0. Another wrote the Video Editor. Behind each of these is someone who spent months pushing past what their role used to cover. That's what I'm proudest of.
+
+This doesn't mean everyone has to be a builder. When anyone in a company can build, people may ship things that shouldn't exist. Our product team often asks one question: "If this took one second and cost nothing, would you ship it?" Sometimes the answer is no. We still need module owners who decide what gets built, what doesn't, and what users finally see. We also need people who maintain infrastructure like Mono. When building gets easy, deciding what to build matters more.
+
+### 7. An AI teammate inside the marketing workflow
+
+A marketing partnership moves through script review, pricing, contracts, approvals, payment, launch, and results review. Those steps live in email, contract tools, approval systems, spreadsheets, and ad platforms. Much of the job used to be moving information between them, which left little time for the creative work that requires judgment.
+
+We started with one small problem: when partner content or an ad went live, we often heard about it late. So we had AI write a script that detects when content is published. Then we wanted performance data. Then a review of past partnerships. Then the whole internal workflow connected: when a contract is signed or an approval clears, the agent updates the status and notifies whoever owns the next step.
+
+Manus built all of this into an internal site. For people, it's dashboards and a calendar. For the agent, it's a set of tools. The agent that uses those tools inside our workflow is what we call an AI teammate. It works only in the channels and systems the team has connected it to, with access scoped to this workflow.
+
+Here's what it does:
+
+- It manages its own queue. Many people message it at once, so it talks to everyone in one "front desk" session and hands tasks to parallel sessions. It decides whether a message is relevant to it, then whether to interrupt current work or wait. It proposed these rules itself during development, and we reviewed them before keeping them.
+- It learns from forwarded context. A strategy change used to mean a meeting and a written brief. Now our marketing lead forwards the discussion and says, "Learn this."
+- It keeps long-running goals in view. On one occasion, teammates in a Slack thread it had been added to couldn't recall where a project stood. Without being tagged, it replied: "B is still in testing. Should we wait for A's results before looking at B?"
+- It checks facts with other teams. After we launched 3D model rigging, it asked the product team what was supported. It learned that rigging covers seven categories, including fish, snakes, and quadrupeds, so our descriptions stayed accurate.
+
+Teammates now bring it into script and pricing reviews, because it has read our past partnership records. People still make the call.
+
+The internal site can also improve from its own users, including the agent. When the agent hits friction, it files a request through a feedback endpoint. That opens a development task in Manus through Automations in Manus 2.0, and an engineer reviews the change before it ships. It has run for about a week. We need many more cases before we rely on it.
+
+So what do the people on the team do? Three things stay with them. They make and own every important decision. They handle cases the agent hasn't seen, and teach it what to do or whom to ask. And they redirect it whenever its analysis points to a new angle.
+
+### 8. Interrupt each other less
+
+Across all these teams, many questions no longer require interrupting someone.
+
+Ask the agent first. A teammate built a Slack bot on Mono that runs on a cloud computer and replies in the thread. Non-engineers use it most. How does this feature work? Where is this string? Has this shipped? They no longer need to find the owner first.
+
+Open the session instead of asking for a status update. An engineer's progress used to live in their own AI chats, invisible once they logged off. So we built an internal feature that lets members of a project see each other's sessions and ask to join. An engineer might build most of a feature with the agent, and then a PM joins the same session to adjust spacing, styles, and copy. Posting in someone else's session requires their approval, and we're still working out the permissions.
+
+![How an engineer, a PM, and a designer work in one session](https://files.manuscdn.com/assets/dashboard/materials/2026/10/30/555809c7e478f1452de193557b3e53d840e1dba6804d42452b258d0fa94ba160.webp)
+
+(Illustrative example: how an engineer, a PM, and a designer work in one session. Not a real pricing change.)
+
+The point isn't to talk to each other less. It's to interrupt each other less.
+
+Decide only what needs deciding. Our heaviest AI user keeps one main session with a single job: list what needs his decision, with a recommendation for each. When Slack gets busy, he stays out of it and asks, "What do I need to decide right now?"
+
+I do something similar. I have more than 20 to-dos a day, and, as I've shared publicly, I have ADHD. Starting is the hardest part for me. Now every to-do goes into a dedicated Manus project that turns each one into its own task. It starts what it can. When it's unsure, it asks me for background and which PM should own it. Then, using the access I've given it to my own Slack, Gmail, and Notion, it gathers the context and hands the PM a complete request instead of a one-line note. For me, the change isn't only about efficiency. I now spend much less of my day anxious about where to begin, which is huge on a personal level.
+
+### 9. Is it worth the cost?
+
+We spend a lot on AI, and we track that spend closely. We don't use it to judge anyone's performance. We use it to judge the spend itself: is it paying off now, or setting us up for later?
+
+Here's what we think it buys us, and where we expect the cost to go:
+
+- It buys time and attention. As a team grows, coordination eats into everyone's attention. AI protects each person's attention and gives them fuller ownership of their work. And we're still hiring.
+- Using the best models is how we learn where AI's limits are. The verification and code review setup described in section 4 runs on the strongest models we can get. The colleague who leads developer productivity calls it our best-value spend.
+- The cost should fall through the product. More of our development now happens in Manus Studio, our own product, so our usage data shows us where tokens are wasted. The fixes go into the product, so they should make Manus more efficient for users too. We expect today's costs to fall substantially as models get cheaper and we remove waste. That's a belief, not a promise!
+
+### 10. What isn't working yet
+
+There are fewer interruptions, but attention is more fragmented. Someone who used to handle four or five things a day may now push 20 or 30 forward at once. Every switch means reloading context. AI expands what people can do, and it also pushes them to do more. One PM told me that whenever a task is running, she can't resist starting another agent. Doing more things isn't the goal. We're treating this as a problem to solve, not a pace to celebrate.
+
+Information is more scattered. Our head of product used to know every change and why it was made. Now he sometimes screenshots a problem and asks Mono, "Who changed this?" It's funny, but the question is real. When everyone is empowered to change the product, who is responsible for the whole?
+
+Sharing permissions need a redesign. When work can be shared and handed over, and agents sit in more of our conversations, we have to decide what's open and what needs approval.
+
+Our fixes are still basic. For now, one agent supervises the others and reports only what's stuck and what needs a human decision. We know this can be better.
+
+### 11. What we're building next
+
+These problems point to product work that other teams will probably need too. We didn't plan these features in advance. They came from problems we kept running into ourselves.
+
+- Sessions as shared workspaces. One person raises a problem, a designer proposes a fix, an engineer builds it, and a PM runs it, all in the same place.
+- Work that moves across devices and people. Local and cloud machines stay connected, so work can continue when people step away.
+- Agents that find options people hadn't considered. An agent working inside a company's systems, with the right permissions, should be able to suggest solutions, not just carry out instructions.
+
+We'll try these on ourselves first, then bring them to users.
+
+### 12. What people do now
+
+The engineer with a row of agent sessions open isn't just a story about efficiency. It's a change in what an organization runs on. Companies used to move information through roles and hierarchy. What one person could do depended on how many people and resources they could leverage. Now we spend a little time giving AI context and tools, and more time making judgments and decisions. More and more often, an agent is the one bringing a problem to us. Deciding what to do about it remains our job.
+
+We've joked about it: if Manus can do this much, why come to the office? Let the agents work it out. But the important questions still need people to raise them, argue about them, and decide. For example, what counts as a good product? Or, to exaggerate a little: build a great product with real revenue that keeps pushing AI's limits, or go for the margin? AI doesn't know which one we want. We do. Culture and trust come from working through things together, day after day and in the moments that matter. That's the foundation the work in every session rests on.
+
+So, for now, here's our answer. In our experiment as an AI-native organization, the role of people hasn't diminished. It has become more focused on areas where they can have the greatest impact: define the problem, judge quality, decide what's worth doing, own the result.
+
+That's also why we're still hiring. People's skills and judgment are at the center of this way of working — and that isn't changing any time soon.
+
+As I write this, I'm curious what this post would say a year from now. Every company has different goals, structures, and culture, so there may be no standard answer and no final form. But for a company that builds agents, working out how people and AI work together isn't optional. It's part of the job. We'll keep at it, and we'll keep sharing what we learn.
+
+*A note on the numbers. Figures in this post come from internal records. Team sizes and PM shipping figures are as of late October. Some points are estimates or one person's experience rather than measurements.*
