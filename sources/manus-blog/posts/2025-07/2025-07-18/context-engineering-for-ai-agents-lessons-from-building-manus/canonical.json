@@ -1,0 +1,1742 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "manus-blog:context-engineering-for-ai-agents-lessons-from-building-manus",
+  "source": {
+    "canonical_url": "https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus",
+    "site": "manus-blog",
+    "author": "Manus",
+    "published_at": "2025-07-18T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:4a60f1294a5fd3d9ad57b77f04dcc801ce744c65c2200c19644ff8a077c08fcf",
+    "fetched_at": "2026-11-04T04:00:05.260592+00:00",
+    "parser_version": "manus-blog.v1"
+  },
+  "content": {
+    "title": "Context Engineering for AI Agents: Lessons from Building Manus",
+    "title_en": "Context Engineering for AI Agents: Lessons from Building Manus",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "b001",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At the very beginning of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://manus.im/app"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Manus"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " project, my team and I faced a key decision: should we train an end-to-end agentic model using open-source foundations, or build an agent on top of the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2301.00234"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "in-context learning"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " abilities of frontier models?"
+          }
+        ]
+      },
+      {
+        "id": "b002",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Back in my first decade in NLP, we didn't have the luxury of that choice. In the distant days of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1810.04805"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "BERT"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (yes, it's been seven years), models had to be fine-tuned—and evaluated—before they could transfer to a new task. That process often took weeks per iteration, even though the models were tiny compared to today's LLMs. For fast-moving applications, especially pre–PMF, such "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "slow feedback loops"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " are a deal-breaker. That was a bitter lesson from my last startup, where I trained models from scratch for "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Open_information_extraction"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "open information extraction"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and semantic search. Then came "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2005.14165"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "GPT-3"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.11416"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Flan-T5"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", and my in-house models became irrelevant overnight. Ironically, those same models marked the beginning of in-context learning—and a whole new path forward."
+          }
+        ]
+      },
+      {
+        "id": "b003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "That hard-earned lesson made the choice clear: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Manus would bet on context engineering"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". This allows us to ship improvements in hours instead of weeks, and kept our product orthogonal to the underlying models: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "If model progress is the rising tide, we want Manus to be the boat"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", not the pillar stuck to the seabed."
+          }
+        ]
+      },
+      {
+        "id": "b004",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Still, context engineering turned out to be anything but straightforward. It's an experimental science—and we've rebuilt our agent framework four times, each time after discovering a better way to shape context. We affectionately refer to this manual process of architecture searching, prompt fiddling, and empirical guesswork as \""
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Stochastic "
+              },
+              {
+                "type": "emphasis",
+                "children": [
+                  {
+                    "type": "strong",
+                    "children": [
+                      {
+                        "type": "strong",
+                        "children": [
+                          {
+                            "type": "text",
+                            "text": "Graduate"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Descent"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\". It's not elegant, but it works."
+          }
+        ]
+      },
+      {
+        "id": "b005",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This post shares the local optima we arrived at through our own \"SGD\". If you're building your own AI agent, I hope these principles help you converge faster."
+          }
+        ]
+      },
+      {
+        "id": "b006",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Design Around the KV-Cache"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b007",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If I had to choose just one metric, I'd argue that the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "KV-cache hit rate"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is the single most important metric for a production-stage AI agent. It directly affects both latency and cost. To understand why, let's look at how "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2210.03629"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "a typical agent"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " operates:"
+          }
+        ]
+      },
+      {
+        "id": "b008",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "After receiving a user input, the agent proceeds through a chain of tool uses to complete the task. In each iteration, the model selects an "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "action"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " from a predefined action space based on the current context. That action is then executed in the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "environment"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " (e.g., Manus's virtual machine sandbox) to produce an "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "observation"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The action and observation are appended to the context, forming the input for the next iteration. This loop continues until the task is complete."
+          }
+        ]
+      },
+      {
+        "id": "b009",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As you can imagine, the context grows with every step, while the output—usually a structured function call—remains relatively short. This makes the ratio between "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "prefilling"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "decoding"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " highly skewed in agents compared to chatbots. In Manus, for example, the average input-to-output token ratio is around "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "100:1"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b010",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Fortunately, contexts with identical prefixes can take advantage of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://medium.com/@joaolages/kv-caching-explained-276520203249"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "KV-cache"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which drastically reduces "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "time-to-first-token (TTFT)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and inference cost—whether you're using a self-hosted model or calling an inference API. And we're not talking about small savings: with Claude Sonnet, for instance, cached input tokens cost "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "0.30 USD/MTok"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", while uncached ones cost "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "3 USD/MTok"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "—a 10x difference."
+          }
+        ]
+      },
+      {
+        "id": "b011",
+        "type": "image",
+        "attrs": {
+          "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/OhdKxGRSXCcuqOvz.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b012",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "From a context engineering perspective, improving KV-cache hit rate involves a few key practices:"
+          }
+        ]
+      },
+      {
+        "id": "b016",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "b013",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Keep your prompt prefix stable."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Due to the "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://en.wikipedia.org/wiki/Autoregressive_model"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "autoregressive"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " nature of LLMs, even a single-token difference can invalidate the cache from that token onward. A common mistake is including a timestamp—especially one precise to the second—at the beginning of the system prompt. Sure, it lets the model tell you the current time, but it also kills your cache hit rate."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b014",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Make your context append-only."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Avoid modifying previous actions or observations. Ensure your serialization is deterministic. Many programming languages and libraries don't guarantee stable key ordering when serializing JSON objects, which can silently break the cache."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b015",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Mark cache breakpoints explicitly when needed."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Some model providers or inference frameworks don't support automatic incremental prefix caching, and instead require manual insertion of cache breakpoints in the context. When assigning these, account for potential cache expiration and at minimum, ensure the breakpoint includes the end of the system prompt."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b017",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Additionally, if you're self-hosting models using frameworks like "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/vllm-project/vllm"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "vLLM"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", make sure "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://docs.vllm.ai/en/stable/design/v1/prefix_caching.html"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "prefix/prompt caching"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is enabled, and that you're using techniques like "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "session IDs"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to route requests consistently across distributed workers."
+          }
+        ]
+      },
+      {
+        "id": "b018",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Mask, Don't Remove"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b019",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As your agent takes on more capabilities, its action space naturally grows more complex—in plain terms, the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "number of tools"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " explodes. The recent popularity of "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://modelcontextprotocol.io/introduction"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "MCP"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " only adds fuel to the fire. If you allow user-configurable tools, trust me: someone will inevitably plug hundreds of mysterious tools into your carefully curated action space. As a result, the model is more likely to select the wrong action or take an inefficient path. In short, your heavily armed agent gets dumber."
+          }
+        ]
+      },
+      {
+        "id": "b020",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A natural reaction is to design a dynamic action space—perhaps loading tools on demand using something "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Retrieval-augmented_generation"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "RAG"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "-like. We tried that in Manus too. But our experiments suggest a clear rule: unless absolutely necessary, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "avoid dynamically adding or removing tools mid-iteration"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". There are two main reasons for this:"
+          }
+        ]
+      },
+      {
+        "id": "b023",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "b021",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "In most LLMs, tool definitions live near the front of the context after serialization, typically before or after the system prompt. So any change will invalidate the KV-cache for all subsequent actions and observations."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b022",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "text",
+                "text": "When previous actions and observations still refer to tools that are no longer defined in the current context, the model gets confused. Without "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://platform.openai.com/docs/guides/structured-outputs"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "constrained decoding"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", this often leads to "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "schema violations or hallucinated actions"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b024",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To solve this while still improving action selection, Manus uses a context-aware "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://en.wikipedia.org/wiki/Finite-state_machine"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "state machine"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to manage tool availability. Rather than removing tools, it "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "masks the token logits"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " during decoding to prevent (or enforce) the selection of certain actions based on the current context."
+          }
+        ]
+      },
+      {
+        "id": "b025",
+        "type": "image",
+        "attrs": {
+          "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/cWxINCvUfrmlbvfV.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b026",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In practice, most model providers and inference frameworks support some form of "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "response prefill"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which allows you to constrain the action space "
+          },
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "without"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " modifying the tool definitions. There are generally three modes of function calling (we'll use the "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://github.com/NousResearch/Hermes-Function-Calling"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Hermes format"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " from NousResearch as an example):"
+          }
+        ]
+      },
+      {
+        "id": "b030",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b027",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Auto"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " – The model may choose to call a function or not. Implemented by prefilling only the reply prefix: "
+              },
+              {
+                "type": "inline_code",
+                "text": "<|im_start|>assistant"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b028",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Required"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " – The model must call a function, but the choice is unconstrained. Implemented by prefilling up to tool call token: "
+              },
+              {
+                "type": "inline_code",
+                "text": "<|im_start|>assistant<tool_call>"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b029",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Specified"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " – The model must call a function "
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "from a specific subset"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Implemented by prefilling up to the beginning of the function name: "
+              },
+              {
+                "type": "inline_code",
+                "text": "<|im_start|>assistant<tool_call>{\"name\": “browser_"
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b031",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Using this, we constrain action selection by masking token logits directly. For example, when the user provides a new input, Manus must reply immediately instead of taking an action. We've also deliberately designed action names with consistent prefixes—e.g., all browser-related tools start with "
+          },
+          {
+            "type": "inline_code",
+            "text": "browser_"
+          },
+          {
+            "type": "text",
+            "text": ", and command-line tools with "
+          },
+          {
+            "type": "inline_code",
+            "text": "shell_"
+          },
+          {
+            "type": "text",
+            "text": ". This allows us to easily enforce that the agent only chooses from a certain group of tools at a given state "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "without using stateful logits processors"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b032",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "These designs help ensure that the Manus agent loop remains stable—even under a model-driven architecture."
+          }
+        ]
+      },
+      {
+        "id": "b033",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Use the File System as Context"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b034",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Modern frontier LLMs now offer context windows of 128K tokens or more. But in real-world agentic scenarios, that's often not enough, and sometimes even a liability. There are three common pain points:"
+          }
+        ]
+      },
+      {
+        "id": "b038",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "b035",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Observations can be huge"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", especially when agents interact with unstructured data like web pages or PDFs. It's easy to blow past the context limit."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b036",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Model performance tends to degrade"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " beyond a certain context length, even if the window technically supports it."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          },
+          {
+            "id": "b037",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "\n"
+              },
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Long inputs are expensive"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ", even with prefix caching. You're still paying to transmit and prefill every token."
+              },
+              {
+                "type": "text",
+                "text": "\n"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b039",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "To deal with this, many agent systems implement context truncation or compression strategies. But overly aggressive compression inevitably leads to information loss. The problem is fundamental: an agent, by nature, must predict the next action based on all prior state—and you "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "can't"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " reliably predict which observation might become critical ten steps later. From a logical standpoint, any irreversible compression carries risk."
+          }
+        ]
+      },
+      {
+        "id": "b040",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "That's why we treat the "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "file system as the ultimate context"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in Manus: unlimited in size, persistent by nature, and directly operable by the agent itself. The model learns to write to and read from files on demand—using the file system not just as storage, but as structured, externalized memory."
+          }
+        ]
+      },
+      {
+        "id": "b041",
+        "type": "image",
+        "attrs": {
+          "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/sBITCOxGnHNUPHTD.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b042",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Our compression strategies are always designed to be "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "restorable"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". For instance, the content of a web page can be dropped from the context as long as the URL is preserved, and a document's contents can be omitted if its path remains available in the sandbox. This allows Manus to shrink context length without permanently losing information."
+          }
+        ]
+      },
+      {
+        "id": "b043",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "While developing this feature, I found myself imagining what it would take for a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "State Space Model (SSM)"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to work effectively in an agentic setting. Unlike Transformers, SSMs lack full attention and struggle with long-range backward dependencies. But if they could master file-based memory—externalizing long-term state instead of holding it in context—then their speed and efficiency might unlock a new class of agents. Agentic SSMs could be the real successors to "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/1410.5401"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Neural Turing Machines"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b044",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Manipulate Attention Through Recitation"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b045",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If you've worked with Manus, you've probably noticed something curious: when handling complex tasks, it tends to create a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "todo.md"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " file—and update it step-by-step as the task progresses, checking off completed items."
+          }
+        ]
+      },
+      {
+        "id": "b046",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "That's not just cute behavior—it's a deliberate mechanism to "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "manipulate attention"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "."
+          }
+        ]
+      },
+      {
+        "id": "b047",
+        "type": "image",
+        "attrs": {
+          "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/OYpTzfPZaBeeWFOx.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b048",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A typical task in Manus requires around "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "50 tool calls"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " on average. That's a long loop—and since Manus relies on LLMs for decision-making, it's vulnerable to drifting off-topic or forgetting earlier goals, especially in long contexts or complicated tasks."
+          }
+        ]
+      },
+      {
+        "id": "b049",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "By constantly rewriting the todo list, Manus is "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "reciting its objectives into the end of the context"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". This pushes the global plan into the model's recent attention span, avoiding \""
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "lost-in-the-middle"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\" issues and reducing goal misalignment. In effect, it's using natural language to bias its own focus toward the task objective—without needing special architectural changes."
+          }
+        ]
+      },
+      {
+        "id": "b050",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Keep the Wrong Stuff In"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b051",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Agents make mistakes. That's not a bug—it's reality. Language models hallucinate, environments return errors, external tools misbehave, and unexpected edge cases show up all the time. In multi-step tasks, failure is not the exception; it's part of the loop."
+          }
+        ]
+      },
+      {
+        "id": "b052",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "And yet, a common impulse is to hide these errors: clean up the trace, retry the action, or reset the model's state and leave it to the magical \""
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://arxiv.org/abs/2405.00492"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "temperature"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "\". That feels safer, more controlled. But it comes at a cost: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "Erasing failure removes evidence"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". And without evidence, the model can't adapt."
+          }
+        ]
+      },
+      {
+        "id": "b053",
+        "type": "image",
+        "attrs": {
+          "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/dBjZlVbKJVhjgQuF.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b054",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In our experience, one of the most effective ways to improve agent behavior is deceptively simple: "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "leave the wrong turns in the context"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". When the model sees a failed action—and the resulting observation or stack trace—it implicitly updates its internal beliefs. This shifts its prior away from similar actions, reducing the chance of repeating the same mistake.\nIn fact, we believe "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "error recovery"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is one of the clearest indicators of true agentic behavior. Yet it's still underrepresented in most academic work and public benchmarks, which often focus on task success under ideal conditions."
+          }
+        ]
+      },
+      {
+        "id": "b055",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Don't Get Few-Shotted"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b056",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.promptingguide.ai/techniques/fewshot"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "Few-shot prompting"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " is a common technique for improving LLM outputs. But in agent systems, it can backfire in subtle ways."
+          }
+        ]
+      },
+      {
+        "id": "b057",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Language models are excellent mimics; they "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "imitate the pattern of behavior"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " in the context. If your context is full of similar past action-observation pairs, the model will tend to follow that pattern, even when it's no longer optimal."
+          }
+        ]
+      },
+      {
+        "id": "b058",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This can be dangerous in tasks that involve repetitive decisions or actions. For example, when using Manus to help review a batch of 20 resumes, the agent often falls into a rhythm—repeating similar actions simply because that's what it sees in the context. This leads to drift, overgeneralization, or sometimes hallucination."
+          }
+        ]
+      },
+      {
+        "id": "b059",
+        "type": "image",
+        "attrs": {
+          "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/IIyBBdwwuMDJUnUc.png",
+          "alt": ""
+        }
+      },
+      {
+        "id": "b060",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The fix is to "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "increase diversity"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". Manus introduces small amounts of structured variation in actions and observations—different serialization templates, alternate phrasing, minor noise in order or formatting. This controlled randomness helps break the pattern and tweaks the model's attention.\nIn other words, "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "don't few-shot yourself into a rut"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". The more uniform your context, the more brittle your agent becomes."
+          }
+        ]
+      },
+      {
+        "id": "b061",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Conclusion"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b062",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Context engineering is still an emerging science—but for agent systems, it's already essential. Models may be getting stronger, faster, and cheaper, but no amount of raw capability replaces the need for memory, environment, and feedback. How you shape the context ultimately defines how your agent behaves: how fast it runs, how well it recovers, and how far it scales."
+          }
+        ]
+      },
+      {
+        "id": "b063",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "At Manus, we've learned these lessons through repeated rewrites, dead ends, and "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "real-world testing across millions of users"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ". None of what we've shared here is universal truth—but these are the patterns that worked for us. If they help you avoid even one painful iteration, then this post did its job."
+          }
+        ]
+      },
+      {
+        "id": "b064",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The agentic future will be built one context at a time. Engineer them well."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "context-engineering-for-ai-agents-lessons-from-building-manus",
+    "source_slug": "Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus",
+    "source_profile": "manus-blog.v1",
+    "source_counts": {
+      "heading": 7,
+      "image": 6,
+      "table": 0,
+      "code": 0
+    },
+    "categories": [
+      "Product"
+    ],
+    "summary_hint": "This post shares the local optima Manus arrived at through our own \"SGD\". If you're building your own AI agent, we hope these principles help you converge faster."
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/OhdKxGRSXCcuqOvz.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/cWxINCvUfrmlbvfV.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/sBITCOxGnHNUPHTD.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/OYpTzfPZaBeeWFOx.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/dBjZlVbKJVhjgQuF.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "url": "https://d1oupeiobkpcny.cloudfront.net/user_upload_by_module/markdown/310708716691272617/IIyBBdwwuMDJUnUc.png",
+      "alt": ""
+    }
+  ]
+}
