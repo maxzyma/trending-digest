@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-11-11）
+# 跨源主题聚类 — 同类与升温（2026-11-12）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,13 +6,13 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| agent-skills-and-plugins | ↑升温 | 6 | 4 | 50 | 49 | github+claude | canonical |
+| agent-skills-and-plugins | ↑升温 | 7 | 5 | 52 | 51 | github+claude | canonical |
 | agent-frameworks-and-platforms | ↑升温 | 6 | 3 | 49 | 48 | github+claude+lilian | canonical |
 | learning-and-curated-resources | ↑升温 | 5 | 4 | 94 | 94 | github+claude+lilian | canonical |
-| dev-infra-and-tooling | ↓退潮 | 3 | 6 | 73 | 70 | github+claude | canonical |
+| dev-infra-and-tooling | ↓退潮 | 3 | 4 | 73 | 70 | github+claude | canonical |
 | productivity-and-business-apps | →持稳 | 3 | 3 | 13 | 13 | github+claude | canonical |
 | coding-agents-and-harnesses | ↓退潮 | 2 | 4 | 61 | 58 | github+claude+lilian | canonical |
-| networking-and-security | ↑升温 | 2 | 1 | 37 | 34 | github+claude+lilian | canonical |
+| networking-and-security | →持稳 | 2 | 2 | 38 | 35 | github+claude+lilian | canonical |
 | desktop-and-media-apps | ↑升温 | 2 | 1 | 33 | 32 | github+claude | canonical |
 | inference-and-serving-runtime | ↑升温 | 2 | 1 | 24 | 24 | github+claude+lilian | canonical |
 | ai-video-voice-creative | ↑升温 | 2 | 1 | 21 | 21 | github+lilian | canonical |
@@ -26,7 +26,7 @@
 
 ## 各主题项目清单
 
-### agent-skills-and-plugins（49）
+### agent-skills-and-plugins（51）
 _agent 技能与插件赛道正在升温（近窗成员数较前窗翻倍），社区 repo 与 Claude 官方博客从两端同时推进：官方一侧把 MCP 推进到无状态核心、加固授权，并把 connectors 扩展到日常消费类应用；社区一侧则以 SKILL.md 和 MCP 为事实标准，大量产出可跨 Claude Code、Cursor、Codex 安装的技能包。结构上，赛道正从早期的 awesome 清单和单点工具桥接，分化出几条更明确的方向。一是给 agent 外挂持久化代码知识图谱或文件化记忆，用来压缩上下文 token；二是给 AI 生成的 UI 施加审美与质量约束，对抗 AI-slop；三是把书籍、地域文化、安全工作流乃至个人目标封装成按需加载的领域上下文。往后看，技能会从提示片段演化成带路由、门禁和本地优先基础设施的可分发能力层。本期 Lil'Log 研究侧暂无对应信号，因此这仍是一条由工程实践和平台协议驱动的赛道。_
 
 - `github-trends` [Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 一个「反 AI-slop」的设计 skill，供 Claude Code、Cursor、Codex 使用。目标是让 AI 生成的网站摆脱千篇一律的 hero→3 特性→CTA→footer 同一节奏，追求「结构多样性」。作者 Hassan El Mghari（Nutlope）是高影响力 KOL。
@@ -78,6 +78,8 @@ _agent 技能与插件赛道正在升温（近窗成员数较前窗翻倍），�
 - `github-trends` [scenario-labs/skills](https://github.com/scenario-labs/skills) — 游戏素材平台 Scenario 官方出的一套 AI 编程助手技能包。装进 Claude Code、Cursor、Codex 后，你可以在对话里让 Agent 生成图片、视频、音频、贴图和 3D 素材，或者驱动本机的 Blender、Maya、Unreal、Unity 等软件。
 - `github-trends` [vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser) — 一个给 AI 编程助手用的"遥控浏览器"。助手通过几条命令打开网页、看页面上有哪些按钮和输入框、点击、填写、截图，再把结果读回来继续判断。发命令和读结果的都是 Agent，人不需要盯着窗口。
 - `github-trends` [homeassistant-ai/ha-mcp](https://github.com/homeassistant-ai/ha-mcp) — 一个让 AI 助手管理智能家居的连接器。装好后，你可以在 Claude、ChatGPT 或 Cursor 里用自然语言让 AI 新建、修改 Home Assistant 的自动化、脚本、场景和仪表盘，查看运行记录排错，也能整理实体、区域和备份。README 列出 87 个工具。
+- `github-trends` [GoogleChrome/modern-web-guidance-src](https://github.com/GoogleChrome/modern-web-guidance-src) — 一套给 AI 编码助手看的"现代 Web 写法手册"。Claude Code、Codex 这类 Agent 写网页前先查它，就知道某个效果浏览器是否已经原生支持、哪些浏览器能用、不支持时怎么降级。上榜的是源码仓，放指南的编写、校准和评测代码；用户实际安装的是分发仓 `GoogleChrome/modern-web-guidance`（5,140 星）。
+- `github-trends` [shadcn/improve](https://github.com/shadcn/improve) — shadcn/ui 作者写的一个 Agent 技能。你让最强的模型通读代码库，挑出值得改的问题，为每个问题写一份可以独立执行的计划文件，放在 `plans/` 目录下。它自己不改源码，README 的说法是"计划就是产品"。
 
 ### agent-frameworks-and-platforms（48）
 _Agent 框架赛道正在升温，重心从「怎么搭一个 agent」转向「怎么让 agent 长期、受控地在生产里干活」。社区 repo 与 Claude 官方博客同时押注同一套基础设施：持久状态与记忆、云端或自托管沙箱、MCP 连接、权限审批与审计。Claude Managed Agents 接连补上 memory、self-hosted sandbox 和 MCP tunnel，GitHub 侧则涌现出 cloudflare/computer 这类 agent 运行时、loopx 与 paperclip 这类长程控制面，以及微软的治理工具包。另一个结构变化是 agent 正被当作「组织成员」来编排，表现为组织架构、预算、heartbeat 调度和人机同权的协作空间，AutoGPT 从自主 agent 转型为编排平台也印证了这一点。下一步的竞争点很可能落在跨工具复用的能力打包、面向真实交付物的垂直评测，以及多 agent 协作的治理层。_
@@ -382,7 +384,7 @@ _编码 agent 赛道正在升温，竞争焦点从"谁的模型更会写代码"�
 - `github-trends` [The-PR-Agent/pr-agent](https://github.com/The-PR-Agent/pr-agent) — 在 GitHub、GitLab 等平台的合并请求（PR）上自动做 AI 代码评审的工具。你在 PR 里评论 `/describe`，它替你写 PR 描述；评论 `/review`，它给出评审意见；`/improve` 给修改建议；`/ask` 可以就这次改动提问。
 - `github-trends` [ranxianglei/billion-context](https://github.com/ranxianglei/billion-context) — 一个装在本机的代理程序，夹在 Claude Code、Codex、OpenCode 这类编码 Agent 和模型 API 之间。它给对话加上"压缩、展开、搜索历史"几个工具，让模型自己决定把哪段旧对话折成摘要、需要原文时再展开，从而在小窗口模型上跑很长的单个会话。
 
-### networking-and-security（34）
+### networking-and-security（35）
 _该赛道正在升温，重心也在变化：传统的"流量主权"线（自建 VPN、代理客户端、离网蓝牙 mesh 通信）仍有稳定的社区热度，但新增量明显转向 AI agent 的身份与治理。社区和官方在这一点上押注同一方向：GitHub 上出现了把 EDR 思路搬到 agent 因果链审计的项目，自托管 IdP 也在走热；Claude 官方博客则集中发布了 Workload Identity Federation、经由 IdP 统一授权 MCP 连接器、agent 身份模型等能力，把 agent 当作需要独立身份、授权和审计的一等主体。与此同时，官方开始强调前沿模型带来的"AI 加速攻防"，Lil'Log 对 LLM 对抗攻击的研究也提供了理论底座。可以预期，后续的竞争焦点会从"保护人的连接"进一步移向"约束和追溯 agent 的行为"，身份联邦和 agent 可观测性有望成为这一赛道的主轴。_
 
 - `github-trends` [chen08209/FlClash](https://github.com/chen08209/FlClash) — 基于 ClashMeta 内核的跨平台代理客户端（Flutter/Dart 写，覆盖 Windows/macOS/Linux/Android），主打简单易用、开源无广告。
@@ -419,6 +421,7 @@ _该赛道正在升温，重心也在变化：传统的"流量主权"线（自�
 - `claude-blog` [Claude Duet Safety, Privacy, and Security](https://claude.com/resources/articles/claude-duet-safety-privacy-and-security) — [Claude Duet (opens in new tab)](https://claude.com/resources/articles/claude-duet) is an agent, currently in research preview, that uses a cloud-based computer to do work for you. It can use all the apps and services you've chosen to connect to Claude, and it runs continuously even after you close the app. It can read your inbox, draft replies, book things, and run routines while you are away. Ou
 - `github-trends` [togg53192-cmd/jailbreaks](https://github.com/togg53192-cmd/jailbreaks) — 一个收集大模型"越狱"提示词的资料库。越狱指用特制的系统提示或人设设定，诱导模型绕开厂商设置的安全限制。仓库根目录约 38 个文件，基本一个模型一份，覆盖 Claude、Gemini、Grok、Mistral 等闭源模型，DeepSeek、Qwen、Kimi、GLM、Gemma 等开源权重模型，以及 OpenCode 上的免费模型；部分做成 AGENTS.md 或 Ollama Modelfile，直接放进编程 Agent 使用。
 - `github-trends` [beenuar/AiSOC](https://github.com/beenuar/AiSOC) — 一套可以自己部署的"AI 安全值班室"。它把各类安全告警汇总归并，让 AI 代理先做研判、对照 MITRE ATT&CK 攻击框架调查，把每一步提示和工具调用记进可回放的"决策账本"；隔离主机、封禁账号这类处置动作必须由人批准。
+- `github-trends` [openai/codex-security](https://github.com/openai/codex-security) — OpenAI 官方的代码安全扫描工具。在仓库里运行 `cs scan .`，Codex 会通读代码找漏洞，验证每个候选漏洞是否成立，生成补丁并复核修复。除了命令行，它还提供 TypeScript SDK 和 GitHub Action。
 
 ### desktop-and-media-apps（32）
 _桌面与媒体应用赛道正在升温，主线是“把控制权收回本机”：社区热门 repo 集中在本地优先、免账号、零遥测的替代品上，从文件互传、外设配置到媒体客户端，并越来越多地用 Rust 重写原生客户端，取代臃肿的官方套件。AI 正从独立产品下沉为桌面工具的内置能力，会议纪要、收藏归档、个人搜索都默认接本地 Ollama/Whisper，甚至通过 MCP 把个人数据开放给 AI 助手检索。官方侧，Claude 博客把 Desktop 定位为聊天、Cowork 与 Code 合一的入口，并铺到三大云的企业渠道，说明厂商与社区同时押注“桌面即 AI 工作台”。两者路线却在分化：厂商走云端托管、企业集成，社区走自托管、数据不出设备，后续竞争点可能落在本地模型能力与隐私合规之间的取舍。_
