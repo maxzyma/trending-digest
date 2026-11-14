@@ -1,0 +1,1242 @@
+{
+  "schema_version": "article.v1",
+  "document_id": "claude-blog:building-always-on-agents",
+  "source": {
+    "canonical_url": "https://claude.com/resources/articles/building-always-on-agents",
+    "site": "claude-blog",
+    "author": "Anthropic",
+    "published_at": "2026-11-13T00:00:00+00:00",
+    "source_timezone": "UTC"
+  },
+  "revision": {
+    "source_hash": "sha256:52800756ba71bffb4545a02ee8671b9657c5aee17a3d0b801faf5e44a8c25b13",
+    "fetched_at": "2026-11-14T02:25:06.281246+00:00",
+    "parser_version": "claude-blog.v1"
+  },
+  "content": {
+    "title": "Building always-on agents",
+    "title_en": "Building always-on agents",
+    "summary": "",
+    "blocks": [
+      {
+        "id": "b001",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Over the past few months, we’ve seen a resurgence of always-on agents."
+          }
+        ]
+      },
+      {
+        "id": "b002",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Always-on agents are stateful and proactive, meaning they manage context across sessions and take actions without direct supervision. Underneath, they run on the same "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.anthropic.com/research/building-effective-agents"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "core loop"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " as other agents. The difference is the surrounding architecture, which is built from primitives that control when the agents wake up, what carries over between runs, and how their work reaches the user."
+          }
+        ]
+      },
+      {
+        "id": "b003",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The resurgence is largely due to recent model advancements, which have made always-on agents more practical to run. First, the latest models have better judgment: they’re more reliable at understanding user intent and knowing when to check in. Second, intelligence is becoming cheaper, with long-horizon tasks benefiting the most. For example, on "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "one long-horizon coding benchmark"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", Opus 5.5 cost 78% less per solved task than Opus 5, compared with 40% less on typical workloads."
+          }
+        ]
+      },
+      {
+        "id": "b004",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Customers have started to ask us how to integrate this type of experience into their own products. Some companies want to make their existing agents more proactive, while others are looking to build them from the ground up."
+          }
+        ]
+      },
+      {
+        "id": "b005",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This post breaks down the primitives behind always-on agents and walks through how they fit together."
+          }
+        ]
+      },
+      {
+        "id": "b006",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The cycle behind the always-on agent"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b007",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "An always-on agent is not actually “always on.” This is just a description of the user experience."
+          }
+        ]
+      },
+      {
+        "id": "b008",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "In reality, the agent spends most of its time asleep, waking up periodically to do work. Each stretch of work is called a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "run"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ": the agent receives an event, completes its task, and then saves information about what happened. A run works inside a "
+          },
+          {
+            "type": "strong",
+            "children": [
+              {
+                "type": "text",
+                "text": "session"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", which is the transcript of messages and tool calls. Once the run is finished, the agent goes back to sleep, and the cycle repeats indefinitely."
+          }
+        ]
+      },
+      {
+        "id": "b009",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/5dc803bf06d6e92e4aecae762da096626e2fa9ec.gif",
+          "alt": "Animated diagram of an always-on agent’s timeline: long stretches asleep with no tokens spent, broken by brief runs. Each run has four steps: an event arrives, a session starts, the agent loop runs, and the run writes back to stored state that carries over between runs."
+        }
+      },
+      {
+        "id": "b010",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The core primitives"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b011",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The surrounding architecture of an always-on agent has five core primitives: an event inbox, timers, memory, permissions, and an outbox. Let’s take a look at each."
+          }
+        ]
+      },
+      {
+        "id": "b012",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Event inbox"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b013",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Most AI agents only run when the user sends a message. In contrast, always-on agents can be triggered by many types of events, including webhooks, scheduled tasks, and background jobs."
+          }
+        ]
+      },
+      {
+        "id": "b014",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "One tempting approach is to have each event source call the agent directly, but that has a few failure modes. For example, two events arriving at the same time can start competing runs, and a crash can lose an event entirely."
+          }
+        ]
+      },
+      {
+        "id": "b015",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "This is where the event inbox comes in. Instead of calling the agent, every source sends an event to an inbox, where a worker picks it up."
+          }
+        ]
+      },
+      {
+        "id": "b016",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The simplest version has three components:"
+          }
+        ]
+      },
+      {
+        "id": "b020",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b017",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A durable list of events, usually a database table;"
+              }
+            ]
+          },
+          {
+            "id": "b018",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A handler, usually an HTTP endpoint, that writes events to the list; and"
+              }
+            ]
+          },
+          {
+            "id": "b019",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "A worker, usually a background service, that reads from the list."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b021",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The inbox should track the status of each event, and events can be deduplicated based on unique identifiers from the source. A relational database works well for the inbox, with every event appended as a new row. We recommend starting with one inbox per user, but you can split this further if you need more parallelism."
+          }
+        ]
+      },
+      {
+        "id": "b022",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/bb08543a505cea3a24c88c718ceec4405e9c0a79.png",
+          "alt": "Diagram of the event inbox. A handler (an HTTP endpoint) writes each event to the inbox, a database table that tracks status and drops duplicates, and wakes the worker. The worker reads what’s pending, starts the run, waits for it to finish, and marks the events done."
+        }
+      },
+      {
+        "id": "b023",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "When a new event comes in, the handler writes the event to the inbox and wakes the worker. The worker reads whatever is pending and starts a run. Events that continue earlier work, such as a reply from the user, resume an existing session, while everything else starts a new session."
+          }
+        ]
+      },
+      {
+        "id": "b024",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "From there, the worker passes the events to the agent loop, waits for the run to finish, and marks the corresponding events as done. The implementation details can get tricky, so here are a few best practices:"
+          }
+        ]
+      },
+      {
+        "id": "b029",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b025",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The handler should acknowledge events quickly"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". Some sources, such as webhook providers, treat slow responses as failures. The handler can still run lightweight checks, but any deeper verification, such as checking for prompt injection, should be done during the run."
+              }
+            ]
+          },
+          {
+            "id": "b026",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The inbox should be the source of truth"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". When the worker is woken up, it should pull the latest events from the inbox first. That way, if the worker dies mid-run, a new one can pick up the same event and retry."
+              }
+            ]
+          },
+          {
+            "id": "b027",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "An inbox should only have one active worker at a time"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": ". This prevents two runs from duplicating work or overwriting each other. When a new event shows up mid-run, you can either push it to the next run, fold it into the current run, or interrupt and restart."
+              }
+            ]
+          },
+          {
+            "id": "b028",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "The worker should batch pending events together."
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " For example, if the user sends several messages in a row, the worker can merge them into a single run, so the agent only needs to reply once."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b030",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Timers"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b031",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Together with the event inbox, timers let always-on agents be proactive. Timers generally fall into one of two categories: follow-ups or schedules. A follow-up is a deadline that the agent sets for itself, such as checking in on a reply. A schedule, on the other hand, is a recurring task that happens on a known cadence, such as a daily newsletter."
+          }
+        ]
+      },
+      {
+        "id": "b032",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Timers live in their own durable store, usually another database table, separate from the inbox. The inbox should only hold events that are ready to be worked on. A follow-up and a schedule can share a similar schema, but a schedule needs to track its recurrence as well."
+          }
+        ]
+      },
+      {
+        "id": "b033",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/c16694e6d979a2ace84d03da0544297b7245c0a8.png",
+          "alt": "Diagram of timers. A run sets a timer in a database table, either a follow-up set by the agent or a schedule set by the user. A scheduler finds what’s due and adds an event to the event inbox, which starts the next run."
+        }
+      },
+      {
+        "id": "b034",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A timer doesn’t initiate a run on its own. Instead, a scheduler, usually a background service, polls the store at a fixed interval and fires anything that’s due. On each pass, the scheduler:"
+          }
+        ]
+      },
+      {
+        "id": "b041",
+        "type": "list",
+        "attrs": {
+          "ordered": true
+        },
+        "children": [
+          {
+            "id": "b035",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Scans the store and finds timers that are due."
+              }
+            ]
+          },
+          {
+            "id": "b039",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Updates each timer based on its category."
+              }
+            ],
+            "children": [
+              {
+                "id": "b038",
+                "type": "list",
+                "attrs": {
+                  "ordered": true
+                },
+                "children": [
+                  {
+                    "id": "b036",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "A follow-up should be marked as done."
+                      }
+                    ]
+                  },
+                  {
+                    "id": "b037",
+                    "type": "list_item",
+                    "inlines": [
+                      {
+                        "type": "text",
+                        "text": "A schedule should get its due time updated to the next occurrence."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b040",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "Adds an event to the inbox and wakes the worker."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b042",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "For the scheduler, you can either build your own service or use a durable execution engine."
+          }
+        ]
+      },
+      {
+        "id": "b043",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Memory"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b044",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Always-on agents work across many disjointed runs and rely on memory to maintain continuity."
+          }
+        ]
+      },
+      {
+        "id": "b045",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Similar to the event inbox and timers, memory should have its own store. In our products, such as Claude Code’s "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://code.claude.com/docs/en/memory"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "auto memory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " and the Messages API’s "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "memory tool"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": ", this is implemented as a directory of files. For an always-on agent, the directories should map to durable storage, usually a database or an object store. This way memories outlive the worker."
+          }
+        ]
+      },
+      {
+        "id": "b046",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "As a rule of thumb, memory should only hold what the agent can’t look up again. If something already lives in another system, such as an issue tracker, you should save a pointer instead. Here is a breakdown of the types of memory an always-on agent should store:"
+          }
+        ]
+      },
+      {
+        "id": "b051",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b047",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "User instructions:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Any instructions from the user about agent behavior should be saved in their own file and loaded at the start of every run. The user won’t always be around to steer the agent, so the instructions have to carry over between runs."
+              }
+            ]
+          },
+          {
+            "id": "b048",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "User notes:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The agent should save what it’s learned about the user, such as their role, their preferences, or any corrections they’ve given. You can start with one file and move to several small files as the notes grow. In the latter case, only an index is loaded at the start of each run, but the agent can pull the individual files into context when it needs more details."
+              }
+            ]
+          },
+          {
+            "id": "b049",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Past messages:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " The agent should keep track of what it’s already told the user so nothing is repeated. It can either store this in a separate file that’s loaded at the start of each run, or have the worker load the agent’s last few messages with the user."
+              }
+            ]
+          },
+          {
+            "id": "b050",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Task progress:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " For each ongoing task, the agent should keep a progress file that covers what’s been done and what’s left. Any new run can then read that file and pick up where the previous run left off. Similar to user notes, only an index is loaded at the start of each run, but the agent can pull the individual files into context when it needs more details."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b052",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The diagram below shows one example setup."
+          }
+        ]
+      },
+      {
+        "id": "b053",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/e5d209d7ef9b3455dec8a27b777dc12bdf806699.png",
+          "alt": "Diagram of an example memory setup as a directory of files. instructions.md, index.md, and reported.md are loaded at the start of every run, while the notes/ and progress/ folders are read when needed. The agent writes to memory during the run."
+        }
+      },
+      {
+        "id": "b054",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "All of the above describes memory that’s saved during a run. You can also add dreaming, which reviews past sessions to curate memories. Dreaming can replace outdated entries and find patterns that only show up across many runs. If you’re interested in learning more, our "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://www.anthropic.com/research/components-of-agent-memory"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "post on agent memory"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " covers this in more detail."
+          }
+        ]
+      },
+      {
+        "id": "b055",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Inside the context window"
+          }
+        ],
+        "attrs": {
+          "level": 4
+        }
+      },
+      {
+        "id": "b056",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Before doing any work, the agent loads the system prompt, tool definitions, and memory files. This initial context “overhead” is included in every run, so we recommend keeping it lean and using "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "prompt caching"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " to lower costs."
+          }
+        ]
+      },
+      {
+        "id": "b057",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A new session starts only with this context overhead and the events that triggered the run. An existing session, on the other hand, brings back the messages and tool calls from its earlier runs."
+          }
+        ]
+      },
+      {
+        "id": "b058",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "If a session becomes too long, you can either "
+          },
+          {
+            "type": "link",
+            "attrs": {
+              "url": "https://platform.claude.com/docs/en/build-with-claude/compaction"
+            },
+            "children": [
+              {
+                "type": "text",
+                "text": "compact the older messages"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": " or start a new session. Both approaches lose detail, so anything that needs to persist should be saved to memory along the way."
+          }
+        ]
+      },
+      {
+        "id": "b059",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/48757f0a147acfe841c943674c6214d34ed4405a.gif",
+          "alt": "Animated chart of context used over time. A fixed band for the system prompt, tools, and memory is present on every run. An existing session brings back its whole transcript and grows until compaction turns the older transcript into a summary."
+        }
+      },
+      {
+        "id": "b060",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Permissions"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b061",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Permissions are where always-on agents carry the most risk. A run holds the user’s access and, by design, operates unattended. For each tool call, the agent needs to decide whether to proceed on its own, block it, or wait for approval."
+          }
+        ]
+      },
+      {
+        "id": "b062",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The components for permissions are the same ones other agents use:"
+          }
+        ]
+      },
+      {
+        "id": "b066",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b063",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Credential store:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " Always-on agents often need sensitive user credentials like passwords or access tokens to be useful. The "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://code.claude.com/docs/en/agent-sdk/secure-deployment#credential-management"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "recommended pattern"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " is a proxy outside the agent’s environment that adds credentials to outgoing requests. The agent sends requests without credentials, and the proxy injects the real credentials before forwarding."
+              }
+            ]
+          },
+          {
+            "id": "b064",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Auto mode:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " An always-on agent should be able to work without constant user input. We’ve already tackled a version of this problem with "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://www.anthropic.com/research/claude-code-auto-mode"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "auto mode"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " in Claude Code. Auto mode uses classifiers to review higher-risk actions and block the ones they identify as dangerous so Claude can find a safer approach. User review, however, is still necessary for the most important decisions."
+              }
+            ]
+          },
+          {
+            "id": "b065",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "strong",
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "Deferred tool calls:"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " In Claude Code, "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://code.claude.com/docs/en/hooks#defer-a-tool-call-for-later"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "a hook can defer a tool call"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " and wait for additional input from the user. The same pattern applies to always-on agents, which may need clarification or approval before taking certain actions. When a call is deferred, the run ends and the session is saved mid-call. The request is shown to the user (e.g., through an interactive card built with "
+              },
+              {
+                "type": "link",
+                "attrs": {
+                  "url": "https://modelcontextprotocol.io/extensions/apps/overview"
+                },
+                "children": [
+                  {
+                    "type": "text",
+                    "text": "MCP Apps"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "), and their answer comes back as an event in the inbox. That event starts a new run, which resumes the saved session with the user’s input. While the deferred call waits for a response, the worker can pick up other events, so the agent isn’t blocked."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b067",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Outbox"
+          }
+        ],
+        "attrs": {
+          "level": 3
+        }
+      },
+      {
+        "id": "b068",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "With most AI agents, the response is streamed to the user as it’s generated, so they can follow along as Claude reasons through the problem, calls tools, and writes its answer."
+          }
+        ]
+      },
+      {
+        "id": "b069",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Always-on agents, on the other hand, do most of their work in the background. The user gets the outcome and a few details, rather than the entire step-by-step breakdown."
+          }
+        ]
+      },
+      {
+        "id": "b070",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/700b5f3a446f22493c0307ec65751b6b2f82ccb7.png",
+          "alt": "Diagram of the outbox. A run ends with nothing to say, a send tool call, or a deferred tool call that asks the user. Messages go to the outbox, a database table, and a dispatcher delivers them to the user. A deferred request can go through the outbox or be shown in your own interface."
+        }
+      },
+      {
+        "id": "b071",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "A run can end in one of three ways:"
+          }
+        ]
+      },
+      {
+        "id": "b075",
+        "type": "list",
+        "attrs": {
+          "ordered": false
+        },
+        "children": [
+          {
+            "id": "b072",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The agent sends a message to the outbox,"
+              }
+            ]
+          },
+          {
+            "id": "b073",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The agent decides that nothing needs to be sent, or"
+              }
+            ]
+          },
+          {
+            "id": "b074",
+            "type": "list_item",
+            "inlines": [
+              {
+                "type": "text",
+                "text": "The agent uses a deferred tool call to request permission or additional input."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b076",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Most always-on agents can get by with a “send” tool that delivers the message directly to the user. You only need a formal outbox when you want to pace your agent’s messages or allow your agent to recover from errors."
+          }
+        ]
+      },
+      {
+        "id": "b077",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "The outbox is a separate table of outgoing messages, analogous to the event inbox. There’s also a dispatcher, usually a background service, that’s analogous to the worker. The dispatcher reads the pending messages, decides what to deliver, and sends those to the user. A request from a deferred tool call can either go through the outbox or be shown directly in the interface."
+          }
+        ]
+      },
+      {
+        "id": "b078",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Beyond delivery, it’s important to tune how many messages the agent sends. An agent that sends too many becomes noisy, while an agent that doesn’t send enough misses things that the user needs to know. We recommend building evals to find the right balance. In practice, it’s better for the agent to start quiet and then earn more of the user’s attention over time."
+          }
+        ]
+      },
+      {
+        "id": "b079",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "How everything fits together"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b080",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Here is how the five primitives fit together:"
+          }
+        ]
+      },
+      {
+        "id": "b081",
+        "type": "image",
+        "attrs": {
+          "url": "https://assets.claude.com/9f8df7b2dcc9d4637d27f37dae6e40a2a5851c8a.gif",
+          "alt": "Animated diagram of how the five primitives fit together. Timers and the event inbox start a run, the run works with memory and permissions inside a session, and the outbox delivers messages to the user, whose answer comes back as an event."
+        }
+      },
+      {
+        "id": "b082",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Every run starts with an event from the inbox, whether it’s a user message, a webhook, or a timer. When the worker picks up an event, it kicks off a run and wakes the agent in a new or existing session. The agent reads its memory to get a baseline, works within its permissions to take actions, and then updates its memory with anything it has learned. Once the run is finished, the agent pushes a row to the outbox, and the dispatcher delivers the message to the user."
+          }
+        ]
+      },
+      {
+        "id": "b083",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Together, these form a cycle. A run can set a timer that wakes the agent again later, and when the user replies to a message, their answer comes back as an event in the inbox. Each run is brief, but the cycle keeps going indefinitely, and that’s what makes the agent feel like it’s always on."
+          }
+        ]
+      },
+      {
+        "id": "b084",
+        "type": "heading",
+        "inlines": [
+          {
+            "type": "text",
+            "text": "Acknowledgements"
+          }
+        ],
+        "attrs": {
+          "level": 2
+        }
+      },
+      {
+        "id": "b085",
+        "type": "paragraph",
+        "inlines": [
+          {
+            "type": "emphasis",
+            "children": [
+              {
+                "type": "text",
+                "text": "Written by William Hu. Special thanks to Rodrigo Olivares and Michael Segner for their contributions."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "slug": "building-always-on-agents",
+    "source_slug": "building-always-on-agents",
+    "source_profile": "claude-blog.v1",
+    "source_counts": {
+      "heading": 10,
+      "image": 7,
+      "table": 0,
+      "code": 0
+    },
+    "categories": [
+      "Best practices"
+    ],
+    "intro_paragraph_count": 5
+  },
+  "assets": [
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/5dc803bf06d6e92e4aecae762da096626e2fa9ec.gif",
+      "alt": "Animated diagram of an always-on agent’s timeline: long stretches asleep with no tokens spent, broken by brief runs. Each run has four steps: an event arrives, a session starts, the agent loop runs, and the run writes back to stored state that carries over between runs."
+    },
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/bb08543a505cea3a24c88c718ceec4405e9c0a79.png",
+      "alt": "Diagram of the event inbox. A handler (an HTTP endpoint) writes each event to the inbox, a database table that tracks status and drops duplicates, and wakes the worker. The worker reads what’s pending, starts the run, waits for it to finish, and marks the events done."
+    },
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/c16694e6d979a2ace84d03da0544297b7245c0a8.png",
+      "alt": "Diagram of timers. A run sets a timer in a database table, either a follow-up set by the agent or a schedule set by the user. A scheduler finds what’s due and adds an event to the event inbox, which starts the next run."
+    },
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/e5d209d7ef9b3455dec8a27b777dc12bdf806699.png",
+      "alt": "Diagram of an example memory setup as a directory of files. instructions.md, index.md, and reported.md are loaded at the start of every run, while the notes/ and progress/ folders are read when needed. The agent writes to memory during the run."
+    },
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/48757f0a147acfe841c943674c6214d34ed4405a.gif",
+      "alt": "Animated chart of context used over time. A fixed band for the system prompt, tools, and memory is present on every run. An existing session brings back its whole transcript and grows until compaction turns the older transcript into a summary."
+    },
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/700b5f3a446f22493c0307ec65751b6b2f82ccb7.png",
+      "alt": "Diagram of the outbox. A run ends with nothing to say, a send tool call, or a deferred tool call that asks the user. Messages go to the outbox, a database table, and a dispatcher delivers them to the user. A deferred request can go through the outbox or be shown in your own interface."
+    },
+    {
+      "type": "image",
+      "url": "https://assets.claude.com/9f8df7b2dcc9d4637d27f37dae6e40a2a5851c8a.gif",
+      "alt": "Animated diagram of how the five primitives fit together. Timers and the event inbox start a run, the run works with memory and permissions inside a session, and the outbox delivers messages to the user, whose answer comes back as an event."
+    }
+  ]
+}

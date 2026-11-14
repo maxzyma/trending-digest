@@ -1,0 +1,954 @@
+{
+  "locale": "zh-CN",
+  "source_revision": "sha256:52800756ba71bffb4545a02ee8671b9657c5aee17a3d0b801faf5e44a8c25b13",
+  "engine": "gemini-2.5-flash",
+  "prompt_version": "claude-blog-zh.v1",
+  "title": "构建全天候运行的智能体",
+  "segments": {
+    "b001": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "过去几个月里，我们看到常驻运行（always-on）的智能体再度兴起。"
+        }
+      ]
+    },
+    "b002": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "常驻智能体（always-on agents）是有状态且主动的，这意味着它们会跨会话管理上下文，并在没有直接监督的情况下采取行动。从底层来看，它们与其他智能体运行在相同的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/research/building-effective-agents"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "核心循环"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "之上。区别在于外围架构：这套架构由一系列原语构建而成，这些原语控制着智能体何时被唤醒、哪些内容会在多次运行之间延续，以及它们的工作成果如何触达用户。"
+        }
+      ]
+    },
+    "b003": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这一复兴在很大程度上得益于近期模型的进步，使常驻运行的智能体变得更加切实可行。首先，最新模型具备更好的判断力：它们在理解用户意图、把握何时向用户确认方面更加可靠。其次，智能的成本正在下降，其中长周期任务受益最大。例如，在"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "一项长周期编程基准测试"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中，Opus 5.5 每解决一个任务的成本比 Opus 5 低 78%，而在典型工作负载上则低 40%。"
+        }
+      ]
+    },
+    "b004": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "客户开始询问我们，如何将这类体验集成到他们自己的产品中。一些公司希望让现有的智能体变得更加主动，而另一些公司则打算从零开始构建这样的智能体。"
+        }
+      ]
+    },
+    "b005": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "本文将拆解常驻智能体背后的基础原语，并逐步讲解它们如何协同组合在一起。"
+        }
+      ]
+    },
+    "b006": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "常驻智能体背后的循环"
+        }
+      ]
+    },
+    "b007": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "所谓“永远在线”的智能体，其实并非真的“永远在线”。这只是对用户体验的一种描述。"
+        }
+      ]
+    },
+    "b008": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "实际上，智能体大部分时间都处于休眠状态，只是定期醒来执行工作。每一段工作称为一次"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "运行（run）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "：智能体接收一个事件，完成其任务，然后保存有关所发生情况的信息。运行在一个"
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "会话（session）"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "中进行，会话即由消息和工具调用构成的记录。运行结束后，智能体重新进入休眠，如此循环往复，无限持续。"
+        }
+      ]
+    },
+    "b010": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "核心原语"
+        }
+      ]
+    },
+    "b011": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "常驻智能体的外围架构包含五个核心原语：事件收件箱、定时器、记忆、权限和发件箱。下面逐一来看。"
+        }
+      ]
+    },
+    "b012": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "事件收件箱"
+        }
+      ]
+    },
+    "b013": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大多数 AI 智能体只在用户发送消息时才会运行。相比之下，始终在线的智能体可以由多种类型的事件触发，包括 webhook、定时任务和后台作业。"
+        }
+      ]
+    },
+    "b014": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一种很有吸引力的做法是让每个事件源直接调用智能体，但这会带来几种失败模式。例如，两个同时到达的事件可能会启动相互竞争的运行，而一次崩溃则可能导致某个事件完全丢失。"
+        }
+      ]
+    },
+    "b015": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这正是事件收件箱发挥作用的地方。各个来源不再直接调用智能体，而是将事件发送到收件箱，再由工作进程从中取出处理。"
+        }
+      ]
+    },
+    "b016": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "最简单的版本包含三个组成部分："
+        }
+      ]
+    },
+    "b017": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一份持久化的事件列表，通常是一张数据库表；"
+        }
+      ]
+    },
+    "b018": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个处理程序（通常是 HTTP 端点），负责将事件写入列表；以及"
+        }
+      ]
+    },
+    "b019": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一个从该列表中读取数据的工作进程，通常是一个后台服务。"
+        }
+      ]
+    },
+    "b021": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "收件箱应跟踪每个事件的状态，并可根据来源提供的唯一标识符对事件进行去重。关系型数据库很适合用作收件箱，每个事件都作为新行追加写入。我们建议从每个用户一个收件箱起步，但如果需要更高的并行度，也可以进一步拆分。"
+        }
+      ]
+    },
+    "b023": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "当有新事件到达时，处理程序会将该事件写入收件箱并唤醒工作进程。工作进程读取所有待处理的内容并启动一次运行。延续先前工作的事件（例如用户的回复）会恢复已有的会话，而其他所有事件都会启动一个新会话。"
+        }
+      ]
+    },
+    "b024": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "接下来，worker 将这些事件传递给智能体循环，等待运行结束，并将相应的事件标记为已完成。具体实现可能会比较棘手，因此这里给出几条最佳实践："
+        }
+      ]
+    },
+    "b025": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "处理程序应快速确认事件"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。某些事件源（例如 webhook 提供方）会将响应缓慢视为失败。处理程序仍可执行轻量级检查，但任何更深入的验证（例如检查提示注入）都应在运行期间完成。"
+        }
+      ]
+    },
+    "b026": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "收件箱应当作为唯一可信来源"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。工作进程被唤醒时，应首先从收件箱拉取最新事件。这样一来，即使工作进程在运行中途崩溃，新的工作进程也能接手同一事件并重试。"
+        }
+      ]
+    },
+    "b027": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "一个收件箱同一时间只应有一个活跃的 worker"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "。这可以防止两次运行重复工作或相互覆盖。当运行过程中出现新事件时，你可以将其推迟到下一次运行，将其并入当前运行，或者中断并重新启动。"
+        }
+      ]
+    },
+    "b028": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "worker 应当将待处理的事件合并批处理。"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "例如，如果用户连续发送了多条消息，worker 可以将它们合并为一次运行，这样 agent 只需回复一次。"
+        }
+      ]
+    },
+    "b030": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定时器"
+        }
+      ]
+    },
+    "b031": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "计时器与事件收件箱相结合，使常驻智能体能够主动采取行动。计时器通常分为两类：跟进（follow-up）和日程（schedule）。跟进是智能体为自己设定的截止时间，例如检查某条回复的进展。而日程则是按已知节奏重复执行的任务，例如每日简报。"
+        }
+      ]
+    },
+    "b032": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定时器存放在独立的持久化存储中（通常是另一张数据库表），与收件箱分开。收件箱只应存放已准备好被处理的事件。后续任务（follow-up）和调度计划（schedule）可以共用相似的模式（schema），但调度计划还需要额外记录其重复规则。"
+        }
+      ]
+    },
+    "b034": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "定时器本身不会启动运行。相反，由调度器（通常是一个后台服务）以固定的时间间隔轮询存储，并触发所有已到期的任务。每次轮询时，调度器会："
+        }
+      ]
+    },
+    "b035": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "扫描存储，找出已到期的定时器。"
+        }
+      ]
+    },
+    "b039": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "根据每个计时器的类别对其进行更新。"
+        }
+      ]
+    },
+    "b036": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "后续事项应标记为已完成。"
+        }
+      ]
+    },
+    "b037": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "调度任务的到期时间应更新为下一次触发的时间。"
+        }
+      ]
+    },
+    "b040": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "将一个事件添加到收件箱并唤醒工作线程。"
+        }
+      ]
+    },
+    "b042": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于调度器，你既可以自行构建服务，也可以使用持久化执行引擎。"
+        }
+      ]
+    },
+    "b043": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "记忆"
+        }
+      ]
+    },
+    "b044": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "常驻智能体在许多彼此割裂的运行中工作，并依靠记忆来保持连续性。"
+        }
+      ]
+    },
+    "b045": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "与事件收件箱和定时器类似，记忆也应当拥有自己的存储。在我们的产品中，例如 Claude Code 的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://code.claude.com/docs/en/memory"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自动记忆"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "和 Messages API 的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "记忆工具"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，这一存储被实现为一个文件目录。对于常驻运行的智能体，这些目录应映射到持久化存储，通常是数据库或对象存储。这样，记忆的生命周期就能长于工作进程。"
+        }
+      ]
+    },
+    "b046": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "经验法则是，记忆中只应保存智能体无法再次查找到的内容。如果某些信息已经存放在其他系统中（例如问题跟踪系统），你应当改为保存一个指向它的指针。以下是常驻智能体应当存储的各类记忆的分类说明："
+        }
+      ]
+    },
+    "b047": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "用户指令："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "用户关于智能体行为的任何指令都应保存在单独的文件中，并在每次运行开始时加载。用户不会一直在场引导智能体，因此这些指令必须在多次运行之间延续下去。"
+        }
+      ]
+    },
+    "b048": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "用户笔记："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "智能体应保存它对用户的了解，例如用户的角色、偏好，或用户给出的任何纠正。你可以从单个文件开始，随着笔记增多再改为多个小文件。在后一种情况下，每次运行开始时只加载一个索引，但智能体在需要更多细节时，可以将单个文件拉入上下文。"
+        }
+      ]
+    },
+    "b049": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "历史消息："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 代理应当记录它已经告诉过用户的内容，以免重复。它可以把这些内容存储在一个单独的文件中，在每次运行开始时加载；也可以让 worker 加载代理与用户之间最近的几条消息。"
+        }
+      ]
+    },
+    "b050": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "任务进度："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对于每个进行中的任务，智能体都应维护一个进度文件，记录已完成的工作和剩余的工作。这样，任何新的运行都可以读取该文件，并从上一次运行中断的地方继续。与用户笔记类似，每次运行开始时只加载索引，但智能体在需要更多细节时，可以将具体文件拉入上下文。"
+        }
+      ]
+    },
+    "b052": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "下图展示了一种示例配置。"
+        }
+      ]
+    },
+    "b054": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以上内容描述的都是在运行过程中保存的记忆。你还可以加入“做梦”（dreaming）机制，它会回顾过去的会话来整理记忆。做梦机制可以替换过时的条目，并发现只有跨越多次运行才会显现的模式。如果你有兴趣深入了解，我们的"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/research/components-of-agent-memory"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "关于智能体记忆的文章"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "对此有更详细的介绍。"
+        }
+      ]
+    },
+    "b055": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "上下文窗口内部"
+        }
+      ]
+    },
+    "b056": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "在开始任何工作之前，智能体会加载系统提示词、工具定义和记忆文件。每次运行都会包含这部分初始上下文“开销”，因此我们建议保持其精简，并使用"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "提示词缓存"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "来降低成本。"
+        }
+      ]
+    },
+    "b057": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "新会话启动时只包含这部分上下文开销以及触发本次运行的事件。而已有会话则会带回其先前运行中的消息和工具调用。"
+        }
+      ]
+    },
+    "b058": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "如果会话变得过长，你可以"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://platform.claude.com/docs/en/build-with-claude/compaction"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "压缩较早的消息"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，或者开启一个新会话。这两种方式都会丢失细节，因此任何需要持久保留的内容都应在过程中随时保存到记忆中。"
+        }
+      ]
+    },
+    "b060": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "权限"
+        }
+      ]
+    },
+    "b061": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "权限是常驻型智能体风险最集中的环节。一次运行持有用户的访问权限，并且按设计在无人值守的状态下运行。对于每一次工具调用，智能体都需要决定是自行继续执行、予以阻止，还是等待批准。"
+        }
+      ]
+    },
+    "b062": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "权限相关的组件与其他智能体所用的组件相同："
+        }
+      ]
+    },
+    "b063": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "凭据存储："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "常驻智能体通常需要密码或访问令牌等敏感的用户凭据才能发挥作用。"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://code.claude.com/docs/en/agent-sdk/secure-deployment#credential-management"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "推荐的模式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "是在智能体环境之外设置一个代理，由它为外发请求添加凭据。智能体发送的请求不携带凭据，代理在转发之前注入真实凭据。"
+        }
+      ]
+    },
+    "b064": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "自动模式："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "一个始终在线的智能体应当能够在无需用户持续输入的情况下工作。我们已经在 Claude Code 中通过"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://www.anthropic.com/research/claude-code-auto-mode"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "自动模式"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "解决过这一问题的某种形式。自动模式使用分类器审查较高风险的操作，并阻止被其识别为危险的操作，从而让 Claude 能够找到更安全的方案。不过，对于最重要的决策，仍然需要用户进行审查。"
+        }
+      ]
+    },
+    "b065": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "text": "延迟的工具调用："
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "在 Claude Code 中，"
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://code.claude.com/docs/en/hooks#defer-a-tool-call-for-later"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "hook 可以延迟一次工具调用"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "，并等待用户提供额外输入。同样的模式也适用于常驻智能体，它们在执行某些操作之前可能需要澄清或审批。当一次调用被延迟时，本次运行结束，会话在调用中途被保存。该请求会展示给用户（例如，通过使用 "
+        },
+        {
+          "type": "link",
+          "attrs": {
+            "url": "https://modelcontextprotocol.io/extensions/apps/overview"
+          },
+          "children": [
+            {
+              "type": "text",
+              "text": "MCP Apps"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " 构建的交互式卡片），用户的回答则作为一个事件回到收件箱中。该事件会启动一次新的运行，携带用户的输入恢复已保存的会话。在被延迟的调用等待响应期间，worker 可以处理其他事件，因此智能体不会被阻塞。"
+        }
+      ]
+    },
+    "b067": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "发件箱"
+        }
+      ]
+    },
+    "b068": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "对于大多数 AI 智能体，响应会在生成的同时以流式方式传输给用户，这样用户就能实时跟随 Claude 推理问题、调用工具并撰写答案的过程。"
+        }
+      ]
+    },
+    "b069": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "相比之下，常驻型智能体的大部分工作都在后台完成。用户得到的是结果和少量细节，而不是完整的逐步分解过程。"
+        }
+      ]
+    },
+    "b071": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "一次运行可能以以下三种方式之一结束："
+        }
+      ]
+    },
+    "b072": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "代理将一条消息发送到发件箱，"
+        }
+      ]
+    },
+    "b073": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体判断无需发送任何内容，或者"
+        }
+      ]
+    },
+    "b074": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "智能体通过延迟工具调用来请求权限或获取额外输入。"
+        }
+      ]
+    },
+    "b076": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "大多数常驻智能体只需一个“send”工具，把消息直接发送给用户即可。只有当你希望控制智能体发送消息的节奏，或让智能体能够从错误中恢复时，才需要一个正式的发件箱。"
+        }
+      ]
+    },
+    "b077": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "发件箱（outbox）是一张独立的待发送消息表，与事件收件箱相对应。此外还有一个分发器（dispatcher），通常是一个后台服务，其作用与工作器（worker）相对应。分发器读取待处理的消息，决定要投递哪些消息，并将其发送给用户。来自延迟工具调用的请求既可以经由发件箱发送，也可以直接在界面中展示。"
+        }
+      ]
+    },
+    "b078": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "除了消息投递之外，调校智能体发送消息的数量也很重要。发送过多消息的智能体会显得嘈杂，而发送太少的智能体则会遗漏用户需要知道的信息。我们建议构建评测来找到合适的平衡点。在实践中，智能体最好一开始保持安静，然后随着时间推移逐步赢得用户更多的关注。"
+        }
+      ]
+    },
+    "b079": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "各部分如何协同运作"
+        }
+      ]
+    },
+    "b080": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "以下是这五个原语如何协同工作的："
+        }
+      ]
+    },
+    "b082": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "每次运行都始于收件箱中的一个事件，无论是用户消息、webhook 还是定时器。当 worker 获取到一个事件时，它会启动一次运行，并在新会话或现有会话中唤醒智能体。智能体会读取其记忆以建立基线，在其权限范围内执行操作，然后将学到的任何内容更新到记忆中。运行结束后，智能体会向发件箱推送一行记录，再由分发器将消息投递给用户。"
+        }
+      ]
+    },
+    "b083": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "这些部分共同构成一个循环。一次运行可以设置一个定时器，让智能体在稍后再次被唤醒；当用户回复某条消息时，他们的答复会作为一个事件重新进入收件箱。每次运行都很短暂，但这个循环会无限持续下去，正是这一点让智能体给人一种始终在线的感觉。"
+        }
+      ]
+    },
+    "b084": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "text",
+          "text": "致谢"
+        }
+      ]
+    },
+    "b085": {
+      "status": "translated",
+      "inlines": [
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "text": "作者：William Hu。特别感谢 Rodrigo Olivares 和 Michael Segner 的贡献。"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
