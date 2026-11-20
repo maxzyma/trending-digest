@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-11-19）
+# 跨源主题聚类 — 同类与升温（2026-11-20）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -6,27 +6,27 @@
 
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
-| dev-infra-and-tooling | ↑升温 | 8 | 2 | 79 | 76 | github+claude | canonical |
-| agent-skills-and-plugins | ↑升温 | 8 | 4 | 55 | 54 | github+claude | canonical |
-| coding-agents-and-harnesses | ↑升温 | 6 | 3 | 65 | 62 | github+claude+lilian | canonical |
-| agent-frameworks-and-platforms | ↓退潮 | 4 | 7 | 51 | 50 | github+claude+lilian | canonical |
-| learning-and-curated-resources | ↓退潮 | 3 | 5 | 95 | 95 | github+claude+lilian | canonical |
-| inference-and-serving-runtime | ↑升温 | 3 | 1 | 26 | 26 | github+claude+lilian | canonical |
+| dev-infra-and-tooling | ↑升温 | 10 | 2 | 81 | 78 | github+claude | canonical |
+| agent-skills-and-plugins | ↑升温 | 7 | 5 | 55 | 54 | github+claude | canonical |
+| coding-agents-and-harnesses | ↑升温 | 5 | 4 | 65 | 62 | github+claude+lilian | canonical |
+| agent-frameworks-and-platforms | ↓退潮 | 4 | 6 | 51 | 50 | github+claude+lilian | canonical |
+| learning-and-curated-resources | ↓退潮 | 2 | 6 | 95 | 95 | github+claude+lilian | canonical |
 | networking-and-security | ↓退潮 | 2 | 3 | 39 | 36 | github+claude+lilian | canonical |
-| desktop-and-media-apps | ↑升温 | 2 | 1 | 34 | 33 | github+claude | canonical |
-| productivity-and-business-apps | ↓退潮 | 2 | 3 | 13 | 13 | github+claude | canonical |
+| desktop-and-media-apps | →持稳 | 2 | 2 | 35 | 34 | github+claude | canonical |
+| inference-and-serving-runtime | →持稳 | 2 | 2 | 26 | 26 | github+claude+lilian | canonical |
+| productivity-and-business-apps | ↓退潮 | 2 | 3 | 14 | 14 | github+claude | canonical |
 | hardware-and-embedded | ↑升温 | 2 | 1 | 6 | 6 | github | canonical |
-| data-and-analytics-infra | ↑升温 | 1 | 0 | 18 | 18 | github+claude | canonical |
 | agent-deliverables-and-artifacts | →持稳 | 1 | 1 | 12 | 12 | github+claude | canonical |
 | model-and-weights-releases | ↑升温 | 1 | 0 | 1 | 1 | claude | candidate |
 | rag-and-memory | ↑升温 | 1 | 0 | 1 | 1 | github | candidate |
 | robotics-and-simulation | ↑升温 | 1 | 0 | 1 | 1 | github | candidate |
 | ai-video-voice-creative | ↓退潮 | 0 | 2 | 21 | 21 | github+lilian | canonical |
+| data-and-analytics-infra | ↓退潮 | 0 | 1 | 18 | 18 | github+claude | canonical |
 | games-and-emulators | ↓退潮 | 0 | 1 | 11 | 11 | github | canonical |
 
 ## 各主题项目清单
 
-### dev-infra-and-tooling（76）
+### dev-infra-and-tooling（78）
 _该赛道近窗热度明显升温（3 对 1），但信号目前全部来自 GitHub Trending，Claude 官方博客与 Lil'Log 均未跟进，仍属社区自发、尚未形成跨源共振。结构上最清晰的一条线是“终端回潮”：从终端本体、TUI 文件管理器到终端内代码审查与 stacked PR 工具，开发者正把审查、拆分、导航等环节搬回命令行，且明确冲着“AI agent 改完代码后如何高效审阅”这一新瓶颈而来。另一条并行线是自托管、离线优先的替代品（本地语法检查、IT 资产台账、项目管理），反映出对 SaaS 依赖与隐私的持续警惕；Node/Deno/Jenkins/Angular 等老牌基础设施的上榜更像常驻底噪，而非结构性变化。_
 
 - `github-trends` [microsoft/terminal](https://github.com/microsoft/terminal) — 微软官方的 Windows Terminal 与原始 Windows 控制台宿主（console host）同仓项目，是 Windows 上的现代化多标签终端。
@@ -105,6 +105,8 @@ _该赛道近窗热度明显升温（3 对 1），但信号目前全部来自 Gi
 - `github-trends` [appwrite/appwrite](https://github.com/appwrite/appwrite) — 可以自己部署的后端平台。做应用时常用的登录认证、数据库、文件存储、云函数、消息推送、站点托管，它打包成一组 Docker 服务和统一的 API，定位接近开源版的 Firebase。
 - `github-trends` [solidjs/solid](https://github.com/solidjs/solid) — 构建网页界面的 JavaScript 库，写法接近 React 的 JSX，但不用虚拟 DOM。数据变化时只更新用到这份数据的那一小块界面，这种机制叫 signals（细粒度响应式）。
 - `claude-blog` [Using a "chaos loop" to harden the Claude Docs launch: 60 server errors across billions of requests](https://claude.dev/blog/chaos-loop-claude-docs-launch/) — Three weeks before Claude Docs opened to the public, it was running as a proof of concept on a single node, used by a few thousand people inside Anthropic. We were racing toward an ambitious launch date, and our own estimate said we'd see millions of docs within the first few days.
+- `github-trends` [mjmirza/app-store-compliance](https://github.com/mjmirza/app-store-compliance) — 一份 App Store 和 Google Play 的「被拒原因手册」，外加一个提审前自查脚本。手册整理了 117 种常见拒审情形和修法，还跟踪 95 个监管截止日（欧盟 AI 法案、DSA、COPPA、各地年龄验证法规等）。脚本扫描你的 Xcode 或 Android 工程，给每一项标出 `BLOCKED`、`CLEAR` 或 `NOT CHECKED`。
+- `github-trends` [Tracer-Cloud/opensre](https://github.com/Tracer-Cloud/opensre) — 一个帮你查「CI 为什么挂了」的命令行 Agent。CI 只告诉你构建失败，它去读失败那次运行的日志，逐个验证可能的原因，然后推一个修复给你审，并把结论发到 Slack、PagerDuty 或 Telegram。你也可以直接问它，例如 `opensre ask "why is checkout-api slow?"`。
 
 ### agent-skills-and-plugins（54）
 _Agent 扩展层正在升温：社区 repo 与 Claude 官方博客同时押注同一套底座。官方一边把 MCP 推进到无状态核心并加固授权，一边把连接器从工作工具铺向 AllTrails、Instacart 等日常应用；社区则以 SKILL.md 为事实标准，批量产出可跨 Claude Code、Codex、Cursor 通用的能力包。结构上，赛道正从"给 agent 接一个工具"转向两类更高阶的封装。一类把审美与领域知识做成 skill，例如反千篇一律的 UI 约束、书籍、本地化和逆向安全工作流；另一类走本地优先的上下文基础设施，例如代码知识图谱、文件化计划记忆和零成本联网，核心诉求是压缩 token、对抗上下文丢失。研究侧（Lil'Log）在本窗口暂无对应信号，说明这一波仍由工程实践和平台标准驱动。下一步的竞争焦点可能落在 skill 的分发、路由与治理上：awesome 清单、`npx` 一键安装、按需加载路由层已初具"包管理器"形态。_
@@ -387,36 +389,6 @@ _学习与资源整理赛道整体小幅退潮（近窗 4 / 前窗 5），热度
 - `github-trends` [anthropics/claude-quickstarts](https://github.com/anthropics/claude-quickstarts) — Anthropic 官方的 Claude 示例项目合集。每个子目录是一个能直接跑起来的小应用，例如客服 Agent、财务数据分析助手、操作电脑的 computer use 演示、浏览器操作工具集，以及一组基于 Managed Agents 的 Slack、Linear、Sentry 集成示例。
 - `github-trends` [DeanChensj/jiangshan-map](https://github.com/DeanChensj/jiangshan-map) — 「江山时序」是一张在浏览器里打开的中国历史地图，界面做成宣纸风格。拖动时间轴，可以看到从战国（前 403 年）到现代的疆域变化，共 18 个时期、198 张疆域快照。点一座古城，能看到它历代叫什么名字、归哪一级政区管辖；地图上还能一步步回放张骞、玄奘、苏轼等人的行迹，并配上相关诗词。在线地址是 deanchen.me/jiangshan-map。
 
-### inference-and-serving-runtime（26）
-_推理赛道正在明显升温，并沿两条线分化：一条是“把超大模型拉回个人设备”，社区通过 1-bit/三值量化、异构卸载、SSD 流式加载和针对特定模型的专用引擎，让 27B 到 671B 级 MoE 模型能在笔记本、Mac 甚至手机上运行；另一条是“推理入口的网关化”，大量 repo 在 OpenAI、Anthropic 等协议之间做翻译、路由和号池聚合，其中包括依赖逆向接口或共享订阅的灰色方案。官方侧则用托管与治理来回应同一需求，Claude 正式登陆 Microsoft Foundry，模型可以进入企业现有的云、计费和权限体系。社区 repo 和官方博客因此在押注同一件事：模型调用正在脱离单一厂商入口。更底层的结构变化是，算子与硬件栈正在去 CUDA 化、走向专用化，例如模型厂商开源自研注意力内核、Mojo/MAX 被 Qualcomm 收购、ANE 被逆向改造用于训练。Lil'Log 早年系统梳理的量化、蒸馏等推理优化手段，如今正从论文落地为普通开发者手里的工具链。_
-
-- `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
-- `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
-- `github-trends` [kvcache-ai/ktransformers](https://github.com/kvcache-ai/ktransformers) — 一个灵活的异构 LLM 推理/微调优化框架，让用户在本地机器上体验对超大模型的高效推理，主打"单机跑得动 236B/671B 级模型 + 超长上下文"。
-- `github-trends` [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) — 月之暗面把自家 Kimi Linear / K3 模型里那一步核心注意力计算（KDA，Kimi Delta Attention）手写成了 CUDA 内核并开源。打个比方：同一套数学运算，原来用通用零件拼装，现在换成为它专门打造的一台发动机——结果一模一样，但跑得更快。
-- `github-trends` [maderix/ANE](https://github.com/maderix/ANE) — 一个研究性质的 hack：把苹果芯片里那块专门做 AI 推理的协处理器（Neural Engine，ANE）改造成能**训练**模型。作者逆向了苹果从未公开的私有接口（`_ANEClient` / `_ANECompiler`）和 MIL 中间格式，绕开 CoreML，直接把含反向传播的计算图塞进 ANE 里跑。
-- `github-trends` [antirez/ds4](https://github.com/antirez/ds4) — Redis 作者 Salvatore Sanfilippo（antirez）用纯 C 手写的本地大模型推理引擎。它有一个反直觉的设计选择：**只跑 DeepSeek V4 Flash/PRO 和 GLM 5.2 这几个模型，不做通用工具**。目标场景是让 128GB 的 MacBook、DGX Spark、Strix Halo 这类个人高配机器直接在本地跑 284B 参数的 MoE 模型，内存不够时用 SSD 流式加载权重。
-- `claude-blog` [Claude in Microsoft Foundry is now generally available](https://claude.com/blog/claude-in-microsoft-foundry) — Starting today, Claude models are generally available in Microsoft Foundry, hosted on Azure. Claude runs in your Azure environment with the authentication, billing, and governance controls your teams already use. You can choose where inference is processed, including a US data zone for teams with data residency requirements. Anthropic operates the inference and is the data processor.
-- `lilian-weng` [Large Transformer Model Inference Optimization](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) — [Updated on 2023-01-24: add a small section on [Distillation](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation).]
-- `github-trends` [huggingface/transformers](https://github.com/huggingface/transformers) — 机器学习领域使用最广的模型库——用统一的接口加载和运行几乎所有主流的预训练模型（文本、图像、音频、多模态），几行代码就能跑推理或微调。
-- `github-trends` [NVIDIA-NeMo/Switchyard](https://github.com/NVIDIA-NeMo/Switchyard) — 一个放在 coding agent 和推理端点之间的流量代理（同时也是 Rust 库）。让 Claude Code / Codex / OpenClaw 这类客户端**一行不改**，就把请求转发给 vLLM、NIM、Ollama 或任意 OpenAI 兼容端点，并在 OpenAI Chat / OpenAI Responses / Anthropic Messages 三种协议间自动翻译。
-- `github-trends` [AlexsJones/llmfit](https://github.com/AlexsJones/llmfit) — 一个终端工具，回答"我这台电脑到底能跑哪些大模型"。运行一条命令，它检测你的内存、CPU、GPU（含多卡和 Apple Silicon 统一内存），然后把几百个模型按质量、速度、适配度、上下文长度四个维度打分，列出哪些能跑得好、哪些勉强能跑、哪些跑不动，并给出建议的量化档位。默认是交互式 TUI，也有传统 CLI 模式供脚本调用。
-- `github-trends` [modular/modular](https://github.com/modular/modular) — 一套想替掉 CUDA 的 AI 计算底座，由两部分组成：Mojo 是一门语法像 Python、性能对标 C++/Rust 的新语言，专门用来写 GPU kernel 和高性能算子；MAX 是基于它的推理平台，让同一份 kernel 代码在 NVIDIA、AMD 等不同厂商的加速卡上都能跑。公司 2026-07-29 已被 Qualcomm 完成收购。
-- `github-trends` [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) — 一个自己架设的"AI 订阅中转站"。你和朋友各自买了 Claude、Codex、Gemini 的月度订阅，平时只有自己能用、额度还经常闲置；Sub2API 把这些订阅账号统一收进一个网关，对外发放普通的 API Key，谁需要就用 Key 调用，后台自动挑账号、算用量、限并发。对使用者来说，感受就是"一个 Key 打通所有订阅，成本按人头分摊"。
-- `github-trends` [tashfeenahmed/freellmapi](https://github.com/tashfeenahmed/freellmapi) — 一个自己在本机跑的 LLM 网关。它把 34 家厂商的**免费额度** key（Groq、Cerebras、SambaNova、Google、Mistral 等，共 635 个免费模型端点）聚合到一个 OpenAI 兼容的 `/v1` 地址后面，一家配额耗尽就自动切下一家。对上层应用来说，看到的只是一个普通的 OpenAI 接口。
-- `github-trends` [Osmantic/ODS](https://github.com/Osmantic/ODS) — 一套把你手头的电脑变成"家用 AI 服务器"的一键安装栈。装完之后这台机器同时提供大模型推理、聊天界面、语音、agent、工作流编排、RAG 和图像生成——底下把 Ollama、Open WebUI、n8n、ComfyUI 这些各自独立的开源组件拼装并接好，你不用一个个配。
-- `github-trends` [workweave/router](https://github.com/workweave/router) — 一个夹在你的编码 agent 和大模型之间的"调度员"。你把 Claude Code 或 Cursor 的 API 地址换成它，它会看每一条 prompt 有多难，然后把简单的发给便宜模型、把难的发给贵模型，整个决策在 50 毫秒内完成。官方说这样能省 40–70% 的推理成本，而你除了改一行配置什么都不用动。
-- `github-trends` [superlinked/sie](https://github.com/superlinked/sie) — 一台自己部署的"模型服务器"，专门伺候 agent 会用到的那些小模型——文本向量化（embedding）、结果重排（rerank）、图片文字识别（OCR）、从文档里抽结构化字段。你原本要为这几件事分别接 Cohere、TEI、OpenAI 的 API 或各起一个服务，现在它们跑在同一个集群里。
-- `github-trends` [magnitudedev/magnitude](https://github.com/magnitudedev/magnitude) — 一个装在你自己电脑上的"模型供应商"。你现在用的编码 agent（Claude Code、Codex、OpenCode、Cline、Hermes 等）默认要连 Anthropic 或 OpenAI 的云端模型，Magnitude 在本机起一个推理服务，让这些 agent 改连本机——不花 token 费、不联网也能用、代码和提示词不出机器。
-- `github-trends` [JustVugg/colibri](https://github.com/JustVugg/colibri) — 一个让普通电脑跑得动超大模型的推理引擎。现在最强的开源模型多是 MoE（混合专家）结构——模型有几百 B 参数，但每次生成只会用到其中一小部分「专家」。colibri 利用这一点：把全部专家权重留在固态硬盘上，用到哪个读哪个，于是显存装不下的模型也能加载起来。纯 C 实现，零依赖。
-- `github-trends` [tile-ai/tilelang](https://github.com/tile-ai/tilelang) — 一门专门用来写"算子"的编程语言。算子是 AI 模型里最底层的计算单元（矩阵乘法、注意力计算等），决定模型在显卡上跑多快。传统上要用 CUDA 手写，门槛很高；TileLang 让工程师用接近 Python 的写法描述计算，再由编译器生成针对 NVIDIA、AMD、华为昇腾等硬件优化过的代码。
-- `github-trends` [microsoft/BitNet](https://github.com/microsoft/BitNet) — 微软研究院开源的推理程序 bitnet.cpp，专门运行"1.58 位"大模型。普通模型的每个参数用 16 位数字存储，这类模型每个参数只取 -1、0、1 三个值，体积和内存占用小得多，可以在普通电脑的 CPU 上运行，不需要显卡。
-- `github-trends` [lightseekorg/tokenspeed](https://github.com/lightseekorg/tokenspeed) — 一个把大模型部署成在线服务的推理引擎，和 vLLM、SGLang、TensorRT-LLM 是同一类软件。公司在自己的 GPU 集群上跑开源大模型时，用它接收请求、排队调度、管理显存里的对话缓存，再把生成结果流式返回。项目口号是"性能做到 TensorRT-LLM 的水平，易用性做到 vLLM 的水平"，背后是非营利组织 LightSeek Foundation。
-- `github-trends` [FlashML-org/FreeToken](https://github.com/FlashML-org/FreeToken) — 一个在普通游戏显卡上跑超大 AI 模型的推理引擎。它针对 MoE（混合专家）模型，把放不进显存的部分放到内存里调度，让 8GB、12GB 显卡也能跑几十 GB 甚至上百 GB 的模型。
-- `github-trends` [FareedKhan-dev/kimi-k3-in-c](https://github.com/FareedKhan-dev/kimi-k3-in-c) — 用纯 C 语言写的 Kimi K3 推理程序，能在一台只有 8GB 内存、没有显卡的电脑上跑完整的 2.78 万亿参数模型。Kimi K3 是月之暗面 2026-07 发布、07-27 开放权重的大模型。
-- `github-trends` [ashhart/TensorFold](https://github.com/ashhart/TensorFold) — 一个在自己电脑或自己服务器上运行大语言模型的引擎。下载一个可执行文件，它就能加载模型，并对外提供和 OpenAI、Anthropic 接口兼容的服务，现有的客户端和 Agent 工具改一个地址就能接上。
-- `github-trends` [openvinotoolkit/openvino](https://github.com/openvinotoolkit/openvino) — Intel 主导的开源推理工具包。把 PyTorch、ONNX 等框架训练好的模型转换并优化，让它在 CPU、集成显卡、NPU 这类没有独立高端显卡的设备上跑得更快。
-
 ### networking-and-security（36）
 _这个赛道正在升温，重心从传统的"网络自主权"向"AI agent 的身份与可观测性"迁移。社区侧仍以自托管和去中心化工具为底色，包括自建 VPN、蓝牙 mesh 离网通信和自托管 IdP，延续"流量与身份不交给第三方"的长期诉求。新的结构性信号来自跨源共振：Claude 官方博客密集发布 Workload Identity Federation、经 IdP 集中授权 MCP 连接器、agent 身份模型等内容，Uber 也开源了面向 agent 的 EDR（ADR）。两者都在把 agent 当作需要独立身份、权限边界和因果审计的"新端点"来治理。叠加官方对 AI 加速攻防的预警，以及 Lil'Log 对 LLM 对抗攻击的研究底座，赛道正从"保护人和设备"扩展到"治理自主 agent"，身份层（OIDC/SAML/SCIM）有望成为两条线的交汇点。_
 
@@ -457,7 +429,7 @@ _这个赛道正在升温，重心从传统的"网络自主权"向"AI agent 的�
 - `github-trends` [openai/codex-security](https://github.com/openai/codex-security) — OpenAI 官方的代码安全扫描工具。在仓库里运行 `cs scan .`，Codex 会通读代码找漏洞，验证每个候选漏洞是否成立，生成补丁并复核修复。除了命令行，它还提供 TypeScript SDK 和 GitHub Action。
 - `github-trends` [elementalsouls/Claude-BugHunter](https://github.com/elementalsouls/Claude-BugHunter) — 一套装进 Claude Code 的漏洞挖掘工具包，面向漏洞赏金猎人和外部红队人员。装上后，Claude Code 多了 82 个技能和 15 个斜杠命令（如 `/recon` 做资产侦察、`/hunt` 找漏洞），还附带从公开披露报告里整理出的 681 种漏洞模式，覆盖 24 类常见漏洞，以及 M365/Entra、Okta、vCenter 等企业身份和基础设施的攻击路径。
 
-### desktop-and-media-apps（33）
+### desktop-and-media-apps（34）
 _桌面与媒体应用赛道正在小幅升温，社区侧的主线很清晰：以 Rust 和本地模型为底座，做"去账号、去云端、去遥测"的自托管替代品，从外设配置、文件传输、会议转写到个人搜索与收藏，都在把原本依赖厂商云服务的桌面体验拉回用户本机。AI 在这里是嵌入式能力，主要接本地 Ollama/Whisper 做打标签、转写和检索，并开始通过 MCP 向 AI 助手开放个人数据。官方侧信号相对单薄且方向不同：Claude 博客押注的是把 Desktop 作为聊天、Cowork、Code 合一的入口，铺向三大云的企业渠道。两源在"桌面成为 AI 主入口"上形成交汇，但社区追求本地主权，官方追求企业集中分发，这条结构性分岔值得持续观察；考虑到近窗样本量很小，当前的升温更宜视为早期信号而非确定拐点。_
 
 - `github-trends` [andrewrabert/jellium-desktop](https://github.com/andrewrabert/jellium-desktop) — Jellyfin（开源自托管媒体服务器）的一个非官方桌面客户端，用 Rust 编写。
@@ -493,8 +465,39 @@ _桌面与媒体应用赛道正在小幅升温，社区侧的主线很清晰：�
 - `github-trends` [vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils) — 一个常驻 Mac 菜单栏的免费工具箱。一个应用里包括按应用分别调音量、系统监控、窗口切换与吸附、Dock 预览、剪贴板历史、文本片段、卸载器、Homebrew 图形管理、端口管理、录屏等功能。
 - `github-trends` [JiaFeiMiao-K-Cat/DiscImageStudio](https://github.com/JiaFeiMiao-K-Cat/DiscImageStudio) — 用普通电脑刻录机，把一张图片"刻"在空白 CD、DVD 或单层 BD-R 的数据面上，刻完肉眼能看到图案。它做的是盘面艺术，不是抓轨或镜像转换。
 - `github-trends` [Likely7/Veyra-NRVideo](https://github.com/Likely7/Veyra-NRVideo) — 一个 Windows 上的视频播放和采集画面增强工具。你可以把本地视频、采集卡画面或 PS5 远程游玩画面接进来，它在 PC 显卡上实时做超分辨率（把低分辨率画面放大变清晰）、画质增强和补帧（在两帧之间插入生成帧，让画面看起来更流畅）。
+- `github-trends` [XiaoYouChR/Ghost-Downloader-3](https://github.com/XiaoYouChR/Ghost-Downloader-3) — 一个跨平台的桌面下载器，想用一个软件接住各种下载任务。普通的 HTTP 文件、磁力链接和 BT 种子、FTP、网页视频用的 M3U8 和 MPEG-DASH、eD2k，它都能下；还能解析 YouTube 和 Bilibili 的视频，并给 GitHub 和 HuggingFace 的下载走镜像加速。
 
-### productivity-and-business-apps（13）
+### inference-and-serving-runtime（26）
+_推理赛道正在明显升温，并沿两条线分化：一条是“把超大模型拉回个人设备”，社区通过 1-bit/三值量化、异构卸载、SSD 流式加载和针对特定模型的专用引擎，让 27B 到 671B 级 MoE 模型能在笔记本、Mac 甚至手机上运行；另一条是“推理入口的网关化”，大量 repo 在 OpenAI、Anthropic 等协议之间做翻译、路由和号池聚合，其中包括依赖逆向接口或共享订阅的灰色方案。官方侧则用托管与治理来回应同一需求，Claude 正式登陆 Microsoft Foundry，模型可以进入企业现有的云、计费和权限体系。社区 repo 和官方博客因此在押注同一件事：模型调用正在脱离单一厂商入口。更底层的结构变化是，算子与硬件栈正在去 CUDA 化、走向专用化，例如模型厂商开源自研注意力内核、Mojo/MAX 被 Qualcomm 收购、ANE 被逆向改造用于训练。Lil'Log 早年系统梳理的量化、蒸馏等推理优化手段，如今正从论文落地为普通开发者手里的工具链。_
+
+- `github-trends` [chenyme/grok2api](https://github.com/chenyme/grok2api) — 一个面向 Grok（Grok Web / Grok Build / Grok Console）的多账号 API 网关。它把逆向得到的 Grok 网页会话，用多个账号的 SSO Token 组成「号池」，再以 OpenAI/Anthropic 兼容的 API 形式统一对外暴露。
+- `github-trends` [PrismML-Eng/Bonsai-demo](https://github.com/PrismML-Eng/Bonsai-demo) — PrismML 官方发布的"把大模型塞进手机/笔记本"的本地推理 demo。它把 Qwen3.6-27B 这样的 27B 参数模型压到 1-bit（约 3.9GB，能在 iPhone 上跑）或 ternary/1.58-bit（约 5.9GB，能在笔记本跑），并附带在 Mac(Metal)/Linux/Windows(CUDA/Vulkan/ROCm)/CPU 上的下载与运行脚本。仓库语言标成 Shell，只是因为它本质是围绕 llama.cpp/MLX 的 setup/下载脚本包装器。
+- `github-trends` [kvcache-ai/ktransformers](https://github.com/kvcache-ai/ktransformers) — 一个灵活的异构 LLM 推理/微调优化框架，让用户在本地机器上体验对超大模型的高效推理，主打"单机跑得动 236B/671B 级模型 + 超长上下文"。
+- `github-trends` [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) — 月之暗面把自家 Kimi Linear / K3 模型里那一步核心注意力计算（KDA，Kimi Delta Attention）手写成了 CUDA 内核并开源。打个比方：同一套数学运算，原来用通用零件拼装，现在换成为它专门打造的一台发动机——结果一模一样，但跑得更快。
+- `github-trends` [maderix/ANE](https://github.com/maderix/ANE) — 一个研究性质的 hack：把苹果芯片里那块专门做 AI 推理的协处理器（Neural Engine，ANE）改造成能**训练**模型。作者逆向了苹果从未公开的私有接口（`_ANEClient` / `_ANECompiler`）和 MIL 中间格式，绕开 CoreML，直接把含反向传播的计算图塞进 ANE 里跑。
+- `github-trends` [antirez/ds4](https://github.com/antirez/ds4) — Redis 作者 Salvatore Sanfilippo（antirez）用纯 C 手写的本地大模型推理引擎。它有一个反直觉的设计选择：**只跑 DeepSeek V4 Flash/PRO 和 GLM 5.2 这几个模型，不做通用工具**。目标场景是让 128GB 的 MacBook、DGX Spark、Strix Halo 这类个人高配机器直接在本地跑 284B 参数的 MoE 模型，内存不够时用 SSD 流式加载权重。
+- `claude-blog` [Claude in Microsoft Foundry is now generally available](https://claude.com/blog/claude-in-microsoft-foundry) — Starting today, Claude models are generally available in Microsoft Foundry, hosted on Azure. Claude runs in your Azure environment with the authentication, billing, and governance controls your teams already use. You can choose where inference is processed, including a US data zone for teams with data residency requirements. Anthropic operates the inference and is the data processor.
+- `lilian-weng` [Large Transformer Model Inference Optimization](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) — [Updated on 2023-01-24: add a small section on [Distillation](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/#distillation).]
+- `github-trends` [huggingface/transformers](https://github.com/huggingface/transformers) — 机器学习领域使用最广的模型库——用统一的接口加载和运行几乎所有主流的预训练模型（文本、图像、音频、多模态），几行代码就能跑推理或微调。
+- `github-trends` [NVIDIA-NeMo/Switchyard](https://github.com/NVIDIA-NeMo/Switchyard) — 一个放在 coding agent 和推理端点之间的流量代理（同时也是 Rust 库）。让 Claude Code / Codex / OpenClaw 这类客户端**一行不改**，就把请求转发给 vLLM、NIM、Ollama 或任意 OpenAI 兼容端点，并在 OpenAI Chat / OpenAI Responses / Anthropic Messages 三种协议间自动翻译。
+- `github-trends` [AlexsJones/llmfit](https://github.com/AlexsJones/llmfit) — 一个终端工具，回答"我这台电脑到底能跑哪些大模型"。运行一条命令，它检测你的内存、CPU、GPU（含多卡和 Apple Silicon 统一内存），然后把几百个模型按质量、速度、适配度、上下文长度四个维度打分，列出哪些能跑得好、哪些勉强能跑、哪些跑不动，并给出建议的量化档位。默认是交互式 TUI，也有传统 CLI 模式供脚本调用。
+- `github-trends` [modular/modular](https://github.com/modular/modular) — 一套想替掉 CUDA 的 AI 计算底座，由两部分组成：Mojo 是一门语法像 Python、性能对标 C++/Rust 的新语言，专门用来写 GPU kernel 和高性能算子；MAX 是基于它的推理平台，让同一份 kernel 代码在 NVIDIA、AMD 等不同厂商的加速卡上都能跑。公司 2026-07-29 已被 Qualcomm 完成收购。
+- `github-trends` [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) — 一个自己架设的"AI 订阅中转站"。你和朋友各自买了 Claude、Codex、Gemini 的月度订阅，平时只有自己能用、额度还经常闲置；Sub2API 把这些订阅账号统一收进一个网关，对外发放普通的 API Key，谁需要就用 Key 调用，后台自动挑账号、算用量、限并发。对使用者来说，感受就是"一个 Key 打通所有订阅，成本按人头分摊"。
+- `github-trends` [tashfeenahmed/freellmapi](https://github.com/tashfeenahmed/freellmapi) — 一个自己在本机跑的 LLM 网关。它把 34 家厂商的**免费额度** key（Groq、Cerebras、SambaNova、Google、Mistral 等，共 635 个免费模型端点）聚合到一个 OpenAI 兼容的 `/v1` 地址后面，一家配额耗尽就自动切下一家。对上层应用来说，看到的只是一个普通的 OpenAI 接口。
+- `github-trends` [Osmantic/ODS](https://github.com/Osmantic/ODS) — 一套把你手头的电脑变成"家用 AI 服务器"的一键安装栈。装完之后这台机器同时提供大模型推理、聊天界面、语音、agent、工作流编排、RAG 和图像生成——底下把 Ollama、Open WebUI、n8n、ComfyUI 这些各自独立的开源组件拼装并接好，你不用一个个配。
+- `github-trends` [workweave/router](https://github.com/workweave/router) — 一个夹在你的编码 agent 和大模型之间的"调度员"。你把 Claude Code 或 Cursor 的 API 地址换成它，它会看每一条 prompt 有多难，然后把简单的发给便宜模型、把难的发给贵模型，整个决策在 50 毫秒内完成。官方说这样能省 40–70% 的推理成本，而你除了改一行配置什么都不用动。
+- `github-trends` [superlinked/sie](https://github.com/superlinked/sie) — 一台自己部署的"模型服务器"，专门伺候 agent 会用到的那些小模型——文本向量化（embedding）、结果重排（rerank）、图片文字识别（OCR）、从文档里抽结构化字段。你原本要为这几件事分别接 Cohere、TEI、OpenAI 的 API 或各起一个服务，现在它们跑在同一个集群里。
+- `github-trends` [magnitudedev/magnitude](https://github.com/magnitudedev/magnitude) — 一个装在你自己电脑上的"模型供应商"。你现在用的编码 agent（Claude Code、Codex、OpenCode、Cline、Hermes 等）默认要连 Anthropic 或 OpenAI 的云端模型，Magnitude 在本机起一个推理服务，让这些 agent 改连本机——不花 token 费、不联网也能用、代码和提示词不出机器。
+- `github-trends` [JustVugg/colibri](https://github.com/JustVugg/colibri) — 一个让普通电脑跑得动超大模型的推理引擎。现在最强的开源模型多是 MoE（混合专家）结构——模型有几百 B 参数，但每次生成只会用到其中一小部分「专家」。colibri 利用这一点：把全部专家权重留在固态硬盘上，用到哪个读哪个，于是显存装不下的模型也能加载起来。纯 C 实现，零依赖。
+- `github-trends` [tile-ai/tilelang](https://github.com/tile-ai/tilelang) — 一门专门用来写"算子"的编程语言。算子是 AI 模型里最底层的计算单元（矩阵乘法、注意力计算等），决定模型在显卡上跑多快。传统上要用 CUDA 手写，门槛很高；TileLang 让工程师用接近 Python 的写法描述计算，再由编译器生成针对 NVIDIA、AMD、华为昇腾等硬件优化过的代码。
+- `github-trends` [microsoft/BitNet](https://github.com/microsoft/BitNet) — 微软研究院开源的推理程序 bitnet.cpp，专门运行"1.58 位"大模型。普通模型的每个参数用 16 位数字存储，这类模型每个参数只取 -1、0、1 三个值，体积和内存占用小得多，可以在普通电脑的 CPU 上运行，不需要显卡。
+- `github-trends` [lightseekorg/tokenspeed](https://github.com/lightseekorg/tokenspeed) — 一个把大模型部署成在线服务的推理引擎，和 vLLM、SGLang、TensorRT-LLM 是同一类软件。公司在自己的 GPU 集群上跑开源大模型时，用它接收请求、排队调度、管理显存里的对话缓存，再把生成结果流式返回。项目口号是"性能做到 TensorRT-LLM 的水平，易用性做到 vLLM 的水平"，背后是非营利组织 LightSeek Foundation。
+- `github-trends` [FlashML-org/FreeToken](https://github.com/FlashML-org/FreeToken) — 一个在普通游戏显卡上跑超大 AI 模型的推理引擎。它针对 MoE（混合专家）模型，把放不进显存的部分放到内存里调度，让 8GB、12GB 显卡也能跑几十 GB 甚至上百 GB 的模型。
+- `github-trends` [FareedKhan-dev/kimi-k3-in-c](https://github.com/FareedKhan-dev/kimi-k3-in-c) — 用纯 C 语言写的 Kimi K3 推理程序，能在一台只有 8GB 内存、没有显卡的电脑上跑完整的 2.78 万亿参数模型。Kimi K3 是月之暗面 2026-07 发布、07-27 开放权重的大模型。
+- `github-trends` [ashhart/TensorFold](https://github.com/ashhart/TensorFold) — 一个在自己电脑或自己服务器上运行大语言模型的引擎。下载一个可执行文件，它就能加载模型，并对外提供和 OpenAI、Anthropic 接口兼容的服务，现有的客户端和 Agent 工具改一个地址就能接上。
+- `github-trends` [openvinotoolkit/openvino](https://github.com/openvinotoolkit/openvino) — Intel 主导的开源推理工具包。把 PyTorch、ONNX 等框架训练好的模型转换并优化，让它在 CPU、集成显卡、NPU 这类没有独立高端显卡的设备上跑得更快。
+
+### productivity-and-business-apps（14）
 _该赛道正在升温，结构上从"把 SaaS 搬回自己服务器"的自托管替代品（ERP/CRM、社交排期、记账、多模型聊天前端），转向"让 AI 替你长期盯着、干活"的常驻型代理：盯盘、盯闲鱼、盯新闻的机器人都是 24 小时监控、AI 判断、推送到飞书/钉钉/Telegram 的同一套模式。Claude 官方博客同期密集发布 Asana、ABC Legal、BDR 自用 agent 舰队等企业案例，与社区 repo 在"人+agent 协作完成日常业务"上形成同向押注。区别在于社区偏个人与中小团队的自部署、数据自持，官方偏企业级托管与组织流程改造。老牌工具也在接入 agent 入口（如排期工具开放 MCP/CLI），说明下一步竞争点是能否被 agent 直接调用；Lil'Log 在此赛道暂无信号，研究侧尚未跟进。_
 
 - `github-trends` [ever-co/ever-gauzy](https://github.com/ever-co/ever-gauzy) — 一套自己装在自己服务器上的公司后台管理系统。一个软件里同时装了客户管理（CRM）、人事（HRM）、招聘（ATS）、项目管理和进销存（ERP），还自带员工计时器和桌面端。定位是中小企业不想按人头买 SaaS、又想把数据留在自己机器上时的替代品。
@@ -510,6 +513,7 @@ _该赛道正在升温，结构上从"把 SaaS 搬回自己服务器"的自托�
 - `github-trends` [Usagi-org/ai-goofish-monitor](https://github.com/Usagi-org/ai-goofish-monitor) — 一个替你盯闲鱼的机器人。你用一句话说想买什么，它 24 小时刷新闲鱼上新，让 AI 看图片、描述和卖家信用，判断是不是真个人闲置、价格是否合适，符合条件就推送到手机。
 - `github-trends` [Thysrael/Horizon](https://github.com/Thysrael/Horizon) — 一个自己部署的"AI 新闻雷达"。它每天从 Hacker News、Reddit、RSS、Telegram、GitHub 等来源抓内容，让 AI 给每条打分、去重，补上背景和评论区摘要，生成中英双语日报，发到网页、邮件、飞书、钉钉或 Slack。
 - `github-trends` [we-promise/sure](https://github.com/we-promise/sure) — 一个自己部署的个人记账和资产管理应用。你把银行账户、信用卡、券商持仓接进来，它汇总成净值曲线、收支分类和预算。README 写明它是已归档的 Maybe Finance 项目的社区 fork，由社区继续维护。
+- `github-trends` [toeverything/AFFiNE](https://github.com/toeverything/AFFiNE) — 一个开源的知识库和协作工具，把文档、白板和数据表放在同一个工作区里，定位是 Notion 加 Miro 的替代品。数据默认存在本地，也可以自己部署服务端来同步。
 
 ### hardware-and-embedded（6）
 _硬件与嵌入式赛道在社区侧小幅升温，但信号几乎全部来自 GitHub，Claude 官方博客与 Lil'Log 均未跟进，目前仍是社区自发的局部热度，而非跨源共识。最显著的结构变化是「仿真训练、ONNX 导出、真机部署」的具身机器人闭环开始以低价消费级套件的形态成套开源，由 Hugging Face 系厂商同时发布训练仓与控制仓并连续上榜，把 sim-to-real 从实验室流程下放到个人 GPU。另一条并行主线是用极低成本硬件与本地化软件夺回控制权：过去昂贵的射频设备被完整开源，家庭网络与家电则绕开厂商云直连局域网。这股「去云化、去门槛」的硬件 DIY 动能仍在积累，但能否演变为与 AI 主线交汇的跨源趋势，要看具身智能这条线是否进入官方或研究博客的视野。_
@@ -520,28 +524,6 @@ _硬件与嵌入式赛道在社区侧小幅升温，但信号几乎全部来自 
 - `github-trends` [pollen-robotics/microduck](https://github.com/pollen-robotics/microduck) — 一只约 25 厘米高、不到 800 克的双足“小鸭”机器人的控制软件。机器人能走路、坐下、摔倒后自己爬起来、用嘴叼东西、踢球。出品方 Pollen Robotics 属于 Hugging Face，由 Seeed 代工，8-27 开放预订，售价 399 美元。这个仓库是它的“大脑”：一组 Rust 程序跑在机器人的 RK3566 主板上，每秒 50 次运行神经网络策略，驱动 15 个舵机。策略在姊妹仓 `microduck_rl`（8-31、9-01 曾在榜，现约 2,600 星）里用仿真训练后导出。
 - `github-trends` [mbillow/localthings](https://github.com/mbillow/localthings) — 一个 Home Assistant 插件。装上后，家里的三星洗衣机、烘干机、冰箱、空调、烤箱和扫地机可以在局域网内直接接受控制和上报状态，不再经过三星的 SmartThings 云和账号。
 - `github-trends` [pookjw/HermesEnabler](https://github.com/pookjw/HermesEnabler) — 一个让普通 Apple Watch 用上 Hermès 版专属表盘的小工具，不用越狱。它由一个手表 App 和一个 iPhone 伴侣 App 组成，装好后在 App 里打开开关，手表就会把自己当成 Hermès 版；新版本还能解锁 Ultra 专属表盘。
-
-### data-and-analytics-infra（18）
-_数据基础设施赛道正在从"给人用的管道和报表"转向"给 agent 用的可信上下文层"：社区 repo 集中在语义层标准化（统一指标口径）、带治理的 GenBI/NL2SQL 和可溯源的知识图谱，Claude 官方博客也在讲用 Claude 在 Slack 里做自助数据分析，社区和官方同时押注"自然语言直连数仓"，而且都把准确率和口径一致性当作核心难题。上游摄取端同步升温，网页清洗、PDF 解析与 OCR 分流这类"喂给 LLM 的干净数据"组件已经成了 RAG/agent 管线的标配；连本地行情库这类垂直数据工具也开始默认提供 MCP 接口。往后看，竞争焦点会从编排和存储本身转向"语义契约 + 血缘溯源 + agent 接入协议"；pgrust 这类由 AI 代理生成的数据库重写则说明，底层引擎本身也开始被 AI 编码改造。不过该赛道目前仅从前窗 0 升至近窗 1，样本仍小，更适合看作结构性信号的早期显现，而非已成定局的浪潮。_
-
-- `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
-- `github-trends` [apache/ossie](https://github.com/apache/ossie) — 一套让不同数据平台"对同一个指标说同一种话"的开放规范。今天你在 BI 工具里定义的"月活跃用户"，到了 AI 助手、数据仓库、报表工具里往往各算各的口径；Ossie 想用一份厂商中立的 JSON/YAML 规范，把指标、维度、关系这些"语义元数据"标准化，作为跨平台的单一事实源。
-- `github-trends` [Canner/WrenAI](https://github.com/Canner/WrenAI) — 面向 AI agent 的开源 GenBI（生成式 BI）平台，通过一层"开放上下文层 + 治理"把自然语言问题转成可信的仪表盘、图表和 SQL，支持 BigQuery、Snowflake、PostgreSQL、ClickHouse、Redshift、Databricks 等 20+ 数据源。
-- `github-trends` [OtterMind/Chat2DB](https://github.com/OtterMind/Chat2DB) — 一个数据库图形客户端（类似 Navicat、DBeaver），额外加了 AI：可以用自然语言问"上个月订单最多的客户是谁"，它生成 SQL、解释 SQL、优化 SQL。支持 30+ 种数据库，包括 MySQL、Oracle、PostgreSQL、SQL Server、ClickHouse。
-- `github-trends` [opengeos/GeoLibre](https://github.com/opengeos/GeoLibre) — 一个在浏览器里就能打开的地图分析软件。过去要装 QGIS 或买 ArcGIS Online 才能做的事——加载卫星影像、叠图层、查属性、出图——现在打开网页就能做，也能装成桌面/移动端应用，甚至嵌进 Jupyter notebook。
-- `github-trends` [hello245m/free-stockdb](https://github.com/hello245m/free-stockdb) — 一个装在自己电脑上的"A 股行情数据库"。双击一个更新程序，它把整个 A 股市场的日线、周线、月线和 1/5/15/30 分钟 K 线下载到本机文件夹；再双击另一个程序，本机就起了一个数据服务（默认 `127.0.0.1:7899`）。之后你想查行情，可以用 Python、HTTP 接口、Excel/WPS 公式、浏览器网页，甚至让 Claude/Cursor 通过 MCP 直接问它。
-- `github-trends` [firecrawl/pdf-inspector](https://github.com/firecrawl/pdf-inspector) — 一个判断「这份 PDF 到底是不是扫描件」的 Rust 库。给它一个 PDF，它在几十毫秒内告诉你：这是原生文本型、纯扫描图片型、图文混合，还是介于之间；并按页给出「这页需不需要 OCR」的建议。顺带它也能把文本型 PDF 抽成带位置信息的文字，或者直接转成干净的 Markdown（标题、列表、表格、代码块、多栏阅读顺序都识别）。由 Firecrawl 团队开发，除 Rust 外还提供 Python、Node.js 和浏览器 WebAssembly 三套绑定。
-- `github-trends` [semantica-agi/semantica](https://github.com/semantica-agi/semantica) — 一个给 AI 系统用的"语义底座"。它把企业里散在各处的数据（数据库、文档、网页、代码仓）抽成实体和关系，建成一张可查询的知识图谱 / 上下文图谱，并且记录每个结论是从哪条数据、经哪一步推理得出来的。README 的自我定位是"给 AI agent 用的开源版 Palantir"。
-- `github-trends` [google-deepmind/weathernext](https://github.com/google-deepmind/weathernext) — DeepMind 天气预报模型的统一开源仓库。它不是新建的——就是原来的 `graphcast` 仓库改名而来（创建日期仍是 2023-07-14，旧地址 302 跳转到这里）。现在里面放着 WeatherNext 2（0.25°、约 30km 分辨率的通用预报模型）、WeatherNext Cyclones（热带气旋专用）、Cyclones Mini（1° 简化版，能在免费 Colab 上跑），原来的 GraphCast 和 GenCast 被降级成 legacy 放进 `docs/`。
-- `github-trends` [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) — 面向 LLM 场景的开源网页抓取/清洗工具，把网页转成对大模型友好的干净 markdown/结构化数据，是 RAG 和 agent 数据管线里被广泛引用的事实级组件之一。
-- `github-trends` [malisper/pgrust](https://github.com/malisper/pgrust) — 一个用 Rust 从零重写的 PostgreSQL，磁盘格式兼容 Postgres 18.3（可直接从现有数据目录启动）。作者 Michael Malis（前 Heap CEO）主要靠 AI 编码代理（自述 8 个并行 Codex 账号、约 45 万行代码）生成，目标是让 Postgres 内部更易改造——去掉 VACUUM、内置连接池、换用线程/连接模型。
-- `github-trends` [infiniflow/ragflow](https://github.com/infiniflow/ragflow) — 开源 RAG 引擎——把企业里的 PDF、扫描件、表格、幻灯片先做深度文档解析和 OCR，切成带结构信息的块，再配上引用可溯源的检索问答，近两年又叠加了 agent 编排能力。
-- `claude-blog` [Self-service data analytics in Slack: how Anthropic deploys Claude Tag for ad-hoc questions](https://claude.com/blog/self-service-data-analytics-in-slack-how-anthropic-deploys-claude-tag-for-ad-hoc-questions) — In our [previous post](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude), we described how we enabled Claude to answer data analytics questions with ~95% accuracy through three primary artifacts:
-- `github-trends` [sngyai/Sequoia-X](https://github.com/sngyai/Sequoia-X) — 一个每天收盘后自动跑一遍的 A 股扫描器。它按几套预设的技术形态（海龟突破、高窄旗形、涨停洗盘、RPS 强度、定增监控等）把全市场股票筛一遍，把符合条件的票推到你的飞书群里。它不下单、不管仓位，只负责把候选名单送到你眼前。
-- `github-trends` [Tencent/WeKnora](https://github.com/Tencent/WeKnora) — 一套可以自己部署的文档知识库系统。你把 PDF、Word、Notion 页面之类的原始文档丢进去，它做三件事：变成能被问答检索的知识库（RAG）、提供一个会自己多步推理的问答 agent、以及生成一份能自我维护的 Wiki。
-- `github-trends` [docling-project/docling](https://github.com/docling-project/docling) — 一个把各种办公文档"翻译"成 AI 能读的格式的工具。你手里有一堆 PDF 合同、Word 报告、PPT 和扫描件，想让大模型回答关于它们的问题，中间缺的就是这一步——把版面、标题层级、表格、图表、公式都识别出来，输出成结构化的 Markdown 或 JSON。Docling 做的就是这一步，一条命令或几行 Python 就能跑，也能起成一个 HTTP 服务（docling-serve）。
-- `github-trends` [t8y2/dbx](https://github.com/t8y2/dbx) — 一个很小（约 25 MB）的数据库管理工具，一个软件就能连 MySQL、PostgreSQL、Redis、MongoDB、DuckDB、达梦、OceanBase 等 100 多种数据库。有桌面版、网页版（Docker）和命令行版，还内置 AI 助手帮你写 SQL，并能作为 MCP 服务让 Claude Code、Cursor 等 AI 编程工具直接查库。
-- `github-trends` [NVIDIA/auto-ontology](https://github.com/NVIDIA/auto-ontology) — 一个放在企业数据库旁边的"业务词典"。它读取库里有哪些表、字段和关系，自动起草一份文档，写明"营收""活跃客户"这类指标在哪张表、怎么算、口径从哪来。业务人员审核通过后，AI Agent 回答问题前先查这份词典，再生成查询，给出的数字附带出处。
 
 ### agent-deliverables-and-artifacts（12）
 _这一赛道的核心是让 agent 直接交付可用的成品文件，而不只是给出建议或代码。社区 repo 大量以"技能包/插件"形态挂进 Claude Code、Codex、Cursor，覆盖架构图、可编辑 PPT、CAD/URDF、竞赛论文等场景；官方博客则通过 Claude Code artifacts 和 Claude Design 与 Code 的打通，把"可分享、可编辑的产物"做成平台原生能力，两边方向一致。结构上，竞争重点正从"能不能生成"转向"能不能可靠地生成"：用组件目录约束输出（json-render），产出原生可编辑格式（.pptx、draw.io XML），以及 univer 这类老牌办公内核重新定位为 agent 读写文档的底座。不过近窗新增已降到 0，且研究侧（Lil'Log）始终没有跟进。赛道看起来正从概念爆发期进入沉淀期，后续增量更可能来自官方平台的原生化和办公/设计底座的接入，而不是新的独立技能包。_
@@ -592,6 +574,28 @@ _AI 音视频创作赛道正在升温，主要驱动力来自 GitHub 社区：�
 - `github-trends` [Kruk2/jasna](https://github.com/Kruk2/jasna) — 一个在本机显卡上运行的视频"去马赛克"工具。它先在每一帧里找出打码区域，再用 AI 模型把这块画面补出来贴回原位，画面其他部分不动。支持普通视频、VR180 视频和图片，有图形界面。
 - `github-trends` [cjpais/Handy](https://github.com/cjpais/Handy) — 一个免费、完全离线的语音转文字应用。按住快捷键说话，松开后识别出的文字自动粘贴进当前输入框，可以选用 Whisper、Parakeet 等本地语音模型。
 - `github-trends` [anomalyco/hex](https://github.com/anomalyco/hex) — 一个本地语音听写应用。按住快捷键说话，松开后文字出现在光标所在的位置，可以选择把输出改写成特定格式（例如全小写）。它由做 OpenCode 编程 Agent 的 Anomaly 团队出品。
+
+### data-and-analytics-infra（18）
+_数据基础设施赛道正在从"给人用的管道和报表"转向"给 agent 用的可信上下文层"：社区 repo 集中在语义层标准化（统一指标口径）、带治理的 GenBI/NL2SQL 和可溯源的知识图谱，Claude 官方博客也在讲用 Claude 在 Slack 里做自助数据分析，社区和官方同时押注"自然语言直连数仓"，而且都把准确率和口径一致性当作核心难题。上游摄取端同步升温，网页清洗、PDF 解析与 OCR 分流这类"喂给 LLM 的干净数据"组件已经成了 RAG/agent 管线的标配；连本地行情库这类垂直数据工具也开始默认提供 MCP 接口。往后看，竞争焦点会从编排和存储本身转向"语义契约 + 血缘溯源 + agent 接入协议"；pgrust 这类由 AI 代理生成的数据库重写则说明，底层引擎本身也开始被 AI 编码改造。不过该赛道目前仅从前窗 0 升至近窗 1，样本仍小，更适合看作结构性信号的早期显现，而非已成定局的浪潮。_
+
+- `github-trends` [PrefectHQ/prefect](https://github.com/PrefectHQ/prefect) — 老牌 Python 工作流编排框架，用装饰器把普通 Python 函数变成可调度、可重试、可观测的数据管道任务。常与 Airflow、Dagster 并列作为数据编排选型。
+- `github-trends` [apache/ossie](https://github.com/apache/ossie) — 一套让不同数据平台"对同一个指标说同一种话"的开放规范。今天你在 BI 工具里定义的"月活跃用户"，到了 AI 助手、数据仓库、报表工具里往往各算各的口径；Ossie 想用一份厂商中立的 JSON/YAML 规范，把指标、维度、关系这些"语义元数据"标准化，作为跨平台的单一事实源。
+- `github-trends` [Canner/WrenAI](https://github.com/Canner/WrenAI) — 面向 AI agent 的开源 GenBI（生成式 BI）平台，通过一层"开放上下文层 + 治理"把自然语言问题转成可信的仪表盘、图表和 SQL，支持 BigQuery、Snowflake、PostgreSQL、ClickHouse、Redshift、Databricks 等 20+ 数据源。
+- `github-trends` [OtterMind/Chat2DB](https://github.com/OtterMind/Chat2DB) — 一个数据库图形客户端（类似 Navicat、DBeaver），额外加了 AI：可以用自然语言问"上个月订单最多的客户是谁"，它生成 SQL、解释 SQL、优化 SQL。支持 30+ 种数据库，包括 MySQL、Oracle、PostgreSQL、SQL Server、ClickHouse。
+- `github-trends` [opengeos/GeoLibre](https://github.com/opengeos/GeoLibre) — 一个在浏览器里就能打开的地图分析软件。过去要装 QGIS 或买 ArcGIS Online 才能做的事——加载卫星影像、叠图层、查属性、出图——现在打开网页就能做，也能装成桌面/移动端应用，甚至嵌进 Jupyter notebook。
+- `github-trends` [hello245m/free-stockdb](https://github.com/hello245m/free-stockdb) — 一个装在自己电脑上的"A 股行情数据库"。双击一个更新程序，它把整个 A 股市场的日线、周线、月线和 1/5/15/30 分钟 K 线下载到本机文件夹；再双击另一个程序，本机就起了一个数据服务（默认 `127.0.0.1:7899`）。之后你想查行情，可以用 Python、HTTP 接口、Excel/WPS 公式、浏览器网页，甚至让 Claude/Cursor 通过 MCP 直接问它。
+- `github-trends` [firecrawl/pdf-inspector](https://github.com/firecrawl/pdf-inspector) — 一个判断「这份 PDF 到底是不是扫描件」的 Rust 库。给它一个 PDF，它在几十毫秒内告诉你：这是原生文本型、纯扫描图片型、图文混合，还是介于之间；并按页给出「这页需不需要 OCR」的建议。顺带它也能把文本型 PDF 抽成带位置信息的文字，或者直接转成干净的 Markdown（标题、列表、表格、代码块、多栏阅读顺序都识别）。由 Firecrawl 团队开发，除 Rust 外还提供 Python、Node.js 和浏览器 WebAssembly 三套绑定。
+- `github-trends` [semantica-agi/semantica](https://github.com/semantica-agi/semantica) — 一个给 AI 系统用的"语义底座"。它把企业里散在各处的数据（数据库、文档、网页、代码仓）抽成实体和关系，建成一张可查询的知识图谱 / 上下文图谱，并且记录每个结论是从哪条数据、经哪一步推理得出来的。README 的自我定位是"给 AI agent 用的开源版 Palantir"。
+- `github-trends` [google-deepmind/weathernext](https://github.com/google-deepmind/weathernext) — DeepMind 天气预报模型的统一开源仓库。它不是新建的——就是原来的 `graphcast` 仓库改名而来（创建日期仍是 2023-07-14，旧地址 302 跳转到这里）。现在里面放着 WeatherNext 2（0.25°、约 30km 分辨率的通用预报模型）、WeatherNext Cyclones（热带气旋专用）、Cyclones Mini（1° 简化版，能在免费 Colab 上跑），原来的 GraphCast 和 GenCast 被降级成 legacy 放进 `docs/`。
+- `github-trends` [unclecode/crawl4ai](https://github.com/unclecode/crawl4ai) — 面向 LLM 场景的开源网页抓取/清洗工具，把网页转成对大模型友好的干净 markdown/结构化数据，是 RAG 和 agent 数据管线里被广泛引用的事实级组件之一。
+- `github-trends` [malisper/pgrust](https://github.com/malisper/pgrust) — 一个用 Rust 从零重写的 PostgreSQL，磁盘格式兼容 Postgres 18.3（可直接从现有数据目录启动）。作者 Michael Malis（前 Heap CEO）主要靠 AI 编码代理（自述 8 个并行 Codex 账号、约 45 万行代码）生成，目标是让 Postgres 内部更易改造——去掉 VACUUM、内置连接池、换用线程/连接模型。
+- `github-trends` [infiniflow/ragflow](https://github.com/infiniflow/ragflow) — 开源 RAG 引擎——把企业里的 PDF、扫描件、表格、幻灯片先做深度文档解析和 OCR，切成带结构信息的块，再配上引用可溯源的检索问答，近两年又叠加了 agent 编排能力。
+- `claude-blog` [Self-service data analytics in Slack: how Anthropic deploys Claude Tag for ad-hoc questions](https://claude.com/blog/self-service-data-analytics-in-slack-how-anthropic-deploys-claude-tag-for-ad-hoc-questions) — In our [previous post](https://claude.com/blog/how-anthropic-enables-self-service-data-analytics-with-claude), we described how we enabled Claude to answer data analytics questions with ~95% accuracy through three primary artifacts:
+- `github-trends` [sngyai/Sequoia-X](https://github.com/sngyai/Sequoia-X) — 一个每天收盘后自动跑一遍的 A 股扫描器。它按几套预设的技术形态（海龟突破、高窄旗形、涨停洗盘、RPS 强度、定增监控等）把全市场股票筛一遍，把符合条件的票推到你的飞书群里。它不下单、不管仓位，只负责把候选名单送到你眼前。
+- `github-trends` [Tencent/WeKnora](https://github.com/Tencent/WeKnora) — 一套可以自己部署的文档知识库系统。你把 PDF、Word、Notion 页面之类的原始文档丢进去，它做三件事：变成能被问答检索的知识库（RAG）、提供一个会自己多步推理的问答 agent、以及生成一份能自我维护的 Wiki。
+- `github-trends` [docling-project/docling](https://github.com/docling-project/docling) — 一个把各种办公文档"翻译"成 AI 能读的格式的工具。你手里有一堆 PDF 合同、Word 报告、PPT 和扫描件，想让大模型回答关于它们的问题，中间缺的就是这一步——把版面、标题层级、表格、图表、公式都识别出来，输出成结构化的 Markdown 或 JSON。Docling 做的就是这一步，一条命令或几行 Python 就能跑，也能起成一个 HTTP 服务（docling-serve）。
+- `github-trends` [t8y2/dbx](https://github.com/t8y2/dbx) — 一个很小（约 25 MB）的数据库管理工具，一个软件就能连 MySQL、PostgreSQL、Redis、MongoDB、DuckDB、达梦、OceanBase 等 100 多种数据库。有桌面版、网页版（Docker）和命令行版，还内置 AI 助手帮你写 SQL，并能作为 MCP 服务让 Claude Code、Cursor 等 AI 编程工具直接查库。
+- `github-trends` [NVIDIA/auto-ontology](https://github.com/NVIDIA/auto-ontology) — 一个放在企业数据库旁边的"业务词典"。它读取库里有哪些表、字段和关系，自动起草一份文档，写明"营收""活跃客户"这类指标在哪张表、怎么算、口径从哪来。业务人员审核通过后，AI Agent 回答问题前先查这份词典，再生成查询，给出的数字附带出处。
 
 ### games-and-emulators（11）
 _该赛道的信号完全来自 GitHub 社区，Claude 官方博客与 Lil'Log 均无呼应，近窗热度已归零，属于典型的社区自发、与 AI 主线脱钩的边缘赛道，正在退出趋势视野。技术上可以看到一个明显的结构变化：玩家社区正从“完整模拟硬件”转向“翻译与重编译”。PS5 项目只翻译 GPU、直接改写游戏二进制，N64 老游戏则走反编译后原生移植的路线，iOS 上也开始叠加 x86 翻译与图形转换层。与此同时，Rust/C# 从零重写服务端、着色器级 HDR 修复、自托管 ROM 库以及官方开源老游戏源码，共同指向“玩家掌控运行时”的长期方向。不过这股动能短期内难以借力 AI 叙事回暖。_
