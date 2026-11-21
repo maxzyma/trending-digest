@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-11-20）
+# 跨源主题聚类 — 同类与升温（2026-11-21）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -7,11 +7,11 @@
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
 | dev-infra-and-tooling | ↑升温 | 10 | 2 | 81 | 78 | github+claude | canonical |
-| agent-skills-and-plugins | ↑升温 | 7 | 5 | 55 | 54 | github+claude | canonical |
+| agent-skills-and-plugins | →持稳 | 6 | 6 | 55 | 54 | github+claude | canonical |
 | coding-agents-and-harnesses | ↑升温 | 5 | 4 | 65 | 62 | github+claude+lilian | canonical |
 | agent-frameworks-and-platforms | ↓退潮 | 4 | 6 | 51 | 50 | github+claude+lilian | canonical |
 | learning-and-curated-resources | ↓退潮 | 2 | 6 | 95 | 95 | github+claude+lilian | canonical |
-| networking-and-security | ↓退潮 | 2 | 3 | 39 | 36 | github+claude+lilian | canonical |
+| networking-and-security | →持稳 | 2 | 2 | 39 | 36 | github+claude+lilian | canonical |
 | desktop-and-media-apps | →持稳 | 2 | 2 | 35 | 34 | github+claude | canonical |
 | inference-and-serving-runtime | →持稳 | 2 | 2 | 26 | 26 | github+claude+lilian | canonical |
 | productivity-and-business-apps | ↓退潮 | 2 | 3 | 14 | 14 | github+claude | canonical |
@@ -22,7 +22,7 @@
 | robotics-and-simulation | ↑升温 | 1 | 0 | 1 | 1 | github | candidate |
 | ai-video-voice-creative | ↓退潮 | 0 | 2 | 21 | 21 | github+lilian | canonical |
 | data-and-analytics-infra | ↓退潮 | 0 | 1 | 18 | 18 | github+claude | canonical |
-| games-and-emulators | ↓退潮 | 0 | 1 | 11 | 11 | github | canonical |
+| games-and-emulators | →持稳 | 0 | 0 | 11 | 11 | github | canonical |
 
 ## 各主题项目清单
 
