@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-11-21）
+# 跨源主题聚类 — 同类与升温（2026-11-22）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -10,7 +10,7 @@
 | agent-skills-and-plugins | →持稳 | 6 | 6 | 55 | 54 | github+claude | canonical |
 | coding-agents-and-harnesses | ↑升温 | 5 | 4 | 65 | 62 | github+claude+lilian | canonical |
 | agent-frameworks-and-platforms | ↓退潮 | 4 | 6 | 51 | 50 | github+claude+lilian | canonical |
-| learning-and-curated-resources | ↓退潮 | 2 | 6 | 95 | 95 | github+claude+lilian | canonical |
+| learning-and-curated-resources | ↓退潮 | 2 | 5 | 95 | 95 | github+claude+lilian | canonical |
 | networking-and-security | →持稳 | 2 | 2 | 39 | 36 | github+claude+lilian | canonical |
 | desktop-and-media-apps | →持稳 | 2 | 2 | 35 | 34 | github+claude | canonical |
 | inference-and-serving-runtime | →持稳 | 2 | 2 | 26 | 26 | github+claude+lilian | canonical |
