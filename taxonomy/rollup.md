@@ -1,4 +1,4 @@
-# 跨源主题聚类 — 同类与升温（2026-11-24）
+# 跨源主题聚类 — 同类与升温（2026-11-25）
 
 近 14 天窗口对比前一等长窗口。来源:GitHub Trending + Claude Blog + Lil'Log。
 
@@ -7,21 +7,21 @@
 | 主题 | 趋势 | 近窗 | 前窗 | 累计 | 项目数 | 覆盖源 | 状态 |
 |---|---|---|---|---|---|---|---|
 | dev-infra-and-tooling | ↑升温 | 9 | 2 | 81 | 78 | github+claude | canonical |
-| agent-skills-and-plugins | ↑升温 | 6 | 5 | 55 | 54 | github+claude | canonical |
-| coding-agents-and-harnesses | ↑升温 | 4 | 3 | 65 | 62 | github+claude+lilian | canonical |
-| agent-frameworks-and-platforms | ↓退潮 | 3 | 6 | 51 | 50 | github+claude+lilian | canonical |
+| agent-skills-and-plugins | ↓退潮 | 5 | 6 | 55 | 54 | github+claude | canonical |
+| coding-agents-and-harnesses | ↑升温 | 4 | 2 | 65 | 62 | github+claude+lilian | canonical |
+| agent-frameworks-and-platforms | ↓退潮 | 2 | 6 | 51 | 50 | github+claude+lilian | canonical |
 | networking-and-security | →持稳 | 2 | 2 | 39 | 36 | github+claude+lilian | canonical |
 | desktop-and-media-apps | →持稳 | 2 | 2 | 35 | 34 | github+claude | canonical |
 | inference-and-serving-runtime | →持稳 | 2 | 2 | 26 | 26 | github+claude+lilian | canonical |
-| productivity-and-business-apps | ↓退潮 | 2 | 3 | 14 | 14 | github+claude | canonical |
+| productivity-and-business-apps | →持稳 | 2 | 2 | 14 | 14 | github+claude | canonical |
 | learning-and-curated-resources | ↓退潮 | 1 | 5 | 95 | 95 | github+claude+lilian | canonical |
-| agent-deliverables-and-artifacts | →持稳 | 1 | 1 | 12 | 12 | github+claude | canonical |
+| agent-deliverables-and-artifacts | ↑升温 | 1 | 0 | 12 | 12 | github+claude | canonical |
 | hardware-and-embedded | →持稳 | 1 | 1 | 6 | 6 | github | canonical |
-| rag-and-memory | ↑升温 | 1 | 0 | 1 | 1 | github | candidate |
 | ai-video-voice-creative | ↓退潮 | 0 | 2 | 21 | 21 | github+lilian | canonical |
 | data-and-analytics-infra | ↓退潮 | 0 | 1 | 18 | 18 | github+claude | canonical |
 | games-and-emulators | →持稳 | 0 | 0 | 11 | 11 | github | canonical |
 | model-and-weights-releases | ↓退潮 | 0 | 1 | 1 | 1 | claude | candidate |
+| rag-and-memory | ↓退潮 | 0 | 1 | 1 | 1 | github | candidate |
 | robotics-and-simulation | ↓退潮 | 0 | 1 | 1 | 1 | github | candidate |
 
 ## 各主题项目清单
@@ -541,9 +541,6 @@ _该赛道热度持稳，信号目前全部来自 GitHub 社区，Claude 官方�
 - `github-trends` [mbillow/localthings](https://github.com/mbillow/localthings) — 一个 Home Assistant 插件。装上后，家里的三星洗衣机、烘干机、冰箱、空调、烤箱和扫地机可以在局域网内直接接受控制和上报状态，不再经过三星的 SmartThings 云和账号。
 - `github-trends` [pookjw/HermesEnabler](https://github.com/pookjw/HermesEnabler) — 一个让普通 Apple Watch 用上 Hermès 版专属表盘的小工具，不用越狱。它由一个手表 App 和一个 iPhone 伴侣 App 组成，装好后在 App 里打开开关，手表就会把自己当成 Hermès 版；新版本还能解锁 Ultra 专属表盘。
 
-### rag-and-memory（1）
-- `github-trends` [garrytan/gbrain](https://github.com/garrytan/gbrain) — 一个给 AI Agent 用的"第二大脑"。你把会议记录、邮件、推文、通话等资料不断喂进去，它整理成人物、公司、事件页面，并标明每条信息的出处。你的 Agent（Claude Code、Codex、OpenClaw、Hermes 等）问问题时，它直接给出带引用的综合答案，而不是一串搜索结果。
-
 ### ai-video-voice-creative（21）
 _这个赛道几乎完全由 GitHub 社区驱动：Claude 官方博客没有相关信号，Lil'Log 只有一篇较早的视频扩散综述作为研究底座，说明它与模型厂商的主叙事基本脱钩。社区侧的共同主线是"本地优先、去订阅"，包括 CapCut 开源替代、本机配音与声音克隆、端侧听写和 CPU 级 TTS，以及单图转 3D。竞争焦点正从模型能力转向把转写、翻译、合成、剪辑串成开箱即用的端到端工作台。不过近窗热度已归零（前窗 2），说明这股以工具化和平替为主的浪潮正在退潮，后续更可能是存量项目迭代（如 YuE2），而不是新项目集中涌现。_
 
@@ -608,6 +605,9 @@ _该赛道目前完全由 GitHub 社区驱动，Claude 官方博客与 Lil'Log �
 
 ### model-and-weights-releases（1）
 - `claude-blog` [Which Claude model should you build with? Fable, Opus, Sonnet, or Haiku](https://claude.dev/blog/which-claude-model-should-you-build-with/) — The current Claude lineup has four generally available models: Claude Haiku 5.5, Claude Sonnet 5.5, Claude Opus 5.5 and Claude Fable 5.2. Claude Mythos 5.2 is our most capable model for cybersecurity and life sciences research, available through our verification programs.
+
+### rag-and-memory（1）
+- `github-trends` [garrytan/gbrain](https://github.com/garrytan/gbrain) — 一个给 AI Agent 用的"第二大脑"。你把会议记录、邮件、推文、通话等资料不断喂进去，它整理成人物、公司、事件页面，并标明每条信息的出处。你的 Agent（Claude Code、Codex、OpenClaw、Hermes 等）问问题时，它直接给出带引用的综合答案，而不是一串搜索结果。
 
 ### robotics-and-simulation（1）
 - `github-trends` [google-deepmind/mujoco](https://github.com/google-deepmind/mujoco) — 一个物理仿真引擎。研究者用它在电脑里搭出机械臂、四足机器人或人体肌肉模型，让它们在模拟的重力、碰撞和摩擦中运动，再用这些模拟去训练控制算法。
